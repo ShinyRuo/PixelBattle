@@ -31,6 +31,18 @@
     "editor.tabSize": 2
   },
 
+  // ── Markdown 不要自动格式化 ──────────────────────────────────
+  // Docs/ 下的文档是手写排版：表格用紧凑的 |---|---|，正文按语义
+  // 在 ~80 字处手动折行。markdown 格式化插件（Prettier、
+  // Markdown All in One 之类）会把表格分隔行补成对齐的长横线，
+  // 一开一存就是几十行伪改动，真正的内容改动会被淹掉。
+  //
+  // 这条只覆盖本工作区，你在别的项目里的全局设置不受影响。
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.rulers": [100]
+  },
+
   "files.eol": "\n",
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
