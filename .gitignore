@@ -1,0 +1,31 @@
+# ── Godot 4 导入缓存 ─────────────────────────────────────
+# .godot/ 是引擎从 assets 生成的中间产物，完全可再生，绝不入库。
+# 这一条相当于 UE 里的 Intermediate/ + DerivedDataCache/。
+.godot/
+
+# 旧版 Godot 3 的缓存目录
+.import/
+
+# ── 导出相关 ─────────────────────────────────────────────
+# export_presets.cfg 含本机绝对路径和可能的签名密钥，默认不入库。
+# 团队协作若需共享导出配置，删掉这行并先清理里面的路径/密钥。
+export_presets.cfg
+export.cfg
+/build/
+/exports/
+
+# 由 CSV 自动生成的翻译文件
+*.translation
+
+# ── C#/.NET（本项目暂不用，先留着） ─────────────────────
+.mono/
+data_*/
+mono_crash.*.json
+*.csproj.user
+
+# ── 系统 / 编辑器杂项 ────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.log

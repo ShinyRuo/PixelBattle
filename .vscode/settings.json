@@ -1,0 +1,46 @@
+{
+  // ── Godot 引擎位置 ────────────────────────────────────────────
+  // 换机器/升级引擎时只改这一行。注意是 godot.exe（GUI 版），
+  // 命令行自检用的是同目录的 godot_console.exe，见 tasks.json。
+  "godotTools.editorPath.godot4": "F:\\Godot_PJ\\_engine\\4.7.2\\godot.exe",
+
+  // ── 语言服务器（补全 / 跳转 / 悬停文档） ──────────────────────
+  // headless = true：插件自己拉一个无窗口 Godot 当 LSP，
+  // 不用开着编辑器也有补全。这正是 VSCode + Claude Code 的用法。
+  // 若你更喜欢开着编辑器（LSP 能看到编辑器里的实时状态），改成 false。
+  "godotTools.lsp.headless": true,
+  "godotTools.lsp.serverPort": 6008,
+  "godotTools.lsp.autoReconnect.enabled": true,
+
+  // 悬停在 .tscn 的场景引用上能看到子场景预览
+  "godotTools.scenePreview.previewRelatedScenes": true,
+  "godotTools.inlayHints.gdscript": true,
+
+  // ── GDScript 编码风格 ────────────────────────────────────────
+  // Godot 官方规范用 Tab 缩进，gdformat 也强制 Tab。别改成空格，
+  // 否则每次保存格式化都会和 gdlint 打架。
+  "[gdscript]": {
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "geequlim.godot-tools",
+    "editor.formatOnSave": true,
+    "editor.rulers": [100]
+  },
+  "[gdscene]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // ── 把引擎缓存挡在视野外 ──────────────────────────────────────
+  // .godot/ 是可再生的导入缓存，几千个文件，不排除的话
+  // 文件搜索和文件监视都会被拖垮。
+  "files.exclude": { "**/.godot": true },
+  "search.exclude": { "**/.godot": true, "**/addons/gut": true },
+  "files.watcherExclude": { "**/.godot/**": true },
+
+  "terminal.integrated.defaultProfile.windows": "PowerShell"
+}

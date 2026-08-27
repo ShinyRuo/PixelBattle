@@ -1,0 +1,67 @@
+{
+  // ─────────────────────────────────────────────────────────────
+  // PixelBattle 工作区
+  //
+  // 用法：VSCode > File > Open Workspace from File… 选本文件。
+  //       （直接 Open Folder 也能用，但少了下面这些工作区级设置。）
+  //
+  // 配置分两层，别混：
+  //   本文件            → 窗口 / 资源管理器的观感（文件嵌套、标题、搜索范围）
+  //   .vscode/settings.json → 语言与工具链（Godot 路径、LSP、gdscript 格式化）
+  // 同一个键写在两处时工作区会覆盖文件夹，所以刻意不重复。
+  // ─────────────────────────────────────────────────────────────
+
+  "folders": [
+    {
+      "name": "PixelBattle",
+      "path": "."
+    }
+  ],
+
+  "settings": {
+    // ── 文件嵌套 ───────────────────────────────────────────────
+    // Godot 会给每个脚本生成 .uid、给每个资产生成 .import 边车文件。
+    // 不折叠的话资源管理器里文件数直接翻倍，全是噪音。
+    // 注意：这些边车文件必须提交进 git，折叠只是眼不见，不是忽略。
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+      "*": "${capture}.uid, ${capture}.import"
+    },
+
+    // ── 窗口 ───────────────────────────────────────────────────
+    "window.title": "PixelBattle — ${activeEditorShort}${separator}${rootName}",
+
+    // ── 搜索 / 文件监视范围 ────────────────────────────────────
+    // .godot 是可再生的导入缓存（几千个文件），addons 是第三方代码。
+    // 不排除的话全局搜索会被它们淹没。
+    // 需要查 GUT 或 MCP 插件源码时，在搜索框里手动勾 "Use Exclude Settings" 关掉即可。
+    "search.exclude": {
+      "**/.godot": true,
+      "**/addons/gut": true,
+      "**/addons/godot_mcp": true
+    },
+    "files.watcherExclude": {
+      "**/.godot/**": true
+    },
+
+    // ── 终端 ───────────────────────────────────────────────────
+    // 打开终端就落在项目根，直接能跑 .\scripts\check.ps1
+    "terminal.integrated.cwd": "${workspaceFolder}",
+
+    // Markdown 文档里的中文排版，关掉英文单词换行检查的干扰
+    "[markdown]": {
+      "editor.wordWrap": "on",
+      "editor.quickSuggestions": { "comments": "off", "strings": "off", "other": "off" }
+    }
+  },
+
+  "extensions": {
+    "recommendations": [
+      "geequlim.godot-tools",
+      "alfish.godot-files",
+      "anthropic.claude-code"
+    ],
+    "unwantedRecommendations": []
+  }
+}

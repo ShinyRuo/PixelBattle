@@ -1,0 +1,8 @@
+{
+  // 换机器或新人接手时，VSCode 会自动提示装这几个
+  "recommendations": [
+    "geequlim.godot-tools",
+    "alfish.godot-files",
+    "anthropic.claude-code"
+  ]
+}

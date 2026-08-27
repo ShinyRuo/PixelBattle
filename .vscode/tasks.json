@@ -1,0 +1,65 @@
+{
+  // 所有任务都调 godot_console.exe 而不是 godot.exe。
+  // 原因：Windows 上 godot.exe 是 GUI 子系统程序，stdout 不回传到调用它的终端，
+  // 命令行看不到任何输出。_console.exe 是官方提供的控制台包装器，专治这个。
+  "version": "2.0.0",
+  "options": {
+    "env": {
+      "GODOT": "F:\\Godot_PJ\\_engine\\4.7.2\\godot_console.exe"
+    }
+  },
+  "tasks": [
+    {
+      "label": "自检（导入 + lint + 测试）",
+      "type": "shell",
+      "command": "powershell",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/check.ps1"],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Godot: 导入资源 / 校验脚本",
+      "type": "shell",
+      "command": "& $env:GODOT --headless --path \"${workspaceFolder}\" --import",
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Godot: 运行游戏",
+      "type": "shell",
+      "command": "& $env:GODOT --path \"${workspaceFolder}\"",
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Godot: 打开编辑器",
+      "type": "shell",
+      "command": "Start-Process 'F:\\Godot_PJ\\_engine\\4.7.2\\godot.exe' -ArgumentList '--editor','--path','${workspaceFolder}'",
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "测试: 跑 GUT 全部用例",
+      "type": "shell",
+      "command": "& $env:GODOT --headless --path \"${workspaceFolder}\" -s res://addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit",
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "代码: gdformat 格式化全项目",
+      "type": "shell",
+      "command": "gdformat src tests",
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "代码: gdlint 静态检查",
+      "type": "shell",
+      "command": "gdlint src tests",
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}

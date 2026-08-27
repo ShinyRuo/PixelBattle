@@ -1,0 +1,72 @@
+# gdlint 配置（YAML）。本文件由 `gdlint -d` 导出的默认值改造而来。
+#
+# 坑：这些值是正则，YAML 里以 [ 开头的裸字符串会被当成数组解析，
+# 所以那几行必须带单引号。要加新规则时，先 `gdlint -d` 导出一份对照。
+#
+# 改完跑 scripts\check.ps1 验证。
+
+# ── 排除目录 ────────────────────────────────────────────────
+# addons 是第三方代码（GUT 等），不该按我们的规范去卡它。
+# .godot 是引擎缓存。
+excluded_directories: !!set
+  .git: null
+  .godot: null
+  addons: null
+  build: null
+
+# ── 命名规则 ────────────────────────────────────────────────
+class-name: ([A-Z][a-z0-9]*)+
+class-variable-name: _?[a-z][a-z0-9]*(_[a-z0-9]+)*
+class-load-variable-name: (([A-Z][a-z0-9]*)+|_?[a-z][a-z0-9]*(_[a-z0-9]+)*)
+constant-name: _?[A-Z][A-Z0-9]*(_[A-Z0-9]+)*
+load-constant-name: (([A-Z][a-z0-9]*)+|_?[A-Z][A-Z0-9]*(_[A-Z0-9]+)*)
+enum-name: ([A-Z][a-z0-9]*)+
+enum-element-name: '[A-Z][A-Z0-9]*(_[A-Z0-9]+)*'
+function-name: (_on_([A-Z][a-z0-9]*)+(_[a-z0-9]+)*|_?[a-z][a-z0-9]*(_[a-z0-9]+)*)
+function-argument-name: _?[a-z][a-z0-9]*(_[a-z0-9]+)*
+function-variable-name: '[a-z][a-z0-9]*(_[a-z0-9]+)*'
+function-preload-variable-name: ([A-Z][a-z0-9]*)+
+signal-name: '[a-z][a-z0-9]*(_[a-z0-9]+)*'
+sub-class-name: _?([A-Z][a-z0-9]*)+
+loop-variable-name: _?[a-z][a-z0-9]*(_[a-z0-9]+)*
+
+# ── 体量上限（超了不是错，是"该拆了"的信号） ────────────────
+max-file-lines: 1000
+max-line-length: 100
+max-public-methods: 20
+max-returns: 6
+function-arguments-number: 10
+
+# ── 类成员声明顺序 ──────────────────────────────────────────
+# GDScript 官方风格：signals → enums → consts → exports → 变量 → 函数。
+# 强制统一后，任何脚本翻到同一位置都能找到同类东西。
+class-definitions-order:
+- tools
+- classnames
+- extends
+- docstrings
+- signals
+- enums
+- consts
+- staticvars
+- exports
+- pubvars
+- prvvars
+- onreadypubvars
+- onreadyprvvars
+- others
+
+# ── 代码异味检查（null = 启用该规则） ───────────────────────
+comparison-with-itself: null
+duplicated-load: null
+expression-not-assigned: null
+mixed-tabs-and-spaces: null
+no-elif-return: null
+no-else-return: null
+trailing-whitespace: null
+unnecessary-pass: null
+unused-argument: null
+tab-characters: 1
+
+# 想临时关掉某条规则，把规则名加进这个列表
+disable: []

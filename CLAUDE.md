@@ -1,0 +1,173 @@
+# PixelBattle — 项目说明书
+
+Godot 4.7.2 / GDScript / 2D。开发在 VSCode + Claude Code，Godot 编辑器只在需要
+所见即所得的时候开（摆关卡、调 Input Map、看 GUT 面板）。
+
+---
+
+## 这是什么游戏
+
+魔兽争霸3 RPG 地图《忍法战场》的复刻版。**2D 像素风 · 横屏 · 无限流 PVE 塔防自走棋**，
+目标 PC（Steam）+ 手机双端。
+
+一句话玩法：抽忍者 → 排阵型（前中后三列）→ 自动战斗 + 手动放大招 → 打无限波次，
+看能推多远。核心策略来自**五系属性克制**（火→风→雷→土→水→火，克制 200% / 被克 50%）
+配上**敌人属性按固定顺序轮转**，逼玩家凑齐五系而不是堆一套最优解。
+
+设计详情看 `Docs/`，下面六条是**架构铁律**，破坏任何一条都要付重写代价：
+
+1. **`src/core/` 零引擎依赖** —— 不 `extends Node`（用 `RefCounted`）、不 `get_node()`、
+   不访问 `SceneTree`、不读 `delta`、不调全局 `randi()`。守住它才有确定性、可单测、
+   可 headless 批量模拟、可换渲染层。
+2. **定帧 20 tick/s**，倍速只改每渲染帧步进的 tick 数。
+   **绝不用 `Engine.time_scale` 或直接乘 `delta`** —— 浮点漂移会让存档回滚和每日种子失效。
+3. **三条独立 RNG 流**（gacha / quest / combat），各持有自己的 `RandomNumberGenerator`，
+   `state` 存进档。全局 `randi()` / `randf()` 一律禁用。
+4. **`element` 挂在伤害事件上**，不挂在单位上（同一角色的不同技能可以是不同属性）。
+5. **代码里不出现角色名字符串**，一律走 `id` + `name_key` 查表。
+   角色数据全在 `data/` 的 `.tres` 里，换皮 = 改表，`src/` 一行不动。
+6. **`COUNT_CAP`（同屏单位上限）不按平台分档**，双端跑同一份模拟，
+   性能差异只在渲染层吸收。
+
+**当前进度**：工具链就绪，游戏代码 0 行。下一步是 M-1 无渲染数值原型
+（见 `Docs/开发路线图.md`）—— **在 `GROWTH` 校准之前不要写美术、UI 或场景。**
+
+---
+
+## 环境速查
+
+| 项 | 值 |
+|---|---|
+| 引擎（GUI） | `F:\Godot_PJ\_engine\4.7.2\godot.exe` |
+| 引擎（命令行） | `F:\Godot_PJ\_engine\4.7.2\godot_console.exe` |
+| 项目根 | `F:\Godot_PJ\PixelBattle` |
+| 测试框架 | GUT 9.6.1（`addons/gut`） |
+| 格式化 / 静态检查 | `gdformat` / `gdlint`（gdtoolkit 4.5.0） |
+
+**Windows 上必须用 `godot_console.exe` 跑命令行。** `godot.exe` 是 GUI 子系统程序，
+stdout 不回传给调用它的终端 —— 用它跑 `--headless` 会看到一片空白，误以为没输出。
+
+---
+
+## 自检契约（最重要的一条）
+
+**任何代码或场景改动之后，跑：**
+
+```powershell
+.\scripts\check.ps1
+```
+
+四个阶段，退出码 0 才算改完：
+
+1. `--import` — 导入资源、解析全部脚本（抓语法错误、断掉的资源引用）
+2. `gdlint` — 静态检查（命名、行长、代码异味）
+3. `--quit-after 120` — 真跑主场景 120 帧（抓「解析得过但一 `_ready` 就炸」）
+4. GUT — 单元测试
+
+常用参数：
+
+```powershell
+.\scripts\check.ps1 -Fix        # 顺手用 gdformat 格式化
+.\scripts\check.ps1 -SkipTests  # 只做快速校验
+.\scripts\check.ps1 -Full       # 打印每阶段完整输出（默认只在失败时打）
+```
+
+默认静默是有意的：成功时刷 200 行导入进度条既没信息量，又会白吃掉上下文窗口。
+
+---
+
+## 目录约定
+
+```
+src/          游戏脚本，按系统分子目录（player/、systems/、enemy/…）
+scenes/       .tscn 场景
+assets/       美术、音频（导入后引擎会在旁边生成 .import 元数据）
+tests/        GUT 用例，文件名和方法名都以 test_ 开头
+addons/       第三方插件，不改、不 lint
+scripts/      开发脚本（PowerShell），不是游戏代码
+Docs/         项目文档
+```
+
+## 其他文档
+
+**设计**
+
+- [Docs/开发路线图.md](Docs/开发路线图.md) — **先读这份**：当前进度、里程碑、待决策、风险登记
+- [Docs/施工策划案.md](Docs/施工策划案.md) — 主规格。每个系统给规则、公式、可调参数、验收标准
+- [Docs/玩法拆解_忍法战场.md](Docs/玩法拆解_忍法战场.md) — 原版考据，理解「为什么这么设计」
+
+**环境**
+
+- [README.md](README.md) — 人看的入口，30 秒上手
+- [Docs/环境搭建记录.md](Docs/环境搭建记录.md) — 环境怎么装出来的、选型理由、踩过的坑
+- [Docs/Godot上手笔记.md](Docs/Godot上手笔记.md) — UE→Godot 概念对照、GDScript 速查
+
+改动涉及环境或工具链时，同步更新《环境搭建记录》；发现新的引擎行为坑位，
+写进本文件的「已知坑位」并在《上手笔记》补一条。
+设计决策变更时更新《施工策划案》，进度与待办变更时更新《开发路线图》。
+
+---
+
+## GDScript 规范
+
+- **Tab 缩进**，不是空格。gdformat 强制，保存时自动跑。
+- 变量、函数 `snake_case`；类名、常量按 `.gdlintrc` 里的正则。
+- **写类型标注**：`var speed: float = 220.0`、`func move(d: Vector2) -> void:`。
+  Godot 会据此走静态类型路径，比 Variant 快，而且错误在编译期就报出来。
+- 私有成员以 `_` 开头。
+- 测试方法名用**英文** —— 中文函数名 GDScript 本身能跑，但 gdlint 的
+  `function-name` 规则不认。中文写在注释和断言消息里。
+- 文档注释用 `##`（会进 Godot 内置文档和 VSCode 悬停提示），普通注释用 `#`。
+
+---
+
+## 场景文件（.tscn）怎么改
+
+`.tscn` / `.tres` 是纯文本，**可以直接编辑**，这是 Godot 相对 UE `.uasset` 最大的优势。
+但有规矩：
+
+- **不要手写 `uid="uid://xxx"`。** 新增 `ext_resource` 只写 `path="res://..."`，
+  跑一次 `--import` 让引擎自己补 uid。手编的 uid 会和引擎数据库对不上。
+- **`.gd.uid` 文件要一起提交。** Godot 4.4+ 给每个脚本生成一个 `.uid` 边车文件，
+  漏提交会让别人机器上的场景引用断掉。
+- 改完 `.tscn` 一定跑 `check.ps1` —— 手写场景很容易节点类型和属性对不上，
+  引擎加载时才报错。
+- 场景内的信号连线（`[connection signal=...]`）留在 `.tscn` 里没问题，它是可读文本。
+  跨场景 / 动态的连接写在代码里用 `connect()`。
+
+## project.godot 的脾气
+
+**引擎会重写这个文件，而且会做三件事**（跑一次 `--import` 就会发生）：
+
+1. **删掉所有注释。** 别在里面写说明，写了也留不住 —— 要解释配置就写在这份 CLAUDE.md 里。
+2. **省略等于默认值的项。** 比如 `window/stretch/aspect="keep"` 写进去也会消失，
+   因为它本来就是默认值。这不是丢失，是归一化；看不到某一项不代表它没生效。
+3. **自动补插件需要的段。** 启用 Godot MCP 后引擎自己加了 `[autoload] MCPGameBridge`
+   和 `[godot_mcp]` 段 —— 别手动删，删了 MCP 就连不上运行中的游戏。
+
+不要手写进去的东西：
+
+- **Input Map（输入动作）**。那段 `Object(InputEventKey, ...)` 序列化格式跨版本会变，
+  手写极易写出加载不了的项目。用编辑器 Project Settings > Input Map 加。
+- **Autoload 路径**同理，用编辑器加，避免路径拼错。
+
+其余普通键值（窗口尺寸、渲染选项等）可以直接改文本，改完跑 `check.ps1`。
+
+---
+
+## 已知坑位
+
+- **`.ps1` 必须存成 UTF-8 with BOM。** PowerShell 5.1 对无 BOM 的 UTF-8 按 GBK 解，
+  中文和特殊符号会变乱码并导致语法错误。
+- **`queue_free()` 不是 `free()`。** 节点删除用 `queue_free()`，在帧末安全释放；
+  `free()` 立即释放，正在遍历时调用会崩。
+- **`@onready` 变量在 `_ready()` 之前赋值**，别在 `_init()` 里访问它们。
+- **GitHub 直连不通**，下载依赖走 `https://ghfast.top/` 前缀代理，
+  下完对 SHA256。npm registry 直连正常。
+
+---
+
+## 协作方式
+
+沿用「提问 → 方案 → 决策 → 草稿 → 批准」：写文件前先说要写哪个、写什么，
+多文件改动给完整变更集，不擅自 commit。
