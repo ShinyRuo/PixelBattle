@@ -32,32 +32,9 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 	result.run_seed = run_seed
 
 	while state.wave_index <= cfg.max_wave:
-		var wave := PBWaveRules.build(state.wave_index, cfg, rng.quest)
-		var quest_grade := PBEconomyRules.roll_quest(rng.quest)
-
-		strategy.prepare(state, wave, cfg, rng)
-
-		var deployed := strategy.deploy(state, wave, cfg)
-		var accepted := strategy.accept_quest(state, wave, quest_grade, cfg)
-		state.dispatched = PBEconomyRules.quest_cost_units(quest_grade) if accepted else 0
-
-		var dps := PBCombatRules.team_dps(
-			deployed,
-			wave.element,
-			state.atk_mult(cfg),
-			state.bond_mult(cfg),
-			state.equip_mult(cfg),
-			cfg
-		)
-		var outcome := _resolve_battle(wave, dps, state.def_reduction(cfg), cfg)
-
-		_collect(state, result, outcome, accepted)
-		_settle_income(state, wave, outcome, quest_grade, accepted, cfg, rng)
-
-		state.base_hp -= outcome.base_damage
-		state.dispatched = 0
-		result.wave_reached = state.wave_index
-
+		var plan := plan_wave(state, strategy, cfg, rng)
+		var outcome := _resolve_battle(plan.wave, plan.dps, state.def_reduction(cfg), cfg)
+		settle_wave(state, plan, outcome, cfg, rng, result)
 		if state.base_hp <= 0.0:
 			break
 		state.wave_index += 1
@@ -67,6 +44,58 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 	result.hit_wave_cap = state.base_hp > 0.0
 	_snapshot(state, result)
 	return result
+
+
+## 准备一波：生成敌人、让玩家花钱、选上场名单、决定接不接任务、算出有效 DPS。
+##
+## **批量模拟和游戏画面共用这一个入口。** 两边各写一份的话，RNG 的调用次序
+## 迟早分叉，「批量校出来的数值」和「实际玩到的手感」会对不上且不报错。
+##
+## 内部顺序不能换，理由见本类顶部的说明。
+static func plan_wave(
+	state: PBRunState, strategy: PBStrategy, cfg: PBSimConfig, rng: PBRngStreams
+) -> PBWavePlan:
+	var plan := PBWavePlan.new()
+	plan.wave = PBWaveRules.build(state.wave_index, cfg, rng.quest)
+	plan.quest_grade = PBEconomyRules.roll_quest(rng.quest)
+
+	strategy.prepare(state, plan.wave, cfg, rng)
+
+	plan.deployed = strategy.deploy(state, plan.wave, cfg)
+	plan.quest_accepted = strategy.accept_quest(state, plan.wave, plan.quest_grade, cfg)
+	state.dispatched = (
+		PBEconomyRules.quest_cost_units(plan.quest_grade) if plan.quest_accepted else 0
+	)
+
+	plan.dps = PBCombatRules.team_dps(
+		plan.deployed,
+		plan.wave.element,
+		state.atk_mult(cfg),
+		state.bond_mult(cfg),
+		state.equip_mult(cfg),
+		cfg
+	)
+	return plan
+
+
+## 结算一波：累计统计、四条收入入账、扣基地血、清掉派遣标记。
+##
+## [param result] 可以传 null —— 游戏画面只关心 [param state]，
+## 不需要那份供 CSV 用的整局汇总。
+static func settle_wave(
+	state: PBRunState,
+	plan: PBWavePlan,
+	outcome: PBCombatOutcome,
+	cfg: PBSimConfig,
+	rng: PBRngStreams,
+	result: PBRunResult = null
+) -> void:
+	_collect(state, result, outcome, plan.quest_accepted)
+	_settle_income(state, plan.wave, outcome, plan.quest_grade, plan.quest_accepted, cfg, rng)
+	state.base_hp -= outcome.base_damage
+	state.dispatched = 0
+	if result != null:
+		result.wave_reached = state.wave_index
 
 
 ## 结算一波战斗。走哪个模型由 [member PBSimConfig.use_tick_battle] 决定。
@@ -88,6 +117,8 @@ static func _collect(
 	state.total_kills += outcome.kills
 	state.total_leaked += outcome.leaked
 	state.elapsed_seconds += outcome.battle_seconds
+	if result == null:
+		return
 
 	result.battle_seconds_sum += outcome.battle_seconds
 	if (

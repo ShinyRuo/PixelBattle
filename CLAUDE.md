@@ -175,6 +175,21 @@ Docs/         项目文档
 
 - **`.ps1` 必须存成 UTF-8 with BOM。** PowerShell 5.1 对无 BOM 的 UTF-8 按 GBK 解，
   中文和特殊符号会变乱码并导致语法错误。
+- **`.gd` 绝不能带 BOM，规矩和 `.ps1` 正好相反。** GDScript 的解析器不认 BOM，
+  报的是 `No terminal matches '﻿' at line 1 col 1` —— 指向第 1 行第 1 列，
+  但那一行看起来完全正常，光看报错想不到是编码问题。
+
+  最容易踩的路径是**用 PowerShell 批量改 `.gd`**：
+  `Set-Content -Encoding UTF8` 在 PowerShell 5.1 里写的是**带 BOM** 的 UTF-8。
+  要写无 BOM 得用 `[IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding($false)))`。
+  体检整个仓库：
+
+  ```powershell
+  Get-ChildItem src,tests -Recurse -Filter *.gd | ForEach-Object {
+      $b = [IO.File]::ReadAllBytes($_.FullName)
+      if ($b.Length -ge 3 -and $b[0] -eq 239 -and $b[1] -eq 187 -and $b[2] -eq 191) { $_.Name }
+  }
+  ```
 - **`queue_free()` 不是 `free()`。** 节点删除用 `queue_free()`，在帧末安全释放；
   `free()` 立即释放，正在遍历时调用会崩。
 - **`@onready` 变量在 `_ready()` 之前赋值**，别在 `_init()` 里访问它们。
