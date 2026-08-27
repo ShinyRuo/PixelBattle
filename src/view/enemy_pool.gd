@@ -50,14 +50,34 @@ const LANE_BOTTOM: float = 300.0
 const FIELD_RIGHT: float = 606.0
 const FIELD_LEFT: float = 46.0
 
+## 克制高亮的亮边颜色。
+##
+## **必须对全部六种属性色都有对比度，所以只能用纯白。**
+## 初版用的是淡黄 `(1.0, 0.98, 0.72)`，撞上雷系的黄色本体之后亮边直接消失 ——
+## 而雷系恰恰是玩家最需要看到「我克得住」的场合之一。
+## 任何带色相的亮边都会和某一系撞车，纯白是唯一对六色都成立的选择。
+const RING_COLOR := Color(1.0, 1.0, 1.0, 0.9)
+
+## 亮边比本体大多少。要够大才能在 `640×360` 下看出是一圈边而不是描边毛刺。
+const RING_SCALE: float = 2.1
+
 var _nodes: Array[Polygon2D] = []
+var _rings: Array[Polygon2D] = []
 
 
 func _ready() -> void:
 	# 按上限一次性建满。COUNT_CAP 是逻辑上限，双端一致（§04），
 	# 所以池子大小也不按平台分档。
 	var cfg := PBSimConfig.new()
+	_rings.resize(cfg.count_cap)
 	_nodes.resize(cfg.count_cap)
+	# 亮边先加，才会画在本体后面 —— Godot 的 2D 绘制顺序就是子节点顺序。
+	for i: int in cfg.count_cap:
+		var ring := Polygon2D.new()
+		ring.color = RING_COLOR
+		ring.visible = false
+		add_child(ring)
+		_rings[i] = ring
 	for i: int in cfg.count_cap:
 		var node := Polygon2D.new()
 		node.visible = false
@@ -70,21 +90,31 @@ func _ready() -> void:
 ## [param enemies] 是 [method PBBattleSim.enemies] 给的只读数组，
 ## 下标就是 [member PBEnemy.slot] —— 靠它把节点和逻辑敌人对上，
 ## 不用每帧重新匹配。
-func sync_enemies(enemies: Array[PBEnemy], current_tick: int, field_length: float) -> void:
+## [param show_counter_ring] 为真时给敌人加一圈亮边，表示当前阵容克得住它。
+## 整波敌人属性相同（§04），所以这是个整波级别的开关，不用逐个判断。
+func sync_enemies(
+	enemies: Array[PBEnemy], current_tick: int, field_length: float, show_counter_ring: bool = false
+) -> void:
 	for i: int in _nodes.size():
 		var node: Polygon2D = _nodes[i]
+		var ring: Polygon2D = _rings[i]
 		if i >= enemies.size():
 			node.visible = false
+			ring.visible = false
 			continue
 		var enemy: PBEnemy = enemies[i]
 		if not enemy.is_active(current_tick):
 			node.visible = false
+			ring.visible = false
 			continue
 		node.visible = true
 		node.position = _position_of(enemy, field_length)
 		node.color = _color_of(enemy)
 		if node.polygon.is_empty():
 			node.polygon = _shape_for(enemy.element)
+			ring.polygon = _shape_for(enemy.element, RING_SCALE)
+		ring.visible = show_counter_ring
+		ring.position = node.position
 
 
 ## 敌人在屏幕上的位置。x 由推进进度决定，y 按槽位散开。
@@ -108,12 +138,12 @@ func _color_of(enemy: PBEnemy) -> Color:
 	return base.lerp(Color(0.15, 0.15, 0.15), (1.0 - health) * 0.6)
 
 
-## 生成某一系的多边形剪影。
-func _shape_for(element: PBElement.Type) -> PackedVector2Array:
+## 生成某一系的多边形剪影。[param scale] 用来做比本体大一圈的亮边。
+func _shape_for(element: PBElement.Type, scale: float = 1.0) -> PackedVector2Array:
 	var sides: int = ELEMENT_SIDES.get(element, 6)
 	var points := PackedVector2Array()
 	for i: int in sides:
 		# -PI/2 让第一个顶点朝上，剪影的朝向才稳定。
 		var angle: float = -PI / 2.0 + TAU * float(i) / float(sides)
-		points.append(Vector2(cos(angle), sin(angle)) * ENEMY_RADIUS)
+		points.append(Vector2(cos(angle), sin(angle)) * ENEMY_RADIUS * scale)
 	return points

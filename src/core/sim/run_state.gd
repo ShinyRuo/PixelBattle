@@ -115,6 +115,31 @@ func equip_mult(cfg: PBSimConfig) -> float:
 	return 1.0 + cfg.equip_power_per_item * float(usable) / float(slots)
 
 
+## 卡池里有没有能克制 [param wave_element] 的单位。
+##
+## §02 的第三层视觉编码「可被当前阵容克制的敌人加一圈亮边」算的就是这个 ——
+## 那是玩家在战斗中最需要的即时信息。
+func can_counter(wave_element: PBElement.Type) -> bool:
+	var needed := PBElement.counter_of(wave_element)
+	for unit: PBUnit in roster.values():
+		if unit.element == needed:
+			return true
+	return false
+
+
+## 卡池覆盖不了的输出属性 —— 即「未来一个轮转周期里，哪几波你没有克星」。
+##
+## §03 要求准备阶段显示「当前阵容对下一波的克制覆盖：2/5，风系空缺」。
+## 这是原版最大的短板：克制关系要点开技能说明才看得到，玩家全靠背。
+## 自动算出来摆在 HUD 上，是本案投入产出比最高的一处改进。
+func missing_counters() -> Array[int]:
+	var missing: Array[int] = []
+	for wave_element: int in PBWaveRules.WAVE_ELEMENTS:
+		if not can_counter(wave_element as PBElement.Type):
+			missing.append(int(PBElement.counter_of(wave_element as PBElement.Type)))
+	return missing
+
+
 ## 花钱。钱不够返回 false 且不扣款。
 func spend(amount: int) -> bool:
 	if amount < 0 or gold < amount:

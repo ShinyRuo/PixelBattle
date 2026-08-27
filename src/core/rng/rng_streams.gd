@@ -37,6 +37,21 @@ func _init(seed_value: int = 0) -> void:
 	combat = _make_stream(&"combat")
 
 
+## 某一波专属的随机流。**每次调用返回一个全新实例**，种子由基准种子和波次序号派生。
+##
+## 波次生成必须是 `(种子, 波次)` 的纯函数，不能从一条顺序消费的流里取。
+## 理由是 §04 要求「波型在准备阶段提前公示」—— 预告第 n+1 波就得先把它掷出来，
+## 而从顺序流里取的话，这一掷会改变后续所有随机数的次序，
+## 于是「有没有看预告」会影响后面抽到什么卡。那显然不行。
+##
+## 做成纯函数之后，预告任意波次都是零副作用的，
+## 存档里也不需要记「第几波的波型已经掷过了」。
+func wave_rng(wave_index: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d/wave/%d" % [base_seed, wave_index])
+	return rng
+
+
 ## 导出三条流的 `state` 供存档。
 ##
 ## **存成字符串不是 int**：`state` 是 uint64，而 JSON 的数字是双精度浮点，

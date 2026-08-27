@@ -54,6 +54,14 @@ static func new_state(cfg: PBSimConfig) -> PBRunState:
 	return state
 
 
+## 构造第 [param wave_index] 波的参数。**零副作用，可以随便调。**
+##
+## §03 要求「下一波属性预告常驻 HUD，提前 1 波显示」，§04 要求波型也一起公示。
+## 靠的就是这个函数不消耗任何顺序随机流 —— 见 [method PBRngStreams.wave_rng]。
+static func preview_wave(wave_index: int, cfg: PBSimConfig, rng: PBRngStreams) -> PBWave:
+	return PBWaveRules.build(wave_index, cfg, rng.wave_rng(wave_index))
+
+
 ## 准备一波：生成敌人、让玩家花钱、选上场名单、决定接不接任务、算出有效 DPS。
 ##
 ## **批量模拟和游戏画面共用这一个入口。** 两边各写一份的话，RNG 的调用次序
@@ -64,7 +72,7 @@ static func plan_wave(
 	state: PBRunState, strategy: PBStrategy, cfg: PBSimConfig, rng: PBRngStreams
 ) -> PBWavePlan:
 	var plan := PBWavePlan.new()
-	plan.wave = PBWaveRules.build(state.wave_index, cfg, rng.quest)
+	plan.wave = preview_wave(state.wave_index, cfg, rng)
 	plan.quest_grade = PBEconomyRules.roll_quest(rng.quest)
 
 	strategy.prepare(state, plan.wave, cfg, rng)

@@ -46,10 +46,14 @@ func test_logic_advances_over_physics_frames() -> void:
 
 func test_enemy_pool_is_preallocated_and_never_grows() -> void:
 	# §14 要求战斗中零新建节点。池子在 _ready 一次建满，之后只改 visible。
+	#
+	# 每个槽位是两层：本体 + 克制亮边（§02 的第三层视觉编码），
+	# 所以节点数是 COUNT_CAP 的两倍。**「永不增长」才是这条测试的真意** ——
+	# 战斗中冒出新节点就说明有人在热路径上 .new() 了。
 	var root := _spawn_battle()
 	var pool := root.get_node("Enemies")
 	var count_at_start: int = pool.get_child_count()
-	assert_eq(count_at_start, PBSimConfig.new().count_cap, "池子大小应等于 COUNT_CAP")
+	assert_eq(count_at_start, PBSimConfig.new().count_cap * 2, "池子应按 COUNT_CAP 建满两层")
 	await wait_physics_frames(60)
 	assert_eq(pool.get_child_count(), count_at_start, "战斗中不该新建任何敌人节点")
 
@@ -94,6 +98,50 @@ func test_view_never_writes_back_to_sim_state() -> void:
 	assert_eq(root._state.gold, gold_before, "一波没打完，金币不该变")
 	assert_eq(root._state.wave_index, wave_before, "一波没打完，波次不该变")
 	assert_eq(root._state.base_hp, hp_before, "没漏怪时基地血不该变")
+
+
+func test_wave_preview_has_no_side_effects() -> void:
+	# **§04 要求波型提前公示，这条守着它的实现前提。**
+	#
+	# 波次生成必须是 (种子, 波次) 的纯函数。要是从顺序流里掷，
+	# 「预告了下一波」就会改变后续所有随机数的次序 ——
+	# 于是玩家看不看预告会影响后面抽到什么卡。那显然不行。
+	var cfg := PBSimConfig.new()
+	var rng := PBRngStreams.new(999)
+	var first := PBRunSim.preview_wave(7, cfg, rng)
+	# 中间预告一堆别的波次，然后再看第 7 波
+	for i: int in range(1, 20):
+		PBRunSim.preview_wave(i, cfg, rng)
+	var again := PBRunSim.preview_wave(7, cfg, rng)
+	assert_eq(first.element, again.element, "反复预告不该改变第 7 波的属性")
+	assert_eq(first.shape, again.shape, "反复预告不该改变第 7 波的波型")
+	assert_eq(first.count, again.count, "反复预告不该改变第 7 波的数量")
+
+
+func test_coverage_counts_what_the_roster_can_counter() -> void:
+	# §03：「当前阵容对下一波的克制覆盖：2/5，风系空缺」
+	var state := PBRunState.new()
+	assert_eq(state.missing_counters().size(), 5, "空卡池应该五系全缺")
+
+	# 火克风，所以持有火系就能覆盖「风」那一波。
+	state.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R))
+	assert_eq(state.missing_counters().size(), 4, "有火系之后应该只缺四系")
+	assert_true(state.can_counter(PBElement.Type.WIND), "火克风")
+	assert_false(state.can_counter(PBElement.Type.FIRE), "火不克火")
+
+	for element: int in PBElement.RING:
+		state.add_unit(PBUnit.new(element as PBElement.Type, PBUnit.Rarity.R))
+	assert_eq(state.missing_counters().size(), 0, "五系齐了应该零空缺")
+
+
+func test_physical_units_never_count_as_coverage() -> void:
+	# 物理不参与克制环（§03），堆再多也覆盖不了任何一系。
+	# 这正是「纯物理阵容极限波次 < 五系的 70%」那条验收的由来。
+	var state := PBRunState.new()
+	for variant: int in 2:
+		for rarity: int in 4:
+			state.add_unit(PBUnit.new(PBElement.Type.PHYSICAL, rarity as PBUnit.Rarity, variant))
+	assert_eq(state.missing_counters().size(), 5, "纯物理卡池应该五系全缺")
 
 
 func test_same_seed_reproduces_the_same_wave() -> void:

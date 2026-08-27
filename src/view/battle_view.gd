@@ -78,6 +78,7 @@ var _deployed_nodes: Array[Polygon2D] = []
 @onready var _deployed_root: Node2D = $Deployed
 @onready var _base_rect: ColorRect = $Base
 @onready var _info: Label = $HUD/Info
+@onready var _preview: Label = $HUD/Preview
 
 
 func _ready() -> void:
@@ -208,9 +209,45 @@ func _resolve_seed() -> int:
 
 
 func _sync_visuals() -> void:
-	_pool.sync_enemies(_battle.enemies(), _battle.current_tick(), _cfg.field_length)
+	# §02 的第三层视觉编码：克得住的敌人加一圈亮边。
+	# 这是玩家在战斗中最需要的即时信息 —— 原版要点开技能说明才看得到。
+	var counterable: bool = _state.can_counter(_plan.wave.element)
+	_pool.sync_enemies(_battle.enemies(), _battle.current_tick(), _cfg.field_length, counterable)
 	_sync_base()
 	_sync_info()
+	_sync_preview()
+
+
+## 下一波预告 + 克制覆盖度。§03 称这是本案投入产出比最高的一处改进 ——
+## 原版的克制关系要点开技能说明才看得到，玩家全靠背。
+##
+## 预告零副作用，因为波次生成是 `(种子, 波次)` 的纯函数，
+## 见 [method PBRngStreams.wave_rng]。
+func _sync_preview() -> void:
+	if _run_over:
+		_preview.text = ""
+		return
+	var next := PBRunSim.preview_wave(_state.wave_index + 1, _cfg, _rng)
+	var missing := _state.missing_counters()
+	var covered: int = PBWaveRules.WAVE_ELEMENTS.size() - missing.size()
+
+	var gap_text: String = "已齐"
+	if not missing.is_empty():
+		var names := PackedStringArray()
+		for element: int in missing:
+			names.append(_element_name(element as PBElement.Type))
+		gap_text = "缺 %s" % "".join(names)
+
+	_preview.text = (
+		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
+		% [
+			_element_name(next.element),
+			_shape_name(next.shape),
+			covered,
+			gap_text,
+			"空格暂停　1/2/3 倍速　R 重开",
+		]
+	)
 
 
 ## 基地血量画成一个高度随血量变化的条。
