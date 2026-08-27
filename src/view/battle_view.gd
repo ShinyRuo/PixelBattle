@@ -87,8 +87,7 @@ func _ready() -> void:
 	_frames_per_tick = maxi(Engine.physics_ticks_per_second / _cfg.tick_rate, 1)
 
 	_rng = PBRngStreams.new(_resolve_seed())
-	_state = PBRunState.new()
-	_state.base_hp = _cfg.base_hp
+	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 
 	_build_deployed_nodes()
@@ -171,8 +170,7 @@ func _restart() -> void:
 	_run_over = false
 	_paused = false
 	_gap_frames = 0
-	_state = PBRunState.new()
-	_state.base_hp = _cfg.base_hp
+	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 	_rng = PBRngStreams.new(_resolve_seed())
 	_start_wave()

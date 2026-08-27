@@ -29,10 +29,13 @@ Godot 4.7.2 / GDScript / 2D。开发在 VSCode + Claude Code，Godot 编辑器�
 6. **`COUNT_CAP`（同屏单位上限）不按平台分档**，双端跑同一份模拟，
    性能差异只在渲染层吸收。
 
-**当前进度**：M-1 无渲染数值原型已完成，`src/core/` 的 sim + rules 可跑，
-首轮 23100 局扫描已出结论。**下一步不是 M0** —— 扫描发现属性、经济、派遣
-三个系统的代价都能被「多抽几张卡」绕过去，得先定这一条。
-详见 `Docs/开发路线图.md`。**在此之前不要写美术、UI 或场景。**
+**当前进度**：M-1 数值原型完成并出了结论；**M0 战斗可视化进行中** ——
+逐 tick 战斗（M0-a）与白模画面（M0-b）已完成，`COUNT_CAP = 48` 观感验收通过。
+主场景是 `scenes/battle.tscn`，跑 `godot.exe --path .` 就能看。
+
+**仍然开着的设计缺口**：经济与派遣的配平阻塞于 §10 装备定价（属于 M3）；
+`GROWTH` 待重新锚定。详见 `Docs/开发路线图.md`。
+**美术资源仍然不要动** —— M0 是白模阶段，真美术在 M5。
 
 ---
 
@@ -59,12 +62,18 @@ stdout 不回传给调用它的终端 —— 用它跑 `--headless` 会看到一
 .\scripts\check.ps1
 ```
 
-四个阶段，退出码 0 才算改完：
+五个阶段，退出码 0 才算改完：
 
 1. `--import` — 导入资源、解析全部脚本（抓语法错误、断掉的资源引用）
-2. `gdlint` — 静态检查（命名、行长、代码异味）
-3. `--quit-after 120` — 真跑主场景 120 帧（抓「解析得过但一 `_ready` 就炸」）
-4. GUT — 单元测试
+2. **core 纯度** — grep `src/core/`，出现 `get_node`、全局 `randi(`、`delta`、
+   `extends Node` 就报错。守铁律 1，见 §14
+3. `gdlint` — 静态检查（命名、行长、代码异味、成员声明顺序）
+4. `--quit-after 120` — 真跑主场景 120 帧（抓「解析得过但一 `_ready` 就炸」）
+5. GUT — 单元测试
+
+> **阶段 5 会因为「测试静默消失」而失败，这是有意的。** 一个测试文件解析失败时
+> GUT 只打一行 WARNING 就跳过整个文件，然后**照样返回 0** —— 用例数悄悄少掉一截，
+> 而自检报告「全部通过」。所以那一阶段配了 `FailPatterns` 把这种情况拦死。
 
 常用参数：
 
@@ -186,8 +195,8 @@ Docs/         项目文档
 
   ```powershell
   Get-ChildItem src,tests -Recurse -Filter *.gd | ForEach-Object {
-      $b = [IO.File]::ReadAllBytes($_.FullName)
-      if ($b.Length -ge 3 -and $b[0] -eq 239 -and $b[1] -eq 187 -and $b[2] -eq 191) { $_.Name }
+	  $b = [IO.File]::ReadAllBytes($_.FullName)
+	  if ($b.Length -ge 3 -and $b[0] -eq 239 -and $b[1] -eq 187 -and $b[2] -eq 191) { $_.Name }
   }
   ```
 - **`queue_free()` 不是 `free()`。** 节点删除用 `queue_free()`，在帧末安全释放；

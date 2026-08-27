@@ -23,8 +23,7 @@ const TARGET_DURATION_MAX: float = 45.0
 ## 跑一局。[param run_seed] 决定三条 RNG 流，同一个种子必然跑出同一个结果。
 static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunResult:
 	var rng := PBRngStreams.new(run_seed)
-	var state := PBRunState.new()
-	state.base_hp = cfg.base_hp
+	var state := new_state(cfg)
 
 	var result := PBRunResult.new()
 	result.strategy_id = strategy.id
@@ -44,6 +43,15 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 	result.hit_wave_cap = state.base_hp > 0.0
 	_snapshot(state, result)
 	return result
+
+
+## 造一个开局状态。批量模拟和游戏画面都走这里，免得两边的开局条件不一致 ——
+## 那种不一致会表现为「批量校出来的波次和实际玩到的对不上」，且不报任何错。
+static func new_state(cfg: PBSimConfig) -> PBRunState:
+	var state := PBRunState.new()
+	state.base_hp = cfg.base_hp
+	state.gold = cfg.starting_gold
+	return state
 
 
 ## 准备一波：生成敌人、让玩家花钱、选上场名单、决定接不接任务、算出有效 DPS。
