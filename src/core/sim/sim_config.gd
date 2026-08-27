@@ -1,0 +1,215 @@
+class_name PBSimConfig
+extends RefCounted
+## 模拟的全部可调参数。默认值取自施工策划案 §03 / §04。
+##
+## 为什么不做成 Resource：§14 规定 `data/` 下的角色、羁绊、装备用 `.tres`，
+## 图的是检查器可视化编辑。但配置在 M-1 的用法是**批量扫描** ——
+## 一次跑几千局，每局一份改了 `growth` 的副本。纯 RefCounted 加 [method clone]
+## 比 Resource 的加载/复制轻得多，也不需要引擎的资源系统参与。
+##
+## 所有字段都是设计意图的占位值。M-1 的产出就是把 `growth` 从占位变成有依据的数。
+
+# ── §03 属性伤害系数 ────────────────────────────────────────────
+## 克制倍率。
+var mult_counter: float = 2.00
+
+## 被克倍率。
+var mult_weak: float = 0.50
+
+## 无关属性倍率。§03 标为固定值，列出来只为公式完整。
+var mult_neutral: float = 1.00
+
+## 物理倍率。**全局最敏感的一个旋钮。**
+##
+## 物理不吃克制、恒定这一个系数，是「这波我没配对」的保底补丁。
+## §03 警告：调到 1.15 以上，堆物理躺赢就成了最优解，整个属性系统当场作废。
+## 改这个值必须跑回归 —— test_element 里那条「物理纯队极限波次显著低于五系队」
+## 就是为它准备的。
+var mult_physical: float = 1.05
+
+# ── §04 成长曲线 ────────────────────────────────────────────────
+## 1 波普通怪血量。
+var hp_base: float = 120.0
+
+## 1 波普通怪攻击。
+var atk_base: float = 10.0
+
+## **整条难度曲线的主控。** 建议范围 1.10–1.15，M-1 存在的全部理由就是校准它。
+var growth: float = 1.125
+
+## 1 波怪物数。
+var count_base: float = 8.0
+
+## 每波数量增量。波型倍率在此之后叠加。
+var count_rate: float = 0.5
+
+## 同屏单位上限。**待决策**，§04 建议 48，M0 出画面后用去色剪影测试定夺。
+## 绝不按平台分档 —— 双端跑同一份模拟，否则难度不同、排行榜没意义。
+var count_cap: int = 48
+
+## 波次基础奖金与每波增量。线性，见 [member PBWave.reward_gold]。
+var gold_base: int = 45
+var gold_rate: int = 6
+
+# ── §04 波型 ────────────────────────────────────────────────────
+## 三种非 BOSS 波型的刷新权重。不必凑成 100，按总和归一。
+var shape_weight_normal: int = 60
+var shape_weight_swarm: int = 25
+var shape_weight_elite: int = 15
+
+## 波型对数量 / 单体血量的倍率。
+var swarm_count_mult: float = 2.2
+var swarm_hp_mult: float = 0.45
+var elite_count_mult: float = 0.3
+var elite_hp_mult: float = 4.0
+var boss_hp_mult: float = 8.0
+var mega_boss_hp_mult: float = 20.0
+
+## BOSS 数量。§04 给的是 1–3 的区间，这里取定值而不是掷骰 ——
+## BOSS 波是存档点也是验收项（「刚好达标的阵容能击败，误差 ±15%」），
+## 掷骰会把这条验收标准本身变成随机的，没法回归。
+var boss_count: int = 2
+var mega_boss_count: int = 1
+
+# ── 战场时空（M-1 新增，策划案未定，取值需靠 M0 实机反推）────────
+## 逻辑帧率。§14 铁律：定帧 20 tick/s，倍速只改每渲染帧步进的 tick 数。
+## M-1 不逐 tick 推进，但所有时长都对齐到整 tick，好让 M0 换成真模拟时数值可比。
+var tick_rate: int = 20
+
+## 敌人从出生点走到基地要多久（秒）。它决定「反应窗口」有多宽。
+var march_seconds: float = 12.0
+
+## 一波敌人分散出场的总时长（秒）。出怪间隔 = 本值 / 数量。
+## 它给单波时长设了个下限：最后一个怪最早也要等到这时候才出场。
+## §01 要求单波 30–45 秒，这个下限加上 march_seconds 是那 30 秒的主要来源。
+var spawn_window: float = 10.0
+
+# ── 基地（M-1 新增，§07 只说了「漏怪掉血」没定规模）─────────────
+## 基地初始血量。漏怪按敌人 ATK 扣，而 ATK 走指数曲线 ——
+## 所以前期能扛几十个漏怪，后期漏两个就没了，卡波表现为「清不完就死」。
+var base_hp: float = 1000.0
+
+## BOSS 漏掉的额外倍率。
+var boss_leak_mult: float = 3.0
+
+# ── §05 人口 ────────────────────────────────────────────────────
+var deploy_slots_base: int = 4
+var deploy_slots_max: int = 10
+var standby_slots_base: int = 3
+var standby_slots_max: int = 6
+
+# ── 玩家战力抽象（M-1 简化，路线图指定「用一条成长曲线代替」）────
+## 各稀有度的基础每秒伤害。R / SR / SSR / USR。
+var rarity_power: Array[float] = [100.0, 185.0, 340.0, 620.0]
+
+## 每星级的战力加成。§08：同卡 3 张升 1 星。
+var star_power_mult: float = 0.25
+
+## 每个（稀有度, 属性）格子里有几号角色。总卡池 = 本值 × 4 稀有度 × 6 属性。
+##
+## **这个数直接决定「换人」这条策略有没有意义。** 取 1 的话「火系 SSR」
+## 全游戏只有一张，玩家永远凑不出四个克制系上场，§03 的克制加成在模型里
+## 被人为掐死一半。取 2 得到 48 张卡，与 §09「PC 首发 40+ 角色」对得上。
+var characters_per_bucket: int = 2
+
+## 羁绊的替身曲线：每个「在场且未被派遣」的单位提供的战力加成。
+##
+## M-1 不实现真羁绊（§09 的档位与功能解锁是 M2 的事），只需要一条
+## 「人越多越强、派出去就没了」的曲线，好让 §06 的「羁绊 ↔ 金币」取舍
+## 在模型里有真实代价。这是整个 M-1 里最粗糙的一处近似，标记清楚。
+var bond_power_per_unit: float = 0.06
+
+## 羁绊加成的计数上限，防止后期堆卡无限叠。
+var bond_unit_cap: int = 12
+
+# ── §07 经济 ────────────────────────────────────────────────────
+## 金币科技：每 0.5 秒产出 `gold_tick_base × (1 + gold_tick_rate × Lv)`。
+## 只在战斗阶段计时 —— 准备阶段不限时，让它在准备阶段产出等于无限金币。
+var gold_tick_base: float = 5.0
+var gold_tick_rate: float = 0.35
+
+## 纲手（击杀流）：50% → +35，30% → −15，20% → 0，期望 +13/击杀。
+## §07 明确「原版保留不动，别去修」—— 它稳赚却包装成会看到扣钱的老虎机。
+var tsunade_gain: int = 35
+var tsunade_loss: int = -15
+
+## 角都（回合流）：第 k 个的收益 = 等级 × 85 × k^−1.5。纯经济卡，无输出。
+var kakuzu_base: float = 85.0
+var kakuzu_falloff: float = -1.5
+
+## 科技价格曲线 `base × mult^Lv`，与等级上限。
+var tech_gold_cost: float = 120.0
+var tech_gold_mult: float = 1.35
+var tech_gold_max: int = 20
+var tech_pop_cost: float = 300.0
+var tech_pop_mult: float = 1.8
+var tech_pop_max: int = 6
+var tech_atk_cost: float = 200.0
+var tech_atk_mult: float = 1.4
+var tech_atk_max: int = 15
+var tech_atk_per_level: float = 0.06
+var tech_def_cost: float = 180.0
+var tech_def_mult: float = 1.45
+var tech_def_max: int = 10
+var tech_def_per_level: float = 0.04
+
+# ── §08 抽卡 ────────────────────────────────────────────────────
+## 单抽价格。§08 特意固定而非随波次上涨：后期收入指数增长，
+## 固定价格意味着后期抽卡近乎免费，配合概率跃升形成「30 波后爆种」的体感。
+var gacha_cost: int = 150
+
+## 保底：连续这么多抽没出 SSR 及以上，下一抽必出。
+var gacha_pity: int = 20
+
+# ── 模拟边界 ────────────────────────────────────────────────────
+## 单局最多跑到第几波。到顶算「未卡波」，统计时要单独标出来，
+## 否则会把「打穿上限」误读成「卡在这一波」。
+var max_wave: int = 200
+
+
+## 克制关系对应的伤害倍率。
+func damage_multiplier(rel: PBElement.Relation) -> float:
+	match rel:
+		PBElement.Relation.COUNTER:
+			return mult_counter
+		PBElement.Relation.WEAK:
+			return mult_weak
+		PBElement.Relation.PHYSICAL:
+			return mult_physical
+		_:
+			return mult_neutral
+
+
+## 波型对单体血量的倍率。
+func shape_hp_mult(shape: PBWave.Shape) -> float:
+	match shape:
+		PBWave.Shape.SWARM:
+			return swarm_hp_mult
+		PBWave.Shape.ELITE:
+			return elite_hp_mult
+		PBWave.Shape.BOSS:
+			return boss_hp_mult
+		PBWave.Shape.MEGA_BOSS:
+			return mega_boss_hp_mult
+		_:
+			return 1.0
+
+
+## 波型对数量的倍率。BOSS 波不走倍率，直接用定值数量，故不在此列。
+func shape_count_mult(shape: PBWave.Shape) -> float:
+	match shape:
+		PBWave.Shape.SWARM:
+			return swarm_count_mult
+		PBWave.Shape.ELITE:
+			return elite_count_mult
+		_:
+			return 1.0
+
+
+## 复制一份。批量扫描时每个参数组合克隆一份再改，避免共享可变状态。
+func clone() -> PBSimConfig:
+	var copy := PBSimConfig.new()
+	for prop: Dictionary in get_property_list():
+		if prop["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			copy.set(prop["name"], get(prop["name"]))
+	return copy

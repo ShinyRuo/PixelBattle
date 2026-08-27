@@ -1,0 +1,117 @@
+class_name PBRunSim
+extends RefCounted
+## 跑完一整局：从第 1 波打到基地被打穿，或撞上 `max_wave` 上限。
+##
+## 每一波的顺序是刻意排的，换顺序会改变结果：
+##
+## 1. 生成本波参数与本波任务（`quest` 流）
+## 2. 玩家花钱（`gacha` 流）—— 抽到的卡本波就能上
+## 3. 选上场单位
+## 4. 决定接不接任务 —— **必须在算 DPS 之前**，因为派遣会削掉羁绊加成
+## 5. 算有效 DPS，结算战斗
+## 6. 四条收入流入账（`combat` 流掷纲手掉落）
+##
+## §01 说准备阶段不限时、可存档退出，所以第 2–4 步在真实游戏里是玩家慢慢想的；
+## 模型里它们不消耗时间，只有第 5 步的战斗产生 [member PBSimConfig.gold_tick_base]
+## 那条被动收入 —— 否则挂机就是无限金币。
+
+## §01 的单波时长目标区间（秒）。
+const TARGET_DURATION_MIN: float = 30.0
+const TARGET_DURATION_MAX: float = 45.0
+
+
+## 跑一局。[param run_seed] 决定三条 RNG 流，同一个种子必然跑出同一个结果。
+static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunResult:
+	var rng := PBRngStreams.new(run_seed)
+	var state := PBRunState.new()
+	state.base_hp = cfg.base_hp
+
+	var result := PBRunResult.new()
+	result.strategy_id = strategy.id
+	result.growth = cfg.growth
+	result.run_seed = run_seed
+
+	while state.wave_index <= cfg.max_wave:
+		var wave := PBWaveRules.build(state.wave_index, cfg, rng.quest)
+		var quest_grade := PBEconomyRules.roll_quest(rng.quest)
+
+		strategy.prepare(state, wave, cfg, rng)
+
+		var deployed := strategy.deploy(state, wave, cfg)
+		var accepted := strategy.accept_quest(state, wave, quest_grade, cfg)
+		state.dispatched = PBEconomyRules.quest_cost_units(quest_grade) if accepted else 0
+
+		var dps := PBCombatRules.team_dps(
+			deployed, wave.element, state.atk_mult(cfg), state.bond_mult(cfg), cfg
+		)
+		var outcome := PBCombatRules.resolve(wave, dps, state.def_reduction(cfg), cfg)
+
+		_collect(state, result, outcome, accepted)
+		_settle_income(state, wave, outcome, quest_grade, accepted, cfg, rng)
+
+		state.base_hp -= outcome.base_damage
+		state.dispatched = 0
+		result.wave_reached = state.wave_index
+
+		if state.base_hp <= 0.0:
+			break
+		state.wave_index += 1
+
+	# 撞上限而不是被打穿。统计时这些局必须单独挑出来，
+	# 混进分位数会把「打穿了上限」误读成「卡在第 200 波」。
+	result.hit_wave_cap = state.base_hp > 0.0
+	_snapshot(state, result)
+	return result
+
+
+## 把本波的过程数据累进统计。
+static func _collect(
+	state: PBRunState, result: PBRunResult, outcome: PBCombatOutcome, accepted: bool
+) -> void:
+	state.total_kills += outcome.kills
+	state.total_leaked += outcome.leaked
+	state.elapsed_seconds += outcome.battle_seconds
+
+	result.battle_seconds_sum += outcome.battle_seconds
+	if (
+		outcome.battle_seconds >= TARGET_DURATION_MIN
+		and outcome.battle_seconds <= TARGET_DURATION_MAX
+	):
+		result.waves_in_target_duration += 1
+	if accepted:
+		result.quests_taken += 1
+
+
+## 四条收入流入账（§07）。
+##
+## 注意纲水的击杀收入在 M-1 里**无条件生效** —— 真实游戏里它要占一个出战位。
+## 这么简化是因为路线图的四个问题都不问「该不该上纲手」，而它对所有策略
+## 是同一个常数，不影响策略之间的相对比较。角都保留了占位代价，
+## 因为「经济位 = 战力空位」那条张力（§07）正是靠它度量的。
+static func _settle_income(
+	state: PBRunState,
+	wave: PBWave,
+	outcome: PBCombatOutcome,
+	quest_grade: int,
+	accepted: bool,
+	cfg: PBSimConfig,
+	rng: PBRngStreams
+) -> void:
+	state.earn(wave.reward_gold)
+	state.earn(PBEconomyRules.passive_income(outcome.battle_seconds, state.tech_gold, cfg))
+	state.earn(PBEconomyRules.tsunade_income(outcome.kills, cfg, rng.combat))
+	state.earn(PBEconomyRules.kakuzu_income(state.kakuzu_count, cfg))
+	if accepted:
+		state.earn(PBEconomyRules.quest_reward(quest_grade, wave.index))
+
+
+static func _snapshot(state: PBRunState, result: PBRunResult) -> void:
+	result.total_kills = state.total_kills
+	result.total_leaked = state.total_leaked
+	result.gold_earned = state.gold_earned
+	result.gacha_pulls = state.gacha_pulls
+	result.final_tech_gold = state.tech_gold
+	result.final_tech_pop = state.tech_pop
+	result.final_tech_atk = state.tech_atk
+	result.final_tech_def = state.tech_def
+	result.final_roster_size = state.roster.size()

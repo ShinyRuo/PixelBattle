@@ -118,6 +118,16 @@ Docs/         项目文档
 - 测试方法名用**英文** —— 中文函数名 GDScript 本身能跑，但 gdlint 的
   `function-name` 规则不认。中文写在注释和断言消息里。
 - 文档注释用 `##`（会进 Godot 内置文档和 VSCode 悬停提示），普通注释用 `#`。
+- **所有 `class_name` 一律加 `PB` 前缀**（PixelBattle）：`PBElement`、`PBRunSim`。
+  文件名不加，仍是 `element.gd`、`run_sim.gd`。
+
+  理由是硬性的：**GDScript 没有命名空间**，每个 `class_name` 都注册到全局，
+  和 `addons/gut`、`addons/godot_mcp` 以及引擎自带的几百个类共用一个名字空间。
+  叫 `Element` / `Unit` / `Strategy` 这种名字，撞名只是时间问题，
+  而撞名的报错往往指不到真正的位置。
+
+  > 《施工策划案》里的代码样例用的是 `MR` 前缀（`MRCharacter`、`MRElement`），
+  > 那是早期遗留，**已统一改为 `PB`**。看到 `MR` 一律按 `PB` 理解。
 
 ---
 

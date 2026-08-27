@@ -1,13 +1,13 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    PixelBattle 一键自检：导入校验 → 静态检查 → 运行时冒烟 → 单元测试。
+    PixelBattle 一键自检：导入校验 → core 纯度 → 静态检查 → 运行时冒烟 → 单元测试。
 
 .DESCRIPTION
     这是整套 AI 开发环境的心脏。Claude（或你自己）改完代码后跑这一条命令，
     就能知道有没有把项目改坏，不用切回 Godot 编辑器手动点。
 
-    四个阶段任何一个失败，脚本以非零退出码结束 —— 这样 CI 和 AI 都能自动判断。
+    五个阶段任何一个失败，脚本以非零退出码结束 —— 这样 CI 和 AI 都能自动判断。
 
 .PARAMETER Fix
     用 gdformat 就地格式化代码（而不是只检查）。
@@ -132,12 +132,81 @@ Write-Host "PixelBattle 自检  —  $ProjectRoot" -ForegroundColor White
 
 # ── 阶段 1：导入资源 + 加载全部脚本 ─────────────────────────────
 # 新加的图片/音频会在这里生成 .import 元数据；脚本的解析错误也会在这里冒出来。
-Invoke-Stage -Name '1/4 导入资源与解析脚本' `
+Invoke-Stage -Name '1/5 导入资源与解析脚本' `
              -Exe  $Godot `
              -Arguments @('--headless', '--path', $ProjectRoot, '--import') `
              -FailPatterns @('SCRIPT ERROR', 'Parse Error', 'Failed to load', 'Cannot open file')
 
-# ── 阶段 2：静态检查 / 格式化 ───────────────────────────────────
+# ── 阶段 2：core 纯度 ───────────────────────────────────────────
+# 施工策划案 §14 的头号铁律：src/core/ 里不许出现任何引擎 API。
+# 守住它白拿四样东西 —— 确定性、可单元测试、可 headless 批量模拟、可换渲染层。
+# 破坏它的代价极高：sim 里一旦混进场景树访问，四样一起失效，拆回来等于重写。
+#
+# 靠人自觉守不住（尤其是 AI 改代码时），所以做成自动化防线。
+function Invoke-CorePurityStage {
+    $name = '2/5 core 纯度（零引擎依赖）'
+    Write-Stage $name
+
+    $coreDir = Join-Path $ProjectRoot 'src\core'
+    if (-not (Test-Path $coreDir)) {
+        Write-Host 'src/core 尚不存在，跳过' -ForegroundColor DarkGray
+        Write-Host "✓ $name" -ForegroundColor Green
+        return
+    }
+
+    # 键是正则，值是给人看的理由 —— 报错时要能直接告诉人「该用什么代替」。
+    #
+    # (?<![.\w]) 是这里最要紧的一段：rng.randf() 是合法的（我们自己持有的 RNG 实例），
+    # 全局 randf() 才是禁止的。两者只差一个点，不看前缀就会把合法用法全拦下来。
+    $banned = [ordered]@{
+        '(?<![.\w])rand[if](_range)?\s*\('     = '全局随机数，状态不可存档。用 PBRngStreams 的流'
+        '(?<![.\w])randomize\s*\('             = '全局随机数播种，会毁掉确定性'
+        'extends\s+Node'                       = 'core 不继承 Node，用 RefCounted'
+        '(?<![.\w])get_node\s*\('              = '访问场景树'
+        '(?<![.\w])get_tree\s*\('              = '访问场景树'
+        'Engine\s*\.'                          = '引擎单例。倍速靠步进 tick 数，不改 time_scale'
+        '(?<![\w])delta(?![\w])'               = 'core 不读 delta，逻辑固定 20 tick/s'
+        '(?<![.\w])(Input|OS|Time|DisplayServer|ProjectSettings|ResourceLoader)\s*\.' = '引擎单例'
+        '\$[A-Za-z_"'']'                       = '$ 是 get_node 的语法糖'
+        '(?<![.\w])await(?![\w])'              = 'core 必须同步，await 会把 SceneTree 拖进来'
+    }
+
+    $hits = @()
+    foreach ($file in Get-ChildItem -Path $coreDir -Recurse -Filter '*.gd') {
+        $rel = $file.FullName.Substring($ProjectRoot.Length + 1)
+        $lineNo = 0
+        foreach ($line in (Get-Content $file.FullName -Encoding UTF8)) {
+            $lineNo++
+            # 先掐掉注释再匹配：文档注释里大量出现 delta、randi() 这些词，
+            # 它们是在解释「为什么禁用」，不该被自己的规则拦下来。
+            # 这是启发式 —— 字符串字面量里的 # 会被误伤，core 里目前没有这种写法。
+            $code = $line -replace '#.*$', ''
+            if (-not $code.Trim()) { continue }
+            foreach ($pattern in $banned.Keys) {
+                # -cmatch 而不是 -match：PowerShell 的 -match 默认忽略大小写，
+                # 那样一个叫 input 的局部变量会被当成 Input 单例误报。
+                if ($code -cmatch $pattern) {
+                    $hits += "  {0}:{1}  {2}" -f $rel, $lineNo, $banned[$pattern]
+                    $hits += "      $($line.Trim())"
+                }
+            }
+        }
+    }
+
+    if ($hits.Count -gt 0) {
+        $hits | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+        $script:Failures += $name
+        Write-Host "✗ $name" -ForegroundColor Red
+    } else {
+        $count = (Get-ChildItem -Path $coreDir -Recurse -Filter '*.gd').Count
+        if ($Full) { Write-Host "src/core 下 $count 个脚本，无引擎依赖" }
+        Write-Host "✓ $name" -ForegroundColor Green
+    }
+}
+
+Invoke-CorePurityStage
+
+# ── 阶段 3：静态检查 / 格式化 ───────────────────────────────────
 if (-not $SkipLint) {
     # 先查 PATH；查不到就去 pip 的 Scripts 目录捞。
     # 必须兜底：刚 pip install 完的那个终端里 PATH 还是旧的，
@@ -160,35 +229,35 @@ if (-not $SkipLint) {
     $gdformat = Resolve-Tool 'gdformat'
     if ($gdlint) {
         if ($Fix -and $gdformat) {
-            Invoke-Stage -Name '2/4 gdformat 格式化' -Exe $gdformat -Arguments @('src', 'tests')
+            Invoke-Stage -Name '3/5 gdformat 格式化' -Exe $gdformat -Arguments @('src', 'tests')
         }
         Push-Location $ProjectRoot
-        Invoke-Stage -Name '2/4 gdlint 静态检查' -Exe $gdlint -Arguments @('src', 'tests')
+        Invoke-Stage -Name '3/5 gdlint 静态检查' -Exe $gdlint -Arguments @('src', 'tests')
         Pop-Location
     } else {
-        Write-Stage '2/4 gdlint —— 跳过（未安装）'
+        Write-Stage '3/5 gdlint —— 跳过（未安装）'
         Write-Host 'pip install "gdtoolkit>=4.0" 可启用' -ForegroundColor Yellow
     }
 }
 
-# ── 阶段 3：运行时冒烟 ──────────────────────────────────────────
+# ── 阶段 4：运行时冒烟 ──────────────────────────────────────────
 # 真的把主场景跑起来 120 帧再退出。能抓到「解析得过但一 _ready 就炸」的问题。
-Invoke-Stage -Name '3/4 运行时冒烟（主场景跑 120 帧）' `
+Invoke-Stage -Name '4/5 运行时冒烟（主场景跑 120 帧）' `
              -Exe  $Godot `
              -Arguments @('--headless', '--path', $ProjectRoot, '--quit-after', '120') `
              -FailPatterns @('SCRIPT ERROR', 'Invalid call', 'Nonexistent function', 'null instance')
 
-# ── 阶段 4：单元测试 ────────────────────────────────────────────
+# ── 阶段 5：单元测试 ────────────────────────────────────────────
 if (-not $SkipTests) {
     if (Test-Path (Join-Path $ProjectRoot 'addons\gut\gut_cmdln.gd')) {
-        Invoke-Stage -Name '4/4 GUT 单元测试' `
+        Invoke-Stage -Name '5/5 GUT 单元测试' `
                      -Exe  $Godot `
                      -Arguments @('--headless', '--path', $ProjectRoot,
                                   '-s', 'res://addons/gut/gut_cmdln.gd',
                                   '-gdir=res://tests', '-ginclude_subdirs', '-gexit') `
                      -ShowOutput
     } else {
-        Write-Stage '4/4 GUT —— 跳过（addons/gut 不存在）'
+        Write-Stage '5/5 GUT —— 跳过（addons/gut 不存在）'
     }
 }
 

@@ -8,6 +8,7 @@ extends CharacterBody2D
 ## 相当于 UE 的 UPROPERTY(EditAnywhere)。
 @export var speed: float = 220.0
 
+
 ## 每物理帧调用，相当于 UE 的 Tick（固定 60Hz，不受帧率影响）。
 func _physics_process(_delta: float) -> void:
 	# ui_left/right/up/down 是 Godot 内置输入动作，WASD 和方向键都已绑定。
