@@ -66,10 +66,5 @@ class PurePower:
 		while state.roster.size() > state.deploy_capacity(cfg) + state.standby_capacity(cfg):
 			if not buy_tech(state, &"pop", cfg):
 				break
-		while true:
-			var atk_cost := PBEconomyRules.tech_cost(&"atk", state.tech_atk, cfg)
-			if atk_cost >= 0 and atk_cost <= cfg.gacha_cost:
-				if not buy_tech(state, &"atk", cfg):
-					return
-			elif not pull_once(state, wave, cfg, rng):
-				return
+		# 和 balanced 用同一套花钱逻辑，唯一的差别就是上面一分钱没投金币科技。
+		spend_on_power(state, wave, cfg, rng, cfg.tech_atk_max)

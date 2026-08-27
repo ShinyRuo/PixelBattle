@@ -28,6 +28,13 @@ var kakuzu_count: int = 0
 ## 本波派出去做任务的人数。派遣期间羁绊不生效（§06），波次结算后归零。
 var dispatched: int = 0
 
+## 已买到的装备配件总数（§10 的替身曲线，见 [member PBSimConfig.equip_part_cost]）。
+##
+## M-1 不区分七种配件、不做合成树，只数总数 —— 保留的是它的经济学身份：
+## **一个吃得下任意金币的深坑**。抽卡在卡池抽满后就没有边际价值了，
+## 装备没有那个天花板，后期金币的去处主要是它。
+var equip_parts: int = 0
+
 ## 连续未出 SSR 及以上的抽数，用于 §08 的保底。跨波保留，本局内有效。
 var gacha_pity: int = 0
 
@@ -92,6 +99,20 @@ func bond_mult(cfg: PBSimConfig) -> float:
 	var on_field: int = mini(roster.size(), deploy_capacity(cfg) + standby_capacity(cfg))
 	var bonded: int = maxi(on_field - dispatched, 0)
 	return 1.0 + cfg.bond_power_per_unit * float(mini(bonded, cfg.bond_unit_cap))
+
+
+## 装备带来的队伍战力倍率（§10 的替身曲线）。
+##
+## 配件先合成品，成品摊到出战席上，每人最多 [member PBSimConfig.equip_items_per_unit] 件。
+## 装备满整队之前，每多一件成品就实打实多一份战力 —— 这就是它能当
+## 「无底金币坑」的原因，和抽卡在卡池抽满后归零的边际收益正好相反。
+func equip_mult(cfg: PBSimConfig) -> float:
+	var slots: int = deploy_capacity(cfg) - kakuzu_count
+	if slots <= 0:
+		return 1.0
+	var items: int = equip_parts / cfg.equip_parts_per_item
+	var usable: int = mini(items, slots * cfg.equip_items_per_unit)
+	return 1.0 + cfg.equip_power_per_item * float(usable) / float(slots)
 
 
 ## 花钱。钱不够返回 false 且不扣款。

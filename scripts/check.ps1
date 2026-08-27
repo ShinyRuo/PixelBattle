@@ -250,11 +250,18 @@ Invoke-Stage -Name '4/5 运行时冒烟（主场景跑 120 帧）' `
 # ── 阶段 5：单元测试 ────────────────────────────────────────────
 if (-not $SkipTests) {
     if (Test-Path (Join-Path $ProjectRoot 'addons\gut\gut_cmdln.gd')) {
+        # FailPatterns 是必须的，不是保险起见 ——
+        # 一个测试文件如果解析失败（比如改了函数签名忘了改调用方），
+        # GUT 只打一行 WARNING 就把整个文件跳过，然后**照样返回 0**。
+        # 用例数会悄悄从 61 掉到 50，而自检报告「全部通过」。
+        # 这种「测试静默消失」比测试失败危险得多，所以在这里拦死。
         Invoke-Stage -Name '5/5 GUT 单元测试' `
                      -Exe  $Godot `
                      -Arguments @('--headless', '--path', $ProjectRoot,
                                   '-s', 'res://addons/gut/gut_cmdln.gd',
                                   '-gdir=res://tests', '-ginclude_subdirs', '-gexit') `
+                     -FailPatterns @('SCRIPT ERROR', 'Parse Error', 'does not extend GutTest',
+                                     'Failed to load script', 'Failing Tests\s+[1-9]') `
                      -ShowOutput
     } else {
         Write-Stage '5/5 GUT —— 跳过（addons/gut 不存在）'

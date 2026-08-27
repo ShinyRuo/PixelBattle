@@ -44,15 +44,7 @@ func _buy_population(state: PBRunState, cfg: PBSimConfig) -> void:
 			return
 
 
-## 剩下的钱在「攻击科技」和「抽卡」之间比价，一直花到买不动为止。
+## 剩下的钱换战力。逻辑在基类，`pure_power` 用的是同一套 ——
+## 这样两者的差别只剩「升不升金币科技」这一个变量。
 func _buy_power(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> void:
-	while true:
-		var atk_cost := PBEconomyRules.tech_cost(&"atk", state.tech_atk, cfg)
-		var tech_is_cheaper: bool = (
-			atk_cost >= 0 and atk_cost <= cfg.gacha_cost and state.tech_atk < atk_tech_target
-		)
-		if tech_is_cheaper:
-			if not buy_tech(state, &"atk", cfg):
-				return
-		elif not pull_once(state, wave, cfg, rng):
-			return
+	spend_on_power(state, wave, cfg, rng, atk_tech_target)

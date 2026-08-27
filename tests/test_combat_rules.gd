@@ -111,8 +111,10 @@ func test_a_static_five_element_team_barely_beats_physical() -> void:
 	for _i: int in 5:
 		physical_team.append(PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR))
 
-	var static_dps := PBCombatRules.team_dps(static_team, PBElement.Type.FIRE, 1.0, 1.0, _cfg)
-	var physical_dps := PBCombatRules.team_dps(physical_team, PBElement.Type.FIRE, 1.0, 1.0, _cfg)
+	var static_dps := PBCombatRules.team_dps(static_team, PBElement.Type.FIRE, 1.0, 1.0, 1.0, _cfg)
+	var physical_dps := PBCombatRules.team_dps(
+		physical_team, PBElement.Type.FIRE, 1.0, 1.0, 1.0, _cfg
+	)
 	var edge := static_dps / physical_dps
 	assert_between(edge, 1.0, 1.10, "不换人的五系阵容对物理只有个位数百分比的优势")
 
@@ -127,8 +129,10 @@ func test_rotating_the_team_unlocks_the_real_advantage() -> void:
 	for _i: int in 5:
 		physical_team.append(PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR))
 
-	var rotated_dps := PBCombatRules.team_dps(rotated, PBElement.Type.FIRE, 1.0, 1.0, _cfg)
-	var physical_dps := PBCombatRules.team_dps(physical_team, PBElement.Type.FIRE, 1.0, 1.0, _cfg)
+	var rotated_dps := PBCombatRules.team_dps(rotated, PBElement.Type.FIRE, 1.0, 1.0, 1.0, _cfg)
+	var physical_dps := PBCombatRules.team_dps(
+		physical_team, PBElement.Type.FIRE, 1.0, 1.0, 1.0, _cfg
+	)
 	assert_gt(rotated_dps / physical_dps, 1.8, "换上克制系后应拉开到接近两倍")
 
 

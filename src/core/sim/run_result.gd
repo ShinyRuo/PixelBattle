@@ -35,6 +35,13 @@ var final_tech_atk: int = 0
 var final_tech_def: int = 0
 var final_roster_size: int = 0
 
+## 终局买到的装备配件数（§10 的替身曲线）。
+## **诊断金币去向时最要紧的一列** —— 抽卡有天花板，装备没有，
+## 这个数偏低就说明金币坑根本没被够到，经济系统的结论要重新审。
+var final_equip_parts: int = 0
+
+var gold_spent: int = 0
+
 
 ## 单波平均战斗时长。§01 要求落在 30–45 秒。
 func mean_battle_seconds() -> float:

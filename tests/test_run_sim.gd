@@ -145,6 +145,43 @@ func test_dispatch_costs_bonds() -> void:
 	assert_lt(state.bond_mult(_cfg), full, "派遣中的忍者不应再提供羁绊加成")
 
 
+func test_equipment_is_a_bottomless_gold_sink() -> void:
+	# §10 的装备是后期金币的主要去处。**缺了它整个经济系统会被误判成「不重要」** ——
+	# 抽卡有天花板（卡池只有 4×6×variant 张），中期就抽满，之后金币边际收益趋近于零。
+	# 装备没有那个天花板：满装一队要 10×3×3×1350 = 121,500 金，比一整局总收入还多。
+	var state := PBRunState.new()
+	state.tech_pop = 6  # 出战席开到 10 个位置
+	var bare := state.equip_mult(_cfg)
+	assert_eq(bare, 1.0, "没有装备时不该有加成")
+
+	# 配件要凑够数才合成一件成品，不满 3 个不产生任何战力。
+	state.equip_parts = _cfg.equip_parts_per_item - 1
+	assert_eq(state.equip_mult(_cfg), 1.0, "配件不满一件成品时不该有加成")
+
+	state.equip_parts = _cfg.equip_parts_per_item
+	assert_gt(state.equip_mult(_cfg), 1.0, "凑满一件成品应产生加成")
+
+	# 一路买到装满整队，加成应持续上升 —— 这正是它能当无底坑的原因。
+	var previous := state.equip_mult(_cfg)
+	for _step: int in 20:
+		state.equip_parts += _cfg.equip_parts_per_item * 3
+		var now := state.equip_mult(_cfg)
+		assert_gte(now, previous, "装满整队之前，加成不该下降")
+		previous = now
+
+
+func test_equipment_saturates_and_stops_absorbing() -> void:
+	# 装满之后不能再涨，否则金币变成无限战力，比抽卡万能还糟。
+	var state := PBRunState.new()
+	var slots := state.deploy_capacity(_cfg)
+	state.equip_parts = slots * _cfg.equip_items_per_unit * _cfg.equip_parts_per_item
+	var full := state.equip_mult(_cfg)
+	state.equip_parts *= 10
+	assert_eq(state.equip_mult(_cfg), full, "装满整队后再买配件不该继续加战力")
+	var expected := 1.0 + _cfg.equip_power_per_item * float(_cfg.equip_items_per_unit)
+	assert_almost_eq(full, expected, 1e-6, "满装的加成应等于「每人 3 件 × 每件加成」")
+
+
 func test_quest_table_matches_spec_costs() -> void:
 	# §06 任务表：C/B 派 2 人，A/S 派 3 人，SSS 派 4 人。
 	# SSS 要 4 人而待命台初始只有 3 格 —— 人口科技的追求目标就是这么来的。

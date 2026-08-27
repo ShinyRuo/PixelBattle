@@ -42,7 +42,12 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 		state.dispatched = PBEconomyRules.quest_cost_units(quest_grade) if accepted else 0
 
 		var dps := PBCombatRules.team_dps(
-			deployed, wave.element, state.atk_mult(cfg), state.bond_mult(cfg), cfg
+			deployed,
+			wave.element,
+			state.atk_mult(cfg),
+			state.bond_mult(cfg),
+			state.equip_mult(cfg),
+			cfg
 		)
 		var outcome := PBCombatRules.resolve(wave, dps, state.def_reduction(cfg), cfg)
 
@@ -115,3 +120,5 @@ static func _snapshot(state: PBRunState, result: PBRunResult) -> void:
 	result.final_tech_atk = state.tech_atk
 	result.final_tech_def = state.tech_def
 	result.final_roster_size = state.roster.size()
+	result.final_equip_parts = state.equip_parts
+	result.gold_spent = state.gold_spent

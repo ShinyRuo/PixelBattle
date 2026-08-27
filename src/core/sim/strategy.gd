@@ -109,6 +109,68 @@ func pull_once(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStre
 	return true
 
 
+## 把剩下的钱换成战力，一直花到买不动为止。`balanced` 与 `pure_power` 共用，
+## 这样两者的差别只剩「升不升金币科技」这一个变量，差值才读得出意义。
+##
+## 优先级是有依据的，不是随手排的：
+##
+## 1. **攻击科技比单抽便宜时先买** —— 确定的 +6% 好过一发方差极大的抽卡
+## 2. **卡池没抽满就抽卡** —— 新卡是全新战力，重复卡只加星级，差一个数量级
+## 3. **抽满了转装备** —— 抽卡的边际收益此时已趋近于零，而装备在装满整队前
+##    每一件都实打实。这个拐点就是 §10 存在的经济学意义
+## 4. **装备也满了再回去抽卡刷星级** —— 边际收益低，但总比钱烂在手里强
+func spend_on_power(
+	state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams, atk_target: int
+) -> void:
+	while true:
+		var atk_cost := PBEconomyRules.tech_cost(&"atk", state.tech_atk, cfg)
+		var tech_first: bool = (
+			atk_cost >= 0 and atk_cost <= cfg.gacha_cost and state.tech_atk < atk_target
+		)
+		if tech_first:
+			if not buy_tech(state, &"atk", cfg):
+				return
+		elif gacha_still_pays(state, cfg) or equipment_is_full(state, cfg):
+			if not pull_once(state, wave, cfg, rng):
+				return
+		elif not buy_equip_part(state, cfg):
+			return
+
+
+## 抽卡是否仍然比装备划算。
+##
+## 判据是**板凳坐不坐得满**，不是卡池抽没抽完 —— 两者差很远。
+## 出战席最多 10 人，多出来的卡只在「换克制系」时轮换用，
+## 手上有两倍板凳容量的卡之后，再多一张几乎不可能挤进当前的上场名单，
+## 边际收益断崖式下跌。而装备是按人头加成的，只要板凳没装满就一直有效。
+##
+## 早先这里写的是「卡池抽到 80% 才转装备」，结果玩家到死卡池才 36/48，
+## 门槛从来没打开过，装备平均只买到 0.5 个（满装要 90 个）——
+## 于是金币坑形同虚设，经济系统被误判成「不重要」。
+func gacha_still_pays(state: PBRunState, cfg: PBSimConfig) -> bool:
+	var bench: int = state.deploy_capacity(cfg) + state.standby_capacity(cfg)
+	return state.roster.size() < bench * 2
+
+
+## 买一个装备配件（§10 的替身曲线）。买不起返回 false。
+##
+## 这是后期金币的主要去处。抽卡在卡池抽满后边际收益趋近于零，
+## 而装备在装满整队之前每一件都实打实 —— 两者的边际曲线正好相反，
+## 所以「该抽卡还是该买装备」在中后期是个真决策。
+func buy_equip_part(state: PBRunState, cfg: PBSimConfig) -> bool:
+	if not state.spend(cfg.equip_part_cost):
+		return false
+	state.equip_parts += 1
+	return true
+
+
+## 出战席是否已经装备到满，再买就溢出了。
+func equipment_is_full(state: PBRunState, cfg: PBSimConfig) -> bool:
+	var slots: int = maxi(state.deploy_capacity(cfg) - state.kakuzu_count, 0)
+	var items: int = state.equip_parts / cfg.equip_parts_per_item
+	return items >= slots * cfg.equip_items_per_unit
+
+
 ## 升一级科技。买不起或已满级返回 false。
 func buy_tech(state: PBRunState, branch: StringName, cfg: PBSimConfig) -> bool:
 	var level: int = _tech_level(state, branch)

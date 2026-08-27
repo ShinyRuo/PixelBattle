@@ -31,6 +31,15 @@ var _seed_base: int = 20260827
 ## 把斜率压平再跑一次，如果换人的收益立刻放大，这个怀疑就坐实了。
 var _rarity_slope: float = 0.0
 
+## 战场时空覆盖值。0 表示用 [PBSimConfig] 的默认值。
+##
+## 这两个决定单波战斗时长，而 §07 的被动收入是「每 0.5 秒」计时、
+## 只在战斗阶段跑的 —— 所以战斗时长直接决定金币科技值不值得升。
+## 当前默认跑出来单波只有 12.9 秒，而 §01 要求 30–45 秒，
+## 被动收入被砍到设计意图的三分之一。用这两个开关验证这层因果。
+var _spawn_window: float = 0.0
+var _march_seconds: float = 0.0
+
 
 func _initialize() -> void:
 	_parse_args()
@@ -62,6 +71,10 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 			base * pow(_rarity_slope, 2.0),
 			base * pow(_rarity_slope, 3.0),
 		]
+	if _spawn_window > 0.0:
+		cfg.spawn_window = _spawn_window
+	if _march_seconds > 0.0:
+		cfg.march_seconds = _march_seconds
 	var out: Array[PBRunResult] = []
 	for i: int in _runs:
 		# 同一个 i 在所有格子上用同一个种子：不同流派面对**同一串**波型与抽卡运气，
@@ -146,12 +159,13 @@ func _write_runs_csv(runs: Array[PBRunResult]) -> void:
 	lines.append(
 		(
 			"growth,strategy,seed,wave_reached,hit_wave_cap,kills,leaked,"
-			+ "gold_earned,pulls,quests,roster,tech_gold,tech_pop,tech_atk,mean_battle_seconds"
+			+ "gold_earned,gold_spent,pulls,quests,roster,equip_parts,"
+			+ "tech_gold,tech_pop,tech_atk,mean_battle_seconds"
 		)
 	)
 	for run: PBRunResult in runs:
 		var line := (
-			"%.4f,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.2f"
+			"%.4f,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.2f"
 			% [
 				run.growth,
 				run.strategy_id,
@@ -161,9 +175,11 @@ func _write_runs_csv(runs: Array[PBRunResult]) -> void:
 				run.total_kills,
 				run.total_leaked,
 				run.gold_earned,
+				run.gold_spent,
 				run.gacha_pulls,
 				run.quests_taken,
 				run.final_roster_size,
+				run.final_equip_parts,
 				run.final_tech_gold,
 				run.final_tech_pop,
 				run.final_tech_atk,
@@ -267,3 +283,7 @@ func _parse_args() -> void:
 				_seed_base = value.to_int()
 			"--rarity-slope":
 				_rarity_slope = maxf(value.to_float(), 0.0)
+			"--spawn-window":
+				_spawn_window = maxf(value.to_float(), 0.0)
+			"--march":
+				_march_seconds = maxf(value.to_float(), 0.0)

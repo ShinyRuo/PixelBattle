@@ -81,12 +81,13 @@ static func team_dps(
 	wave_element: PBElement.Type,
 	atk_tech_mult: float,
 	bond_mult: float,
+	equip_mult: float,
 	cfg: PBSimConfig
 ) -> float:
 	var total: float = 0.0
 	for unit: PBUnit in deployed:
 		total += unit.effective_power(wave_element, cfg)
-	return total * atk_tech_mult * bond_mult
+	return total * atk_tech_mult * bond_mult * equip_mult
 
 
 ## 第 [param index] 个敌人的出场时刻（秒）。整波在 `spawn_window` 内均匀出完。
