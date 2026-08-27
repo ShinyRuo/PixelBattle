@@ -105,3 +105,26 @@ func test_physical_multiplier_stays_below_the_danger_line() -> void:
 	assert_lt(cfg.mult_physical, 1.15, "MULT_PHYSICAL ≥ 1.15 会让物理纯队成为最优解（§03）")
 	assert_gt(cfg.mult_physical, 1.0, "物理低于 1.0 就不再是保底补丁了")
 	assert_lt(cfg.mult_physical, cfg.mult_counter, "物理必须显著低于克制，否则没人配属性")
+
+
+func test_rarity_ladder_stays_flatter_than_the_counter_bonus() -> void:
+	# 和上面那条是同一类防线，守的是另一个方向。
+	#
+	# 稀有度阶梯和克制倍率是**同一种货币**（都是 DPS 倍率），所以能互相替代。
+	# 阶梯一旦逼近克制倍率，「升一档稀有度」就等于「换上克制系」，
+	# 玩家没有理由再为属性调整阵容 —— §03 整套设计被架空，而且不会报任何错，
+	# 只会表现为「大家都在堆最高稀有度」。
+	#
+	# 初版阶梯是 ×1.84（对克制的 ×2.0），M-1 实测换人只值 1.25 倍战力。
+	# 压到 ×1.30 后升到 1.39 倍。1.45 以上是完全没用的平台，所以卡在 1.45。
+	var cfg := PBSimConfig.new()
+	assert_eq(cfg.rarity_power.size(), 4, "稀有度应有 R/SR/SSR/USR 四档")
+	for i: int in range(1, cfg.rarity_power.size()):
+		var step: float = cfg.rarity_power[i] / cfg.rarity_power[i - 1]
+		assert_gt(step, 1.0, "高稀有度不该比低稀有度弱")
+		assert_lt(step, 1.45, "稀有度阶梯 ≥1.45 会让「升一档」替代「换克制系」，属性系统失效")
+
+	# 反过来也要守：USR 若与 R 差不多，抽卡在数值上就没意义了，
+	# §08 的「30 波后爆种」体感会消失。
+	var top_to_bottom: float = cfg.rarity_power[3] / cfg.rarity_power[0]
+	assert_gt(top_to_bottom, 1.8, "USR 对 R 的差距太小，抽到高稀有度就没有升级感了")
