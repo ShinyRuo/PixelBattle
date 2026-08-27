@@ -40,6 +40,9 @@ var _rarity_slope: float = 0.0
 var _spawn_window: float = 0.0
 var _march_seconds: float = 0.0
 
+## 批量模拟走逐 tick 战斗模型而不是解析式。用来测两者的结果差异与耗时代价。
+var _tick_battle: bool = false
+
 
 func _initialize() -> void:
 	_parse_args()
@@ -75,6 +78,7 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 		cfg.spawn_window = _spawn_window
 	if _march_seconds > 0.0:
 		cfg.march_seconds = _march_seconds
+	cfg.use_tick_battle = _tick_battle
 	var out: Array[PBRunResult] = []
 	for i: int in _runs:
 		# 同一个 i 在所有格子上用同一个种子：不同流派面对**同一串**波型与抽卡运气，
@@ -266,6 +270,9 @@ func _write_file(path: String, lines: PackedStringArray) -> void:
 
 func _parse_args() -> void:
 	var args := OS.get_cmdline_user_args()
+	# 无值开关先单独扫一遍：下面那个循环靠 args[i + 1] 取值，
+	# 会跳过最后一个参数，写在末尾的开关就丢了。
+	_tick_battle = args.has("--tick-battle")
 	for i: int in args.size():
 		if i + 1 >= args.size():
 			continue

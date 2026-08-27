@@ -49,7 +49,7 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 			state.equip_mult(cfg),
 			cfg
 		)
-		var outcome := PBCombatRules.resolve(wave, dps, state.def_reduction(cfg), cfg)
+		var outcome := _resolve_battle(wave, dps, state.def_reduction(cfg), cfg)
 
 		_collect(state, result, outcome, accepted)
 		_settle_income(state, wave, outcome, quest_grade, accepted, cfg, rng)
@@ -67,6 +67,18 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 	result.hit_wave_cap = state.base_hp > 0.0
 	_snapshot(state, result)
 	return result
+
+
+## 结算一波战斗。走哪个模型由 [member PBSimConfig.use_tick_battle] 决定。
+##
+## 两个模型语义一致、结果对得上（`test_battle_sim.gd` 有对拍断言锁着）。
+## 批量校数值默认走解析式（快），游戏跑起来一定是逐 tick（要看到敌人在动）。
+static func _resolve_battle(
+	wave: PBWave, dps: float, def_reduction: float, cfg: PBSimConfig
+) -> PBCombatOutcome:
+	if cfg.use_tick_battle:
+		return PBBattleSim.new(wave, dps, def_reduction, cfg).run_to_end()
+	return PBCombatRules.resolve(wave, dps, def_reduction, cfg)
 
 
 ## 把本波的过程数据累进统计。
