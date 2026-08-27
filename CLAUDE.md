@@ -98,11 +98,15 @@ Docs/         项目文档
 - [Docs/施工策划案.md](Docs/施工策划案.md) — 主规格。每个系统给规则、公式、可调参数、验收标准
 - [Docs/玩法拆解_忍法战场.md](Docs/玩法拆解_忍法战场.md) — 原版考据，理解「为什么这么设计」
 
+**代码**
+
+- [Docs/代码导读.md](Docs/代码导读.md) — `src/` 的分层、数据流、类速查、「想改 X 去哪」
+- [Docs/Godot上手笔记.md](Docs/Godot上手笔记.md) — UE→Godot 概念对照、GDScript 速查
+
 **环境**
 
 - [README.md](README.md) — 人看的入口，30 秒上手
 - [Docs/环境搭建记录.md](Docs/环境搭建记录.md) — 环境怎么装出来的、选型理由、踩过的坑
-- [Docs/Godot上手笔记.md](Docs/Godot上手笔记.md) — UE→Godot 概念对照、GDScript 速查
 
 改动涉及环境或工具链时，同步更新《环境搭建记录》；发现新的引擎行为坑位，
 写进本文件的「已知坑位」并在《上手笔记》补一条。
