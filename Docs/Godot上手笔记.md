@@ -35,6 +35,8 @@
 | `Cast<AEnemy>(Obj)` | `obj as Enemy` / `obj is Enemy` | |
 | `Destroy()` | `queue_free()` | **不是 `free()`**，见下方坑位 |
 | `UDataTable` | `Resource` (`.tres`) 或 JSON | |
+| `TSharedPtr<T>` 管的对象 | `RefCounted` | 引用计数，自动释放。见下节 |
+| 裸 `new` / `delete` | `Object` | 必须自己 `free()`，日常别用 |
 | `UGameInstance` 单例 | Autoload（自动加载的单例节点） | |
 | Overlap Volume | `Area2D` | |
 | `UGameplayStatics` | `get_tree()` / 全局单例 | |
@@ -42,6 +44,55 @@
 | `Saved/` | `user://` | 可写，存档放这 |
 | `.uasset`（二进制） | `.tscn` / `.tres`（**文本**） | 可 diff、可 merge、可手改 |
 | C++ 模块 + 编译 | GDScript（免编译）或 GDExtension（C++） | |
+
+---
+
+## 三种内存模型：`Object` / `RefCounted` / `Node`
+
+教程里满屏都是 `Node`，容易以为 Godot 只有这一种对象。其实有三条继承线，
+**选错了要么泄漏、要么白白背上场景树的开销**。
+
+```
+Object                    ← 手动管理，必须自己 free()
+├── RefCounted            ← 自动引用计数，没人引用就自动没了
+│   └── Resource          ← + 能存成 .tres、能 load()
+│       ├── PackedScene / Texture2D / …
+│       └──（你自己的数据表类）
+└── Node                  ← 进场景树，用 queue_free()
+    ├── Node2D → Sprite2D / CharacterBody2D / …
+    └── Control → Button / Label / …
+```
+
+| | 需要场景树 | 怎么释放 | 创建开销 |
+|---|---|---|---|
+| `Object` | 否 | **手动 `free()`** | 小 |
+| `RefCounted` | 否 | **自动**（引用计数） | 小 |
+| `Node` | 是 | `queue_free()` | 大（名字、分组、树簿记、信号） |
+
+### `RefCounted` 用起来就是「不用管」
+
+```gdscript
+var wave := PBWave.new()
+# ……用完不管它。变量出作用域 → 引用计数归零 → 立刻析构
+```
+
+没有对应的 `free()`。引擎自带的 `RandomNumberGenerator`、`Image`、
+`Mutex` 之类也都是 `RefCounted`，`.new()` 出来就不用再操心。
+
+**本项目 `src/core/` 全部是 `RefCounted`**，所以一行释放代码都没有 ——
+跑一次批量模拟会创建几十万个对象，全靠引用计数收掉。
+理由见 [代码导读.md](代码导读.md) 第 0 节。
+
+### 不写 `extends` 默认就是 `RefCounted`
+
+```gdscript
+class_name Foo        # 没有 extends 这一行 → 隐式 extends RefCounted
+```
+
+### 和 UE 的 GC 有一个本质差别
+
+UE 的 `UObject` 走**标记-清除式 GC**，能回收循环引用。
+Godot 的 `RefCounted` 是**引用计数**，**收不掉环** —— 见下方坑位。
 
 ---
 
@@ -304,6 +355,20 @@ godot_console --version
 
 - **`queue_free()` 不是 `free()`。** `free()` 立即释放，正在遍历或信号回调里调用会崩；
   `queue_free()` 在帧末安全释放。除非你非常确定，否则永远用 `queue_free()`。
+  （这条只针对 `Node`。`RefCounted` 两个都不用调。）
+- **`RefCounted` 的循环引用会泄漏。** 引用计数收不掉环，这是它和 UE 的 GC
+  最本质的差别：
+
+  ```gdscript
+  a.partner = b
+  b.partner = a    # 两边计数都不归零，永远不释放
+  ```
+
+  症状是退出时控制台报 `ObjectDB instances leaked at exit`（只在调试版报，
+  发布版静默泄漏）。破环的办法是其中一边改用 `weakref(other)`，
+  取值时 `.get_ref()`。父子结构一律「父持子用强引用，子指父用弱引用」。
+- **别直接 `extends Object`。** 不 `free()` 就是纯泄漏，而且没有任何提示。
+  要么 `RefCounted`（自动），要么 `Node`（进树）。
 - **`_init()` 里访问不到 `$子节点` 和 `@onready` 变量**，初始化逻辑写 `_ready()`。
 - **移动写 `_physics_process`**，不是 `_process`。写错了帧率一变手感就变。
 - **Tab 缩进**，不是空格。gdformat 强制，混用会被 gdlint 拦下。
