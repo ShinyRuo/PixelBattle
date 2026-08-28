@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+
+[resource]
+script = ExtResource("1_char")
+id = &"darui"
+name_key = "char.darui"
+icon_key = "char.darui"
+element = 2
+rarity = 0

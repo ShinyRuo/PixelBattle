@@ -96,21 +96,30 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 			return -1
 
 
-## 抽一张卡。属性在六种里等概率（含物理），稀有度查 §08 的分段概率表。
+## 抽一张卡：**先掷稀有度（§08 的分段概率表），再在该稀有度的角色里等概率取一个。**
 ##
 ## [param pity] 是连续未出 SSR 及以上的次数，由调用方维护。
 ##
-## **三次随机的次序是红线**（属性 → 变体 → 稀有度）。M2-a 给卡加身份时
-## 一字没动，就是为了让「引入角色表」这一步能和批量基线逐位对拍 ——
-## 次序一变，所有扫描结论和实际玩到的就分叉，且不报任何错。
+## ## 为什么是这个次序（M2-a2 改的）
+##
+## 之前是「掷属性 → 掷变体 → 掷稀有度」，因为那时卡池是
+## 4 稀有度 × 6 属性 × 2 变体 的**满格网格**，随便掷都落得到人。
+##
+## 真角色表不是网格：30 个角色摊到 24 格上，大部分格子只有 1 个或 0 个
+## （比如没有水系 USR）。照旧掷法会不停撞空格走退化路径，
+## **实际的属性分布会被那条退化路径悄悄改写**，而估值那边算的是别的分布。
+##
+## 现在这个次序和 [method PBValuation.expected_surplus] 的口径完全一致：
+## 单张卡的概率 = 稀有度概率 ÷ 该稀有度的角色数。
+##
+## 属性因此**不再是等概率的** —— 它由角色表决定。那正是想要的：
+## 「哪一系深、哪一系浅」变成了可以在 `data/` 里调的设计，而不是写死的 1/6。
 static func roll_gacha(
 	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator
 ) -> PBUnit:
-	var element := _roll_element(rng)
-	var variant: int = rng.randi_range(0, maxi(cfg.characters_per_bucket - 1, 0))
+	# 保底只保到 SSR，不直接给 USR —— 否则保底会变成刷 USR 的最优路径。
 	if pity >= cfg.gacha_pity:
-		# 保底只保到 SSR，不直接给 USR —— 否则保底会变成刷 USR 的最优路径。
-		return _draw(cfg, element, PBUnit.Rarity.SSR, variant)
+		return _draw(cfg, PBUnit.Rarity.SSR, rng)
 
 	var row: Array = _gacha_row(wave_index)
 	var roll: float = rng.randf() * 100.0
@@ -118,18 +127,38 @@ static func roll_gacha(
 	for i: int in range(1, 5):
 		acc += float(row[i])
 		if roll < acc:
-			return _draw(cfg, element, (i - 1) as PBUnit.Rarity, variant)
-	return _draw(cfg, element, PBUnit.Rarity.R, variant)
+			return _draw(cfg, (i - 1) as PBUnit.Rarity, rng)
+	return _draw(cfg, PBUnit.Rarity.R, rng)
 
 
-## 把掷出来的（属性, 稀有度, 变体）落到具体角色上。
-static func _draw(
-	cfg: PBSimConfig, element: PBElement.Type, rarity: PBUnit.Rarity, variant: int
-) -> PBUnit:
-	var unit := PBUnit.of(cfg, element, rarity, variant)
-	if unit == null:
-		push_error("角色表里找不到（属性 %d, 稀有度 %d）—— 这张表填得不完整" % [element, rarity])
-	return unit
+## 在某个稀有度的角色里等概率取一个。
+##
+## 那一档一个角色都没有时**不能静默返回 null** —— 空卡会在几百局之后
+## 表现为「某些局莫名少几张卡」，极难反推。退回相邻档（先往下找，再往上找）。
+static func _draw(cfg: PBSimConfig, rarity: PBUnit.Rarity, rng: RandomNumberGenerator) -> PBUnit:
+	var pool := cfg.characters.of_rarity(rarity)
+	if pool.is_empty():
+		pool = _nearest_pool(cfg, rarity)
+	if pool.is_empty():
+		push_error("角色表是空的，抽不出卡")
+		return null
+	return PBUnit.new(pool[rng.randi_range(0, pool.size() - 1)])
+
+
+## 找离 [param rarity] 最近的非空稀有度档。先降后升 —— 降档比升档安全，
+## 升档等于白送玩家一张更好的卡。
+static func _nearest_pool(cfg: PBSimConfig, rarity: PBUnit.Rarity) -> Array[PBCharacter]:
+	for step: int in range(1, PBUnit.Rarity.size()):
+		var lower: int = int(rarity) - step
+		if lower >= 0 and not cfg.characters.of_rarity(lower as PBUnit.Rarity).is_empty():
+			return cfg.characters.of_rarity(lower as PBUnit.Rarity)
+		var higher: int = int(rarity) + step
+		if (
+			higher < PBUnit.Rarity.size()
+			and not cfg.characters.of_rarity(higher as PBUnit.Rarity).is_empty()
+		):
+			return cfg.characters.of_rarity(higher as PBUnit.Rarity)
+	return [] as Array[PBCharacter]
 
 
 ## 刷新本波的任务，返回它在 [constant QUEST_TABLE] 里的行号。
@@ -161,12 +190,6 @@ static func _cost_or_capped(level: int, max_level: int, base: float, mult: float
 	if level >= max_level:
 		return -1
 	return int(floor(base * pow(mult, float(level))))
-
-
-## 属性在六种里等概率。真实角色池当然不是均匀的，但 M-1 不该在这里引入
-## 一个自己拍的分布 —— 那会让「五系覆盖有多难」这个结论变成拍脑袋的产物。
-static func _roll_element(rng: RandomNumberGenerator) -> PBElement.Type:
-	return rng.randi_range(0, 5) as PBElement.Type
 
 
 static func _gacha_row(wave_index: int) -> Array:

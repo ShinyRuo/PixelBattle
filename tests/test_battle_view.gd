@@ -25,6 +25,22 @@ func test_battle_scene_loads() -> void:
 	assert_not_null(load(BATTLE_SCENE), "battle.tscn 应该能被加载")
 
 
+func test_the_running_game_uses_the_real_character_table() -> void:
+	# **这条守的是一个静默失效**：`PBSimConfig.new()` 默认装的是给对拍用的
+	# 合成卡池（4×6×2 的假牌）。游戏入口忘了调 PBCharacterLoader.config()
+	# 不会报任何错，只表现为「玩到的和扫描结论对不上」。
+	#
+	# 两张表大小不同（30 vs 48），拿这个当指纹。
+	var root := _spawn_battle()
+	var cfg: PBSimConfig = root.get("_cfg")
+	assert_not_null(cfg, "战斗画面应该有一份配置")
+	assert_eq(
+		cfg.characters.size(), PBCharacterLoader.table().size(), "主场景应该装的是 data/ 里的真角色表，不是合成表"
+	)
+	for character: PBCharacter in cfg.characters.all():
+		assert_false(String(character.id).begins_with("syn_"), "混进了合成表的卡：%s" % character.id)
+
+
 func test_scene_has_the_nodes_the_script_expects() -> void:
 	# @onready 取不到节点会在 _ready 里炸，而 .tscn 是手写的、
 	# 节点名很容易和脚本对不上。这条把两边钉在一起。

@@ -105,7 +105,9 @@ var _deployed_nodes: Array[Polygon2D] = []
 
 
 func _ready() -> void:
-	_cfg = PBSimConfig.new()
+	# 走装载器而不是 PBSimConfig.new()：后者默认的是给对拍用的合成卡池，
+	# 忘了装真角色表不会报错，只表现为「玩到的和扫描结论对不上」（§14 铁律 5）。
+	_cfg = PBCharacterLoader.config()
 	# 画面必须逐 tick —— 排队模型算完就没了，没有中间状态可画。
 	_cfg.use_tick_battle = true
 	_frames_per_tick = maxi(Engine.physics_ticks_per_second / _cfg.tick_rate, 1)

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+
+[resource]
+script = ExtResource("1_char")
+id = &"rock_lee"
+name_key = "char.rock_lee"
+icon_key = "char.rock_lee"
+element = 5
+rarity = 1

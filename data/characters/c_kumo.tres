@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+
+[resource]
+script = ExtResource("1_char")
+id = &"c_kumo"
+name_key = "char.c_kumo"
+icon_key = "char.c_kumo"
+element = 2
+rarity = 0
