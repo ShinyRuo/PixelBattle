@@ -88,9 +88,12 @@ func test_speed_multiplier_only_changes_how_many_ticks_per_frame() -> void:
 
 func test_view_never_writes_back_to_sim_state() -> void:
 	# **本文件最要紧的一条。** 渲染层只读 sim，改状态只能走 PBRunSim 的
-	# plan_wave / settle_wave —— 那是批量模拟走的同一条路。
+	# begin_wave / lock_plan / settle_wave —— 那是批量模拟走的同一条路。
 	# 渲染层偷偷改一笔，画面和批量结论就会分叉，而且不报任何错。
 	var root := _spawn_battle()
+	# 先让准备阶段过去：M1 起「花钱」发生在 _ready 之后的第一个物理帧
+	# （§01 的准备阶段是显式的一段），在那之前取快照会把合法的花钱当成回写。
+	await wait_physics_frames(3)
 	var gold_before: int = root._state.gold
 	var wave_before: int = root._state.wave_index
 	var hp_before: float = root._state.base_hp
@@ -152,3 +155,31 @@ func test_same_seed_reproduces_the_same_wave() -> void:
 	assert_eq(a._plan.wave.element, b._plan.wave.element, "同种子的敌方属性应一致")
 	assert_eq(a._plan.wave.count, b._plan.wave.count, "同种子的敌人数量应一致")
 	assert_eq(a._plan.wave.shape, b._plan.wave.shape, "同种子的波型应一致")
+
+
+func test_preparation_is_its_own_phase_and_waits_for_the_player() -> void:
+	# **M1-a 的核心。** §01 说准备阶段不限时，所以它必须是一个会**停下来**的
+	# 状态，而不是像 M0 那样在一帧里被 plan_wave 做完。
+	#
+	# 关掉自动推进之后，画面应当停在准备阶段：波次已生成（有东西可看），
+	# 但战斗还没开始（没有敌人在动），而且怎么等都不会自己开打。
+	var root := _spawn_battle()
+	root.auto_play = false
+	root._enter_prepare()
+	assert_eq(root._phase, PBBattleView.Phase.PREPARE, "关掉自动后应停在准备阶段")
+	assert_not_null(root._plan.wave, "准备阶段就该知道这一波长什么样（§04 要求提前公示）")
+	await wait_physics_frames(30)
+	assert_eq(root._phase, PBBattleView.Phase.PREPARE, "不限时意味着等多久都不会自己开打")
+
+	root._finish_prepare()
+	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "锁定名单后应进入战斗")
+	assert_gt(root._plan.dps, 0.0, "锁定之后才有有效 DPS")
+
+
+func test_auto_play_advances_without_any_input() -> void:
+	# §01 点名要自动推进（「PC：开自动推进，一次坐 30~60 分钟」）。
+	# 它同时是 M1 的回归工具：开着的时候决策序列与批量模拟完全一致。
+	var root := _spawn_battle()
+	assert_true(root.auto_play, "默认应开着自动推进")
+	await wait_physics_frames(10)
+	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "自动模式下不该停在准备阶段")

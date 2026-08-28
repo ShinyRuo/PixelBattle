@@ -68,21 +68,60 @@ static func preview_wave(wave_index: int, cfg: PBSimConfig, rng: PBRngStreams) -
 ## 迟早分叉，「批量校出来的数值」和「实际玩到的手感」会对不上且不报错。
 ##
 ## 内部顺序不能换，理由见本类顶部的说明。
+##
+## 本函数是 [method begin_wave] → 花钱选人 → [method lock_plan] 三步的合成。
+## 脚本玩家一口气跑完，真人玩家在中间那段停下来慢慢做 —— 见 [method begin_wave]。
 static func plan_wave(
 	state: PBRunState, strategy: PBStrategy, cfg: PBSimConfig, rng: PBRngStreams
 ) -> PBWavePlan:
+	var plan := begin_wave(state, cfg, rng)
+	strategy.prepare(state, plan.wave, cfg, rng)
+	lock_plan(
+		state,
+		plan,
+		strategy.deploy(state, plan.wave, cfg),
+		strategy.accept_quest(state, plan.wave, plan.quest_grade, cfg),
+		cfg
+	)
+	return plan
+
+
+## 开波：生成敌人参数、掷出本波任务。**之后就是准备阶段。**
+##
+## 拆出这一步是 M1 的前提。§01 说准备阶段不限时、玩家慢慢想，
+## 而 [PBStrategy] 的 `prepare()` 是**同步**的 —— 调用、返回、结束。
+## 脚本玩家没问题，真人做不到：人要点几十次按钮、隔几十秒才「返回」。
+##
+## 所以真人走的是「`begin_wave` → 停下来 → 玩家用 `pull_once` / `buy_tech`
+## 等原语自己花钱 → `lock_plan`」，与脚本玩家共用同一批原语和同一个顺序。
+##
+## **本函数只消费 `quest` 流一次**（波型走的是 `wave_rng`，纯函数、零副作用）。
+## 这个次序不能动 —— 动了批量校出来的数值就和实际玩到的对不上，且不报错。
+static func begin_wave(state: PBRunState, cfg: PBSimConfig, rng: PBRngStreams) -> PBWavePlan:
 	var plan := PBWavePlan.new()
 	plan.wave = preview_wave(state.wave_index, cfg, rng)
 	plan.quest_grade = PBEconomyRules.roll_quest(rng.quest)
+	return plan
 
-	strategy.prepare(state, plan.wave, cfg, rng)
 
-	plan.deployed = strategy.deploy(state, plan.wave, cfg)
-	plan.quest_accepted = strategy.accept_quest(state, plan.wave, plan.quest_grade, cfg)
+## 锁定：确定上场名单与派遣，算出有效 DPS。**准备阶段结束时调一次。**
+##
+## 派遣必须在算 DPS 之前落定 —— 派出去的人羁绊失效（§06），
+## 顺序反了会让派遣变成没有代价的纯收益。
+##
+## 不消费任何随机流。
+static func lock_plan(
+	state: PBRunState,
+	plan: PBWavePlan,
+	deployed: Array[PBUnit],
+	quest_accepted: bool,
+	cfg: PBSimConfig
+) -> void:
+	plan.deployed = deployed
+	plan.quest_accepted = quest_accepted
 	state.dispatched = (
 		PBEconomyRules.quest_cost_units(plan.quest_grade) if plan.quest_accepted else 0
 	)
-
 	plan.dps = PBCombatRules.team_dps(
 		plan.deployed,
 		plan.wave.element,
@@ -91,7 +130,6 @@ static func plan_wave(
 		state.equip_mult(cfg),
 		cfg
 	)
-	return plan
 
 
 ## 结算一波：累计统计、四条收入入账、扣基地血、清掉派遣标记。

@@ -20,7 +20,17 @@ extends Node2D
 ## 一个字段都不回写。要改状态只能通过 [PBRunSim] 的 `plan_wave` /
 ## `settle_wave` —— 那是批量模拟走的同一条路，两边不会分叉。
 
-## 波次之间停多少个物理帧。§01 说结算 2–4 秒，这里取 1 秒够看清结果。
+## 一波的三个阶段（§01）。
+##
+## M0 只有战斗 —— 准备阶段被 [method PBRunSim.plan_wave] 在一帧里做完了，
+## 因为那时候玩家是脚本。M1 把它显式拆出来：**准备阶段不限时，等玩家**。
+enum Phase {
+	PREPARE,  ## 花钱、排阵、决定接不接任务。§01：不限时，可存档退出
+	BATTLE,  ## 逐 tick 推进
+	SETTLE,  ## 结算，看一眼战果
+}
+
+## 结算停多少个物理帧。§01 说 2–4 秒，这里取 1 秒够看清结果。
 const WAVE_GAP_FRAMES: int = 60
 
 ## 本局的随机种子。0 表示用系统时间。
@@ -48,6 +58,13 @@ const WAVE_GAP_FRAMES: int = 60
 ## 它只改这一波的敌人数量，不改任何平衡参数 —— 别拿它跑数值结论。
 @export var debug_enemy_count: int = 0
 
+## 自动推进：准备阶段由脚本玩家代劳，不等输入。
+##
+## §01 点名要这个模式（「PC：开自动推进，一次坐 30~60 分钟」）。
+## 它同时是 M1 的**回归工具** —— 开着的时候整局的决策序列与批量模拟完全一致，
+## 所以「UI 改动有没有把数值弄歪」可以直接和批量结果对拍。
+@export var auto_play: bool = true
+
 var _cfg: PBSimConfig
 var _state: PBRunState
 var _strategy: PBStrategy
@@ -66,7 +83,10 @@ var _paused: bool = false
 ## 本局是否已经结束（基地被打穿）。
 var _run_over: bool = false
 
-## 波间停顿的剩余帧数。
+## 当前阶段。
+var _phase: Phase = Phase.PREPARE
+
+## 结算阶段的剩余帧数。
 var _gap_frames: int = 0
 
 var _deployed_nodes: Array[Polygon2D] = []
@@ -93,19 +113,25 @@ func _ready() -> void:
 
 	_build_deployed_nodes()
 	_fast_forward_to(start_wave)
-	_start_wave()
+	_enter_prepare()
 
 
 func _physics_process(_delta: float) -> void:
 	if _run_over:
 		return
-	if _gap_frames > 0:
-		_gap_frames -= 1
-		if _gap_frames == 0:
-			_start_wave()
-		return
-	if not _paused:
-		_advance_logic()
+	match _phase:
+		Phase.PREPARE:
+			# §01：准备阶段不限时。自动模式下由脚本玩家立刻做完，
+			# 手动模式下就停在这里等 —— M1-b/c 的界面接在这个缝上。
+			if auto_play:
+				_finish_prepare()
+		Phase.SETTLE:
+			_gap_frames -= 1
+			if _gap_frames <= 0:
+				_enter_prepare()
+		Phase.BATTLE:
+			if not _paused:
+				_advance_logic()
 	_sync_visuals()
 
 
@@ -128,6 +154,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_speed = 3
 		KEY_R:
 			_restart()
+		KEY_A:
+			auto_play = not auto_play
+		KEY_ENTER:
+			# 准备阶段的「开打」。M1-a 还没有花钱界面，
+			# 所以这里仍然让脚本玩家代做决策 —— 换掉它就是 M1-b/c。
+			if _phase == Phase.PREPARE:
+				_finish_prepare()
 
 
 ## 推进逻辑。倍速在这里体现为「一次多走几个 tick」，tick 本身的时长不变。
@@ -144,17 +177,36 @@ func _advance_logic() -> void:
 		_end_wave()
 
 
-## 准备下一波。走的是批量模拟的同一个入口，保证两边 RNG 次序一致。
-func _start_wave() -> void:
-	_plan = PBRunSim.plan_wave(_state, _strategy, _cfg, _rng)
+## 进入准备阶段：把这一波的敌人和任务掷出来，然后**停下来**。
+##
+## 这一步之后玩家（或自动模式下的脚本玩家）花钱、排阵、决定接不接任务，
+## 全部走 [PBStrategy] 那批原语 —— 与批量模拟同一套，RNG 次序不会分叉。
+func _enter_prepare() -> void:
+	_phase = Phase.PREPARE
+	_plan = PBRunSim.begin_wave(_state, _cfg, _rng)
 	if debug_enemy_count > 0:
 		# 纯视觉覆盖，见 debug_enemy_count 的说明。钳在 COUNT_CAP 内，
 		# 因为「同屏不超过 COUNT_CAP」本身就是 §04 的验收项。
 		_plan.wave.count = mini(debug_enemy_count, _cfg.count_cap)
-	_battle = PBBattleSim.new(_plan.wave, _plan.dps, _state.def_reduction(_cfg), _cfg)
-	_frame_counter = 0
+	# 名单还没锁，先按「如果现在就开打」预览一份，让准备阶段有东西可看。
 	_sync_deployed()
 	_sync_visuals()
+
+
+## 准备阶段结束：锁定名单与派遣，开打。
+func _finish_prepare() -> void:
+	_strategy.prepare(_state, _plan.wave, _cfg, _rng)
+	PBRunSim.lock_plan(
+		_state,
+		_plan,
+		_strategy.deploy(_state, _plan.wave, _cfg),
+		_strategy.accept_quest(_state, _plan.wave, _plan.quest_grade, _cfg),
+		_cfg
+	)
+	_battle = PBBattleSim.new(_plan.wave, _plan.dps, _state.def_reduction(_cfg), _cfg)
+	_frame_counter = 0
+	_phase = Phase.BATTLE
+	_sync_deployed()
 
 
 func _end_wave() -> void:
@@ -164,6 +216,7 @@ func _end_wave() -> void:
 		_sync_visuals()
 		return
 	_state.wave_index += 1
+	_phase = Phase.SETTLE
 	_gap_frames = WAVE_GAP_FRAMES
 
 
@@ -171,10 +224,11 @@ func _restart() -> void:
 	_run_over = false
 	_paused = false
 	_gap_frames = 0
+	_battle = null
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 	_rng = PBRngStreams.new(_resolve_seed())
-	_start_wave()
+	_enter_prepare()
 
 
 ## 把前面的波次用解析式模型瞬间跑完，不渲染。调试用，见 [member start_wave]。
@@ -209,10 +263,16 @@ func _resolve_seed() -> int:
 
 
 func _sync_visuals() -> void:
-	# §02 的第三层视觉编码：克得住的敌人加一圈亮边。
-	# 这是玩家在战斗中最需要的即时信息 —— 原版要点开技能说明才看得到。
-	var counterable: bool = _state.can_counter(_plan.wave.element)
-	_pool.sync_enemies(_battle.enemies(), _battle.current_tick(), _cfg.field_length, counterable)
+	# 准备阶段还没有战场 —— 敌人要等 _finish_prepare() 才生成。
+	if _battle == null:
+		_pool.sync_enemies([], 0, _cfg.field_length, false)
+	else:
+		# §02 的第三层视觉编码：克得住的敌人加一圈亮边。
+		# 这是玩家在战斗中最需要的即时信息 —— 原版要点开技能说明才看得到。
+		var counterable: bool = _state.can_counter(_plan.wave.element)
+		_pool.sync_enemies(
+			_battle.enemies(), _battle.current_tick(), _cfg.field_length, counterable
+		)
 	_sync_base()
 	_sync_info()
 	_sync_preview()
@@ -238,6 +298,9 @@ func _sync_preview() -> void:
 			names.append(_element_name(element as PBElement.Type))
 		gap_text = "缺 %s" % "".join(names)
 
+	var keys: String = "空格暂停　1/2/3 倍速　R 重开　A 自动:%s" % ("开" if auto_play else "关")
+	if _phase == Phase.PREPARE and not auto_play:
+		keys = "回车开打　A 自动:关　R 重开"
 	_preview.text = (
 		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
 		% [
@@ -245,7 +308,7 @@ func _sync_preview() -> void:
 			_shape_name(next.shape),
 			covered,
 			gap_text,
-			"空格暂停　1/2/3 倍速　R 重开",
+			keys,
 		]
 	)
 
@@ -262,15 +325,20 @@ func _sync_base() -> void:
 ##
 ## 这一列每波会换色 —— 那正是 §03「每波换上克制系」在画面上的样子。
 ## 换人如果没发生，这一列的颜色就不会变，一眼能看出来。
+##
+## 准备阶段名单还没锁，显示的是「现在开打的话会是谁」的预览。
+## [method PBStrategy.deploy] 只读不改状态，拿来预览是安全的。
 func _sync_deployed() -> void:
+	var units: Array[PBUnit] = _plan.deployed
+	if _phase == Phase.PREPARE:
+		units = _strategy.deploy(_state, _plan.wave, _cfg)
 	for i: int in _deployed_nodes.size():
 		var node: Polygon2D = _deployed_nodes[i]
-		if i >= _plan.deployed.size():
+		if i >= units.size():
 			node.visible = false
 			continue
-		var unit: PBUnit = _plan.deployed[i]
 		node.visible = true
-		node.color = PBEnemyPool.ELEMENT_COLORS.get(unit.element, Color.WHITE)
+		node.color = PBEnemyPool.ELEMENT_COLORS.get(units[i].element, Color.WHITE)
 
 
 func _build_deployed_nodes() -> void:
@@ -292,22 +360,37 @@ func _sync_info() -> void:
 		_info.text = "本局结束　卡在第 %d 波　按 R 重开" % _state.wave_index
 		return
 	var wave: PBWave = _plan.wave
-	var out: PBCombatOutcome = _battle.result()
-	_info.text = (
-		"第 %d 波　%s　%s　　敌 %d/%d　漏 %d　　基地 %d　金 %d　　%.1fs　%s"
+	var head := (
+		"第 %d 波　%s　%s　　基地 %d　金 %d　卡池 %d"
 		% [
 			wave.index,
 			_element_name(wave.element),
 			_shape_name(wave.shape),
+			int(_state.base_hp),
+			_state.gold,
+			_state.roster.size(),
+		]
+	)
+	if _phase == Phase.PREPARE:
+		# §01：准备阶段不限时。所以这里不显示秒数，只说在等什么。
+		_info.text = "%s　　【准备阶段】敌 %d　任务 %s" % [head, wave.count, _quest_name()]
+		return
+	var out: PBCombatOutcome = _battle.result()
+	_info.text = (
+		"%s　　敌 %d/%d　漏 %d　　%.1fs　%s"
+		% [
+			head,
 			out.kills,
 			wave.count,
 			out.leaked,
-			int(_state.base_hp),
-			_state.gold,
 			out.battle_seconds,
 			"暂停" if _paused else "%d 倍速" % _speed,
 		]
 	)
+
+
+func _quest_name() -> String:
+	return String(PBEconomyRules.QUEST_GRADES[_plan.quest_grade])
 
 
 func _element_name(element: PBElement.Type) -> String:
