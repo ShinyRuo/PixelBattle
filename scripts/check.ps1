@@ -240,10 +240,13 @@ if (-not $SkipLint) {
     $gdlint   = Resolve-Tool 'gdlint'
     $gdformat = Resolve-Tool 'gdformat'
     if ($gdlint) {
+        # 两步都必须在项目根下跑 —— 参数是相对路径 'src' / 'tests'。
+        # gdformat 那步以前在 Push-Location 外面，一直靠「调用者的 cwd 恰好是项目根」
+        # 蒙混过关；从别处调 check.ps1 -Fix 就会报 Cannot open file 'src'。
+        Push-Location $ProjectRoot
         if ($Fix -and $gdformat) {
             Invoke-Stage -Name '3/5 gdformat 格式化' -Exe $gdformat -Arguments @('src', 'tests')
         }
-        Push-Location $ProjectRoot
         Invoke-Stage -Name '3/5 gdlint 静态检查' -Exe $gdlint -Arguments @('src', 'tests')
         Pop-Location
     } else {

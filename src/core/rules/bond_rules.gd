@@ -53,6 +53,41 @@ static func active_tiers(units: Array[PBUnit], table: PBBondTable) -> Dictionary
 	return out
 
 
+## 每组羁绊现在到场几个成员，`{ 羁绊 id: 人数 }`。
+##
+## 给估值用：**「再抽一张值多少」要对整个卡池问一遍**，
+## 每问一次都重新数一遍到场人数是 O(卡池 × 羁绊 × 在场)，
+## 而这个函数把「在场」那一维提出来只算一次。
+static func counts_of(units: Array[PBUnit], table: PBBondTable) -> Dictionary:
+	var out := {}
+	if table == null:
+		return out
+	for bond: PBBond in table.all():
+		out[bond.id] = active_count(bond, units)
+	return out
+
+
+## 假如再多一个 [param character]，羁绊加成会涨多少。
+##
+## [param counts] 是 [method counts_of] 的结果 —— 传进来而不是现算，
+## 因为调用方要拿整个卡池各问一遍。
+##
+## **注意它算的是「多一个成员」，不是「多一张卡」。** 重复卡不增加成员数，
+## 对羁绊没有贡献；上不了场的卡同样没有。两者都由调用方判断。
+static func marginal_bonus(counts: Dictionary, table: PBBondTable, character: PBCharacter) -> float:
+	if table == null or character == null:
+		return 0.0
+	# 变量别叫 delta —— core 纯度检查按词拦 `delta`（铁律 2：不读帧间隔），
+	# 局部变量重名也会被拦下。这是有意的宁枉勿纵。
+	var gained: float = 0.0
+	for bond: PBBond in table.all():
+		if not bond.counts_character(character):
+			continue
+		var active: int = int(counts.get(bond.id, 0))
+		gained += bond.bonus_at(active + 1) - bond.bonus_at(active)
+	return gained
+
+
 ## 离 [param bond] 的下一档还差几个人。已满档返回 0。
 ##
 ## 这是「换一个人上场值不值」里最要紧的一格信息：差 1 个人的时候，

@@ -45,7 +45,7 @@ var _deaths: Array[int] = []
 
 func _initialize() -> void:
 	_parse_args()
-	var cfg := PBCharacterLoader.config()
+	var cfg := PBGameData.config()
 	if _growth > 0.0:
 		cfg.growth = _growth
 

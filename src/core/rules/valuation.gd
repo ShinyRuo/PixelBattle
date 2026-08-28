@@ -215,11 +215,59 @@ static func gacha_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 		counted += 1
 	power_gain /= float(maxi(counted, 1))
 
-	var bond_before: float = state.bond_mult(cfg)
-	var bond_gain: float = 0.0
-	if bond_before > 0.0:
-		bond_gain = state.bond_mult_for(state.roster.size() + 1, cfg) / bond_before - 1.0
-	return (1.0 + power_gain) * (1.0 + bond_gain) - 1.0
+	return (1.0 + power_gain) * (1.0 + expected_bond_gain(state, cfg)) - 1.0
+
+
+## 再抽一张卡对**羁绊**的期望增益（§09）。
+##
+## ## 这里踩过一个量纲错误，值得记着
+##
+## M2-b2 换上真羁绊表之后，这一段原本写的是
+## `bond_mult_for(roster.size() + 1) / bond_mult() - 1`——
+## **分子来自替身曲线（按人头），分母来自真羁绊（按组合）。**
+## 两个口径相除，算出来是「再抽一张涨 32% 战力」这种数，
+## 于是会算账的玩家把钱全砸进抽卡，科技和装备一概不买。
+##
+## 实测代价：`rational` 从 44.4 波掉到 26.3 波，反而打不过写死优先级的
+## `balanced`（38.5）。而同一批扫描里每个**不用估值**的流派只掉 1–8%，
+## 那个差异正是把原因锁死在这里的证据 —— 曲线下移会一起下移，
+## 只有一个流派塌下去就是估值坏了。
+##
+## ## 现在的算法
+##
+## 按角色表求期望，和 [method expected_surplus] 同一套路：
+## 对每个**还没有的**角色，问「多这一个成员，各组羁绊各涨多少」，
+## 按抽到它的概率加权。已有的角色跳过 —— 重复卡只加星，不增加成员数。
+##
+## ## 一处刻意保守的近似
+##
+## **在场席位满了就返回 0。** 新卡挤不挤得进在场名单，取决于「谁上场」
+## 这个决策，而那个决策现在还不存在（[method PBRunState.bonded_units]
+## 按仓库顺序取前 N）。M2-c 开放选人之后这里要跟着换成「挤掉谁」。
+## 现在取 0 是**低估**而不是高估 —— 宁可让玩家少抽一点，
+## 也不要重蹈上面那个高估的覆辙。
+static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
+	var units := state.bonded_units(cfg)
+	if units.size() >= state.deploy_capacity(cfg) + state.standby_capacity(cfg):
+		return 0.0
+	var base: float = 1.0 + PBBondRules.power_bonus(units, cfg.bonds)
+	if base <= 0.0:
+		return 0.0
+
+	var counts := PBBondRules.counts_of(units, cfg.bonds)
+	var row: Array = gacha_row(state.wave_index)
+	var gain: float = 0.0
+	for rarity: int in cfg.rarity_power.size():
+		var chance: float = float(row[rarity + 1]) / 100.0
+		var pool := cfg.characters.of_rarity(rarity as PBUnit.Rarity)
+		if chance <= 0.0 or pool.is_empty():
+			continue
+		var per_card: float = chance / float(pool.size())
+		for character: PBCharacter in pool:
+			if state.roster.has(character.id):
+				continue
+			gain += per_card * PBBondRules.marginal_bonus(counts, cfg.bonds, character)
+	return gain / base
 
 
 ## 面对 [param wave_element] 这一波，抽一张卡能给上场阵容多加多少输出（期望值）。

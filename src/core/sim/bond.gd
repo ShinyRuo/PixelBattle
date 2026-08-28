@@ -72,13 +72,23 @@ enum Match {
 func counts(unit: PBUnit) -> bool:
 	if unit == null:
 		return false
+	return counts_character(unit.character)
+
+
+## 这个**角色**算不算本组的成员。
+##
+## 和 [method counts] 分开，是因为估值要问「**假如**抽到这个角色，羁绊会涨多少」——
+## 那时手上还没有对应的 [PBUnit]，只有角色表里的一条定义。
+func counts_character(character: PBCharacter) -> bool:
+	if character == null:
+		return false
 	match match_mode:
 		Match.EVERYONE:
 			return true
 		Match.ELEMENT:
-			return unit.element == match_element
+			return character.element == match_element
 		_:
-			return member_ids.has(unit.character.id)
+			return member_ids.has(character.id)
 
 
 ## 到场 [param active] 个成员时，激活的是第几档。**0 表示没激活。**

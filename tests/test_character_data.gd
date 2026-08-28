@@ -34,7 +34,7 @@ var _cfg: PBSimConfig
 
 func before_all() -> void:
 	_table = PBCharacterLoader.load_from(PBCharacterLoader.DIR)
-	_cfg = PBCharacterLoader.config()
+	_cfg = PBGameData.config()
 
 
 func test_the_data_directory_actually_loads() -> void:

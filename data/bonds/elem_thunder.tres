@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBond" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_bond"]
+
+[resource]
+script = ExtResource("1_bond")
+id = &"elem_thunder"
+name_key = "bond.elem_thunder"
+match_mode = 1
+member_ids = Array[StringName]([])
+match_element = 2
+tier_counts = Array[int]([2, 4])
+tier_power = Array[float]([0.06, 0.16])
+tier_function_keys = Array[StringName]([&"", &""])

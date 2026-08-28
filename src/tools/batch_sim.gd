@@ -98,7 +98,7 @@ func _initialize() -> void:
 
 ## 跑一个（growth, strategy）格子的全部局数。
 func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
-	var cfg := PBCharacterLoader.config()
+	var cfg := PBGameData.config()
 	cfg.growth = growth
 	if _rarity_slope > 0.0:
 		var base: float = cfg.rarity_power[0]

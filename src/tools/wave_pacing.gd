@@ -50,7 +50,7 @@ var _hp_base: float = 0.0
 
 func _initialize() -> void:
 	_parse_args()
-	var cfg := PBCharacterLoader.config()
+	var cfg := PBGameData.config()
 	cfg.use_tick_battle = true
 	if _spawn_window > 0.0:
 		cfg.spawn_window = _spawn_window
