@@ -96,7 +96,17 @@ func def_reduction(cfg: PBSimConfig) -> float:
 ## 否则 §06 那句「这一波我要羁绊，还是要钱」在模型里就没有代价，
 ## 派遣策略的对比（路线图第 4 个问题）会得出「派满永远最优」的假结论。
 func bond_mult(cfg: PBSimConfig) -> float:
-	var on_field: int = mini(roster.size(), deploy_capacity(cfg) + standby_capacity(cfg))
+	return bond_mult_for(roster.size(), cfg)
+
+
+## 假如仓库里有 [param roster_size] 张卡，羁绊倍率会是多少。
+##
+## 存在的理由是**比价**：会算账的玩家要问「再抽一张值多少」，
+## 而新卡的价值有一部分来自羁绊，不只是它自己的输出。
+## 单独开一个函数而不是在调用方重算公式 —— 公式抄两份迟早对不上，
+## 而这种偏差只会表现为「模拟玩家的决策略微不理性」，不报任何错。
+func bond_mult_for(roster_size: int, cfg: PBSimConfig) -> float:
+	var on_field: int = mini(roster_size, deploy_capacity(cfg) + standby_capacity(cfg))
 	var bonded: int = maxi(on_field - dispatched, 0)
 	return 1.0 + cfg.bond_power_per_unit * float(mini(bonded, cfg.bond_unit_cap))
 

@@ -46,6 +46,28 @@ var _tick_battle: bool = false
 ## 开局金币覆盖值。-1 表示用 [PBSimConfig] 的默认值。
 var _starting_gold: int = -1
 
+## §10 装备的定价与强度覆盖值。0 表示用 [PBSimConfig] 的默认值。
+##
+## 这是「开工前待决策」里的关键路径 —— 经济配平、派遣配平、`GROWTH` 锚点、
+## 单波时长四件事都堵在它后面。§10 已经写死了硬约束
+## （装备的「每 1% 战力成本」必须低于抽卡），缺的只是具体数字。
+##
+## **扫这两个开关时流派要挑 `rational`。** 其余流派的花钱顺序是写死的，
+## 从头到尾没有任何判断读过 `equip_part_cost`，扫出来的差异只是
+## 「剩下的钱能多买几个配件」，不是「玩家会不会改买装备」。
+var _equip_part_cost: int = 0
+var _equip_power: float = 0.0
+
+## 只跑这一个流派。空表示跑全部。扫价格时用得上 —— 七个流派里有六个
+## 对价格不敏感，全跑一遍纯属浪费。
+var _only_strategy: StringName = &""
+
+## 覆盖流派自带的派遣策略（`never` / `always` / `smart`）。空表示不覆盖。
+##
+## 为什么做成开关而不是再开两个流派类：§06 的派遣差异要在**每一种定价下**
+## 各量一次，写死的类会随定价维度成倍增殖。
+var _dispatch: StringName = &""
+
 
 func _initialize() -> void:
 	_parse_args()
@@ -53,7 +75,7 @@ func _initialize() -> void:
 
 	var runs: Array[PBRunResult] = []
 	for growth: float in _growth_values():
-		for strategy_id: StringName in PBStrategyRegistry.IDS:
+		for strategy_id: StringName in _strategy_ids():
 			runs.append_array(_run_cell(growth, strategy_id))
 
 	var elapsed := (Time.get_ticks_msec() - started) / 1000.0
@@ -84,12 +106,35 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 	cfg.use_tick_battle = _tick_battle
 	if _starting_gold >= 0:
 		cfg.starting_gold = _starting_gold
+	if _equip_part_cost > 0:
+		cfg.equip_part_cost = _equip_part_cost
+	if _equip_power > 0.0:
+		cfg.equip_power_per_item = _equip_power
 	var out: Array[PBRunResult] = []
 	for i: int in _runs:
 		# 同一个 i 在所有格子上用同一个种子：不同流派面对**同一串**波型与抽卡运气，
 		# 流派之间的差值因此不含运气成分。这是配对比较，比各跑各的省一个数量级的样本量。
 		var strategy := PBStrategyRegistry.make(strategy_id)
+		_apply_dispatch(strategy)
 		out.append(PBRunSim.run(cfg, strategy, _seed_base + i))
+	return out
+
+
+func _apply_dispatch(strategy: PBStrategy) -> void:
+	match _dispatch:
+		&"never":
+			strategy.dispatch_policy = PBStrategy.Dispatch.NEVER
+		&"always":
+			strategy.dispatch_policy = PBStrategy.Dispatch.ALWAYS
+		&"smart":
+			strategy.dispatch_policy = PBStrategy.Dispatch.SMART
+
+
+## 这次要跑哪些流派。
+func _strategy_ids() -> Array[StringName]:
+	if _only_strategy == &"":
+		return PBStrategyRegistry.IDS
+	var out: Array[StringName] = [_only_strategy]
 	return out
 
 
@@ -118,12 +163,18 @@ func _summarize(runs: Array[PBRunResult]) -> Array[Dictionary]:
 		var capped: int = 0
 		var seconds_sum: float = 0.0
 		var duration_hits: float = 0.0
+		var roster_sum: float = 0.0
+		var parts_sum: float = 0.0
+		var pulls_sum: float = 0.0
 		for run: PBRunResult in cell:
 			waves.append(run.wave_reached)
 			if run.hit_wave_cap:
 				capped += 1
 			seconds_sum += run.mean_battle_seconds()
 			duration_hits += run.duration_hit_rate()
+			roster_sum += float(run.final_roster_size)
+			parts_sum += float(run.final_equip_parts)
+			pulls_sum += float(run.gacha_pulls)
 		waves.sort()
 		var first: PBRunResult = cell[0]
 		var row := {
@@ -136,6 +187,10 @@ func _summarize(runs: Array[PBRunResult]) -> Array[Dictionary]:
 			"cap_rate": float(capped) / float(cell.size()),
 			"mean_battle_seconds": seconds_sum / float(cell.size()),
 			"duration_hit_rate": duration_hits / float(cell.size()),
+			# 这三个是校 §10 装备定价时真正要盯的：钱到底花去哪了。
+			"mean_roster": roster_sum / float(cell.size()),
+			"mean_parts": parts_sum / float(cell.size()),
+			"mean_pulls": pulls_sum / float(cell.size()),
 		}
 		out.append(row)
 	out.sort_custom(
@@ -202,11 +257,14 @@ func _write_runs_csv(runs: Array[PBRunResult]) -> void:
 func _write_summary_csv(summary: Array[Dictionary]) -> void:
 	var lines := PackedStringArray()
 	lines.append(
-		"growth,strategy,runs,p50,p90,mean_wave,cap_rate,mean_battle_seconds,duration_hit_rate"
+		(
+			"growth,strategy,runs,p50,p90,mean_wave,cap_rate,mean_battle_seconds,"
+			+ "duration_hit_rate,mean_pulls,mean_roster,mean_parts"
+		)
 	)
 	for row: Dictionary in summary:
 		var line := (
-			"%.4f,%s,%d,%.1f,%.1f,%.2f,%.3f,%.2f,%.3f"
+			"%.4f,%s,%d,%.1f,%.1f,%.2f,%.3f,%.2f,%.3f,%.1f,%.1f,%.1f"
 			% [
 				row["growth"],
 				row["strategy"],
@@ -217,6 +275,9 @@ func _write_summary_csv(summary: Array[Dictionary]) -> void:
 				row["cap_rate"],
 				row["mean_battle_seconds"],
 				row["duration_hit_rate"],
+				row["mean_pulls"],
+				row["mean_roster"],
+				row["mean_parts"],
 			]
 		)
 		lines.append(line)
@@ -230,11 +291,11 @@ func _print_report(summary: Array[Dictionary], total_runs: int, elapsed: float) 
 	print("M-1 批量模拟完成：%d 局，耗时 %.1f 秒" % [total_runs, elapsed])
 	print("CSV 输出到 %s/" % OUT_DIR)
 	print("")
-	print("growth  strategy         p50    p90   mean  cap%%  单波秒数")
-	print("──────  ───────────────  ─────  ─────  ─────  ────  ────────")
+	print("growth  strategy         p50    p90   mean  cap%%  单波秒数   抽数  卡池  配件")
+	print("──────  ───────────────  ─────  ─────  ─────  ────  ────────  ─────  ────  ────")
 	for row: Dictionary in summary:
 		var line := (
-			"%.3f   %-15s  %5.1f  %5.1f  %5.1f  %3.0f%%  %6.1f"
+			"%.3f   %-15s  %5.1f  %5.1f  %5.1f  %3.0f%%  %6.1f    %5.1f  %4.1f  %4.1f"
 			% [
 				row["growth"],
 				row["strategy"],
@@ -243,6 +304,9 @@ func _print_report(summary: Array[Dictionary], total_runs: int, elapsed: float) 
 				row["mean_wave"],
 				row["cap_rate"] * 100.0,
 				row["mean_battle_seconds"],
+				row["mean_pulls"],
+				row["mean_roster"],
+				row["mean_parts"],
 			]
 		)
 		print(line)
@@ -301,3 +365,11 @@ func _parse_args() -> void:
 				_spawn_window = maxf(value.to_float(), 0.0)
 			"--march":
 				_march_seconds = maxf(value.to_float(), 0.0)
+			"--equip-part-cost":
+				_equip_part_cost = maxi(value.to_int(), 0)
+			"--equip-power":
+				_equip_power = maxf(value.to_float(), 0.0)
+			"--strategy":
+				_only_strategy = StringName(value)
+			"--dispatch":
+				_dispatch = StringName(value)

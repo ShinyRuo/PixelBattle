@@ -12,6 +12,11 @@ extends RefCounted
 ## | `no_rotation` vs `pure_physical` | 物理保底补丁与「不换人的五系」差距（应该很小） |
 ## | `balanced` vs `pure_economy` / `pure_power` | §07 的经济与战力平衡点在哪 |
 ## | `dispatch_never` / `balanced` / `dispatch_always` | §06 三种派遣策略的差异（应 < 20%） |
+## | `balanced` vs `rational` | 写死的花钱顺序离「会算账」差多远 |
+##
+## `rational` 与其余流派性质不同：它是**校价用的仪器**，不是一种玩法。
+## 其余流派的花钱顺序写死，读不到 `equip_part_cost`，
+## 所以拿它们扫装备价格问不出「玩家会不会改买装备」。见 [PBStratRational]。
 const IDS: Array[StringName] = [
 	&"balanced",
 	&"no_rotation",
@@ -20,6 +25,7 @@ const IDS: Array[StringName] = [
 	&"pure_power",
 	&"dispatch_never",
 	&"dispatch_always",
+	&"rational",
 ]
 
 
@@ -43,5 +49,7 @@ static func make(id: StringName) -> PBStrategy:
 			return PBStratVariants.DispatchNever.new()
 		&"dispatch_always":
 			return PBStratVariants.DispatchAlways.new()
+		&"rational":
+			return PBStratRational.new()
 		_:
 			return null
