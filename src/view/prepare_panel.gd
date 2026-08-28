@@ -47,8 +47,11 @@ const TECH_NAMES := {
 }
 
 ## 商店占左半屏，右半屏留给阵容面板（[PBRosterPanel]）。
-const PANEL_RECT := Rect2(46.0, 96.0, 232.0, 224.0)
-const BUTTON_SIZE := Vector2(216.0, 22.0)
+## 高度 224 → 206、按钮 22 → 20：M2-d 加了羁绊带（[PBBondPanel]）之后
+## 屏幕底部不够用了，两块准备面板各让出 18px。
+## 让出来的空间正好是一行按钮的余量，七行按钮排完到 176，「开打」在 178。
+const PANEL_RECT := Rect2(46.0, 96.0, 232.0, 206.0)
+const BUTTON_SIZE := Vector2(216.0, 20.0)
 const FONT_SIZE: int = 9
 
 var _buttons: Dictionary = {}

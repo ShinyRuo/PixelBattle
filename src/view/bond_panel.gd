@@ -23,8 +23,13 @@ extends Control
 ## 所以这里显示的是加成百分比。功能档落地后这一行要改成显示解锁的机制名，
 ## [member PBBond.tier_function_keys] 已经为此留好了位置。
 
-## 屏幕 640×360：准备阶段两块面板占 y 96–320，这一条放在它们下面。
-const PANEL_RECT := Rect2(46.0, 322.0, 548.0, 34.0)
+## 屏幕 640×360，纵向排得很满：Info 5–25、任务卡 28–90、
+## 两块准备面板 96–302、**羁绊带 304–336**、下一波预告 338–358。
+##
+## 第一版摆在 322–356，和「下一波预告」那个常驻标签（334–354）直接叠在一起，
+## 底下那行糊成一团 —— 截图一看就知道。腾地方的办法是把两块准备面板
+## 各压 18px（见 [constant PBPreparePanel.PANEL_RECT]），不是把这条挤薄。
+const PANEL_RECT := Rect2(46.0, 304.0, 548.0, 32.0)
 const FONT_SIZE: int = 9
 
 ## 第二行最多提几组，多了这一行会被挤爆。按「补上去值多少」排序后取前几名。
@@ -45,8 +50,8 @@ func _ready() -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(backdrop)
 
-	_active = _add_label(PANEL_RECT.position + Vector2(8.0, 2.0))
-	_next = _add_label(PANEL_RECT.position + Vector2(8.0, 17.0))
+	_active = _add_label(PANEL_RECT.position + Vector2(8.0, 1.0))
+	_next = _add_label(PANEL_RECT.position + Vector2(8.0, 16.0))
 
 
 ## 按当前在场名单刷新。[param bond_aware] 是玩家现在用哪种带人方式（`B` 键切换）。

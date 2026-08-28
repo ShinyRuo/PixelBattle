@@ -28,7 +28,9 @@ extends Control
 
 ## 每个上场位显示成一个小方块 + 一行字。
 const SLOT_SIZE := Vector2(66.0, 22.0)
-const PANEL_RECT := Rect2(286.0, 96.0, 308.0, 224.0)
+## 高度 224 → 206：见 [constant PBPreparePanel.PANEL_RECT]，
+## 两块准备面板一起让出 18px 给底部的羁绊带。
+const PANEL_RECT := Rect2(286.0, 96.0, 308.0, 206.0)
 const FONT_SIZE: int = 9
 
 ## 属性的单字名。与 [PBEnemyPool.ELEMENT_COLORS] 用同一套色相。
@@ -77,7 +79,8 @@ func _ready() -> void:
 	_standby = _add_label(PANEL_RECT.position + Vector2(8.0, 110.0), PANEL_RECT.size.x - 16.0)
 	_rotation = _add_label(PANEL_RECT.position + Vector2(8.0, 132.0), PANEL_RECT.size.x - 16.0)
 	_rotation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_rotation.size.y = 84.0
+	# 面板压到 206 高之后这里最多到 132 + 70 = 202，正好不越界。
+	_rotation.size.y = 70.0
 
 
 ## 按当前状态和**这一波的属性**刷新。属性每波轮转（§04），

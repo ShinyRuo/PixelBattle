@@ -404,7 +404,7 @@ func _sync_preview() -> void:
 
 	var keys: String = "空格暂停　1/2/3 倍速　R 重开　A 自动:%s" % ("开" if auto_play else "关")
 	if _phase == Phase.PREPARE and not auto_play:
-		keys = "回车开打　Q 接任务　A 自动:关　R 重开"
+		keys = "回车开打　Q 接任务　B 换带人法　A 自动:关　R 重开"
 	_preview.text = (
 		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
 		% [
