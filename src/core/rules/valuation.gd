@@ -103,16 +103,16 @@ static func equip_item_gain(state: PBRunState, cfg: PBSimConfig, base: float) ->
 	return after / base - 1.0
 
 
-## 上一个角都会让队伍 DPS 掉百分之几 —— 它占掉一个出战位（§07）。
+## 上一个经济位会让队伍 DPS 掉百分之几 —— 它占掉一个出战位（§07）。
 ##
 ## 返回的是**纯代价**，正数表示损失。收益那一半是金币，币种不同，
 ## 换算由调用方做：模拟玩家用「当前每金币战力增幅」当汇率，界面直接把两个数并列显示。
-static func kakuzu_slot_loss(state: PBRunState, cfg: PBSimConfig, base: float) -> float:
+static func economy_slot_loss(state: PBRunState, cfg: PBSimConfig, base: float) -> float:
 	if base <= 0.0 or state.open_slots(cfg) <= 1:
 		return 1.0
-	state.kakuzu_count += 1
+	state.economy_slot_count += 1
 	var after: float = mean_dps(state, cfg)
-	state.kakuzu_count -= 1
+	state.economy_slot_count -= 1
 	return 1.0 - after / base
 
 

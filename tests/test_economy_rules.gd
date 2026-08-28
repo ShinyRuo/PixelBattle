@@ -48,28 +48,28 @@ func test_tech_costs_climb_and_stop_at_max_level() -> void:
 	assert_eq(PBEconomyRules.tech_cost(&"nope", 0, _cfg), -1, "不认识的分支应返回 -1")
 
 
-func test_kakuzu_income_falls_off_sharply() -> void:
+func test_economy_slot_income_falls_off_sharply() -> void:
 	# §07 的改动：递减从原版的减半改成 k^−1.5，更陡。
-	# 这样「上第二个角都」是真实的战力牺牲，不是无脑叠。
-	var one := PBEconomyRules.kakuzu_income(1, 20, _cfg)
-	var two := PBEconomyRules.kakuzu_income(2, 20, _cfg)
-	var three := PBEconomyRules.kakuzu_income(3, 20, _cfg)
-	assert_gt(two, one, "第二个角都仍有正收益")
+	# 这样「上第二个经济位」是真实的战力牺牲，不是无脑叠。
+	var one := PBEconomyRules.economy_slot_income(1, 20, _cfg)
+	var two := PBEconomyRules.economy_slot_income(2, 20, _cfg)
+	var three := PBEconomyRules.economy_slot_income(3, 20, _cfg)
+	assert_gt(two, one, "第二个经济位仍有正收益")
 	assert_lt(two - one, one, "第二个的边际收益应低于第一个")
 	assert_lt(three - two, two - one, "边际收益应持续递减")
-	assert_eq(PBEconomyRules.kakuzu_income(0, 20, _cfg), 0, "没有角都就没有回合收入")
+	assert_eq(PBEconomyRules.economy_slot_income(0, 20, _cfg), 0, "没有经济位就没有回合收入")
 
 
-func test_kakuzu_income_grows_with_the_wave_index() -> void:
-	# **常数收益是「角都从来没人选」的根因。**
+func test_economy_slot_income_grows_with_the_wave_index() -> void:
+	# **常数收益是「经济位从来没人选」的根因。**
 	#
-	# 波次奖金是 45+6n、任务是 160+22n，都跟着波次涨，只有角都是常数 85 ——
+	# 波次奖金是 45+6n、任务是 160+22n，都跟着波次涨，只有经济位是常数 85 ——
 	# 于是它占掉的那个出战位越到后期越值钱，而它给的钱不变。
-	# 实测后果：每一个不被强制的流派，角都占总收入的比例都是 0%。
+	# 实测后果：每一个不被强制的流派，经济位占总收入的比例都是 0%。
 	assert_gt(
-		PBEconomyRules.kakuzu_income(1, 30, _cfg),
-		PBEconomyRules.kakuzu_income(1, 5, _cfg),
-		"第 30 波的角都收益应高于第 5 波，否则它会随波次贬值到没人要"
+		PBEconomyRules.economy_slot_income(1, 30, _cfg),
+		PBEconomyRules.economy_slot_income(1, 5, _cfg),
+		"第 30 波的经济位收益应高于第 5 波，否则它会随波次贬值到没人要"
 	)
 
 

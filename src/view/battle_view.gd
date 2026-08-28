@@ -142,9 +142,9 @@ func _on_purchase(kind: StringName) -> void:
 			_strategy.pull_once(_state, _plan.wave, _cfg, _rng)
 		&"equip":
 			_strategy.buy_equip_part(_state, _cfg)
-		&"kakuzu":
+		&"economy_slot":
 			if _state.open_slots(_cfg) > 1 and _state.spend(_cfg.gacha_cost):
-				_state.kakuzu_count += 1
+				_state.economy_slot_count += 1
 		_:
 			_strategy.buy_tech(_state, StringName(String(kind).trim_prefix("tech_")), _cfg)
 	_sync_deployed()

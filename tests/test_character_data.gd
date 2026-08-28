@@ -14,17 +14,19 @@ extends GutTest
 ##
 ## 所以下面这些不是形式检查，是配平约束。
 
-## §07 把角色名写死进了机制名，是 M-1 就欠下的债。
+## 已经清掉的角色名。**这条名单只增不减，它防的是复发。**
 ##
-## `tsunade_income`（击杀掉落流）、`GOLD_SOURCES` 里的 `&"tsunade"`、
-## `PBSimConfig.tsunade_gain/loss`、CSV 的 `share_tsunade` 列 ——
-## 换皮之后这些会变成「以一个不存在的角色命名的机制」。
-## 角都同理（`kakuzu_income` / `kakuzu_count` / `kakuzu_base`），
-## 只是它还没进首批 30 人表，所以下面那条测试暂时抓不到它。
+## §07 原本把两个角色的名字写死进了机制名，是 M-1 就欠下的债：
+## `tsunade_income` → 现在的 `kill_drop_income`（击杀掉落流），
+## `kakuzu_*` → 现在的 `economy_slot_*`（经济位，§07 自己的词汇）。
+## 换皮之后那些会变成「以一个不存在的角色命名的机制」。
 ##
-## **清债要在 M5（换皮里程碑）之前做**，而且要单独一次改动 ——
-## 它会动 CSV 列名和报表表头，混在别的改动里会让历史扫描结果对不上号。
-const KNOWN_LEAKS: Array[StringName] = [&"tsunade"]
+## 债在 M2-a2 之后单独清了一次（动了 CSV 列名与报表表头，所以没有
+## 混进别的改动 —— 混进去会让历史扫描结果对不上号）。
+##
+## **`kakuzu` 不在角色表里，所以下面按表扫描的那条测试永远抓不到它。**
+## 这份名单就是补那个洞的：无论角色表里有没有，这些词都不许回到 `src/`。
+const RETIRED_NAMES: Array[String] = ["tsunade", "kakuzu", "纲手", "角都"]
 
 var _table: PBCharacterTable
 var _cfg: PBSimConfig
@@ -55,7 +57,7 @@ func test_no_element_is_over_represented() -> void:
 	# 上面那条只管下限。**上限同样要管** —— 物理超配就会破 §03 的
 	# 「纯物理 < 五系的 70%」，实测 20% 占比即破线。
 	# 首批表刻意做成六系均分（各 5 个），好让此前所有扫描结论
-	# （GROWTH 1.10、装备 300、角都曲线）继续成立。
+	# （GROWTH 1.10、装备 300、经济位曲线）继续成立。
 	var counts := {}
 	for character: PBCharacter in _table.all():
 		counts[int(character.element)] = int(counts.get(int(character.element), 0)) + 1
@@ -92,23 +94,26 @@ func test_no_character_name_leaks_into_src() -> void:
 	# §14 铁律 5 的**执行**：换皮 = 改表，`src/` 一行不动。
 	# 只要有一个 id 出现在 src/ 里，那条铁律就已经破了。
 	#
-	# 这条测试自己就抓出了一条真的（见 KNOWN_LEAKS）—— 以前没有角色表，
-	# 这种泄漏根本无从发现。
+	# 这条测试写出来的第一次就抓到一条真的（`tsunade` 写死在 §07 的收入流名里）——
+	# 以前没有角色表，这种泄漏根本无从发现。那笔债已经清掉，见 [constant RETIRED_NAMES]。
 	var offenders := PackedStringArray()
 	for character: PBCharacter in _table.all():
-		if character.id in KNOWN_LEAKS:
-			continue
 		if _src_mentions(String(character.id)):
 			offenders.append(String(character.id))
 	assert_eq(String(", ").join(offenders), "", "这些角色 id 出现在了 src/ 里，换皮就不再是纯改表")
 
 
-func test_the_known_leaks_are_still_actually_leaking() -> void:
-	# 豁免名单必须会**过期**。债还掉之后这条会红，提醒把名字从名单里删掉 ——
-	# 否则豁免名单会变成一张只增不减、越来越没人看的清单。
-	for leaked: StringName in KNOWN_LEAKS:
-		assert_not_null(_table.by_id(leaked), "%s 已不在角色表里，该从豁免名单删掉了" % leaked)
-		assert_true(_src_mentions(String(leaked)), "%s 已经不泄漏了，该从豁免名单删掉了" % leaked)
+func test_retired_character_names_never_come_back() -> void:
+	# **上面那条按角色表扫描，所以它有个盲区**：不在表里的角色名它看不见。
+	# §07 的经济位就是这种情况 —— 那张卡在原版里叫「角都」，
+	# 但它在本案里不是一个可抽的角色，永远不会进 data/characters/。
+	#
+	# 所以清掉的名字要单独列一份，中英文都列（注释里也不许留）。
+	var offenders := PackedStringArray()
+	for name: String in RETIRED_NAMES:
+		if _src_mentions(name):
+			offenders.append(name)
+	assert_eq(String(", ").join(offenders), "", "已清掉的角色名又回到了 src/ 里")
 
 
 func _src_mentions(needle: String) -> bool:

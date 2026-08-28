@@ -36,7 +36,9 @@ const QUEST_GRADES: Array[StringName] = [&"C", &"B", &"A", &"S", &"SSS"]
 ## 实测跑到 39.5 波（均衡的 96%），也就是**不投经济几乎没有代价**。
 ## 只看总收入分不出两种解释 —— 是金币科技本身没用，
 ## 还是它有用但被别的流盖过去了。分了流才看得出该动哪一条。
-const GOLD_SOURCES: Array[StringName] = [&"wave", &"passive", &"tsunade", &"kakuzu", &"quest"]
+const GOLD_SOURCES: Array[StringName] = [
+	&"wave", &"passive", &"kill_drop", &"economy_slot", &"quest"
+]
 
 
 ## 金币科技的被动收入：战斗阶段每 0.5 秒一跳。
@@ -49,35 +51,35 @@ static func passive_income(battle_seconds: float, tech_level: int, cfg: PBSimCon
 	return int(floor(ticks * per_tick))
 
 
-## 纲手：按击杀数掷骰。§07 的期望是 +13/击杀，但刻意保留看得见的负收益。
+## 击杀掉落：按击杀数掷骰。§07 的期望是 +13/击杀，但刻意保留看得见的负收益。
 ##
 ## §07 明确写了「原版保留不动，别去修」—— 它稳赚却包装成会扣钱的老虎机，
 ## 用体感波动换玩家的注意力投入。M-1 照掷，因为「打不动就断粮」这条
 ## 反馈回路正是 §07「经济位 = 战力空位」硬下限的来源。
-static func tsunade_income(kills: int, cfg: PBSimConfig, rng: RandomNumberGenerator) -> int:
+static func kill_drop_income(kills: int, cfg: PBSimConfig, rng: RandomNumberGenerator) -> int:
 	var total: int = 0
 	for _i: int in kills:
 		var roll: float = rng.randf()
 		if roll < 0.50:
-			total += cfg.tsunade_gain
+			total += cfg.kill_drop_gain
 		elif roll < 0.80:
-			total += cfg.tsunade_loss
+			total += cfg.kill_drop_loss
 	return total
 
 
-## 角都：每波结算的回合收入。第 k 个的系数是 `k^−1.5`，递减比原版的减半更陡。
+## 经济位：每波结算的回合收入。第 k 个的系数是 `k^−1.5`，递减比原版的减半更陡。
 ##
-## §07 的改动：角都取消输出能力，纯经济卡。原版它兼任雷系 AOE 第二，
+## §07 的改动：经济位取消输出能力，纯经济卡。原版它兼任雷系 AOE 第二，
 ## 一个位置交付两份价值 —— 那是原版流派单一的直接原因。
 ##
-## **收益随波次走**（`kakuzu_base + kakuzu_rate × n`），和波次奖金、任务奖励
+## **收益随波次走**（`economy_slot_base + economy_slot_rate × n`），和波次奖金、任务奖励
 ## 同一个形状。初版是常数 85，实测的后果是它恒为微亏、**没有任何流派会选它** ——
-## 详见 [member PBSimConfig.kakuzu_rate]。
-static func kakuzu_income(count: int, wave_index: int, cfg: PBSimConfig) -> int:
-	var per_unit: float = cfg.kakuzu_base + cfg.kakuzu_rate * float(wave_index)
+## 详见 [member PBSimConfig.economy_slot_rate]。
+static func economy_slot_income(count: int, wave_index: int, cfg: PBSimConfig) -> int:
+	var per_unit: float = cfg.economy_slot_base + cfg.economy_slot_rate * float(wave_index)
 	var total: float = 0.0
 	for k: int in range(1, count + 1):
-		total += per_unit * pow(float(k), cfg.kakuzu_falloff)
+		total += per_unit * pow(float(k), cfg.economy_slot_falloff)
 	return int(floor(total))
 
 

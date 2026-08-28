@@ -31,7 +31,7 @@ var id: StringName = &"base"
 var dispatch_policy: Dispatch = Dispatch.SMART
 
 
-## 准备阶段花钱。抽卡、升科技、上角都都在这里做。
+## 准备阶段花钱。抽卡、升科技、上经济位都在这里做。
 ##
 ## 子类必须覆盖。基类什么都不做 —— 一个不花钱的玩家也是合法的对照组。
 func prepare(_state: PBRunState, _wave: PBWave, _cfg: PBSimConfig, _rng: PBRngStreams) -> void:
@@ -167,7 +167,7 @@ func buy_equip_part(state: PBRunState, cfg: PBSimConfig) -> bool:
 
 ## 出战席是否已经装备到满，再买就溢出了。
 func equipment_is_full(state: PBRunState, cfg: PBSimConfig) -> bool:
-	var slots: int = maxi(state.deploy_capacity(cfg) - state.kakuzu_count, 0)
+	var slots: int = maxi(state.deploy_capacity(cfg) - state.economy_slot_count, 0)
 	var items: int = state.equip_parts / cfg.equip_parts_per_item
 	return items >= slots * cfg.equip_items_per_unit
 

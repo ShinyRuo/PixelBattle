@@ -23,8 +23,8 @@ var tech_pop: int = 0
 var tech_atk: int = 0
 var tech_def: int = 0
 
-## 上场的角都数量。纯经济卡，占出战位但不产生任何输出（§07 的改动）。
-var kakuzu_count: int = 0
+## 上场的经济位数量。纯经济卡，占出战位但不产生任何输出（§07 的改动）。
+var economy_slot_count: int = 0
 
 ## 本波派出去做任务的人数。派遣期间羁绊不生效（§06），波次结算后归零。
 var dispatched: int = 0
@@ -79,9 +79,9 @@ func deploy_capacity(cfg: PBSimConfig) -> int:
 	return mini(cfg.deploy_slots_base + tech_pop, cfg.deploy_slots_max)
 
 
-## 出战席里还剩几个位置能放输出 —— 角都占着位却不产出任何伤害（§07）。
+## 出战席里还剩几个位置能放输出 —— 经济位占着位却不产出任何伤害（§07）。
 func open_slots(cfg: PBSimConfig) -> int:
-	return maxi(deploy_capacity(cfg) - kakuzu_count, 0)
+	return maxi(deploy_capacity(cfg) - economy_slot_count, 0)
 
 
 ## 待命台格数。§05：初始 3，人口科技每 2 级 +1，上限 6。
@@ -144,7 +144,7 @@ func standby_available(cfg: PBSimConfig) -> int:
 ## 装备满整队之前，每多一件成品就实打实多一份战力 —— 这就是它能当
 ## 「无底金币坑」的原因，和抽卡在卡池抽满后归零的边际收益正好相反。
 func equip_mult(cfg: PBSimConfig) -> float:
-	var slots: int = deploy_capacity(cfg) - kakuzu_count
+	var slots: int = deploy_capacity(cfg) - economy_slot_count
 	if slots <= 0:
 		return 1.0
 	var items: int = equip_parts / cfg.equip_parts_per_item
@@ -194,5 +194,5 @@ func earn(amount: int, source: StringName = &"other") -> void:
 	gold += amount
 	if amount > 0:
 		gold_earned += amount
-	# 纲手会掉负数，照实累计净额 —— 抹掉负值会让它看起来比实际稳。
+	# 击杀掉落会掉负数，照实累计净额 —— 抹掉负值会让它看起来比实际稳。
 	gold_by_source[source] = int(gold_by_source.get(source, 0)) + amount

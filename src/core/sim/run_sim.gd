@@ -9,7 +9,7 @@ extends RefCounted
 ## 3. 选上场单位
 ## 4. 决定接不接任务 —— **必须在算 DPS 之前**，因为派遣会削掉羁绊加成
 ## 5. 算有效 DPS，结算战斗
-## 6. 四条收入流入账（`combat` 流掷纲手掉落）
+## 6. 四条收入流入账（`combat` 流掷击杀掉落掉落）
 ##
 ## §01 说准备阶段不限时、可存档退出，所以第 2–4 步在真实游戏里是玩家慢慢想的；
 ## 模型里它们不消耗时间，只有第 5 步的战斗产生 [member PBSimConfig.gold_tick_base]
@@ -187,8 +187,8 @@ static func _collect(
 ## 四条收入流入账（§07）。
 ##
 ## 注意纲水的击杀收入在 M-1 里**无条件生效** —— 真实游戏里它要占一个出战位。
-## 这么简化是因为路线图的四个问题都不问「该不该上纲手」，而它对所有策略
-## 是同一个常数，不影响策略之间的相对比较。角都保留了占位代价，
+## 这么简化是因为路线图的四个问题都不问「该不该上击杀掉落」，而它对所有策略
+## 是同一个常数，不影响策略之间的相对比较。经济位保留了占位代价，
 ## 因为「经济位 = 战力空位」那条张力（§07）正是靠它度量的。
 static func _settle_income(
 	state: PBRunState,
@@ -203,8 +203,11 @@ static func _settle_income(
 	state.earn(
 		PBEconomyRules.passive_income(outcome.battle_seconds, state.tech_gold, cfg), &"passive"
 	)
-	state.earn(PBEconomyRules.tsunade_income(outcome.kills, cfg, rng.combat), &"tsunade")
-	state.earn(PBEconomyRules.kakuzu_income(state.kakuzu_count, wave.index, cfg), &"kakuzu")
+	state.earn(PBEconomyRules.kill_drop_income(outcome.kills, cfg, rng.combat), &"kill_drop")
+	state.earn(
+		PBEconomyRules.economy_slot_income(state.economy_slot_count, wave.index, cfg),
+		&"economy_slot"
+	)
 	if accepted:
 		state.earn(PBEconomyRules.quest_reward(quest_grade, wave.index), &"quest")
 

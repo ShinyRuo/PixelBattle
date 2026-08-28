@@ -62,14 +62,14 @@ var _equip_power: float = 0.0
 ## 对价格不敏感，全跑一遍纯属浪费。
 var _only_strategy: StringName = &""
 
-## §07 角都的收益曲线：`(kakuzu_base + kakuzu_rate × 波次) × k^−1.5`。
+## §07 经济位的收益曲线：`(economy_slot_base + economy_slot_rate × 波次) × k^−1.5`。
 ## -1 表示用 [PBSimConfig] 的默认值。
 ##
-## 常数版本（`rate = 0`）实测下**每一个不被强制的流派角都占比都是 0%** ——
+## 常数版本（`rate = 0`）实测下**每一个不被强制的流派经济位占比都是 0%** ——
 ## 它恒为微亏，于是 §07 的「经济位 = 战力空位」等于不存在。
-## 扫这两个开关时流派必须挑 `rational`，其余流派根本不会考虑上不上角都。
-var _kakuzu_base: float = -1.0
-var _kakuzu_rate: float = -1.0
+## 扫这两个开关时流派必须挑 `rational`，其余流派根本不会考虑上不上经济位。
+var _economy_slot_base: float = -1.0
+var _economy_slot_rate: float = -1.0
 
 ## 覆盖流派自带的派遣策略（`never` / `always` / `smart`）。空表示不覆盖。
 ##
@@ -119,10 +119,10 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 		cfg.equip_part_cost = _equip_part_cost
 	if _equip_power > 0.0:
 		cfg.equip_power_per_item = _equip_power
-	if _kakuzu_base >= 0.0:
-		cfg.kakuzu_base = _kakuzu_base
-	if _kakuzu_rate >= 0.0:
-		cfg.kakuzu_rate = _kakuzu_rate
+	if _economy_slot_base >= 0.0:
+		cfg.economy_slot_base = _economy_slot_base
+	if _economy_slot_rate >= 0.0:
+		cfg.economy_slot_rate = _economy_slot_rate
 	var out: Array[PBRunResult] = []
 	for i: int in _runs:
 		# 同一个 i 在所有格子上用同一个种子：不同流派面对**同一串**波型与抽卡运气，
@@ -342,7 +342,7 @@ func _print_report(summary: Array[Dictionary], total_runs: int, elapsed: float) 
 func _print_income_report(summary: Array[Dictionary]) -> void:
 	print("")
 	print("收入构成（§07 的五条流，占总收入的比例）")
-	print("growth  strategy         总收入   波次奖金  金币科技    纲手    角都    任务")
+	print("growth  strategy         总收入   波次奖金  金币科技    击杀掉落    经济位    任务")
 	print("──────  ───────────────  ───────  ────────  ────────  ──────  ──────  ──────")
 	for row: Dictionary in summary:
 		var line := (
@@ -353,8 +353,8 @@ func _print_income_report(summary: Array[Dictionary]) -> void:
 				row["mean_gold"],
 				row["share_wave"] * 100.0,
 				row["share_passive"] * 100.0,
-				row["share_tsunade"] * 100.0,
-				row["share_kakuzu"] * 100.0,
+				row["share_kill_drop"] * 100.0,
+				row["share_economy_slot"] * 100.0,
 				row["share_quest"] * 100.0,
 			]
 		)
@@ -422,7 +422,7 @@ func _parse_args() -> void:
 				_only_strategy = StringName(value)
 			"--dispatch":
 				_dispatch = StringName(value)
-			"--kakuzu-base":
-				_kakuzu_base = maxf(value.to_float(), 0.0)
-			"--kakuzu-rate":
-				_kakuzu_rate = maxf(value.to_float(), 0.0)
+			"--economy-slot-base":
+				_economy_slot_base = maxf(value.to_float(), 0.0)
+			"--economy-slot-rate":
+				_economy_slot_rate = maxf(value.to_float(), 0.0)

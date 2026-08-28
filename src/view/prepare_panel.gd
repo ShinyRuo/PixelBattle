@@ -31,7 +31,7 @@ signal start_requested
 const KINDS: Array[StringName] = [
 	&"gacha",
 	&"equip",
-	&"kakuzu",
+	&"economy_slot",
 	&"tech_gold",
 	&"tech_pop",
 	&"tech_atk",
@@ -126,8 +126,8 @@ func _cost_of(kind: StringName, state: PBRunState, cfg: PBSimConfig) -> int:
 			return cfg.gacha_cost
 		&"equip":
 			return -1 if _equipment_full(state, cfg) else cfg.equip_part_cost
-		&"kakuzu":
-			# 角都是抽来的角色不是商店货，代价折成一次单抽 —— 与模拟玩家同口径。
+		&"economy_slot":
+			# 经济位是抽来的角色不是商店货，代价折成一次单抽 —— 与模拟玩家同口径。
 			# 留一个出战位，否则整队都是经济卡、DPS 归零。
 			return -1 if state.open_slots(cfg) <= 1 else cfg.gacha_cost
 		_:
@@ -146,8 +146,8 @@ func _label_of(kind: StringName, state: PBRunState, cfg: PBSimConfig, base: floa
 			return "抽卡 %d　期望战力 %s" % [cost, _percent(PBValuation.gacha_gain(state, cfg))]
 		&"equip":
 			return _label_equip(state, cfg, base, cost)
-		&"kakuzu":
-			return _label_kakuzu(state, cfg, base, cost)
+		&"economy_slot":
+			return _label_economy_slot(state, cfg, base, cost)
 	return _label_tech(kind, state, cfg, base, cost)
 
 
@@ -163,16 +163,20 @@ func _label_equip(state: PBRunState, cfg: PBSimConfig, base: float, cost: int) -
 	return "配件 %d（%d/%d 成一件，满件战力 %s）" % [cost, progress, cfg.equip_parts_per_item, per_item]
 
 
-## 角都是全场唯一一个**两种货币并列**的按钮：付出战力，收金币。
+## 经济位是全场唯一一个**两种货币并列**的按钮：付出战力，收金币。
 ## 换算留给玩家 —— §07 的「经济位 = 战力空位」就是这个取舍本身。
-func _label_kakuzu(state: PBRunState, cfg: PBSimConfig, base: float, cost: int) -> String:
+func _label_economy_slot(state: PBRunState, cfg: PBSimConfig, base: float, cost: int) -> String:
 	if cost < 0:
-		return "角都　位置不够"
+		return "经济位　位置不够"
 	if base <= 0.0:
-		return "角都 %d　每波 +%d 金（先凑阵容）" % [cost, _kakuzu_step(state, cfg)]
+		return "经济位 %d　每波 +%d 金（先凑阵容）" % [cost, _economy_slot_step(state, cfg)]
 	return (
-		"角都 %d　战力 −%.1f%%　每波 +%d 金"
-		% [cost, PBValuation.kakuzu_slot_loss(state, cfg, base) * 100.0, _kakuzu_step(state, cfg)]
+		"经济位 %d　战力 −%.1f%%　每波 +%d 金"
+		% [
+			cost,
+			PBValuation.economy_slot_loss(state, cfg, base) * 100.0,
+			_economy_slot_step(state, cfg)
+		]
 	)
 
 
@@ -211,10 +215,14 @@ func _passive_step(state: PBRunState, cfg: PBSimConfig) -> int:
 	return after - PBEconomyRules.passive_income(seconds, state.tech_gold, cfg)
 
 
-## 多上一个角都，每波多赚多少。
-func _kakuzu_step(state: PBRunState, cfg: PBSimConfig) -> int:
-	var after := PBEconomyRules.kakuzu_income(state.kakuzu_count + 1, state.wave_index, cfg)
-	return after - PBEconomyRules.kakuzu_income(state.kakuzu_count, state.wave_index, cfg)
+## 多上一个经济位，每波多赚多少。
+func _economy_slot_step(state: PBRunState, cfg: PBSimConfig) -> int:
+	var after := PBEconomyRules.economy_slot_income(
+		state.economy_slot_count + 1, state.wave_index, cfg
+	)
+	return (
+		after - PBEconomyRules.economy_slot_income(state.economy_slot_count, state.wave_index, cfg)
+	)
 
 
 func _equipment_full(state: PBRunState, cfg: PBSimConfig) -> bool:

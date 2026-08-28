@@ -268,8 +268,8 @@ func test_the_shop_labels_carry_the_numbers_a_decision_needs() -> void:
 	assert_true(gacha_text.contains("战力"), "抽卡要写期望战力增幅：%s" % gacha_text)
 	var gold_text: String = (panel._buttons[&"tech_gold"] as Button).text
 	assert_true(gold_text.contains("金"), "金币科技的收益是金币不是战力：%s" % gold_text)
-	var kakuzu_text: String = (panel._buttons[&"kakuzu"] as Button).text
+	var economy_slot_text: String = (panel._buttons[&"economy_slot"] as Button).text
 	assert_true(
-		kakuzu_text.contains("战力") and kakuzu_text.contains("每波"),
-		"角都必须同时写明战力代价与金币收益 —— 那个取舍就是 §07 本身：%s" % kakuzu_text
+		economy_slot_text.contains("战力") and economy_slot_text.contains("每波"),
+		"经济位必须同时写明战力代价与金币收益 —— 那个取舍就是 §07 本身：%s" % economy_slot_text
 	)

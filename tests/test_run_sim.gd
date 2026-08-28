@@ -92,7 +92,7 @@ func test_income_streams_add_up_to_the_gold_that_actually_moved() -> void:
 	# 漏了不报错，只表现为「某条流看起来不重要」，而那正是要下结论的地方。
 	#
 	# 不变式：开局金币 + 五条流之和 − 花掉的 = 手上剩的。
-	# 注意左边不能用 gold_earned —— 它只累计正数，而纲手会掉负数（§07 有意保留）。
+	# 注意左边不能用 gold_earned —— 它只累计正数，而击杀掉落会掉负数（§07 有意保留）。
 	var cfg := PBSimConfig.new()
 	for seed_value: int in [20260827, 4242, 991]:
 		var state := PBRunSim.new_state(cfg)
