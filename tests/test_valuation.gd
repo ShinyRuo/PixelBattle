@@ -92,6 +92,67 @@ func _rotation_gain(state: PBRunState, element: PBElement.Type) -> float:
 	return smart / naive - 1.0
 
 
+func test_dispatch_estimates_leave_no_trace_on_the_state() -> void:
+	# 两个估值函数都用「改一下、量一次、改回来」，而它们量的是 `dispatched` ——
+	# 那个字段归 [method PBRunSim.lock_plan] 管。漏改回来的话，
+	# 玩家在准备阶段每看一眼任务卡，本波的羁绊就掉一层，而且不报任何错。
+	var state := _roster_of(10)
+	var wave := PBWaveRules.build(9, _cfg, RandomNumberGenerator.new())
+	var units := PBValuation.deployed_for(state, wave.element, _cfg)
+	var before: float = PBValuation.mean_dps(state, _cfg)
+
+	PBValuation.dispatch_loss(state, _cfg, before, 3)
+	PBValuation.dps_if_dispatched(state, wave, units, 3, _cfg)
+
+	assert_eq(state.dispatched, 0, "估值不该留下派遣标记")
+	assert_almost_eq(PBValuation.mean_dps(state, _cfg), before, 1e-6, "估值不该改动队伍战力")
+
+
+func test_the_leak_threshold_is_the_real_cliff() -> void:
+	# 任务卡拿这个数当分母，所以它必须真的是那条线：
+	# 差一点点在上面就一个不漏，差一点点在下面就开始漏。
+	#
+	# 二分成立的前提是 `resolve` 对 dps 单调 ——
+	# 那条性质由 `test_more_dps_never_produces_more_leaks` 锁着。
+	var rng := RandomNumberGenerator.new()
+	for wave_index: int in [1, 7, 20, 30, 41]:
+		var wave := PBWaveRules.build(wave_index, _cfg, rng)
+		var cliff: float = PBValuation.leak_threshold_dps(wave, 0.0, _cfg)
+		assert_gt(cliff, 0.0, "第 %d 波应该存在一条悬崖" % wave_index)
+		assert_eq(
+			PBCombatRules.resolve(wave, cliff * 1.02, 0.0, _cfg).leaked,
+			0,
+			"第 %d 波：比悬崖高一点就不该漏" % wave_index
+		)
+		assert_gt(
+			PBCombatRules.resolve(wave, cliff * 0.98, 0.0, _cfg).leaked,
+			0,
+			"第 %d 波：比悬崖低一点就该开始漏" % wave_index
+		)
+
+
+func test_dispatching_costs_dps_until_the_bench_passes_the_bond_cap() -> void:
+	# 派出去的人羁绊失效（§06），所以代价是**整队一起降** ——
+	# 被派的是待命台上本来就不上场的人，他们自己的输出一点没少。
+	# 这一点手推很容易推反，所以钉一条。
+	var thin := _roster_of(7)
+	var loss: float = PBValuation.dispatch_loss(thin, _cfg, PBValuation.mean_dps(thin, _cfg), 3)
+	assert_gt(loss, 0.0, "板凳没到羁绊上限时，派人一定要付代价")
+
+	# 卡池深到超过 bond_unit_cap 之后，派遣是白捡的钱。
+	#
+	# 前置条件是**派完之后还在上限之上**，不是「派之前在上限之上」——
+	# 后者是我第一版写的，它松得刚好放过了真正的失败情形：
+	# 板凳 15 人、上限 12、派 4 个人，派之前是 12 档，派之后掉到 11。
+	# 抽 40 次是为了凑够唯一卡 —— 重复卡在仓库里会合并，抽 20 次只有十几张。
+	var deep := _roster_of(40)
+	assert_gte(deep.roster.size() - 4, _cfg.bond_unit_cap, "派完之后仍要在羁绊上限之上")
+	var free_loss: float = PBValuation.dispatch_loss(
+		deep, _cfg, PBValuation.mean_dps(deep, _cfg), 4
+	)
+	assert_almost_eq(free_loss, 0.0, 1e-9, "过了羁绊上限，派人不该再掉战力")
+
+
 func test_the_roster_panel_shows_the_multiplier_on_every_deployed_card() -> void:
 	# §03 说原版最大的短板是克制关系不可见。面板每一格都要写出倍率，
 	# 否则玩家还是只能靠背。

@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/view/battle_view.gd" id="1_view"]
 [ext_resource type="Script" path="res://src/view/enemy_pool.gd" id="2_pool"]
 [ext_resource type="Script" path="res://src/view/prepare_panel.gd" id="3_prepare"]
 [ext_resource type="Script" path="res://src/view/roster_panel.gd" id="4_roster"]
+[ext_resource type="Script" path="res://src/view/quest_card.gd" id="5_quest"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_view")
@@ -51,6 +52,11 @@ script = ExtResource("3_prepare")
 offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("4_roster")
+
+[node name="Quest" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("5_quest")
 
 [node name="Preview" type="Label" parent="HUD"]
 offset_left = 8.0

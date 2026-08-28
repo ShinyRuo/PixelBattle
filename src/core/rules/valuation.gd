@@ -116,6 +116,70 @@ static func kakuzu_slot_loss(state: PBRunState, cfg: PBSimConfig, base: float) -
 	return 1.0 - after / base
 
 
+## 派 [param units] 个人出去做任务，队伍 DPS 掉百分之几（§06）。
+##
+## 派出去的人羁绊失效，所以代价是**整队一起降**，不是少了那几个人的输出 ——
+## 被派的是待命台上本来就不上场的人。这一点手推很容易推反。
+##
+## 返回的是**纯代价**，正数表示损失。收益那一半是金币，币种不同 ——
+## 换算不在这里做，见 [PBQuestCard] 为什么它把两边并排显示而不合成一个数。
+static func dispatch_loss(state: PBRunState, cfg: PBSimConfig, base: float, units: int) -> float:
+	if base <= 0.0 or units <= 0:
+		return 0.0
+	var before: int = state.dispatched
+	state.dispatched = before + units
+	var after: float = mean_dps(state, cfg)
+	state.dispatched = before
+	return 1.0 - after / base
+
+
+## 派 [param units] 个人出去之后，这一波还剩多少 DPS。零副作用。
+static func dps_if_dispatched(
+	state: PBRunState, wave: PBWave, deployed: Array[PBUnit], units: int, cfg: PBSimConfig
+) -> float:
+	var before: int = state.dispatched
+	state.dispatched = units
+	var dps: float = dps_of(deployed, wave.element, state, cfg)
+	state.dispatched = before
+	return dps
+
+
+## 这一波的**悬崖**：DPS 低到多少就开始漏怪。
+##
+## ## 为什么代价要用「离悬崖多远」度量，而不是「基地掉多少血」
+##
+## 任务卡最初写的是「不接 基地 −0 / 接了 基地 −128」——
+## **实测下来那一行在几乎每一波都读作两个相同的 0**：
+## 种子 20260827 那局打到第 40 波（最后一波活着的）两边仍然都是 0，
+## 第 41 波直接团灭。
+##
+## 根因是 M0 已经查明的：这是个**单服务器排队**，ρ<1 一个不漏、ρ>1 全线崩，
+## 中间没有稳定段（路线图 §01 那条缺口，要等 M3 的射程与多目标分配）。
+## 所以基地伤害这个量在悬崖前恒为 0、悬崖后一步到底，**没有分辨率**。
+##
+## 富余倍数有分辨率，而且它正是玩家看不见的那个东西 ——
+## 不给的话整局读起来是「好好好、死」。
+##
+## 二分靠的是 [method PBCombatRules.resolve] 对 dps 单调，
+## 那条性质由 `test_more_dps_never_produces_more_leaks` 锁着。
+static func leak_threshold_dps(wave: PBWave, def_reduction: float, cfg: PBSimConfig) -> float:
+	var high: float = maxf(wave.hp_each, 1.0)
+	var guard: int = 0
+	while guard < 64 and PBCombatRules.resolve(wave, high, def_reduction, cfg).leaked > 0:
+		high *= 2.0
+		guard += 1
+	if guard >= 64:
+		return high
+	var low: float = 0.0
+	for _i: int in 32:
+		var mid: float = (low + high) * 0.5
+		if PBCombatRules.resolve(wave, mid, def_reduction, cfg).leaked > 0:
+			low = mid
+		else:
+			high = mid
+	return high
+
+
 ## 抽一张卡的**期望**增幅。抽卡是随机的，量不出来，只能算。
 ##
 ## 拆成两项相乘：

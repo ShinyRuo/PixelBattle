@@ -61,10 +61,10 @@ func open_slots(state: PBRunState, cfg: PBSimConfig) -> int:
 	return state.open_slots(cfg)
 
 
-## 待命台上现在有几个人可以被派出去。
+## 待命台上现在有几个人可以被派出去。实现在 [method PBRunState.standby_available] ——
+## 界面层也要问同一个问题，公式只能有一份。
 func standby_available(state: PBRunState, cfg: PBSimConfig) -> int:
-	var spare: int = state.roster.size() - open_slots(state, cfg)
-	return clampi(spare, 0, state.standby_capacity(cfg))
+	return state.standby_available(cfg)
 
 
 ## 按「对本波的有效战力」取前 [param slots] 个 —— 即每波换上克制系。

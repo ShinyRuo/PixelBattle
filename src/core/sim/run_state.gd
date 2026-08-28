@@ -114,9 +114,27 @@ func bond_mult(cfg: PBSimConfig) -> float:
 ## 单独开一个函数而不是在调用方重算公式 —— 公式抄两份迟早对不上，
 ## 而这种偏差只会表现为「模拟玩家的决策略微不理性」，不报任何错。
 func bond_mult_for(roster_size: int, cfg: PBSimConfig) -> float:
+	return 1.0 + cfg.bond_power_per_unit * float(bonded_count_for(roster_size, dispatched, cfg))
+
+
+## 有几个人在给羁绊计数 —— 羁绊倍率就是拿这个数乘出来的。
+##
+## 单独暴露出来是给准备阶段的任务卡用：§06 的验收原话是
+## 「派了羁绊掉几档，准备阶段能一眼看出」，**「档」指的就是这个计数**。
+## 只显示倍率不显示档数的话，玩家看不出自己离 [member PBSimConfig.bond_unit_cap]
+## 还有多远 —— 而卡池够大的时候派遣是**完全免费**的（掉的档被上限吃掉了），
+## 那是这个决策里最反直觉、也最值钱的一格信息。
+func bonded_count_for(roster_size: int, dispatch: int, cfg: PBSimConfig) -> int:
 	var on_field: int = mini(roster_size, deploy_capacity(cfg) + standby_capacity(cfg))
-	var bonded: int = maxi(on_field - dispatched, 0)
-	return 1.0 + cfg.bond_power_per_unit * float(mini(bonded, cfg.bond_unit_cap))
+	return mini(maxi(on_field - dispatch, 0), cfg.bond_unit_cap)
+
+
+## 待命台上现在有几个人可以被派出去做任务。
+##
+## 实现在这里而不是在 [PBStrategy] —— 界面层要问同一个问题（任务派不派得出），
+## 而公式只能有一份。和 [method open_slots] 当初挪过来是同一个理由。
+func standby_available(cfg: PBSimConfig) -> int:
+	return clampi(roster.size() - open_slots(cfg), 0, standby_capacity(cfg))
 
 
 ## 装备带来的队伍战力倍率（§10 的替身曲线）。

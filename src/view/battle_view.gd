@@ -101,6 +101,7 @@ var _deployed_nodes: Array[Polygon2D] = []
 @onready var _preview: Label = $HUD/Preview
 @onready var _shop: PBPreparePanel = $HUD/Prepare
 @onready var _roster: PBRosterPanel = $HUD/Roster
+@onready var _quest: PBQuestCard = $HUD/Quest
 
 
 func _ready() -> void:
@@ -115,6 +116,11 @@ func _ready() -> void:
 
 	_shop.purchase_requested.connect(_on_purchase)
 	_shop.start_requested.connect(_finish_prepare)
+	# 任务卡自己记着接没接（[method PBQuestCard.accepted]），切换后只需重画。
+	# **不在这里改 `state.dispatched`** —— 那个字段归 `lock_plan` 管，
+	# 渲染层一个字段都不回写（见类顶部）。卡面本来就把两个分支并排显示，
+	# 玩家不需要靠「先提交再看效果」来了解代价。
+	_quest.quest_toggled.connect(func(_accepted: bool) -> void: _refresh_panels())
 
 	_build_deployed_nodes()
 	_fast_forward_to(start_wave)
@@ -186,9 +192,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			# 面板只在「手动 + 准备阶段」出现。切换时立刻反映，
 			# 否则玩家关了自动却要等下一波才看得到商店。
 			_set_panels_visible(_phase == Phase.PREPARE and not auto_play and not _run_over)
+		KEY_Q:
+			# 接/不接本波任务（§06）。手柄和触屏都点得到按钮，
+			# 键盘上给一个快捷键 —— 这是准备阶段唯一需要反复试的开关。
+			if _phase == Phase.PREPARE and not auto_play:
+				_quest.toggle()
 		KEY_ENTER:
-			# 准备阶段的「开打」。M1-a 还没有花钱界面，
-			# 所以这里仍然让脚本玩家代做决策 —— 换掉它就是 M1-b/c。
 			if _phase == Phase.PREPARE:
 				_finish_prepare()
 
@@ -220,6 +229,7 @@ func _enter_prepare() -> void:
 		_plan.wave.count = mini(debug_enemy_count, _cfg.count_cap)
 	# 名单还没锁，先按「如果现在就开打」预览一份，让准备阶段有东西可看。
 	_sync_deployed()
+	_quest.reset(_state, _cfg, _plan)
 	_set_panels_visible(not auto_play)
 	_sync_visuals()
 
@@ -234,13 +244,15 @@ func _finish_prepare() -> void:
 	_set_panels_visible(false)
 	if auto_play:
 		_strategy.prepare(_state, _plan.wave, _cfg, _rng)
-	PBRunSim.lock_plan(
-		_state,
-		_plan,
-		_strategy.deploy(_state, _plan.wave, _cfg),
-		_strategy.accept_quest(_state, _plan.wave, _plan.quest_grade, _cfg),
-		_cfg
+	# 手动模式下派遣是玩家的决定（M1-d）；自动模式仍由脚本玩家的
+	# [enum PBStrategy.Dispatch] 策略决定，这样开着自动跑出来的整局
+	# 与批量模拟逐波一致，UI 改动有没有把数值弄歪可以直接对拍。
+	var accepted: bool = (
+		_strategy.accept_quest(_state, _plan.wave, _plan.quest_grade, _cfg)
+		if auto_play
+		else _quest.accepted()
 	)
+	PBRunSim.lock_plan(_state, _plan, _strategy.deploy(_state, _plan.wave, _cfg), accepted, _cfg)
 	_battle = PBBattleSim.new(_plan.wave, _plan.dps, _state.def_reduction(_cfg), _cfg)
 	_frame_counter = 0
 	_phase = Phase.BATTLE
@@ -259,11 +271,12 @@ func _end_wave() -> void:
 	_gap_frames = WAVE_GAP_FRAMES
 
 
-## 两个准备阶段面板一起显隐、一起刷新 —— 分开控制迟早漏掉一个，
+## 三个准备阶段面板一起显隐、一起刷新 —— 分开控制迟早漏掉一个，
 ## 表现为「战斗中还挂着半张商店」。
 func _set_panels_visible(shown: bool) -> void:
 	_shop.visible = shown
 	_roster.visible = shown
+	_quest.visible = shown
 	if shown:
 		_refresh_panels()
 
@@ -273,6 +286,7 @@ func _refresh_panels() -> void:
 		return
 	_shop.refresh(_state, _cfg)
 	_roster.refresh(_state, _cfg, _plan.wave)
+	_quest.refresh(_state, _cfg, _plan)
 
 
 func _restart() -> void:
@@ -356,7 +370,7 @@ func _sync_preview() -> void:
 
 	var keys: String = "空格暂停　1/2/3 倍速　R 重开　A 自动:%s" % ("开" if auto_play else "关")
 	if _phase == Phase.PREPARE and not auto_play:
-		keys = "回车开打　A 自动:关　R 重开"
+		keys = "回车开打　Q 接任务　A 自动:关　R 重开"
 	_preview.text = (
 		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
 		% [
