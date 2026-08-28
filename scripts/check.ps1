@@ -15,9 +15,20 @@
 .PARAMETER SkipTests
     跳过 GUT 单元测试，只做快速校验。
 
+.PARAMETER Deep
+    连慢档一起跑（tests/test_balance_scan.gd 那类靠整局扫描才能验的配平结论）。
+
+    默认不跑，因为它们占了整套测试 85% 的时间（98 秒里的 83 秒），
+    而它们红不红取决于**调参**，不取决于改没改代码。日常改代码等一分半钟，
+    人就会开始不跑自检 —— 那比测试慢危险得多。
+
+    **改了 PBSimConfig 的数值、改了估值口径、动了角色表分布、里程碑验收，
+    就要跑这个。** 判据写在 tests/test_balance_scan.gd 开头。
+
 .EXAMPLE
     .\scripts\check.ps1
     .\scripts\check.ps1 -Fix
+    .\scripts\check.ps1 -Deep
     .\scripts\check.ps1 -SkipTests
 #>
 [CmdletBinding()]
@@ -25,6 +36,7 @@ param(
     [switch]$Fix,
     [switch]$SkipTests,
     [switch]$SkipLint,
+    [switch]$Deep,
     # 打印每个阶段的完整输出。默认只在失败时打印 ——
     # 成功时刷 200 行导入进度条既没信息量，又会白白吃掉 AI 的上下文窗口。
     [switch]$Full
@@ -250,12 +262,19 @@ Invoke-Stage -Name '4/5 运行时冒烟（主场景跑 120 帧）' `
 # ── 阶段 5：单元测试 ────────────────────────────────────────────
 if (-not $SkipTests) {
     if (Test-Path (Join-Path $ProjectRoot 'addons\gut\gut_cmdln.gd')) {
+        # 慢档开关。测试脚本里用 should_skip_script() 读它 ——
+        # 走 GUT 的跳过机制而不是「不扫描那个目录」，是因为 GUT 会**先实例化
+        # 脚本再判跳过**：慢档文件的解析错误在快档照样暴露，报告里也会打出
+        # 「[Script skipped]」并计入 risky。挪目录的话，那个文件哪天解析不过
+        # 都没人知道 —— 正是阶段 5 的 FailPatterns 在防的「测试静默消失」。
+        $env:PB_DEEP = if ($Deep) { '1' } else { '' }
+        $stageName = if ($Deep) { '5/5 GUT 单元测试（含慢档）' } else { '5/5 GUT 单元测试（跳过慢档）' }
         # FailPatterns 是必须的，不是保险起见 ——
         # 一个测试文件如果解析失败（比如改了函数签名忘了改调用方），
         # GUT 只打一行 WARNING 就把整个文件跳过，然后**照样返回 0**。
         # 用例数会悄悄从 61 掉到 50，而自检报告「全部通过」。
         # 这种「测试静默消失」比测试失败危险得多，所以在这里拦死。
-        Invoke-Stage -Name '5/5 GUT 单元测试' `
+        Invoke-Stage -Name $stageName `
                      -Exe  $Godot `
                      -Arguments @('--headless', '--path', $ProjectRoot,
                                   '-s', 'res://addons/gut/gut_cmdln.gd',
@@ -263,6 +282,9 @@ if (-not $SkipTests) {
                      -FailPatterns @('SCRIPT ERROR', 'Parse Error', 'does not extend GutTest',
                                      'Failed to load script', 'Failing Tests\s+[1-9]') `
                      -ShowOutput
+        if (-not $Deep) {
+            Write-Host '  慢档（配平扫描）已跳过 —— 改了数值或做验收时跑 .\scripts\check.ps1 -Deep' -ForegroundColor Yellow
+        }
     } else {
         Write-Stage '5/5 GUT —— 跳过（addons/gut 不存在）'
     }

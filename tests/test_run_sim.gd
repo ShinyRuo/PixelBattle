@@ -57,19 +57,8 @@ func test_strategy_objects_are_not_reused_across_runs() -> void:
 	assert_ne(first.get_instance_id(), second.get_instance_id(), "每次 make 应给新实例")
 
 
-func test_higher_growth_never_helps_the_player() -> void:
-	# 单调性：GROWTH 是整条难度曲线的主控，调高只可能更难。
-	# 用配对比较（同一批种子）消掉运气，再比中位数。
-	var medians: Array[float] = []
-	for growth: float in [1.10, 1.125, 1.15]:
-		_cfg.growth = growth
-		var reached: Array[int] = []
-		for run_seed: int in range(1, 25):
-			reached.append(_run(&"balanced", run_seed).wave_reached)
-		reached.sort()
-		medians.append(float(reached[reached.size() / 2]))
-	assert_lte(medians[1], medians[0], "GROWTH 1.125 不该比 1.10 更容易")
-	assert_lte(medians[2], medians[1], "GROWTH 1.15 不该比 1.125 更容易")
+# GROWTH 单调性（调高只可能更难）在 `test_balance_scan.gd` ——
+# 那一条要跑 72 局，而它测的是**参数的性质**，不是本文件关心的模型自洽性。
 
 
 func test_hit_wave_cap_is_flagged_not_silently_folded_in() -> void:
