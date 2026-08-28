@@ -46,6 +46,25 @@ class PurePhysical:
 	func deploy(state: PBRunState, _wave: PBWave, cfg: PBSimConfig) -> Array[PBUnit]:
 		return pick_by_element(state, PBElement.Type.PHYSICAL, cfg, open_slots(state, cfg))
 
+	## 纯物理流当然会把物理卡带上场。
+	##
+	## M2-c 之后 `pick_by_element` 是在**在场名单**里筛的，而默认的在场名单
+	## 按裸战力选 —— 那样这个流派会因为「带错人」而变弱，
+	## 而「带错人」不是它要度量的东西（它度量的是 §03 的物理保底补丁值多少）。
+	func bring_to_field(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
+		var capacity: int = state.deploy_capacity(cfg) + state.standby_capacity(cfg)
+		var physical: Array[PBUnit] = []
+		var rest: Array[PBUnit] = []
+		for unit: PBUnit in state.sorted_by_power(cfg):
+			if unit.element == PBElement.Type.PHYSICAL:
+				physical.append(unit)
+			else:
+				rest.append(unit)
+		physical.append_array(rest)
+		var chosen := physical.slice(0, capacity)
+		state.set_field(chosen)
+		return chosen
+
 
 ## 派遣策略的两个极端，其余一切与 `balanced` 相同。
 ##
@@ -70,3 +89,24 @@ class DispatchAlways:
 		super()
 		id = &"dispatch_always"
 		dispatch_policy = Dispatch.ALWAYS
+
+
+## 和 [PBStratRational] **只差一个变量：不会凑羁绊。** M2-c 的度量工具。
+##
+## §01 要求三档玩家拉开 15–25 / 40–60 / 100+ 波，而 M1 实测整条技能阶梯
+## 只有 1.30×（新手代理 33.9 波 → `rational` 44.2 波）。根因是加法杠杆
+## 在指数难度曲线上只换得到对数级的波次差 —— 与 §07 的经济张力同一条。
+##
+## 羁绊是本案第一个**乘法级**杠杆，但它只有在「带谁上场」是个真决策时
+## 才提供杠杆。所以要量它，就得有一个除此之外一模一样的对照组。
+##
+## `rational` 与本流派的比值就是**羁绊贡献的技能阶梯**，
+## M2 的验收要求它到 2× 以上。两者的花钱逻辑、派遣逻辑、换人逻辑
+## 全部相同，唯一的差别是 [member PBStrategy.field_policy]。
+class BondBlind:
+	extends PBStratRational
+
+	func _init() -> void:
+		super()
+		id = &"bond_blind"
+		field_policy = Field.RAW_POWER

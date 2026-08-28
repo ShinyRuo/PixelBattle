@@ -60,6 +60,9 @@ var economy_slot_horizon_waves: float = 12.0
 func _init() -> void:
 	id = &"rational"
 	dispatch_policy = Dispatch.SMART
+	# 会算账就会算羁绊。对照组 `bond_blind` 只改这一个字段，
+	# 两者的比值就是羁绊贡献的技能阶梯（M2 的核心验收）。
+	field_policy = Field.BOND_AWARE
 
 
 func prepare(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> void:

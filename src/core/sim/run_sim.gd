@@ -42,6 +42,7 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 	# 混进分位数会把「打穿了上限」误读成「卡在第 200 波」。
 	result.hit_wave_cap = state.base_hp > 0.0
 	_snapshot(state, result)
+	_snapshot_power(state, cfg, result)
 	return result
 
 
@@ -210,6 +211,20 @@ static func _settle_income(
 	)
 	if accepted:
 		state.earn(PBEconomyRules.quest_reward(quest_grade, wave.index), &"quest")
+
+
+## 把「羁绊倍率」和「出战席裸战力」分开记下来。M2-c。
+##
+## 羁绊的技能阶梯是这两个量的**乘积** —— 会凑羁绊的玩家羁绊更高，
+## 但为了凑羁绊要带上战力较低的成员，出战席战力更低。
+## 只记波次的话，「羁绊涨得不够」和「羁绊涨了但被战力损失吃掉」读起来一样，
+## 而这两种情况的修法完全相反（加大档位 vs 降低凑羁绊的门槛）。
+static func _snapshot_power(state: PBRunState, cfg: PBSimConfig, result: PBRunResult) -> void:
+	result.final_bond_mult = state.bond_mult(cfg)
+	var power: float = 0.0
+	for unit: PBUnit in PBValuation.deployed_by_raw_power(state, cfg):
+		power += unit.power(cfg)
+	result.final_deployed_power = power
 
 
 static func _snapshot(state: PBRunState, result: PBRunResult) -> void:

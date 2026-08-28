@@ -43,7 +43,9 @@ static func mean_dps(state: PBRunState, cfg: PBSimConfig) -> float:
 static func deployed_for(
 	state: PBRunState, element: PBElement.Type, cfg: PBSimConfig
 ) -> Array[PBUnit]:
-	var pool := state.all_units()
+	# M2-c 之后只在**在场名单**里挑 —— 出战席必然是在场名单的子集，
+	# 拿全仓去挑会让估值假设一支实际带不上场的队伍。
+	var pool := state.field_units(cfg)
 	pool.sort_custom(
 		func(a: PBUnit, b: PBUnit) -> bool:
 			return a.effective_power(element, cfg) > b.effective_power(element, cfg)
@@ -58,7 +60,9 @@ static func deployed_for(
 ## 玩家看不到。阵容面板把两条并排显示，是为了让「每波换克制系」这件事
 ## **在玩的时候就能感觉到**，而不是只能从策划那儿听说。
 static func deployed_by_raw_power(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
-	return state.sorted_by_power(cfg).slice(0, state.open_slots(cfg))
+	var pool := state.field_units(cfg)
+	pool.sort_custom(func(a: PBUnit, b: PBUnit) -> bool: return a.power(cfg) > b.power(cfg))
+	return pool.slice(0, state.open_slots(cfg))
 
 
 ## 一份名单对 [param element] 这一波打出多少 DPS。科技、羁绊、装备都计入。

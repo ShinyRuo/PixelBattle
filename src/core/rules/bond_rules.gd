@@ -88,6 +88,78 @@ static func marginal_bonus(counts: Dictionary, table: PBBondTable, character: PB
 	return gained
 
 
+## 挑出**带上场的那批卡**（出战席 + 待命台），按「战力 × 羁绊」贪心。M2-c。
+##
+## ## 为什么这是 M2 的正题
+##
+## M2-b 装上真羁绊表之后，「谁在场」第一次成了有内容的决策 ——
+## 而在那之前它根本不是决策：[method PBRunState.bonded_units] 按**仓库顺序**
+## 取前 N，也就是「你先抽到谁就带谁」。羁绊表再精致，选人是随机的，
+## 会玩的和不会玩的拿到的加成就一样，§01 那条技能阶梯永远量不出来。
+##
+## ## 目标函数
+##
+## `前 deploy_slots 个人的裸战力之和 × (1 + 羁绊加成)`。
+##
+## 两处刻意的简化，都记在这里：
+##
+## 1. **用裸战力而不是对某一波的有效战力。** 在场名单是整局带着的队伍，
+##    每波在这批人里换克制系上场（[method PBStrategy.pick_by_effect]），
+##    所以选谁在场不该跟着某一波的属性走。
+## 2. **第 deploy_slots 个之后的人只算羁绊、不算输出。** 那正是 §05 说的
+##    「待命台不参战但羁绊全额生效」—— 板凳的唯一价值就是羁绊。
+##
+## ## 为什么是贪心而不是最优
+##
+## 30 张卡挑 16 张是 C(30,16) ≈ 1.45 亿种组合，每波都要算一次。
+## 贪心是 `容量 × 候选 × 羁绊组数` ≈ 5000 次运算，差着五个数量级。
+## 贪心会错过「单看每一步都不划算、凑齐才跳档」的组合 ——
+## **那正是真人玩家要自己发现的东西**，模拟玩家比人略笨在这里是合适的。
+static func choose_field(
+	candidates: Array[PBUnit], capacity: int, deploy_slots: int, cfg: PBSimConfig
+) -> Array[PBUnit]:
+	var pool := candidates.duplicate()
+	pool.sort_custom(func(a: PBUnit, b: PBUnit) -> bool: return a.power(cfg) > b.power(cfg))
+
+	var chosen: Array[PBUnit] = []
+	var counts := counts_of([] as Array[PBUnit], cfg.bonds)
+	var bonus: float = 0.0
+	var power_sum: float = 0.0
+	var taken := {}
+
+	while chosen.size() < capacity and chosen.size() < pool.size():
+		var best_index: int = -1
+		var best_score: float = -1.0
+		var best_bond: float = 0.0
+		for i: int in pool.size():
+			if taken.has(i):
+				continue
+			var unit: PBUnit = pool[i]
+			var bond_gain: float = marginal_bonus(counts, cfg.bonds, unit.character)
+			var power_after: float = power_sum
+			if chosen.size() < deploy_slots:
+				power_after += unit.power(cfg)
+			var score: float = power_after * (1.0 + bonus + bond_gain)
+			if score > best_score:
+				best_score = score
+				best_index = i
+				best_bond = bond_gain
+		if best_index < 0:
+			break
+
+		taken[best_index] = true
+		var picked: PBUnit = pool[best_index]
+		if chosen.size() < deploy_slots:
+			power_sum += picked.power(cfg)
+		chosen.append(picked)
+		bonus += best_bond
+		if cfg.bonds != null:
+			for bond: PBBond in cfg.bonds.all():
+				if bond.counts(picked):
+					counts[bond.id] = int(counts.get(bond.id, 0)) + 1
+	return chosen
+
+
 ## 离 [param bond] 的下一档还差几个人。已满档返回 0。
 ##
 ## 这是「换一个人上场值不值」里最要紧的一格信息：差 1 个人的时候，

@@ -29,6 +29,17 @@ var economy_slot_count: int = 0
 ## 本波派出去做任务的人数。派遣期间羁绊不生效（§06），波次结算后归零。
 var dispatched: int = 0
 
+## 本波带在场上的卡（出战席 + 待命台），元素是角色 id。M2-c。
+##
+## **由流派/玩家在准备阶段挑**，见 [method PBStrategy.bring_to_field]。
+## M2-b 之前这不是个决策 —— 在场名单按仓库顺序取前 N，也就是
+## 「你先抽到谁就带谁」，于是会玩的和不会玩的拿到的羁绊一样多，
+## §01 那条技能阶梯永远量不出来。
+##
+## 空表示还没挑过，那时仍按仓库顺序取 —— 现造局面的测试
+## 因此不必每次都先挑一遍人。
+var field: Array[StringName] = []
+
 ## 已买到的装备配件总数（§10 的替身曲线，见 [member PBSimConfig.equip_part_cost]）。
 ##
 ## M-1 不区分七种配件、不做合成树，只数总数 —— 保留的是它的经济学身份：
@@ -99,6 +110,27 @@ func def_reduction(cfg: PBSimConfig) -> float:
 	return cfg.tech_def_per_level * float(tech_def)
 
 
+## 记下这一波带上场的名单。只存 id，不存引用 —— §12 的存档要序列化这个。
+func set_field(units: Array[PBUnit]) -> void:
+	field.clear()
+	for unit: PBUnit in units:
+		field.append(unit.key())
+
+
+## 在场名单对应的卡。没挑过就按仓库顺序取前 N（见 [member field]）。
+func field_units(cfg: PBSimConfig) -> Array[PBUnit]:
+	var capacity: int = deploy_capacity(cfg) + standby_capacity(cfg)
+	var out: Array[PBUnit] = []
+	if field.is_empty():
+		var pool := all_units()
+		return pool.slice(0, mini(pool.size(), capacity))
+	for key: StringName in field:
+		var unit := roster.get(key, null) as PBUnit
+		if unit != null and out.size() < capacity:
+			out.append(unit)
+	return out
+
+
 ## 现在有哪些卡在给羁绊计数（§09）。
 ##
 ## §09 的生效规则：**出战席与待命台双场景全额生效、无衰减**，
@@ -106,19 +138,12 @@ func def_reduction(cfg: PBSimConfig) -> float:
 ## 否则 §06 那句「这一波我要羁绊，还是要钱」在模型里就没有代价，
 ## 派遣策略的对比（路线图第 4 个问题）会得出「派满永远最优」的假结论。
 ##
-## ## 两处刻意留着的粗糙
-##
-## 1. **在场的是哪几张卡，这里按仓库顺序取前 N，不排序。**
-##    「谁上场」在 M2-c 会变成玩家的真决策（真羁绊让它重新有得选），
-##    在那之前排不排都一样 —— 合成羁绊表匹配所有人，取谁都是同一个数。
-##    **而且不能排**：本函数在 [method PBValuation.mean_dps] 的热路径上，
-##    每买一笔钱要过好几遍，多一次全仓排序会让批量扫描直接慢一倍。
-## 2. **派出去的是哪几个，按末尾取。** §06 说派的是待命台上的人，
-##    而待命台坐的就是排在后面的那几张。M2-d 会把它变成「派哪 3 人」。
+## **派出去的是哪几个，按末尾取。** §06 说派的是待命台上的人，
+## 而在场名单是按「先出战席后待命台」排的，末尾正是板凳。
+## M2-d 会把它变成「派哪 3 人」。
 func bonded_units(cfg: PBSimConfig) -> Array[PBUnit]:
-	var pool := all_units()
-	var on_field: int = mini(pool.size(), deploy_capacity(cfg) + standby_capacity(cfg))
-	return pool.slice(0, maxi(on_field - dispatched, 0))
+	var pool := field_units(cfg)
+	return pool.slice(0, maxi(pool.size() - dispatched, 0))
 
 
 ## 羁绊加成倍率（§09）。

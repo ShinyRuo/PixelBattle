@@ -13,6 +13,7 @@ extends RefCounted
 ## | `balanced` vs `pure_economy` / `pure_power` | §07 的经济与战力平衡点在哪 |
 ## | `dispatch_never` / `balanced` / `dispatch_always` | §06 三种派遣策略的差异（应 < 20%） |
 ## | `balanced` vs `rational` | 写死的花钱顺序离「会算账」差多远 |
+## | `bond_blind` vs `rational` | **羁绊贡献的技能阶梯**（唯一变量：会不会凑羁绊）|
 ##
 ## `rational` 与其余流派性质不同：它是**校价用的仪器**，不是一种玩法。
 ## 其余流派的花钱顺序写死，读不到 `equip_part_cost`，
@@ -26,6 +27,7 @@ const IDS: Array[StringName] = [
 	&"dispatch_never",
 	&"dispatch_always",
 	&"rational",
+	&"bond_blind",
 ]
 
 
@@ -51,5 +53,7 @@ static func make(id: StringName) -> PBStrategy:
 			return PBStratVariants.DispatchAlways.new()
 		&"rational":
 			return PBStratRational.new()
+		&"bond_blind":
+			return PBStratVariants.BondBlind.new()
 		_:
 			return null

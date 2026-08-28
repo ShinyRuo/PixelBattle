@@ -25,10 +25,26 @@ enum Dispatch {
 	SMART,  ## BOSS 波前一波收手，其余照接
 }
 
+## 带谁上场（出战席 + 待命台）。M2-c 之后这是**技能阶梯的主要来源**。
+##
+## §01 要求三档玩家拉开 15–25 / 40–60 / 100+ 波，而 M1 实测整条技能阶梯
+## 只有 1.30× —— 根因是加法杠杆在指数曲线上换不到波次差。
+## 羁绊是第一个乘法级杠杆，但它只有在「带谁」是个真决策时才提供杠杆：
+## M2-b 之前在场名单按仓库顺序取，会玩的和不会玩的拿到的羁绊一样多。
+enum Field {
+	## 只按裸战力带人。**不会凑羁绊的玩家** —— 羁绊全靠撞上。
+	RAW_POWER,
+	## 按「战力 × 羁绊」带人。**会凑羁绊的玩家**，见 [method PBBondRules.choose_field]。
+	BOND_AWARE,
+}
+
 ## 流派名，进 CSV 的 `strategy` 列。
 var id: StringName = &"base"
 
 var dispatch_policy: Dispatch = Dispatch.SMART
+
+## 默认不会凑羁绊 —— 大多数流派是「某种打法」的对照组，不是「会玩的玩家」。
+var field_policy: Field = Field.RAW_POWER
 
 
 ## 准备阶段花钱。抽卡、升科技、上经济位都在这里做。
@@ -67,9 +83,25 @@ func standby_available(state: PBRunState, cfg: PBSimConfig) -> int:
 	return state.standby_available(cfg)
 
 
+## 挑出这一波**带上场**的卡（出战席 + 待命台），并记进 [member PBRunState.field]。
+##
+## **全部 `pick_by_*` 都从这里取候选**，所以覆盖了 `deploy` 的流派也自动
+## 走同一套在场规则 —— 出战席必然是在场名单的子集，
+## 而 §05 的「待命台不参战但羁绊全额生效」也就自动成立。
+func bring_to_field(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
+	var capacity: int = state.deploy_capacity(cfg) + state.standby_capacity(cfg)
+	var chosen: Array[PBUnit]
+	if field_policy == Field.BOND_AWARE:
+		chosen = PBBondRules.choose_field(state.all_units(), capacity, state.open_slots(cfg), cfg)
+	else:
+		chosen = state.sorted_by_power(cfg).slice(0, capacity)
+	state.set_field(chosen)
+	return chosen
+
+
 ## 按「对本波的有效战力」取前 [param slots] 个 —— 即每波换上克制系。
 func pick_by_effect(state: PBRunState, wave: PBWave, cfg: PBSimConfig, slots: int) -> Array[PBUnit]:
-	var pool := state.all_units()
+	var pool := bring_to_field(state, cfg)
 	pool.sort_custom(
 		func(a: PBUnit, b: PBUnit) -> bool:
 			return a.effective_power(wave.element, cfg) > b.effective_power(wave.element, cfg)
@@ -81,7 +113,9 @@ func pick_by_effect(state: PBRunState, wave: PBWave, cfg: PBSimConfig, slots: in
 ## 这是隔离「换人」效应的对照组：它和 [method pick_by_effect] 的差值，
 ## 就是 §03 整套属性系统在数值上真正值多少。
 func pick_by_raw_power(state: PBRunState, cfg: PBSimConfig, slots: int) -> Array[PBUnit]:
-	return state.sorted_by_power(cfg).slice(0, maxi(slots, 0))
+	var pool := bring_to_field(state, cfg)
+	pool.sort_custom(func(a: PBUnit, b: PBUnit) -> bool: return a.power(cfg) > b.power(cfg))
+	return pool.slice(0, maxi(slots, 0))
 
 
 ## 只从指定属性里取前 [param slots] 个。凑不满就有几个上几个。
@@ -89,7 +123,7 @@ func pick_by_element(
 	state: PBRunState, element: PBElement.Type, cfg: PBSimConfig, slots: int
 ) -> Array[PBUnit]:
 	var pool: Array[PBUnit] = []
-	for unit: PBUnit in state.all_units():
+	for unit: PBUnit in bring_to_field(state, cfg):
 		if unit.element == element:
 			pool.append(unit)
 	pool.sort_custom(func(a: PBUnit, b: PBUnit) -> bool: return a.power(cfg) > b.power(cfg))
