@@ -171,10 +171,24 @@ var characters: PBCharacterTable = null
 ## M-1 不实现真羁绊（§09 的档位与功能解锁是 M2 的事），只需要一条
 ## 「人越多越强、派出去就没了」的曲线，好让 §06 的「羁绊 ↔ 金币」取舍
 ## 在模型里有真实代价。这是整个 M-1 里最粗糙的一处近似，标记清楚。
+##
+## **M2-b 之后这两个数只在构造时被读一次**，用来造 [member bonds] 那张合成表 ——
+## 和 [member characters_per_bucket] 的处境一样。真羁绊表装进来之后它们就不生效了。
 var bond_power_per_unit: float = 0.06
 
 ## 羁绊加成的计数上限，防止后期堆卡无限叠。
 var bond_unit_cap: int = 12
+
+## 全部羁绊（§09）。战力结算按它算加成，界面按它显示档数。
+##
+## 默认是 [method PBBondTable.synthetic] 造的合成表，
+## 数值上精确复现 M-1 那条「每人 +6%」的替身曲线 ——
+## **结构层是当作可对拍的重构引入的**，换真羁绊表是下一步，
+## 那一步的数值变化必须能和这一步的重构分开看。
+##
+## 真羁绊表由 core 外面的加载器从 `data/bonds/*.tres` 装进来，
+## 因为 `ResourceLoader` 在 core 里是禁用的（§14）。
+var bonds: PBBondTable = null
 
 # ── 装备（§10 的替身曲线）──────────────────────────────────────
 ## 一个配件多少钱。**这是后期金币的主要去处，缺了它整个经济系统会被误判成「不重要」。**
@@ -358,14 +372,15 @@ func shape_count_mult(shape: PBWave.Shape) -> float:
 
 
 func _init() -> void:
-	# 字段初始化跑完才轮到 _init，所以这里读得到 characters_per_bucket。
+	# 字段初始化跑完才轮到 _init，所以这里读得到上面那几个字段。
 	characters = PBCharacterTable.synthetic(characters_per_bucket)
+	bonds = PBBondTable.synthetic(bond_power_per_unit, bond_unit_cap)
 
 
 ## 复制一份。批量扫描时每个参数组合克隆一份再改，避免共享可变状态。
 ##
-## [member characters] 是**共享引用而不是深拷贝** —— 角色表造完只读，
-## 几千个格子各拷一份几十个 Resource 纯属浪费。
+## [member characters] 与 [member bonds] 是**共享引用而不是深拷贝** ——
+## 两张表造完只读，几千个格子各拷一份几十个 Resource 纯属浪费。
 func clone() -> PBSimConfig:
 	var copy := PBSimConfig.new()
 	for prop: Dictionary in get_property_list():

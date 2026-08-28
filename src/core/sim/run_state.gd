@@ -99,21 +99,44 @@ func def_reduction(cfg: PBSimConfig) -> float:
 	return cfg.tech_def_per_level * float(tech_def)
 
 
-## 羁绊加成倍率 —— M-1 的替身曲线，不是真羁绊。
+## 现在有哪些卡在给羁绊计数（§09）。
 ##
-## 只有「在场（出战席 + 待命台）且未被派遣」的卡算数。这三个条件缺一不可，
+## §09 的生效规则：**出战席与待命台双场景全额生效、无衰减**，
+## 但**派出去做任务的人羁绊暂时失效**（§06 新增）。这两条缺一不可，
 ## 否则 §06 那句「这一波我要羁绊，还是要钱」在模型里就没有代价，
 ## 派遣策略的对比（路线图第 4 个问题）会得出「派满永远最优」的假结论。
+##
+## ## 两处刻意留着的粗糙
+##
+## 1. **在场的是哪几张卡，这里按仓库顺序取前 N，不排序。**
+##    「谁上场」在 M2-c 会变成玩家的真决策（真羁绊让它重新有得选），
+##    在那之前排不排都一样 —— 合成羁绊表匹配所有人，取谁都是同一个数。
+##    **而且不能排**：本函数在 [method PBValuation.mean_dps] 的热路径上，
+##    每买一笔钱要过好几遍，多一次全仓排序会让批量扫描直接慢一倍。
+## 2. **派出去的是哪几个，按末尾取。** §06 说派的是待命台上的人，
+##    而待命台坐的就是排在后面的那几张。M2-d 会把它变成「派哪 3 人」。
+func bonded_units(cfg: PBSimConfig) -> Array[PBUnit]:
+	var pool := all_units()
+	var on_field: int = mini(pool.size(), deploy_capacity(cfg) + standby_capacity(cfg))
+	return pool.slice(0, maxi(on_field - dispatched, 0))
+
+
+## 羁绊加成倍率（§09）。
 func bond_mult(cfg: PBSimConfig) -> float:
-	return bond_mult_for(roster.size(), cfg)
+	return 1.0 + PBBondRules.power_bonus(bonded_units(cfg), cfg.bonds)
 
 
 ## 假如仓库里有 [param roster_size] 张卡，羁绊倍率会是多少。
 ##
 ## 存在的理由是**比价**：会算账的玩家要问「再抽一张值多少」，
 ## 而新卡的价值有一部分来自羁绊，不只是它自己的输出。
-## 单独开一个函数而不是在调用方重算公式 —— 公式抄两份迟早对不上，
-## 而这种偏差只会表现为「模拟玩家的决策略微不理性」，不报任何错。
+##
+## **这条口径 M2-b2 要换掉。** 它按人头算，而真羁绊问的是「多的那张卡是谁」——
+## 一张补上凯班第 4 档的卡和一张谁都不搭的卡，价值差一个数量级。
+## 换成按角色表求期望（和 [method PBValuation.expected_surplus] 同一套路）是那一步的事。
+## 现在留着，是因为合成羁绊表上它和 [method bond_mult] 恒等，
+## `test_bond_prediction_matches_the_real_formula` 锁着这条 ——
+## **那条测试在 M2-b2 会红，那正是它的用处。**
 func bond_mult_for(roster_size: int, cfg: PBSimConfig) -> float:
 	return 1.0 + cfg.bond_power_per_unit * float(bonded_count_for(roster_size, dispatched, cfg))
 
