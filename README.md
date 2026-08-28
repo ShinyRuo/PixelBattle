@@ -67,7 +67,7 @@ Docs/         项目文档
 |---|---|
 | 引擎（GUI） | `F:\Godot_PJ\_engine\4.7.2\godot.exe` |
 | 引擎（命令行） | `F:\Godot_PJ\_engine\4.7.2\godot_console.exe` |
-| 测试 | GUT 9.6.1 |
+| 测试 | GUT 9.7.1 |
 | 静态检查 | gdtoolkit 4.5.0（gdlint / gdformat） |
 | MCP | `@satelliteoflove/godot-mcp` 4.1.9（需 Godot 编辑器开着） |
 

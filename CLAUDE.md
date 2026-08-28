@@ -63,7 +63,7 @@ Godot 4.7.2 / GDScript / 2D。开发在 VSCode + Claude Code，Godot 编辑器�
 | 引擎（GUI） | `F:\Godot_PJ\_engine\4.7.2\godot.exe` |
 | 引擎（命令行） | `F:\Godot_PJ\_engine\4.7.2\godot_console.exe` |
 | 项目根 | `F:\Godot_PJ\PixelBattle` |
-| 测试框架 | GUT 9.6.1（`addons/gut`） |
+| 测试框架 | GUT 9.7.1（`addons/gut`） |
 | 格式化 / 静态检查 | `gdformat` / `gdlint`（gdtoolkit 4.5.0） |
 
 **Windows 上必须用 `godot_console.exe` 跑命令行。** `godot.exe` 是 GUI 子系统程序，

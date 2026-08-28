@@ -167,27 +167,10 @@ func _get_singleton_text(parsed, included_methods, is_partial):
 	return src
 
 
-func _method_returns_signal(parsed_method):
-	var return_meta = parsed_method.meta.get('return', {})
-	return typeof(return_meta) == TYPE_DICTIONARY and \
-		return_meta.get('type', TYPE_NIL) == TYPE_SIGNAL
-
-
 func _is_method_eligible_for_doubling(parsed_script, parsed_method):
-	var method_name = parsed_method.meta.name
-	if(parsed_method.is_accessor() or \
-		!parsed_method.is_eligible_for_doubling() or \
-		_ignored_methods.has(parsed_script.resource, method_name)):
-		return false
-
-	if(_method_returns_signal(parsed_method)):
-		_lgr.error(str(
-			"Cannot double method '", method_name,
-			"' because it returns a Signal.  Call ignore_method_when_doubling on ",
-			"this method before creating the double."))
-		return false
-
-	return true
+	return !parsed_method.is_accessor() and \
+		parsed_method.is_eligible_for_doubling() and \
+		!_ignored_methods.has(parsed_script.resource, parsed_method.meta.name)
 
 
 # Disable the native_method_override setting so that doubles do not generate
@@ -212,14 +195,14 @@ func _create_double(parsed, strategy, override_path, partial):
 	for method in parsed.get_local_methods():
 		if(_is_method_eligible_for_doubling(parsed, method)):
 			included_methods.append(method.meta.name)
-			dbl_src += _get_func_text(method.meta)
+			dbl_src += _method_maker.get_function_text(method)
 
 	if(strategy == GutUtils.DOUBLE_STRATEGY.INCLUDE_NATIVE):
 		for method in parsed.get_super_methods():
 			if(_is_method_eligible_for_doubling(parsed, method)):
 				included_methods.append(method.meta.name)
 				_stub_to_call_super(parsed, method.meta.name)
-				dbl_src += _get_func_text(method.meta)
+				dbl_src += _method_maker.get_function_text(method)
 
 	var base_script = _get_base_script_text(parsed, override_path, partial, included_methods)
 	dbl_src = base_script + "\n\n" + dbl_src
@@ -255,7 +238,7 @@ func _create_singleton_double(singleton, is_partial):
 	var DblClass = GutUtils.create_script_from_source(dbl_src)
 	if(_stubber != null):
 		for key in parsed.methods_by_name:
-			var meta = parsed.methods_by_name[key]
+			var meta = parsed.methods_by_name[key].meta
 			if(meta != {} and !meta.flags & METHOD_FLAG_VARARG):
 				_stubber.stub_defaults_from_meta(singleton, meta)
 
@@ -264,9 +247,8 @@ func _create_singleton_double(singleton, is_partial):
 
 func _stub_method_default_values(parsed):
 	for method in parsed.get_local_methods():
-		if(method.is_eligible_for_doubling() and \
-			!_ignored_methods.has(parsed.resource, method.meta.name)):
-			_stubber.stub_defaults_from_meta(parsed.script_path, method.meta)
+		if(method.is_eligible_for_doubling() and !_ignored_methods.has(parsed.resource, method.meta.name)):
+			_stubber.stub_defaults_from_meta(parsed.resource, method.meta)
 
 
 func _double_scene_and_script(scene, strategy, partial):
@@ -297,10 +279,6 @@ func _get_inst_id_ref_str(inst):
 	if(inst):
 		ref_str = str('instance_from_id(', inst.get_instance_id(),')')
 	return ref_str
-
-
-func _get_func_text(method_hash):
-	return _method_maker.get_function_text(method_hash) + "\n"
 
 
 func _parse_script(obj):
