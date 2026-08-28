@@ -78,6 +78,11 @@ func deploy_capacity(cfg: PBSimConfig) -> int:
 	return mini(cfg.deploy_slots_base + tech_pop, cfg.deploy_slots_max)
 
 
+## 出战席里还剩几个位置能放输出 —— 角都占着位却不产出任何伤害（§07）。
+func open_slots(cfg: PBSimConfig) -> int:
+	return maxi(deploy_capacity(cfg) - kakuzu_count, 0)
+
+
 ## 待命台格数。§05：初始 3，人口科技每 2 级 +1，上限 6。
 func standby_capacity(cfg: PBSimConfig) -> int:
 	return mini(cfg.standby_slots_base + tech_pop / 2, cfg.standby_slots_max)

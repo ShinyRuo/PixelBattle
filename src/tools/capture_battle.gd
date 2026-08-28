@@ -25,6 +25,9 @@ var _start_wave: int = 1
 ## 强制敌人数量，纯视觉用。0 表示按 §04 的公式正常算。
 var _enemy_count: int = 0
 
+## 关掉自动推进，停在准备阶段截图 —— M1-b 的花钱面板只在那时出现。
+var _manual: bool = false
+
 
 func _initialize() -> void:
 	_parse_args()
@@ -40,6 +43,7 @@ func _initialize() -> void:
 	battle.run_seed = _seed
 	battle.start_wave = _start_wave
 	battle.debug_enemy_count = _enemy_count
+	battle.auto_play = not _manual
 	root.add_child(battle)
 	battle.set("_speed", _speed)
 
@@ -72,6 +76,7 @@ func _ensure_out_dir() -> void:
 
 func _parse_args() -> void:
 	var args := OS.get_cmdline_user_args()
+	_manual = args.has("--manual")
 	for i: int in args.size():
 		if i + 1 >= args.size():
 			continue

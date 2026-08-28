@@ -82,18 +82,17 @@ func test_gacha_is_worth_less_once_the_bench_is_full_of_good_cards() -> void:
 	# 抽卡的边际价值必须随卡池变好而衰减 —— §10 的「装备是后期金币的主要去处」
 	# 整个建立在这条曲线上。不衰减的话拐点永远不出现，装备定多少钱都没人买。
 	var cfg := PBSimConfig.new()
-	var strategy := PBStratRational.new()
 
 	var empty := PBRunSim.new_state(cfg)
 	empty.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R))
-	var early: float = strategy._gacha_gain(empty, cfg)
+	var early: float = PBValuation.gacha_gain(empty, cfg)
 
 	var stacked := PBRunSim.new_state(cfg)
 	stacked.tech_pop = cfg.tech_pop_max
 	for element: int in PBElement.Type.size():
 		for variant: int in cfg.characters_per_bucket:
 			stacked.add_unit(PBUnit.new(element as PBElement.Type, PBUnit.Rarity.USR, variant))
-	var late: float = strategy._gacha_gain(stacked, cfg)
+	var late: float = PBValuation.gacha_gain(stacked, cfg)
 
 	assert_gt(early, late, "板凳全是 USR 之后，再抽一张的边际价值应显著低于开局")
 
@@ -103,7 +102,6 @@ func test_duplicate_cards_are_valued_below_new_ones() -> void:
 	# 把每一抽都当新卡会系统性高估后期抽卡 —— 而后期正是
 	# 「该继续抽还是该转装备」的分界区，偏差刚好落在结论上。
 	var cfg := PBSimConfig.new()
-	var strategy := PBStratRational.new()
 
 	# 直接量估值函数本身，门槛固定为 0，这样两边只差「卡池占掉了多少格」——
 	# 拿两个完整局面去比会把「队伍强弱」混进来，那条差异不是这里要测的东西。
@@ -116,8 +114,8 @@ func test_duplicate_cards_are_valued_below_new_ones() -> void:
 					PBUnit.new(element as PBElement.Type, rarity as PBUnit.Rarity, variant)
 				)
 
-	var fresh: float = strategy._expected_surplus(PBElement.Type.FIRE, 0.0, virgin, cfg)
-	var dupes: float = strategy._expected_surplus(PBElement.Type.FIRE, 0.0, owned, cfg)
+	var fresh: float = PBValuation.expected_surplus(PBElement.Type.FIRE, 0.0, virgin, cfg)
+	var dupes: float = PBValuation.expected_surplus(PBElement.Type.FIRE, 0.0, owned, cfg)
 	assert_gt(fresh, 0.0, "空卡池时每一抽都是新卡，期望收益应为正")
 	assert_lt(dupes, fresh * 0.2, "卡池抽满之后每一抽都是重复卡，收益应低一个数量级")
 

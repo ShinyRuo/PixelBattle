@@ -171,6 +171,12 @@ func test_preparation_is_its_own_phase_and_waits_for_the_player() -> void:
 	await wait_physics_frames(30)
 	assert_eq(root._phase, PBBattleView.Phase.PREPARE, "不限时意味着等多久都不会自己开打")
 
+	# 手动模式下不花钱就没有卡、DPS 为零 —— 这是诚实的后果，
+	# 开局金币（§07 的 starting_gold）存在的理由就是让第一波买得起人。
+	assert_eq(root._state.roster.size(), 0, "手动模式下不该有人替玩家花钱")
+	root._on_purchase(&"gacha")
+	assert_eq(root._state.roster.size(), 1, "点一次抽卡应该真的抽到一张")
+
 	root._finish_prepare()
 	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "锁定名单后应进入战斗")
 	assert_gt(root._plan.dps, 0.0, "锁定之后才有有效 DPS")
@@ -183,3 +189,67 @@ func test_auto_play_advances_without_any_input() -> void:
 	assert_true(root.auto_play, "默认应开着自动推进")
 	await wait_physics_frames(10)
 	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "自动模式下不该停在准备阶段")
+
+
+func test_the_shop_spends_through_the_shared_primitives() -> void:
+	# **界面绝不自己扣钱。** 钱要走 PBStrategy 的原语 —— 那是批量模拟走的
+	# 同一批函数，里面还维护着 §08 的保底计数等状态。
+	# 界面自己扣的话不报错，只表现为「玩到的和扫描结论对不上」。
+	var root := _spawn_battle()
+	root.auto_play = false
+	root._enter_prepare()
+	var cfg := PBSimConfig.new()
+	# 这条测的是接线，不是预算。开局金币只够 3 抽（§07 有意如此），
+	# 不给够钱的话失败原因会变成「买不起」，掩盖真正要验的东西。
+	root._state.gold = 9999
+
+	var gold_before: int = root._state.gold
+	root._on_purchase(&"gacha")
+	assert_eq(root._state.gold, gold_before - cfg.gacha_cost, "抽卡应扣掉单抽的钱")
+	assert_eq(root._state.gacha_pulls, 1, "抽卡次数要计数 —— 保底靠它")
+
+	root._on_purchase(&"equip")
+	assert_eq(root._state.equip_parts, 1, "买配件应真的进仓库")
+
+	root._on_purchase(&"tech_atk")
+	assert_eq(root._state.tech_atk, 1, "升攻击科技应真的升级")
+
+
+func test_the_shop_only_reacts_during_preparation() -> void:
+	# 战斗中点到按钮不该生效 —— §01 只允许在准备阶段花钱，
+	# 而且战斗中改 DPS 会让已经开打的这一波结果和名单对不上。
+	var root := _spawn_battle()
+	await wait_physics_frames(10)
+	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "这时候应该已经在打了")
+	var gold_before: int = root._state.gold
+	root._on_purchase(&"gacha")
+	assert_eq(root._state.gold, gold_before, "战斗阶段的购买请求应被忽略")
+
+
+func test_the_shop_labels_carry_the_numbers_a_decision_needs() -> void:
+	# §03 说原版最大的短板是信息不透明：克制关系要点开技能说明才看得到。
+	# 这一层的存在理由就是把账摆在按钮上，所以按钮文字里必须真的有数。
+	var cfg := PBSimConfig.new()
+	var state := PBRunSim.new_state(cfg)
+	state.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.SR))
+	var panel := PBPreparePanel.new()
+	add_child_autofree(panel)
+	panel.refresh(state, cfg)
+
+	for kind: StringName in PBPreparePanel.KINDS:
+		var text: String = (panel._buttons[kind] as Button).text
+		var cost: int = panel._cost_of(kind, state, cfg)
+		assert_ne(text, "", "%s 按钮应该有文字" % kind)
+		if cost >= 0:
+			assert_true(text.contains(str(cost)), "%s 的按钮上必须写着它要多少钱：%s" % [kind, text])
+
+	# 每一类的「收益」口径不同，各自都得写出来，不能只写价格。
+	var gacha_text: String = (panel._buttons[&"gacha"] as Button).text
+	assert_true(gacha_text.contains("战力"), "抽卡要写期望战力增幅：%s" % gacha_text)
+	var gold_text: String = (panel._buttons[&"tech_gold"] as Button).text
+	assert_true(gold_text.contains("金"), "金币科技的收益是金币不是战力：%s" % gold_text)
+	var kakuzu_text: String = (panel._buttons[&"kakuzu"] as Button).text
+	assert_true(
+		kakuzu_text.contains("战力") and kakuzu_text.contains("每波"),
+		"角都必须同时写明战力代价与金币收益 —— 那个取舍就是 §07 本身：%s" % kakuzu_text
+	)

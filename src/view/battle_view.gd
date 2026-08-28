@@ -99,6 +99,7 @@ var _deployed_nodes: Array[Polygon2D] = []
 @onready var _base_rect: ColorRect = $Base
 @onready var _info: Label = $HUD/Info
 @onready var _preview: Label = $HUD/Preview
+@onready var _shop: PBPreparePanel = $HUD/Prepare
 
 
 func _ready() -> void:
@@ -111,9 +112,34 @@ func _ready() -> void:
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 
+	_shop.purchase_requested.connect(_on_purchase)
+	_shop.start_requested.connect(_finish_prepare)
+
 	_build_deployed_nodes()
 	_fast_forward_to(start_wave)
 	_enter_prepare()
+
+
+## 玩家在准备阶段买了一笔。
+##
+## **钱走 [PBStrategy] 的原语，不由界面自己扣** —— 那是批量模拟走的同一批函数。
+## 界面自己扣钱的话，迟早会和 `pull_once` 里维护的保底计数之类的东西不同步，
+## 而这种不同步不报错，只表现为「玩到的和扫描结论对不上」。
+func _on_purchase(kind: StringName) -> void:
+	if _phase != Phase.PREPARE or _run_over:
+		return
+	match kind:
+		&"gacha":
+			_strategy.pull_once(_state, _plan.wave, _cfg, _rng)
+		&"equip":
+			_strategy.buy_equip_part(_state, _cfg)
+		&"kakuzu":
+			if _state.open_slots(_cfg) > 1 and _state.spend(_cfg.gacha_cost):
+				_state.kakuzu_count += 1
+		_:
+			_strategy.buy_tech(_state, StringName(String(kind).trim_prefix("tech_")), _cfg)
+	_sync_deployed()
+	_shop.refresh(_state, _cfg)
 
 
 func _physics_process(_delta: float) -> void:
@@ -156,6 +182,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_restart()
 		KEY_A:
 			auto_play = not auto_play
+			# 面板只在「手动 + 准备阶段」出现。切换时立刻反映，
+			# 否则玩家关了自动却要等下一波才看得到商店。
+			_shop.visible = _phase == Phase.PREPARE and not auto_play and not _run_over
+			if _shop.visible:
+				_shop.refresh(_state, _cfg)
 		KEY_ENTER:
 			# 准备阶段的「开打」。M1-a 还没有花钱界面，
 			# 所以这里仍然让脚本玩家代做决策 —— 换掉它就是 M1-b/c。
@@ -190,12 +221,22 @@ func _enter_prepare() -> void:
 		_plan.wave.count = mini(debug_enemy_count, _cfg.count_cap)
 	# 名单还没锁，先按「如果现在就开打」预览一份，让准备阶段有东西可看。
 	_sync_deployed()
+	_shop.visible = not auto_play
+	if _shop.visible:
+		_shop.refresh(_state, _cfg)
 	_sync_visuals()
 
 
 ## 准备阶段结束：锁定名单与派遣，开打。
+##
+## 自动模式下由脚本玩家代做花钱决策；手动模式下玩家已经在面板上花完了，
+## 所以**跳过 `prepare()`** —— 再调一次会让脚本玩家把剩下的钱也花掉。
 func _finish_prepare() -> void:
-	_strategy.prepare(_state, _plan.wave, _cfg, _rng)
+	if _phase != Phase.PREPARE or _run_over:
+		return
+	_shop.visible = false
+	if auto_play:
+		_strategy.prepare(_state, _plan.wave, _cfg, _rng)
 	PBRunSim.lock_plan(
 		_state,
 		_plan,
@@ -213,6 +254,7 @@ func _end_wave() -> void:
 	PBRunSim.settle_wave(_state, _plan, _battle.result(), _cfg, _rng)
 	if _state.base_hp <= 0.0:
 		_run_over = true
+		_shop.visible = false
 		_sync_visuals()
 		return
 	_state.wave_index += 1
@@ -225,6 +267,7 @@ func _restart() -> void:
 	_paused = false
 	_gap_frames = 0
 	_battle = null
+	_shop.visible = false
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 	_rng = PBRngStreams.new(_resolve_seed())

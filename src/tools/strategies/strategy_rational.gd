@@ -26,7 +26,7 @@ extends PBStrategy
 ## 2. **确定性支出用「改一下、量一次、改回来」**，不推公式。
 ##    科技、人口、装备的效果直接调 [PBCombatRules.team_dps] 量出来，
 ##    模型和真实结算永远一致；推公式则会随着结算逻辑演化而悄悄失准。
-## 3. **抽卡是随机的，量不了，只能求期望** —— 见 [method _gacha_gain]。
+## 3. **抽卡是随机的，量不了，只能求期望** —— 见 [method PBValuation.gacha_gain]。
 ##
 ## ## 金币科技为什么不参加比价
 ##
@@ -104,19 +104,19 @@ func _battle_seconds_estimate(state: PBRunState, wave: PBWave) -> float:
 
 ## 买一笔当前性价比最高的。买不动了返回 false。
 func _buy_best(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> bool:
-	var base: float = _mean_dps(state, cfg)
+	var base: float = PBValuation.mean_dps(state, cfg)
 	var best := Buy.NONE
 	var best_rate: float = 0.0
 
 	var atk_cost := PBEconomyRules.tech_cost(&"atk", state.tech_atk, cfg)
 	if atk_cost > 0 and atk_cost <= state.gold:
-		best_rate = _rate(_gain_from_tech(state, cfg, &"atk", base), atk_cost)
+		best_rate = _rate(PBValuation.tech_gain(state, cfg, &"atk", base), atk_cost)
 		if best_rate > 0.0:
 			best = Buy.TECH_ATK
 
 	var pop_cost := PBEconomyRules.tech_cost(&"pop", state.tech_pop, cfg)
 	if pop_cost > 0 and pop_cost <= state.gold:
-		var rate := _rate(_gain_from_tech(state, cfg, &"pop", base), pop_cost)
+		var rate := _rate(PBValuation.tech_gain(state, cfg, &"pop", base), pop_cost)
 		if rate > best_rate:
 			best_rate = rate
 			best = Buy.TECH_POP
@@ -130,14 +130,16 @@ func _buy_best(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStre
 	# 表现为「怎么加强装备都没人买」，看上去像经济学结论，其实是攒钱行为没建模。
 	# 摊薄之后收益率完全不变（三个配件的边际收益相同），可负担性却正常了。
 	if cfg.equip_part_cost <= state.gold and not equipment_is_full(state, cfg):
-		var per_part: float = _gain_from_equip(state, cfg, base) / float(cfg.equip_parts_per_item)
+		var per_part: float = (
+			PBValuation.equip_item_gain(state, cfg, base) / float(cfg.equip_parts_per_item)
+		)
 		var rate := _rate(per_part, cfg.equip_part_cost)
 		if rate > best_rate:
 			best_rate = rate
 			best = Buy.EQUIP
 
 	if cfg.gacha_cost <= state.gold:
-		var rate := _rate(_gacha_gain(state, cfg), cfg.gacha_cost)
+		var rate := _rate(PBValuation.gacha_gain(state, cfg), cfg.gacha_cost)
 		if rate > best_rate:
 			best_rate = rate
 			best = Buy.GACHA
@@ -184,55 +186,10 @@ func _buy_kakuzu(state: PBRunState, cfg: PBSimConfig) -> bool:
 
 
 # ── 估值 ────────────────────────────────────────────────────────
-
-
-## 队伍 DPS，按五波轮转取均值。**所有比价都用这个口径。**
-##
-## 用当前这一波的属性去比会失真：装备是无属性的固定加成，
-## 抽到的卡却只在轮转里的某一波吃到克制。只看一波会让装备显得更划算，
-## 而「装备到底划不划算」正是这个流派要回答的问题。
-func _mean_dps(state: PBRunState, cfg: PBSimConfig) -> float:
-	var total: float = 0.0
-	for wave_element: int in PBWaveRules.WAVE_ELEMENTS:
-		var element := wave_element as PBElement.Type
-		total += PBCombatRules.team_dps(
-			_deployed_for(state, element, cfg),
-			element,
-			state.atk_mult(cfg),
-			state.bond_mult(cfg),
-			state.equip_mult(cfg),
-			cfg
-		)
-	return total / float(PBWaveRules.WAVE_ELEMENTS.size())
-
-
-## 面对 [param element] 这一波会派谁上场。等价于 [method pick_by_effect]，
-## 只是不需要为了取属性而造一个 [PBWave]。
-func _deployed_for(state: PBRunState, element: PBElement.Type, cfg: PBSimConfig) -> Array[PBUnit]:
-	var pool := state.all_units()
-	pool.sort_custom(
-		func(a: PBUnit, b: PBUnit) -> bool:
-			return a.effective_power(element, cfg) > b.effective_power(element, cfg)
-	)
-	return pool.slice(0, maxi(open_slots(state, cfg), 0))
-
-
-## 升一级科技能让队伍 DPS 涨百分之几。**改一下、量一次、改回来。**
-##
-## 不推公式是有意的：人口科技会同时影响上场人数、待命台格数和羁绊，
-## 手推的公式漏掉任何一项都不会报错，只会让模拟玩家轻微地不理性。
-func _gain_from_tech(state: PBRunState, cfg: PBSimConfig, branch: StringName, base: float) -> float:
-	if base <= 0.0:
-		return 0.0
-	if branch == &"atk":
-		state.tech_atk += 1
-		var after: float = _mean_dps(state, cfg)
-		state.tech_atk -= 1
-		return after / base - 1.0
-	state.tech_pop += 1
-	var after_pop: float = _mean_dps(state, cfg)
-	state.tech_pop -= 1
-	return after_pop / base - 1.0
+#
+# 具体计算全在 [PBValuation]（`src/core/rules/`）。放在那里而不是这里，
+# 是因为**准备阶段的界面要显示同一组数字** —— 抄两份的话，
+# 玩家看到的「这一笔涨多少战力」会和扫描定参时用的口径慢慢分叉，且不报错。
 
 
 ## 上一个角都值不值 —— 返回净的 DPS 增幅（可以是负数）。
@@ -251,123 +208,6 @@ func _kakuzu_gain(
 	if base <= 0.0 or open_slots(state, cfg) <= 1:
 		return 0.0
 	var before: int = PBEconomyRules.kakuzu_income(state.kakuzu_count, wave.index, cfg)
-	var after_income: int = PBEconomyRules.kakuzu_income(state.kakuzu_count + 1, wave.index, cfg)
-	var gold: float = float(after_income - before) * kakuzu_horizon_waves
-
-	state.kakuzu_count += 1
-	var after_dps: float = _mean_dps(state, cfg)
-	state.kakuzu_count -= 1
-	var slot_loss: float = 1.0 - after_dps / base
-
-	return gold * gold_rate - slot_loss
-
-
-## 买一件成品装备能让队伍 DPS 涨百分之几。
-func _gain_from_equip(state: PBRunState, cfg: PBSimConfig, base: float) -> float:
-	if base <= 0.0:
-		return 0.0
-	state.equip_parts += cfg.equip_parts_per_item
-	var after: float = _mean_dps(state, cfg)
-	state.equip_parts -= cfg.equip_parts_per_item
-	return after / base - 1.0
-
-
-## 抽一张卡的**期望**增幅。抽卡是随机的，量不出来，只能算。
-##
-## 拆成两项相乘：
-##
-## - **输出**：新卡只有挤掉当前上场阵容里最弱的那个才有价值。
-##   对轮转里的每一波各算一次门槛，再对（稀有度 × 属性）24 种结果求期望。
-##   `max(新卡 − 门槛, 0)` 这个形式是精确的 —— 上场名单就是按有效战力取前 N，
-##   加一张卡要么挤掉最弱的那个，要么完全不上场。
-## - **羁绊**：板凳没坐满时，多一张卡本身就是加成（§09 的替身曲线）。
-##
-## 已知的一处简化：**不算保底**。快到保底时抽卡的真实期望比这里高一点。
-##
-## 重复卡是算的，而且必须算 —— 卡池只有 48 张（§08），后期手上已有三十几张，
-## **四分之三的抽卡都是重复卡**，只能加星（同卡 3 张升 1 星），
-## 收益比新卡低一个数量级。把每一抽都当新卡会系统性高估后期抽卡，
-## 而后期正是「该继续抽还是该转装备」的分界区 —— 偏差刚好落在结论上。
-func _gacha_gain(state: PBRunState, cfg: PBSimConfig) -> float:
-	var slots: int = open_slots(state, cfg)
-	if slots <= 0:
-		return 0.0
-
-	var power_gain: float = 0.0
-	var counted: int = 0
-	for wave_element: int in PBWaveRules.WAVE_ELEMENTS:
-		var element := wave_element as PBElement.Type
-		var deployed := _deployed_for(state, element, cfg)
-		var total: float = 0.0
-		for unit: PBUnit in deployed:
-			total += unit.effective_power(element, cfg)
-		if total <= 0.0:
-			# 一张卡都没有：第一张的相对增幅是无穷大，直接判定抽卡最优。
-			return 1.0
-		# 名单没坐满时门槛是 0 —— 新卡直接填空位，不用挤谁。
-		var cutoff: float = 0.0
-		if deployed.size() >= slots:
-			cutoff = deployed[deployed.size() - 1].effective_power(element, cfg)
-		power_gain += _expected_surplus(element, cutoff, state, cfg) / total
-		counted += 1
-	power_gain /= float(maxi(counted, 1))
-
-	var bond_before: float = state.bond_mult(cfg)
-	var bond_gain: float = 0.0
-	if bond_before > 0.0:
-		bond_gain = state.bond_mult_for(state.roster.size() + 1, cfg) / bond_before - 1.0
-	return (1.0 + power_gain) * (1.0 + bond_gain) - 1.0
-
-
-## 面对 [param wave_element] 这一波，抽一张卡能给上场阵容多加多少输出（期望值）。
-##
-## 上场名单是「按有效战力取前 N」，所以一张卡的贡献恰好是
-## `max(它 − 门槛, 0)` 的增量 —— 打不过门槛就完全不上场，打得过就顶掉最弱的那个。
-## 这个形式对新卡和重复卡都成立，两者只差「它之前值多少」。
-##
-## 算法分两步，避开逐格枚举 48 张卡：
-##
-## 1. 先按「全是新卡」把 4 稀有度 × 6 属性 的期望算出来
-## 2. 再遍历已有的卡，把它们那一格从「新卡」换成「重复卡」
-func _expected_surplus(
-	wave_element: PBElement.Type, cutoff: float, state: PBRunState, cfg: PBSimConfig
-) -> float:
-	var row: Array = _gacha_row(state.wave_index)
-	var surplus: float = 0.0
-	for rarity: int in cfg.rarity_power.size():
-		var chance: float = float(row[rarity + 1]) / 100.0
-		if chance <= 0.0:
-			continue
-		for element: int in PBElement.Type.size():
-			var fresh: float = cfg.rarity_power[rarity] * _multiplier(element, wave_element, cfg)
-			surplus += chance / 6.0 * maxf(fresh - cutoff, 0.0)
-
-	var bucket: float = float(maxi(cfg.characters_per_bucket, 1))
-	for unit: PBUnit in state.roster.values():
-		var chance: float = float(row[int(unit.rarity) + 1]) / 100.0
-		if chance <= 0.0:
-			continue
-		# 落到这一格的概率：稀有度 × 属性六选一 × 同格几号角色。
-		var p_cell: float = chance / 6.0 / bucket
-		var mult: float = _multiplier(int(unit.element), wave_element, cfg)
-		# 撤掉上一段里把这一格当新卡算的那份。
-		surplus -= p_cell * maxf(cfg.rarity_power[int(unit.rarity)] * mult - cutoff, 0.0)
-		# 换成重复卡该给的：只有凑够 3 张跨过星级边界的那一抽才涨战力。
-		var before: float = unit.effective_power(wave_element, cfg)
-		var step: float = 0.0
-		if unit.copies % 3 == 0:
-			step = cfg.rarity_power[int(unit.rarity)] * cfg.star_power_mult * mult
-		surplus += p_cell * (maxf(before + step - cutoff, 0.0) - maxf(before - cutoff, 0.0))
-	return surplus
-
-
-func _multiplier(element: int, wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
-	return cfg.damage_multiplier(PBElement.relation(element as PBElement.Type, wave_element))
-
-
-## §08 概率表在当前波次的那一行。表在 [PBEconomyRules]，这里只是查。
-func _gacha_row(wave_index: int) -> Array:
-	for row: Array in PBEconomyRules.GACHA_TABLE:
-		if wave_index <= int(row[0]):
-			return row
-	return PBEconomyRules.GACHA_TABLE[PBEconomyRules.GACHA_TABLE.size() - 1]
+	var after: int = PBEconomyRules.kakuzu_income(state.kakuzu_count + 1, wave.index, cfg)
+	var gold: float = float(after - before) * kakuzu_horizon_waves
+	return gold * gold_rate - PBValuation.kakuzu_slot_loss(state, cfg, base)

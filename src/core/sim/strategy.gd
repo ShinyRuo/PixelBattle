@@ -55,9 +55,10 @@ func accept_quest(state: PBRunState, wave: PBWave, grade: int, cfg: PBSimConfig)
 	return (wave.index + 1) % PBWaveRules.BOSS_EVERY != 0
 
 
-## 出战席里还剩几个位置能放输出 —— 角都占着位却不产出任何伤害（§07）。
+## 出战席里还剩几个位置能放输出。实现在 [method PBRunState.open_slots] ——
+## 界面层也要问同一个问题，公式只能有一份。
 func open_slots(state: PBRunState, cfg: PBSimConfig) -> int:
-	return maxi(state.deploy_capacity(cfg) - state.kakuzu_count, 0)
+	return state.open_slots(cfg)
 
 
 ## 待命台上现在有几个人可以被派出去。
