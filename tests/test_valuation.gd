@@ -19,7 +19,8 @@ func _roster_of(count: int) -> PBRunState:
 	rng.seed = 4242
 	for _i: int in count:
 		state.add_unit(
-			PBUnit.new(
+			PBUnit.of(
+				_cfg,
 				rng.randi_range(0, 5) as PBElement.Type,
 				rng.randi_range(0, 3) as PBUnit.Rarity,
 				rng.randi_range(0, _cfg.characters_per_bucket - 1)
@@ -70,8 +71,8 @@ func test_rotation_is_worth_more_when_the_roster_covers_the_counter() -> void:
 	var bare := PBRunSim.new_state(_cfg)
 	for i: int in 8:
 		# 一个五系齐全，一个全是物理（物理不参与克制环，§03）。
-		covered.add_unit(PBUnit.new((i % 5) as PBElement.Type, PBUnit.Rarity.SR, i % 2))
-		bare.add_unit(PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR, i % 2))
+		covered.add_unit(PBUnit.of(_cfg, (i % 5) as PBElement.Type, PBUnit.Rarity.SR, i % 2))
+		bare.add_unit(PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR, i % 2))
 
 	var element := PBElement.Type.THUNDER
 	var covered_gain: float = _rotation_gain(covered, element)
@@ -180,7 +181,7 @@ func test_the_roster_panel_says_so_when_the_counter_is_missing() -> void:
 	# 「为什么这一波突然打不动」是原版最恼人的一处 —— §03 点名要补。
 	var state := PBRunSim.new_state(_cfg)
 	for i: int in 6:
-		state.add_unit(PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR, i % 2))
+		state.add_unit(PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR, i % 2))
 	var wave := PBWaveRules.build(1, _cfg, RandomNumberGenerator.new())
 	var panel := PBRosterPanel.new()
 	add_child_autofree(panel)

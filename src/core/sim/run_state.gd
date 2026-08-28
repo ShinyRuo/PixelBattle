@@ -13,7 +13,8 @@ var gold: int = 0
 ## 基地剩余血量。归零即本局结束，卡在的那一波就是玩家的成绩。
 var base_hp: float = 0.0
 
-## 已持有的卡。键是 [method PBUnit.key]，值是那张卡（重复抽到只加 copies）。
+## 已持有的卡。键是 [method PBUnit.key]（即角色 id），值是那张卡；
+## 重复抽到只加 `copies`（§08：同卡 3 张升 1 星）。
 var roster: Dictionary = {}
 
 ## 四条科技分支的等级（§07）。
@@ -52,7 +53,7 @@ var gold_by_source: Dictionary = {}
 
 ## 收一张卡进仓库。已有的话累加张数（§08：同卡 3 张升 1 星）。
 func add_unit(unit: PBUnit) -> void:
-	var k: int = unit.key()
+	var k: StringName = unit.key()
 	if roster.has(k):
 		(roster[k] as PBUnit).copies += 1
 	else:

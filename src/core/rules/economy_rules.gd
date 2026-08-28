@@ -99,6 +99,10 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 ## 抽一张卡。属性在六种里等概率（含物理），稀有度查 §08 的分段概率表。
 ##
 ## [param pity] 是连续未出 SSR 及以上的次数，由调用方维护。
+##
+## **三次随机的次序是红线**（属性 → 变体 → 稀有度）。M2-a 给卡加身份时
+## 一字没动，就是为了让「引入角色表」这一步能和批量基线逐位对拍 ——
+## 次序一变，所有扫描结论和实际玩到的就分叉，且不报任何错。
 static func roll_gacha(
 	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator
 ) -> PBUnit:
@@ -106,7 +110,7 @@ static func roll_gacha(
 	var variant: int = rng.randi_range(0, maxi(cfg.characters_per_bucket - 1, 0))
 	if pity >= cfg.gacha_pity:
 		# 保底只保到 SSR，不直接给 USR —— 否则保底会变成刷 USR 的最优路径。
-		return PBUnit.new(element, PBUnit.Rarity.SSR, variant)
+		return _draw(cfg, element, PBUnit.Rarity.SSR, variant)
 
 	var row: Array = _gacha_row(wave_index)
 	var roll: float = rng.randf() * 100.0
@@ -114,8 +118,18 @@ static func roll_gacha(
 	for i: int in range(1, 5):
 		acc += float(row[i])
 		if roll < acc:
-			return PBUnit.new(element, (i - 1) as PBUnit.Rarity, variant)
-	return PBUnit.new(element, PBUnit.Rarity.R, variant)
+			return _draw(cfg, element, (i - 1) as PBUnit.Rarity, variant)
+	return _draw(cfg, element, PBUnit.Rarity.R, variant)
+
+
+## 把掷出来的（属性, 稀有度, 变体）落到具体角色上。
+static func _draw(
+	cfg: PBSimConfig, element: PBElement.Type, rarity: PBUnit.Rarity, variant: int
+) -> PBUnit:
+	var unit := PBUnit.of(cfg, element, rarity, variant)
+	if unit == null:
+		push_error("角色表里找不到（属性 %d, 稀有度 %d）—— 这张表填得不完整" % [element, rarity])
+	return unit
 
 
 ## 刷新本波的任务，返回它在 [constant QUEST_TABLE] 里的行号。

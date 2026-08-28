@@ -23,7 +23,8 @@ func _state_of(count: int, maxed_pop: bool = false) -> PBRunState:
 	rng.seed = 77
 	for _i: int in count:
 		state.add_unit(
-			PBUnit.new(
+			PBUnit.of(
+				_cfg,
 				rng.randi_range(0, 5) as PBElement.Type,
 				rng.randi_range(0, 3) as PBUnit.Rarity,
 				rng.randi_range(0, _cfg.characters_per_bucket - 1)

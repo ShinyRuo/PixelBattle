@@ -123,27 +123,31 @@ func test_wave_preview_has_no_side_effects() -> void:
 
 func test_coverage_counts_what_the_roster_can_counter() -> void:
 	# §03：「当前阵容对下一波的克制覆盖：2/5，风系空缺」
+	var cfg := PBSimConfig.new()
 	var state := PBRunState.new()
 	assert_eq(state.missing_counters().size(), 5, "空卡池应该五系全缺")
 
 	# 火克风，所以持有火系就能覆盖「风」那一波。
-	state.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R))
+	state.add_unit(PBUnit.of(cfg, PBElement.Type.FIRE, PBUnit.Rarity.R))
 	assert_eq(state.missing_counters().size(), 4, "有火系之后应该只缺四系")
 	assert_true(state.can_counter(PBElement.Type.WIND), "火克风")
 	assert_false(state.can_counter(PBElement.Type.FIRE), "火不克火")
 
 	for element: int in PBElement.RING:
-		state.add_unit(PBUnit.new(element as PBElement.Type, PBUnit.Rarity.R))
+		state.add_unit(PBUnit.of(cfg, element as PBElement.Type, PBUnit.Rarity.R))
 	assert_eq(state.missing_counters().size(), 0, "五系齐了应该零空缺")
 
 
 func test_physical_units_never_count_as_coverage() -> void:
 	# 物理不参与克制环（§03），堆再多也覆盖不了任何一系。
 	# 这正是「纯物理阵容极限波次 < 五系的 70%」那条验收的由来。
+	var cfg := PBSimConfig.new()
 	var state := PBRunState.new()
 	for variant: int in 2:
 		for rarity: int in 4:
-			state.add_unit(PBUnit.new(PBElement.Type.PHYSICAL, rarity as PBUnit.Rarity, variant))
+			state.add_unit(
+				PBUnit.of(cfg, PBElement.Type.PHYSICAL, rarity as PBUnit.Rarity, variant)
+			)
 	assert_eq(state.missing_counters().size(), 5, "纯物理卡池应该五系全缺")
 
 
@@ -231,7 +235,7 @@ func test_the_shop_labels_carry_the_numbers_a_decision_needs() -> void:
 	# 这一层的存在理由就是把账摆在按钮上，所以按钮文字里必须真的有数。
 	var cfg := PBSimConfig.new()
 	var state := PBRunSim.new_state(cfg)
-	state.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.SR))
+	state.add_unit(PBUnit.of(cfg, PBElement.Type.FIRE, PBUnit.Rarity.SR))
 	var panel := PBPreparePanel.new()
 	add_child_autofree(panel)
 	panel.refresh(state, cfg)

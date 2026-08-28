@@ -84,14 +84,14 @@ func test_gacha_is_worth_less_once_the_bench_is_full_of_good_cards() -> void:
 	var cfg := PBSimConfig.new()
 
 	var empty := PBRunSim.new_state(cfg)
-	empty.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R))
+	empty.add_unit(PBUnit.of(cfg, PBElement.Type.FIRE, PBUnit.Rarity.R))
 	var early: float = PBValuation.gacha_gain(empty, cfg)
 
 	var stacked := PBRunSim.new_state(cfg)
 	stacked.tech_pop = cfg.tech_pop_max
 	for element: int in PBElement.Type.size():
 		for variant: int in cfg.characters_per_bucket:
-			stacked.add_unit(PBUnit.new(element as PBElement.Type, PBUnit.Rarity.USR, variant))
+			stacked.add_unit(PBUnit.of(cfg, element as PBElement.Type, PBUnit.Rarity.USR, variant))
 	var late: float = PBValuation.gacha_gain(stacked, cfg)
 
 	assert_gt(early, late, "板凳全是 USR 之后，再抽一张的边际价值应显著低于开局")
@@ -111,7 +111,7 @@ func test_duplicate_cards_are_valued_below_new_ones() -> void:
 		for element: int in PBElement.Type.size():
 			for variant: int in cfg.characters_per_bucket:
 				owned.add_unit(
-					PBUnit.new(element as PBElement.Type, rarity as PBUnit.Rarity, variant)
+					PBUnit.of(cfg, element as PBElement.Type, rarity as PBUnit.Rarity, variant)
 				)
 
 	var fresh: float = PBValuation.expected_surplus(PBElement.Type.FIRE, 0.0, virgin, cfg)
@@ -125,8 +125,12 @@ func test_bond_prediction_matches_the_real_formula() -> void:
 	# 偏差只会表现为「模拟玩家略微不理性」，不报任何错。
 	var cfg := PBSimConfig.new()
 	var state := PBRunSim.new_state(cfg)
+	# 取五个**不同属性**的角色，而不是同一格的五个变体 —— M2-a 之后
+	# 卡是从角色表里取的，一格只有 characters_per_bucket 个，
+	# 拿变体下标凑数会绕回同一个角色，仓库里只进两张卡。
 	for i: int in 5:
-		state.add_unit(PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R, i))
+		state.add_unit(PBUnit.of(cfg, i as PBElement.Type, PBUnit.Rarity.R))
+	assert_eq(state.roster.size(), 5, "这五张应该是五个不同角色")
 	assert_eq(state.bond_mult_for(state.roster.size(), cfg), state.bond_mult(cfg), "同一个人数应给出同一个倍率")
 	assert_gt(state.bond_mult_for(6, cfg), state.bond_mult(cfg), "板凳没坐满时多一张卡应该多一份羁绊")
 

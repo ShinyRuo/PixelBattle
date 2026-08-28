@@ -78,7 +78,7 @@ func test_dispatch_costs_bonds() -> void:
 	# 就没有取舍，派满永远最优 —— 正是 §06 想改掉的原版毛病。
 	var state := PBRunState.new()
 	for i: int in 8:
-		state.add_unit(PBUnit.new((i % 5) as PBElement.Type, PBUnit.Rarity.SR))
+		state.add_unit(PBUnit.of(_cfg, (i % 5) as PBElement.Type, PBUnit.Rarity.SR))
 	var full := state.bond_mult(_cfg)
 	state.dispatched = 3
 	assert_lt(state.bond_mult(_cfg), full, "派遣中的忍者不应再提供羁绊加成")

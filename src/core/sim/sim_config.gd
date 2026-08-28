@@ -151,7 +151,20 @@ var star_power_mult: float = 0.25
 ## **这个数直接决定「换人」这条策略有没有意义。** 取 1 的话「火系 SSR」
 ## 全游戏只有一张，玩家永远凑不出四个克制系上场，§03 的克制加成在模型里
 ## 被人为掐死一半。取 2 得到 48 张卡，与 §09「PC 首发 40+ 角色」对得上。
+##
+## **M2-a 之后这个数只在构造时被读一次**，用来造 [member characters] 那张合成表。
+## 改完它要重新造表（或者直接换 [member characters]）—— 光改数字不生效。
 var characters_per_bucket: int = 2
+
+## 全部角色（§09）。抽卡从这里出牌，估值按它算概率，羁绊按它认成员。
+##
+## 默认是 [method PBCharacterTable.synthetic] 造的合成表，
+## 完全复现 M-1 至 M1 的卡池 —— **身份层是当作可对拍的重构引入的**，
+## 换真角色表是下一步，那一步的数值变化必须能和这一步的重构分开看。
+##
+## 真角色表由 core 外面的加载器从 `data/characters/*.tres` 装进来，
+## 因为 `ResourceLoader` 在 core 里是禁用的（§14）。
+var characters: PBCharacterTable = null
 
 ## 羁绊的替身曲线：每个「在场且未被派遣」的单位提供的战力加成。
 ##
@@ -344,7 +357,15 @@ func shape_count_mult(shape: PBWave.Shape) -> float:
 			return 1.0
 
 
+func _init() -> void:
+	# 字段初始化跑完才轮到 _init，所以这里读得到 characters_per_bucket。
+	characters = PBCharacterTable.synthetic(characters_per_bucket)
+
+
 ## 复制一份。批量扫描时每个参数组合克隆一份再改，避免共享可变状态。
+##
+## [member characters] 是**共享引用而不是深拷贝** —— 角色表造完只读，
+## 几千个格子各拷一份几十个 Resource 纯属浪费。
 func clone() -> PBSimConfig:
 	var copy := PBSimConfig.new()
 	for prop: Dictionary in get_property_list():

@@ -89,8 +89,8 @@ func test_boss_leaks_hurt_more() -> void:
 
 func test_counter_element_is_worth_about_twice_physical() -> void:
 	# §03 的支点：克制 2.0 对物理 1.05，接近两倍。
-	var water := PBUnit.new(PBElement.Type.WATER, PBUnit.Rarity.SR)
-	var physical := PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR)
+	var water := PBUnit.of(_cfg, PBElement.Type.WATER, PBUnit.Rarity.SR)
+	var physical := PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR)
 	var fire_wave := PBElement.Type.FIRE
 	var ratio := water.effective_power(fire_wave, _cfg) / physical.effective_power(fire_wave, _cfg)
 	assert_almost_eq(ratio, 2.0 / 1.05, 1e-6, "克制系对物理应接近 1.9 倍")
@@ -106,10 +106,10 @@ func test_a_static_five_element_team_barely_beats_physical() -> void:
 	# 跑出「属性系统没用」的结论时，这里会先红，提醒他是模型错了不是设计错了。
 	var static_team: Array[PBUnit] = []
 	for element: int in PBElement.RING:
-		static_team.append(PBUnit.new(element as PBElement.Type, PBUnit.Rarity.SR))
+		static_team.append(PBUnit.of(_cfg, element as PBElement.Type, PBUnit.Rarity.SR))
 	var physical_team: Array[PBUnit] = []
 	for _i: int in 5:
-		physical_team.append(PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR))
+		physical_team.append(PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR))
 
 	var static_dps := PBCombatRules.team_dps(static_team, PBElement.Type.FIRE, 1.0, 1.0, 1.0, _cfg)
 	var physical_dps := PBCombatRules.team_dps(
@@ -121,13 +121,13 @@ func test_a_static_five_element_team_barely_beats_physical() -> void:
 
 func test_rotating_the_team_unlocks_the_real_advantage() -> void:
 	# 同样五张卡，换成「只上克制系」之后差距应该拉开到接近两倍。
-	var counter := PBUnit.new(PBElement.Type.WATER, PBUnit.Rarity.SR)
+	var counter := PBUnit.of(_cfg, PBElement.Type.WATER, PBUnit.Rarity.SR)
 	var rotated: Array[PBUnit] = []
 	for _i: int in 5:
 		rotated.append(counter)
 	var physical_team: Array[PBUnit] = []
 	for _i: int in 5:
-		physical_team.append(PBUnit.new(PBElement.Type.PHYSICAL, PBUnit.Rarity.SR))
+		physical_team.append(PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR))
 
 	var rotated_dps := PBCombatRules.team_dps(rotated, PBElement.Type.FIRE, 1.0, 1.0, 1.0, _cfg)
 	var physical_dps := PBCombatRules.team_dps(
@@ -143,7 +143,9 @@ func test_card_identity_includes_the_variant() -> void:
 	for rarity: int in 4:
 		for element: int in 6:
 			for variant: int in _cfg.characters_per_bucket:
-				var unit := PBUnit.new(element as PBElement.Type, rarity as PBUnit.Rarity, variant)
+				var unit := PBUnit.of(
+					_cfg, element as PBElement.Type, rarity as PBUnit.Rarity, variant
+				)
 				assert_false(seen.has(unit.key()), "卡片身份键不应撞车")
 				seen[unit.key()] = true
 	var expected: int = 4 * 6 * _cfg.characters_per_bucket
@@ -161,7 +163,7 @@ func test_enough_counter_cards_exist_to_fill_the_bench() -> void:
 
 func test_star_ups_need_three_copies() -> void:
 	# §08：同卡 3 张升 1 星。
-	var unit := PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R)
+	var unit := PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.R)
 	assert_eq(unit.star(), 1, "第 1 张是 1 星")
 	unit.copies = 3
 	assert_eq(unit.star(), 1, "3 张仍是 1 星")
@@ -169,4 +171,4 @@ func test_star_ups_need_three_copies() -> void:
 	assert_eq(unit.star(), 2, "第 4 张升到 2 星")
 	unit.copies = 7
 	assert_eq(unit.star(), 3, "第 7 张升到 3 星")
-	assert_gt(unit.power(_cfg), PBUnit.new(PBElement.Type.FIRE, PBUnit.Rarity.R).power(_cfg))
+	assert_gt(unit.power(_cfg), PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.R).power(_cfg))

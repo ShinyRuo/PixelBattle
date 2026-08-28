@@ -229,10 +229,14 @@ static func gacha_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 ## 把每一抽都当新卡会系统性高估后期抽卡 —— 而后期正是「该继续抽还是该转装备」
 ## 的分界区，偏差刚好落在结论上。
 ##
-## 算法分两步，避开逐格枚举 48 张卡：
+## 算法分两步：
 ##
-## 1. 先按「全是新卡」把 4 稀有度 × 6 属性 的期望算出来
+## 1. 先按「全是新卡」把整个卡池的期望算出来
 ## 2. 再遍历已有的卡，把它们那一格从「新卡」换成「重复卡」
+##
+## **概率口径按角色表算，不按「六个属性等概率」硬编码**（M2-a）。
+## 合成表上两者恒等（每个稀有度下六系均分），但真角色表的属性分布是不均匀的 ——
+## 硬编码 1/6 会让估值和抽卡的实际分布悄悄对不上，且不报错。
 static func expected_surplus(
 	wave_element: PBElement.Type, cutoff: float, state: PBRunState, cfg: PBSimConfig
 ) -> float:
@@ -240,21 +244,25 @@ static func expected_surplus(
 	var surplus: float = 0.0
 	for rarity: int in cfg.rarity_power.size():
 		var chance: float = float(row[rarity + 1]) / 100.0
-		if chance <= 0.0:
+		var pool := cfg.characters.of_rarity(rarity as PBUnit.Rarity)
+		if chance <= 0.0 or pool.is_empty():
 			continue
-		for element: int in PBElement.Type.size():
-			var fresh: float = cfg.rarity_power[rarity] * _multiplier(element, wave_element, cfg)
-			surplus += chance / 6.0 * maxf(fresh - cutoff, 0.0)
+		var per_card: float = chance / float(pool.size())
+		for character: PBCharacter in pool:
+			var fresh: float = (
+				cfg.rarity_power[rarity] * _multiplier(int(character.element), wave_element, cfg)
+			)
+			surplus += per_card * maxf(fresh - cutoff, 0.0)
 
-	var bucket: float = float(maxi(cfg.characters_per_bucket, 1))
 	for unit: PBUnit in state.roster.values():
 		var chance: float = float(row[int(unit.rarity) + 1]) / 100.0
-		if chance <= 0.0:
+		var pool := cfg.characters.of_rarity(unit.rarity)
+		if chance <= 0.0 or pool.is_empty():
 			continue
-		# 落到这一格的概率：稀有度 × 属性六选一 × 同格几号角色。
-		var p_cell: float = chance / 6.0 / bucket
+		# 抽到**这一个角色**的概率：稀有度概率 ÷ 该稀有度下的角色数。
+		var p_cell: float = chance / float(pool.size())
 		var mult: float = _multiplier(int(unit.element), wave_element, cfg)
-		# 撤掉上一段里把这一格当新卡算的那份。
+		# 撤掉上一段里把这张卡当新卡算的那份。
 		surplus -= p_cell * maxf(cfg.rarity_power[int(unit.rarity)] * mult - cutoff, 0.0)
 		# 换成重复卡该给的：只有凑够 3 张跨过星级边界的那一抽才涨战力。
 		var before: float = unit.effective_power(wave_element, cfg)
