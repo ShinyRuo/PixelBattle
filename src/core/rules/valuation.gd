@@ -51,6 +51,25 @@ static func deployed_for(
 	return pool.slice(0, state.open_slots(cfg))
 
 
+## 面对 [param element] 这一波，**不换人**会派谁上场 —— 按裸战力排，完全不看属性。
+##
+## 它和 [method deployed_for] 的差值就是 §03 整套属性系统在数值上真正值多少。
+## M-1 扫描出来是 1.41 倍（`GROWTH` = 1.10），而那个数字以前只存在于扫描报告里，
+## 玩家看不到。阵容面板把两条并排显示，是为了让「每波换克制系」这件事
+## **在玩的时候就能感觉到**，而不是只能从策划那儿听说。
+static func deployed_by_raw_power(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
+	return state.sorted_by_power(cfg).slice(0, state.open_slots(cfg))
+
+
+## 一份名单对 [param element] 这一波打出多少 DPS。科技、羁绊、装备都计入。
+static func dps_of(
+	units: Array[PBUnit], element: PBElement.Type, state: PBRunState, cfg: PBSimConfig
+) -> float:
+	return PBCombatRules.team_dps(
+		units, element, state.atk_mult(cfg), state.bond_mult(cfg), state.equip_mult(cfg), cfg
+	)
+
+
 ## 升一级 [param branch] 科技能让队伍 DPS 涨百分之几。
 ##
 ## [param base] 传当前的 [method mean_dps]，避免同一轮比价里重复算。

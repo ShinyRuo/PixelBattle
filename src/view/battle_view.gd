@@ -100,6 +100,7 @@ var _deployed_nodes: Array[Polygon2D] = []
 @onready var _info: Label = $HUD/Info
 @onready var _preview: Label = $HUD/Preview
 @onready var _shop: PBPreparePanel = $HUD/Prepare
+@onready var _roster: PBRosterPanel = $HUD/Roster
 
 
 func _ready() -> void:
@@ -139,7 +140,7 @@ func _on_purchase(kind: StringName) -> void:
 		_:
 			_strategy.buy_tech(_state, StringName(String(kind).trim_prefix("tech_")), _cfg)
 	_sync_deployed()
-	_shop.refresh(_state, _cfg)
+	_refresh_panels()
 
 
 func _physics_process(_delta: float) -> void:
@@ -184,9 +185,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			auto_play = not auto_play
 			# 面板只在「手动 + 准备阶段」出现。切换时立刻反映，
 			# 否则玩家关了自动却要等下一波才看得到商店。
-			_shop.visible = _phase == Phase.PREPARE and not auto_play and not _run_over
-			if _shop.visible:
-				_shop.refresh(_state, _cfg)
+			_set_panels_visible(_phase == Phase.PREPARE and not auto_play and not _run_over)
 		KEY_ENTER:
 			# 准备阶段的「开打」。M1-a 还没有花钱界面，
 			# 所以这里仍然让脚本玩家代做决策 —— 换掉它就是 M1-b/c。
@@ -221,9 +220,7 @@ func _enter_prepare() -> void:
 		_plan.wave.count = mini(debug_enemy_count, _cfg.count_cap)
 	# 名单还没锁，先按「如果现在就开打」预览一份，让准备阶段有东西可看。
 	_sync_deployed()
-	_shop.visible = not auto_play
-	if _shop.visible:
-		_shop.refresh(_state, _cfg)
+	_set_panels_visible(not auto_play)
 	_sync_visuals()
 
 
@@ -234,7 +231,7 @@ func _enter_prepare() -> void:
 func _finish_prepare() -> void:
 	if _phase != Phase.PREPARE or _run_over:
 		return
-	_shop.visible = false
+	_set_panels_visible(false)
 	if auto_play:
 		_strategy.prepare(_state, _plan.wave, _cfg, _rng)
 	PBRunSim.lock_plan(
@@ -254,7 +251,7 @@ func _end_wave() -> void:
 	PBRunSim.settle_wave(_state, _plan, _battle.result(), _cfg, _rng)
 	if _state.base_hp <= 0.0:
 		_run_over = true
-		_shop.visible = false
+		_set_panels_visible(false)
 		_sync_visuals()
 		return
 	_state.wave_index += 1
@@ -262,12 +259,28 @@ func _end_wave() -> void:
 	_gap_frames = WAVE_GAP_FRAMES
 
 
+## 两个准备阶段面板一起显隐、一起刷新 —— 分开控制迟早漏掉一个，
+## 表现为「战斗中还挂着半张商店」。
+func _set_panels_visible(shown: bool) -> void:
+	_shop.visible = shown
+	_roster.visible = shown
+	if shown:
+		_refresh_panels()
+
+
+func _refresh_panels() -> void:
+	if not _shop.visible:
+		return
+	_shop.refresh(_state, _cfg)
+	_roster.refresh(_state, _cfg, _plan.wave)
+
+
 func _restart() -> void:
 	_run_over = false
 	_paused = false
 	_gap_frames = 0
 	_battle = null
-	_shop.visible = false
+	_set_panels_visible(false)
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 	_rng = PBRngStreams.new(_resolve_seed())

@@ -38,9 +38,6 @@ const KINDS: Array[StringName] = [
 	&"tech_def",
 ]
 
-## 左列放「买东西」，右列放「升科技」—— 两类的决策性质不同，分开摆。
-const LEFT_COLUMN: Array[StringName] = [&"gacha", &"equip", &"kakuzu"]
-
 ## 四条科技分支的显示名（§07）。
 const TECH_NAMES := {
 	&"gold": "金币科技",
@@ -49,9 +46,10 @@ const TECH_NAMES := {
 	&"def": "防御科技",
 }
 
-const PANEL_RECT := Rect2(46.0, 96.0, 400.0, 208.0)
-const BUTTON_SIZE := Vector2(186.0, 24.0)
-const FONT_SIZE: int = 10
+## 商店占左半屏，右半屏留给阵容面板（[PBRosterPanel]）。
+const PANEL_RECT := Rect2(46.0, 96.0, 232.0, 224.0)
+const BUTTON_SIZE := Vector2(216.0, 22.0)
+const FONT_SIZE: int = 9
 
 var _buttons: Dictionary = {}
 var _summary: Label
@@ -77,8 +75,8 @@ func _ready() -> void:
 
 	_start = Button.new()
 	_start.text = "开打"
-	_start.position = PANEL_RECT.position + Vector2(8.0, PANEL_RECT.size.y - 30.0)
-	_start.size = Vector2(BUTTON_SIZE.x, 26.0)
+	_start.position = PANEL_RECT.position + Vector2(8.0, PANEL_RECT.size.y - 28.0)
+	_start.size = Vector2(BUTTON_SIZE.x, 24.0)
 	_start.add_theme_font_size_override("font_size", FONT_SIZE + 1)
 	_start.pressed.connect(func() -> void: start_requested.emit())
 	add_child(_start)
@@ -88,10 +86,7 @@ func _ready() -> void:
 ## 里面每一项都要跑一次 [method PBValuation.mean_dps]，不适合每帧跑。
 func refresh(state: PBRunState, cfg: PBSimConfig) -> void:
 	var base: float = PBValuation.mean_dps(state, cfg)
-	_summary.text = (
-		"准备阶段　金币 %d　队伍战力 %.0f　卡池 %d　出战位 %d（角都占 %d）"
-		% [state.gold, base, state.roster.size(), state.open_slots(cfg), state.kakuzu_count]
-	)
+	_summary.text = "花钱　金币 %d　（战力增幅按五波轮转均值算）" % state.gold
 	for kind: StringName in KINDS:
 		var button: Button = _buttons[kind]
 		var cost: int = _cost_of(kind, state, cfg)
@@ -102,19 +97,8 @@ func refresh(state: PBRunState, cfg: PBSimConfig) -> void:
 
 
 func _slot_position(kind: StringName) -> Vector2:
-	var left: bool = LEFT_COLUMN.has(kind)
-	var column: Array[StringName] = LEFT_COLUMN if left else _right_column()
-	var row: int = column.find(kind)
-	var origin := PANEL_RECT.position + Vector2(8.0 if left else 202.0, 26.0)
-	return origin + Vector2(0.0, float(row) * (BUTTON_SIZE.y + 4.0))
-
-
-func _right_column() -> Array[StringName]:
-	var out: Array[StringName] = []
-	for kind: StringName in KINDS:
-		if not LEFT_COLUMN.has(kind):
-			out.append(kind)
-	return out
+	var row: int = KINDS.find(kind)
+	return PANEL_RECT.position + Vector2(8.0, 24.0 + float(row) * (BUTTON_SIZE.y + 2.0))
 
 
 func _make_button(kind: StringName, at: Vector2) -> Button:
