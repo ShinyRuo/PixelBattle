@@ -42,6 +42,20 @@ var final_equip_parts: int = 0
 
 var gold_spent: int = 0
 
+## 五条收入流各自赚了多少（§07）。键见 [constant PBEconomyRules.GOLD_SOURCES]。
+##
+## §07 的验收「纯战力开局在 20 波左右因缺钱停滞」实测跑到 96%，
+## 也就是不投经济几乎没有代价。这一列是诊断那件事的入口 ——
+## 光看 [member gold_earned] 分不出「金币科技没用」和「它被别的流盖过」。
+var gold_by_source: Dictionary = {}
+
+
+## 某条收入流占总收入的比例。
+func gold_share(source: StringName) -> float:
+	if gold_earned <= 0:
+		return 0.0
+	return float(int(gold_by_source.get(source, 0))) / float(gold_earned)
+
 
 ## 单波平均战斗时长。§01 要求落在 30–45 秒。
 func mean_battle_seconds() -> float:

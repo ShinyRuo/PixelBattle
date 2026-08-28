@@ -36,7 +36,7 @@ extends PBStrategy
 ## 卡在阈值上自然就停了 —— 不需要像 `balanced` 那样写死一个目标等级。
 
 ## 候选项的编号。
-enum Buy { NONE, GACHA, TECH_ATK, TECH_POP, EQUIP }
+enum Buy { NONE, GACHA, TECH_ATK, TECH_POP, EQUIP, KAKUZU }
 
 ## 一次 `prepare` 最多买多少笔。纯安全阀 —— 每一笔都在花钱、金币有限，
 ## 正常情况下会自己停下来。
@@ -45,6 +45,16 @@ const MAX_PURCHASES: int = 400
 ## 金币科技的回本阈值（波）。§07 要求「第一个金币科技 3–4 波回本」，
 ## 放宽到 6 波给后面几级留出空间。超过这个数就不升了。
 var gold_payback_waves: float = 6.0
+
+## 估值角都时往后看多少波。
+##
+## 角都买的是「未来每一波的金币」，值多少取决于**还能活多久** ——
+## 而那是玩家不知道的。取 12 波是个中庸假设：比金币科技的回本阈值宽
+## （角都的代价是出战位，回本本来就慢），又不至于假设自己能活到天荒地老。
+##
+## **这个数直接决定角都的估值，是本流派里最像「拍的」的一处。**
+## 它偏大会让角都被高估、偏小会让它永远不被选中，改动前先跑一遍扫描。
+var kakuzu_horizon_waves: float = 12.0
 
 
 func _init() -> void:
@@ -132,6 +142,12 @@ func _buy_best(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStre
 			best_rate = rate
 			best = Buy.GACHA
 
+	# 角都放在最后，因为它要用**上面几项里最好的那个汇率**做换算 —— 见下。
+	if cfg.gacha_cost <= state.gold and best_rate > 0.0:
+		var rate := _rate(_kakuzu_gain(state, wave, cfg, base, best_rate), cfg.gacha_cost)
+		if rate > best_rate:
+			best = Buy.KAKUZU
+
 	return _execute(best, state, wave, cfg, rng)
 
 
@@ -153,8 +169,18 @@ func _execute(
 			return buy_equip_part(state, cfg)
 		Buy.GACHA:
 			return pull_once(state, wave, cfg, rng)
-		_:
-			return false
+		Buy.KAKUZU:
+			return _buy_kakuzu(state, cfg)
+	return false
+
+
+## 上一个角都。角都是抽来的角色不是商店货，代价折成一次单抽 ——
+## 与 `pure_economy` 同口径。真正的代价是它占掉的那个出战位，那一份照实算。
+func _buy_kakuzu(state: PBRunState, cfg: PBSimConfig) -> bool:
+	if not state.spend(cfg.gacha_cost):
+		return false
+	state.kakuzu_count += 1
+	return true
 
 
 # ── 估值 ────────────────────────────────────────────────────────
@@ -207,6 +233,33 @@ func _gain_from_tech(state: PBRunState, cfg: PBSimConfig, branch: StringName, ba
 	var after_pop: float = _mean_dps(state, cfg)
 	state.tech_pop -= 1
 	return after_pop / base - 1.0
+
+
+## 上一个角都值不值 —— 返回净的 DPS 增幅（可以是负数）。
+##
+## **这是本流派里唯一一处要换算币种的地方。** 角都收的是未来的金币，
+## 付的却是一个出战位（DPS），两边不同币。
+##
+## 汇率不另外拍一个数：**用本轮比价里最好的那个「每金币 DPS 增幅」** ——
+## 那正是这个玩家此刻把钱换成战力的真实效率。§10 降价之后这个汇率变了，
+## 角都的估值就会跟着自动变，不用手工同步两处。
+##
+## 净值 = 未来 [member kakuzu_horizon_waves] 波的金币 × 汇率 − 让出一个出战位的损失。
+func _kakuzu_gain(
+	state: PBRunState, wave: PBWave, cfg: PBSimConfig, base: float, gold_rate: float
+) -> float:
+	if base <= 0.0 or open_slots(state, cfg) <= 1:
+		return 0.0
+	var before: int = PBEconomyRules.kakuzu_income(state.kakuzu_count, wave.index, cfg)
+	var after_income: int = PBEconomyRules.kakuzu_income(state.kakuzu_count + 1, wave.index, cfg)
+	var gold: float = float(after_income - before) * kakuzu_horizon_waves
+
+	state.kakuzu_count += 1
+	var after_dps: float = _mean_dps(state, cfg)
+	state.kakuzu_count -= 1
+	var slot_loss: float = 1.0 - after_dps / base
+
+	return gold * gold_rate - slot_loss
 
 
 ## 买一件成品装备能让队伍 DPS 涨百分之几。

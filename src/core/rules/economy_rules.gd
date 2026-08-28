@@ -30,6 +30,14 @@ const QUEST_TABLE := [
 ## 任务等级的显示名，只用于 CSV 输出。
 const QUEST_GRADES: Array[StringName] = [&"C", &"B", &"A", &"S", &"SSS"]
 
+## §07 的五条收入流。顺序即报表列序。
+##
+## 分开记账不是为了好看：§07 的验收「纯战力开局在 20 波左右因缺钱停滞」
+## 实测跑到 39.5 波（均衡的 96%），也就是**不投经济几乎没有代价**。
+## 只看总收入分不出两种解释 —— 是金币科技本身没用，
+## 还是它有用但被别的流盖过去了。分了流才看得出该动哪一条。
+const GOLD_SOURCES: Array[StringName] = [&"wave", &"passive", &"tsunade", &"kakuzu", &"quest"]
+
 
 ## 金币科技的被动收入：战斗阶段每 0.5 秒一跳。
 ##
@@ -61,10 +69,15 @@ static func tsunade_income(kills: int, cfg: PBSimConfig, rng: RandomNumberGenera
 ##
 ## §07 的改动：角都取消输出能力，纯经济卡。原版它兼任雷系 AOE 第二，
 ## 一个位置交付两份价值 —— 那是原版流派单一的直接原因。
-static func kakuzu_income(count: int, cfg: PBSimConfig) -> int:
+##
+## **收益随波次走**（`kakuzu_base + kakuzu_rate × n`），和波次奖金、任务奖励
+## 同一个形状。初版是常数 85，实测的后果是它恒为微亏、**没有任何流派会选它** ——
+## 详见 [member PBSimConfig.kakuzu_rate]。
+static func kakuzu_income(count: int, wave_index: int, cfg: PBSimConfig) -> int:
+	var per_unit: float = cfg.kakuzu_base + cfg.kakuzu_rate * float(wave_index)
 	var total: float = 0.0
 	for k: int in range(1, count + 1):
-		total += cfg.kakuzu_base * pow(float(k), cfg.kakuzu_falloff)
+		total += per_unit * pow(float(k), cfg.kakuzu_falloff)
 	return int(floor(total))
 
 

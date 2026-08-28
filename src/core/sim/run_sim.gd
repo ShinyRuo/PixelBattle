@@ -161,12 +161,14 @@ static func _settle_income(
 	cfg: PBSimConfig,
 	rng: PBRngStreams
 ) -> void:
-	state.earn(wave.reward_gold)
-	state.earn(PBEconomyRules.passive_income(outcome.battle_seconds, state.tech_gold, cfg))
-	state.earn(PBEconomyRules.tsunade_income(outcome.kills, cfg, rng.combat))
-	state.earn(PBEconomyRules.kakuzu_income(state.kakuzu_count, cfg))
+	state.earn(wave.reward_gold, &"wave")
+	state.earn(
+		PBEconomyRules.passive_income(outcome.battle_seconds, state.tech_gold, cfg), &"passive"
+	)
+	state.earn(PBEconomyRules.tsunade_income(outcome.kills, cfg, rng.combat), &"tsunade")
+	state.earn(PBEconomyRules.kakuzu_income(state.kakuzu_count, wave.index, cfg), &"kakuzu")
 	if accepted:
-		state.earn(PBEconomyRules.quest_reward(quest_grade, wave.index))
+		state.earn(PBEconomyRules.quest_reward(quest_grade, wave.index), &"quest")
 
 
 static func _snapshot(state: PBRunState, result: PBRunResult) -> void:
@@ -181,3 +183,4 @@ static func _snapshot(state: PBRunState, result: PBRunResult) -> void:
 	result.final_roster_size = state.roster.size()
 	result.final_equip_parts = state.equip_parts
 	result.gold_spent = state.gold_spent
+	result.gold_by_source = state.gold_by_source.duplicate()

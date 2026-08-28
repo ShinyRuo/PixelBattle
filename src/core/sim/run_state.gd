@@ -46,6 +46,9 @@ var gold_spent: int = 0
 var gacha_pulls: int = 0
 var elapsed_seconds: float = 0.0
 
+## 每条收入流各自赚了多少。键是 [constant PBEconomyRules.GOLD_SOURCES] 里的名字。
+var gold_by_source: Dictionary = {}
+
 
 ## 收一张卡进仓库。已有的话累加张数（§08：同卡 3 张升 1 星）。
 func add_unit(unit: PBUnit) -> void:
@@ -159,8 +162,13 @@ func spend(amount: int) -> bool:
 	return true
 
 
-## 进账。
-func earn(amount: int) -> void:
+## 进账。[param source] 是 [constant PBEconomyRules.GOLD_SOURCES] 里的一条流。
+##
+## 分流记账是为了回答 §07 的那个失败验收：不投经济几乎没有代价，
+## 但只看总收入分不出「金币科技没用」和「金币科技有用但被别的流盖过」。
+func earn(amount: int, source: StringName = &"other") -> void:
 	gold += amount
 	if amount > 0:
 		gold_earned += amount
+	# 纲手会掉负数，照实累计净额 —— 抹掉负值会让它看起来比实际稳。
+	gold_by_source[source] = int(gold_by_source.get(source, 0)) + amount

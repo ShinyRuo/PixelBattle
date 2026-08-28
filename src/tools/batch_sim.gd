@@ -62,6 +62,15 @@ var _equip_power: float = 0.0
 ## 对价格不敏感，全跑一遍纯属浪费。
 var _only_strategy: StringName = &""
 
+## §07 角都的收益曲线：`(kakuzu_base + kakuzu_rate × 波次) × k^−1.5`。
+## -1 表示用 [PBSimConfig] 的默认值。
+##
+## 常数版本（`rate = 0`）实测下**每一个不被强制的流派角都占比都是 0%** ——
+## 它恒为微亏，于是 §07 的「经济位 = 战力空位」等于不存在。
+## 扫这两个开关时流派必须挑 `rational`，其余流派根本不会考虑上不上角都。
+var _kakuzu_base: float = -1.0
+var _kakuzu_rate: float = -1.0
+
 ## 覆盖流派自带的派遣策略（`never` / `always` / `smart`）。空表示不覆盖。
 ##
 ## 为什么做成开关而不是再开两个流派类：§06 的派遣差异要在**每一种定价下**
@@ -110,6 +119,10 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 		cfg.equip_part_cost = _equip_part_cost
 	if _equip_power > 0.0:
 		cfg.equip_power_per_item = _equip_power
+	if _kakuzu_base >= 0.0:
+		cfg.kakuzu_base = _kakuzu_base
+	if _kakuzu_rate >= 0.0:
+		cfg.kakuzu_rate = _kakuzu_rate
 	var out: Array[PBRunResult] = []
 	for i: int in _runs:
 		# 同一个 i 在所有格子上用同一个种子：不同流派面对**同一串**波型与抽卡运气，
@@ -166,6 +179,9 @@ func _summarize(runs: Array[PBRunResult]) -> Array[Dictionary]:
 		var roster_sum: float = 0.0
 		var parts_sum: float = 0.0
 		var pulls_sum: float = 0.0
+		var gold_sum: float = 0.0
+		# 五条收入流各自的占比，按局取平均。诊断 §07 用的就是这一组。
+		var shares: Dictionary = {}
 		for run: PBRunResult in cell:
 			waves.append(run.wave_reached)
 			if run.hit_wave_cap:
@@ -175,6 +191,9 @@ func _summarize(runs: Array[PBRunResult]) -> Array[Dictionary]:
 			roster_sum += float(run.final_roster_size)
 			parts_sum += float(run.final_equip_parts)
 			pulls_sum += float(run.gacha_pulls)
+			gold_sum += float(run.gold_earned)
+			for source: StringName in PBEconomyRules.GOLD_SOURCES:
+				shares[source] = float(shares.get(source, 0.0)) + run.gold_share(source)
 		waves.sort()
 		var first: PBRunResult = cell[0]
 		var row := {
@@ -191,7 +210,10 @@ func _summarize(runs: Array[PBRunResult]) -> Array[Dictionary]:
 			"mean_roster": roster_sum / float(cell.size()),
 			"mean_parts": parts_sum / float(cell.size()),
 			"mean_pulls": pulls_sum / float(cell.size()),
+			"mean_gold": gold_sum / float(cell.size()),
 		}
+		for source: StringName in PBEconomyRules.GOLD_SOURCES:
+			row["share_%s" % source] = float(shares.get(source, 0.0)) / float(cell.size())
 		out.append(row)
 	out.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
@@ -310,6 +332,33 @@ func _print_report(summary: Array[Dictionary], total_runs: int, elapsed: float) 
 			]
 		)
 		print(line)
+	_print_income_report(summary)
+
+
+## §07 的五条收入流各占多少。**诊断「不投经济没有代价」的入口。**
+##
+## 光看总收入分不出「金币科技没用」和「金币科技有用但被别的流盖过」——
+## 这两种情况要动的东西完全不同。
+func _print_income_report(summary: Array[Dictionary]) -> void:
+	print("")
+	print("收入构成（§07 的五条流，占总收入的比例）")
+	print("growth  strategy         总收入   波次奖金  金币科技    纲手    角都    任务")
+	print("──────  ───────────────  ───────  ────────  ────────  ──────  ──────  ──────")
+	for row: Dictionary in summary:
+		var line := (
+			"%.3f   %-15s  %7.0f    %5.0f%%     %5.0f%%   %5.0f%%  %5.0f%%  %5.0f%%"
+			% [
+				row["growth"],
+				row["strategy"],
+				row["mean_gold"],
+				row["share_wave"] * 100.0,
+				row["share_passive"] * 100.0,
+				row["share_tsunade"] * 100.0,
+				row["share_kakuzu"] * 100.0,
+				row["share_quest"] * 100.0,
+			]
+		)
+		print(line)
 
 
 func _ensure_out_dir() -> void:
@@ -373,3 +422,7 @@ func _parse_args() -> void:
 				_only_strategy = StringName(value)
 			"--dispatch":
 				_dispatch = StringName(value)
+			"--kakuzu-base":
+				_kakuzu_base = maxf(value.to_float(), 0.0)
+			"--kakuzu-rate":
+				_kakuzu_rate = maxf(value.to_float(), 0.0)

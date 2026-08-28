@@ -37,7 +37,11 @@ func test_it_actually_responds_to_the_equipment_price() -> void:
 		cheap += _run_with(0, seed_value).final_equip_parts
 		expensive += _run_with(1350, seed_value).final_equip_parts
 	assert_gt(cheap, 0, "按定好的价格应该真的会买装备")
-	assert_eq(expensive, 0, "涨回旧价（1350）就该一个都不买 —— 这就是「看价格」的定义")
+	# 断言的是**比值**，不是「旧价下买 0 个」。
+	# 定价那次扫描时旧价确实是 0，但 §07 把角都改成随波次走之后玩家富了不少，
+	# 抽卡更早饱和，于是旧价下也会买几个。价格敏感性没变，绝对值变了 ——
+	# 把绝对值写进断言会让它随经济的任何一次调整误报。
+	assert_gt(cheap, expensive * 3, "价格翻 4.5 倍，买到的配件应少一个数量级")
 
 
 func test_equipment_price_satisfies_the_spec_hard_constraint() -> void:
@@ -137,3 +141,33 @@ func test_it_never_overspends() -> void:
 	for seed_value: int in SEEDS:
 		var result := _run_with(200, seed_value)
 		assert_gte(result.gold_earned + budget, result.gold_spent, "花掉的钱不该超过赚到的加开局给的")
+
+
+func test_the_economy_slot_is_not_a_trap() -> void:
+	# **§07 改写后的验收：角都不能是陷阱。**
+	#
+	# 原来的常数 85 就是个陷阱 —— 一个会算账的玩家选了它反而更差
+	# （43.0 → 42.1 波）。因为波次奖金和任务奖励都随波次涨，只有它不涨，
+	# 而它占掉的那个出战位越到后期越值钱。
+	#
+	# 对照组把角都收益调成 0，等价于「没有这张卡」。有它不该比没它差。
+	var with_slot: int = 0
+	var without: int = 0
+	for seed_value: int in [20260827, 4242, 991]:
+		var live := PBSimConfig.new()
+		with_slot += PBRunSim.run(live, PBStratRational.new(), seed_value).wave_reached
+		var muted := PBSimConfig.new()
+		muted.kakuzu_base = 0.0
+		muted.kakuzu_rate = 0.0
+		without += PBRunSim.run(muted, PBStratRational.new(), seed_value).wave_reached
+	assert_gte(with_slot, without, "上角都不该让会算账的玩家变差 —— 那就是把它做成了陷阱")
+
+
+func test_the_economy_slot_does_not_dominate() -> void:
+	# 另一头：§07 明确警告「最优解会收敛成开局无脑铺经济，整个前期决策消失」。
+	# 判据是角都占总收入的比例 —— 实测 45+24n 会到 44%，那已经越线了。
+	var cfg := PBSimConfig.new()
+	var share: float = 0.0
+	for seed_value: int in [20260827, 4242, 991]:
+		share += PBRunSim.run(cfg, PBStratRational.new(), seed_value).gold_share(&"kakuzu")
+	assert_lt(share / 3.0, 0.35, "角都占收入超过 35% 就退化成「无脑铺经济」了")
