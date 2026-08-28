@@ -72,9 +72,15 @@ func test_full_five_element_coverage_needed_per_cycle() -> void:
 
 
 func test_growth_scale_starts_at_one_and_compounds() -> void:
+	# 断言的是**指数关系**，不是 GROWTH 当前取值 —— 那是个会被反复重锚的调参旋钮
+	# （已经从 1.125 改到 1.10 一次），把它的值写死在这里只会让每次调参都误报一次红。
 	assert_eq(PBWaveRules.growth_scale(1, _cfg), 1.0, "第 1 波成长倍数应为 1.0")
-	assert_almost_eq(PBWaveRules.growth_scale(2, _cfg), 1.125, 1e-9, "第 2 波应为 GROWTH^1")
-	assert_almost_eq(PBWaveRules.growth_scale(9, _cfg), pow(1.125, 8), 1e-9, "第 9 波应为 GROWTH^8")
+	assert_almost_eq(PBWaveRules.growth_scale(2, _cfg), _cfg.growth, 1e-9, "第 2 波应为 GROWTH^1")
+	assert_almost_eq(
+		PBWaveRules.growth_scale(9, _cfg), pow(_cfg.growth, 8), 1e-9, "第 9 波应为 GROWTH^8"
+	)
+	# 但取值落在 §04 声明的区间里这件事要守住 —— 跑出区间说明有人绕过了决策流程。
+	assert_between(_cfg.growth, 1.10, 1.15, "GROWTH 应落在 §04 声明的 1.10–1.15 区间内")
 
 
 func test_first_wave_matches_base_values() -> void:
