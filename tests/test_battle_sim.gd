@@ -192,3 +192,46 @@ func test_defense_tech_reduces_leak_damage_the_same_way() -> void:
 	assert_almost_eq(armored.base_damage, bare.base_damage * 0.6, 1e-3, "40% 减伤应精确生效")
 	var analytic := PBCombatRules.resolve(wave, 0.0, 0.40, _cfg)
 	assert_almost_eq(armored.base_damage, analytic.base_damage, 1e-3, "与解析模型的基地伤害应一致")
+
+
+# ── M0 的节奏结论（守着一个很容易踩的陷阱）──────────────────────
+
+
+## 场上同时有几个敌人（按 tick 取平均）。诊断工具 `wave_pacing.gd` 算的是同一个量。
+func _mean_on_field(wave: PBWave, dps: float) -> float:
+	var battle := _sim(wave, dps)
+	var total: int = 0
+	var ticks: int = 0
+	while not battle.is_finished() and battle.current_tick() < PBBattleSim.MAX_TICKS:
+		battle.step()
+		total += battle.active_enemies().size()
+		ticks += 1
+	return float(total) / float(maxi(ticks, 1))
+
+
+func test_stretching_the_spawn_window_makes_the_field_emptier_not_fuller() -> void:
+	# **这条守的是一个会让人自以为达标的陷阱。**
+	#
+	# §01 要求单波 30–45 秒。默认配置只有 12 秒，而调大 `spawn_window`
+	# 能让 100% 的波次落进那个区间 —— 实测 35/35。
+	# 但那是假的：时长变长的部分全是「在等出怪」，战场反而更空。
+	#
+	# M0 从数据里拟合出来的关系是：
+	#
+	#     场上人数 ≈ 清怪时间 / 出怪窗口
+	#
+	# 分母变大，人数就变小。所以 §01 那句话说的其实是**清怪时间**，
+	# 不是出怪窗口 —— 详见《开发路线图》「M0 的答案 · Q3」。
+	var wave := _wave(12)
+	var dps: float = 2000.0
+
+	_cfg.spawn_window = 10.0
+	var tight_seconds: float = _sim(wave, dps).run_to_end().battle_seconds
+	var tight_crowd: float = _mean_on_field(wave, dps)
+
+	_cfg.spawn_window = 30.0
+	var stretched_seconds: float = _sim(wave, dps).run_to_end().battle_seconds
+	var stretched_crowd: float = _mean_on_field(wave, dps)
+
+	assert_gt(stretched_seconds, tight_seconds * 2.0, "拉长出怪窗口确实能把单波时长撑上去")
+	assert_lt(stretched_crowd, tight_crowd, "但战场只会更空 —— 这就是它不能当达标手段的原因")
