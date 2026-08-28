@@ -238,6 +238,27 @@ Docs/         项目文档
 	  if ($b.Length -ge 3 -and $b[0] -eq 239 -and $b[1] -eq 187 -and $b[2] -eq 191) { $_.Name }
   }
   ```
+- **PowerShell 5.1 会把单元素的嵌套数组拍平。** `@( @('旧','新') )` 迭代出来的
+  不是那一对字符串，而是**两个字符串本身**。写「批量替换」时这个差别是致命的：
+
+  ```powershell
+  # 看着像遍历「旧/新」对，实际 $p 是字符串，$p[0] 是它的第一个字符
+  foreach ($p in $pairs) { $t = $t.Replace($p[0], $p[1]) }
+  ```
+
+  真实后果：一次注释替换把 `battle_view.gd` 里**每个 `#` 换成了空格**
+  （`$p[0]` = `#`，`$p[1]` = 空格），527 行代码的注释标记全部消失。
+  语法照样能过 —— 注释变成了缩进对不上的语句才报错，指的位置和病因毫无关系。
+
+  两条规矩：**加逗号强制成数组** `@( ,@('旧','新') )`，或者干脆别用脚本改 `.gd`，
+  用编辑器的替换。改完必查：
+
+  ```powershell
+  Get-ChildItem src,tests -Recurse -Filter *.gd | ForEach-Object {
+	  $c = ([IO.File]::ReadAllLines($_.FullName) | Where-Object { $_.TrimStart() -like '#*' }).Count
+	  if ($c -eq 0) { "可疑（一行注释都没有）: " + $_.Name }
+  }
+  ```
 - **`queue_free()` 不是 `free()`。** 节点删除用 `queue_free()`，在帧末安全释放；
   `free()` 立即释放，正在遍历时调用会崩。
 - **`@onready` 变量在 `_ready()` 之前赋值**，别在 `_init()` 里访问它们。

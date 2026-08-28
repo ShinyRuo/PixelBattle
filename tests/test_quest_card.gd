@@ -12,24 +12,29 @@ var _cfg: PBSimConfig
 
 
 func before_each() -> void:
-	_cfg = PBSimConfig.new()
+	# **走 PBGameData 而不是 PBSimConfig.new()。** M2-b 之后两者差得很远：
+	# 后者装的是给对拍用的合成羁绊表（一组「所有人都算成员」的假羁绊），
+	# 拿它测卡面会让断言对着 `syn_headcount` 这种永远不会出现在游戏里的名字。
+	# 卡面测试的全部意义就是「玩家会看到什么」，那就得喂真数据。
+	_cfg = PBGameData.config()
 
 
+## 造一个有 [param count] 张**互不相同**的卡的局面。
+##
+## **不能靠随机抽。** 真角色表只有 30 个角色，而且（属性 × 稀有度）的格子
+## 不是满的，`PBUnit.of` 遇到空格会退化到同稀有度的任意一个 —— 撞得很厉害。
+## 原来那版随机抽 7 次实际只进 5 张，于是待命台不够派任务，
+## **整条断言跑到了「派不出」那个分支上**，测的完全不是它要测的东西。
+##
+## 按表的顺序取是确定的（装载器按文件名排序，见 [PBCharacterLoader]）。
 func _state_of(count: int, maxed_pop: bool = false) -> PBRunState:
 	var state := PBRunSim.new_state(_cfg)
 	if maxed_pop:
 		state.tech_pop = _cfg.tech_pop_max
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 77
-	for _i: int in count:
-		state.add_unit(
-			PBUnit.of(
-				_cfg,
-				rng.randi_range(0, 5) as PBElement.Type,
-				rng.randi_range(0, 3) as PBUnit.Rarity,
-				rng.randi_range(0, _cfg.characters_per_bucket - 1)
-			)
-		)
+	var all := _cfg.characters.all()
+	for i: int in mini(count, all.size()):
+		state.add_unit(PBUnit.new(all[i]))
+	assert_eq(state.roster.size(), mini(count, all.size()), "这批卡应该互不相同")
 	return state
 
 
@@ -46,44 +51,92 @@ func _card() -> PBQuestCard:
 	return card
 
 
-func test_the_card_spells_out_how_many_bond_tiers_dispatch_costs() -> void:
-	# §06 的验收原话。倍率不能代替档数 —— 玩家看不出自己离上限还有多远。
+func test_the_card_names_which_bonds_dispatch_would_break() -> void:
+	# §06 的验收原话「派了羁绊掉几档，准备阶段能一眼看出」。
+	#
+	# **M2-b 之后这条重写过。** 旧版断的是「羁绊 7 → 4 档」这种**人头数**，
+	# 那在替身曲线下成立（一个人就是一档），装上真羁绊表之后就不成立了 ——
+	# 档位是每组羁绊各有各的。而且玩家要的本来也不是一个标量，
+	# 是「我会失去哪一组」。
 	var state := _state_of(7)
 	var plan := _plan_of(6, 2)  # A 级，派 3 人
 	var card := _card()
 	card.reset(state, _cfg, plan)
 
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
-	var before: int = state.bonded_count_for(state.roster.size(), 0, _cfg)
-	var after: int = state.bonded_count_for(state.roster.size(), need, _cfg)
-	assert_gt(before, after, "这个卡池还没到羁绊上限，派人一定掉档")
-	assert_true(
-		card._bond.text.contains("%d → %d 档" % [before, after]), "羁绊档数要写出来：%s" % card._bond.text
-	)
-	assert_true(card._bond.text.contains("掉 %d 档" % (before - after)), card._bond.text)
+	var kept := PBBondRules.active_tiers(_bonded_with(state, 0), _cfg.bonds)
+	var sent := PBBondRules.active_tiers(_bonded_with(state, need), _cfg.bonds)
+
+	var broken: Array[PBBond] = []
+	for bond: PBBond in _cfg.bonds.all():
+		if int(sent.get(bond.id, 0)) < int(kept.get(bond.id, 0)):
+			broken.append(bond)
+	assert_false(broken.is_empty(), "这个局面派 %d 人应该真的会掉档，否则测不到东西" % need)
+
+	for bond: PBBond in broken:
+		assert_true(
+			card._bond.text.contains(PBLocale.of_bond(bond)),
+			"掉档的羁绊要点名写出来（缺 %s）：%s" % [PBLocale.of_bond(bond), card._bond.text]
+		)
 	assert_true(card._bond.text.contains("战力 −"), "还要给出对应的战力损失：%s" % card._bond.text)
 
 
-func test_a_deep_bench_makes_dispatch_free_and_the_card_says_so() -> void:
-	# 板凳深到超过 bond_unit_cap 之后，被派走的人本来就不在羁绊计数里 ——
-	# **这一波派遣是白捡的钱**。这是整张卡上最反直觉、也最值钱的一格信息，
-	# 漏掉它玩家会一直以为任务永远要付代价。
-	# 抽 40 次是为了凑够唯一卡 —— 重复卡在仓库里会合并（§08：同卡 3 张升 1 星），
-	# 抽 20 次只有十几张，够不到上限。
-	var state := _state_of(40, true)
-	var plan := _plan_of(30, 4)  # SSS，派 4 人，最贵的一档
+func test_the_card_never_shows_a_raw_key_instead_of_a_name() -> void:
+	# 羁绊名走 [PBLocale]。语言表缺一条时它会回退到 key，
+	# 那在文档注释里是有意为之，但**摆到卡面上就是 bug** ——
+	# 玩家会看到「bond.xxx 3→2 档」。
+	var state := _state_of(7)
 	var card := _card()
-	card.reset(state, _cfg, plan)
+	card.reset(state, _cfg, _plan_of(6, 2))
+	assert_false(card._bond.text.contains("bond."), "卡面漏出了 name_key：%s" % card._bond.text)
 
-	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
-	assert_gte(state.roster.size() - need, _cfg.bond_unit_cap, "派完之后仍要在羁绊上限之上")
-	assert_eq(
-		state.bonded_count_for(state.roster.size(), need, _cfg),
-		state.bonded_count_for(state.roster.size(), 0, _cfg),
-		"卡池过了上限，派 %d 个人不该掉档" % need
-	)
-	assert_true(card._bond.text.contains("不变"), "免费的时候要明说：%s" % card._bond.text)
-	assert_true(card._bond.text.contains("上限 %d" % _cfg.bond_unit_cap), card._bond.text)
+
+func test_it_says_so_when_dispatch_breaks_nothing() -> void:
+	# 被派走的人**没在给任何一组羁绊顶档**时，这一波派遣是白捡的钱，
+	# 卡面要明说 —— 不说的话玩家会以为任务永远要付代价。
+	#
+	# ## 这条分支在 M2-b 之后变罕见了，那是设计上的改善
+	#
+	# 旧的替身曲线按人头算、封顶 12 人，所以**只要板凳够深，派遣就恒定免费**——
+	# M1-d 把那一格当成整张卡最值钱的信息。装上真羁绊表之后不再成立：
+	# 没有全局上限了，每个成员都在给自己那几组做贡献，
+	# 板凳末尾的人也可能正顶着某一档。
+	#
+	# 于是 §06 的「这一波我要羁绊，还是要钱」**几乎总是真取舍**，
+	# 而不是「板凳深了就白拿」。这比原来好，但分支仍然存在，仍然要测。
+	#
+	# 局面用 set_field 直接摆，不靠抽卡碰运气 —— 碰得到的概率太低，
+	# 那样的测试会随机变红，而随机红的测试很快就会被人无视。
+	var state := PBRunSim.new_state(_cfg)
+	state.tech_pop = _cfg.tech_pop_max
+	var field: Array[PBUnit] = []
+	for character: PBCharacter in _cfg.characters.all():
+		if character.element == PBElement.Type.THUNDER:
+			var unit := PBUnit.new(character)
+			state.add_unit(unit)
+			field.append(unit)
+	state.set_field(field)
+	assert_eq(field.size(), 5, "这一系要有 5 个角色，派走 1 个之后才还撑得住 4 人档")
+
+	# 派 1 个之后这一系还剩 4 个，仍然吃着同一档；也没有别的组被顶着。
+	var kept := PBBondRules.active_tiers(_bonded_with(state, 0), _cfg.bonds)
+	var sent := PBBondRules.active_tiers(_bonded_with(state, 1), _cfg.bonds)
+	assert_eq(sent, kept, "这个局面应该一档都不掉，否则测不到「免费」那一支")
+
+	var text: String = _card()._bond_text(state, _cfg, 1)
+	assert_true(text.contains("没有羁绊会掉档"), "免费的时候要明说：%s" % text)
+	assert_true(text.contains("战力不变"), text)
+
+
+## 派 [param dispatch] 个人之后还有谁在给羁绊计数。**用完必须还原** ——
+## 估值函数漏掉「改回来」会让玩家每看一眼任务卡就掉一层羁绊，
+## `test_dispatch_estimates_leave_no_trace_on_the_state` 守的就是这条。
+func _bonded_with(state: PBRunState, dispatch: int) -> Array[PBUnit]:
+	var before: int = state.dispatched
+	state.dispatched = dispatch
+	var units := state.bonded_units(_cfg)
+	state.dispatched = before
+	return units
 
 
 func test_the_card_measures_the_cost_against_the_cliff_not_against_base_damage() -> void:

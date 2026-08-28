@@ -114,26 +114,46 @@ func refresh(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 
 
 ## §06 那句「派了羁绊掉几档」。
+##
+## ## M2-b 之后这一行重写过一次
+##
+## 旧版走的是 [method PBRunState.bonded_count_for]，也就是**人头数**：
+## 「羁绊 12 档 → 9 档」。那在替身曲线下是对的（一个人就是一档），
+## 装上真羁绊表之后就不成立了 —— 档位是每组羁绊各有各的，
+## 12 个人可能是「某小队 3 档 + 另一小队 2 档 + 某属性 1 档」。
+##
+## 而且这个错**不会报错**：卡面照样显示一个像模像样的数字，
+## 只是那个数字和游戏里真正生效的东西没有关系。
+##
+## 现在的写法是把派遣前后的档位表对比一遍，只报**真的掉了的那几组**。
+## 玩家要的本来就不是「掉了几档」这个标量，而是「我会失去哪一组」。
 func _bond_text(state: PBRunState, cfg: PBSimConfig, need: int) -> String:
-	var size: int = state.roster.size()
-	var before: int = state.bonded_count_for(size, 0, cfg)
-	var after: int = state.bonded_count_for(size, need, cfg)
-	# 卡池够大时被派走的人本来就在羁绊上限之外 —— 这一波派遣是白捡的钱。
+	var before: int = state.dispatched
+	state.dispatched = 0
+	var kept := PBBondRules.active_tiers(state.bonded_units(cfg), cfg.bonds)
+	var kept_mult: float = state.bond_mult(cfg)
+	state.dispatched = need
+	var sent := PBBondRules.active_tiers(state.bonded_units(cfg), cfg.bonds)
+	var sent_mult: float = state.bond_mult(cfg)
+	state.dispatched = before
+
+	var broken := PackedStringArray()
+	for bond: PBBond in cfg.bonds.all():
+		var was: int = int(kept.get(bond.id, 0))
+		var now: int = int(sent.get(bond.id, 0))
+		if now < was:
+			broken.append("%s %d→%d 档" % [PBLocale.of_bond(bond), was, now])
+
+	# 板凳够深时被派走的人本来就没在给任何一组羁绊补档 —— 这一波派遣是白捡的钱。
 	# 这一格是整张卡里最值钱的信息，值得单独说一句。
-	if after >= before:
-		return "羁绊 %d 档不变（人数已过上限 %d，派谁都不掉）　战力不变" % [before, cfg.bond_unit_cap]
+	if broken.is_empty():
+		return "派了：没有羁绊会掉档（派的是板凳末尾，谁都没顶着档位）　战力不变"
+
 	var base: float = PBValuation.mean_dps(state, cfg)
 	var loss: float = PBValuation.dispatch_loss(state, cfg, base, need)
 	return (
-		"派了：羁绊 %d → %d 档（掉 %d 档，×%.2f → ×%.2f）　战力 −%.1f%%"
-		% [
-			before,
-			after,
-			before - after,
-			state.bond_mult_for(size, cfg),
-			1.0 + cfg.bond_power_per_unit * float(after),
-			loss * 100.0,
-		]
+		"派了：%s　（羁绊 ×%.2f → ×%.2f）　战力 −%.1f%%"
+		% [String("、").join(broken), kept_mult, sent_mult, loss * 100.0]
 	)
 
 

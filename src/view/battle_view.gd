@@ -102,6 +102,7 @@ var _deployed_nodes: Array[Polygon2D] = []
 @onready var _shop: PBPreparePanel = $HUD/Prepare
 @onready var _roster: PBRosterPanel = $HUD/Roster
 @onready var _quest: PBQuestCard = $HUD/Quest
+@onready var _bonds: PBBondPanel = $HUD/Bonds
 
 
 func _ready() -> void:
@@ -199,6 +200,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			# 键盘上给一个快捷键 —— 这是准备阶段唯一需要反复试的开关。
 			if _phase == Phase.PREPARE and not auto_play:
 				_quest.toggle()
+		KEY_B:
+			# 带人方式：按战力，还是按羁绊（§09）。M2-d。
+			#
+			# **加这个键是因为不加的话羁绊面板是不可操作的信息。**
+			# 面板第二行会说「还差 1 人就能进满档，+18%」，而玩家
+			# 一个按钮都没有 —— 看得见动不了的 UI 比没有还糟，
+			# 它只会让人以为自己漏掉了什么操作。
+			#
+			# 完整的「手动点选谁上场」要等阵容面板做成可交互。
+			# 在那之前这个开关是同一个决策的**最小可玩形式**：
+			# 一次按键就能看见「凑羁绊」和「堆战力」差多少。
+			if _phase == Phase.PREPARE and not auto_play:
+				_toggle_field_policy()
 		KEY_ENTER:
 			if _phase == Phase.PREPARE:
 				_finish_prepare()
@@ -279,16 +293,34 @@ func _set_panels_visible(shown: bool) -> void:
 	_shop.visible = shown
 	_roster.visible = shown
 	_quest.visible = shown
+	_bonds.visible = shown
 	if shown:
 		_refresh_panels()
+
+
+## 换一种带人方式，并立刻重画 —— 玩家按下去要马上看到倍率变了多少，
+## 等下一波才生效的话这个开关就没法用来比较。
+func _toggle_field_policy() -> void:
+	_strategy.field_policy = (
+		PBStrategy.Field.RAW_POWER
+		if _strategy.field_policy == PBStrategy.Field.BOND_AWARE
+		else PBStrategy.Field.BOND_AWARE
+	)
+	_refresh_panels()
+	_sync_deployed()
 
 
 func _refresh_panels() -> void:
 	if not _shop.visible:
 		return
+	# 先把在场名单按当前策略重挑一遍，四块面板才看的是同一支队伍。
+	# 漏了这一步，玩家抽到的新卡要等到点「开打」时才进队，
+	# 而面板上的羁绊倍率会停在上一波 —— 不报错，只是数字不动。
+	_strategy.bring_to_field(_state, _cfg)
 	_shop.refresh(_state, _cfg)
 	_roster.refresh(_state, _cfg, _plan.wave)
 	_quest.refresh(_state, _cfg, _plan)
+	_bonds.refresh(_state, _cfg, _strategy.field_policy == PBStrategy.Field.BOND_AWARE)
 
 
 func _restart() -> void:

@@ -157,7 +157,7 @@ func bond_mult(cfg: PBSimConfig) -> float:
 ## 而新卡的价值有一部分来自羁绊，不只是它自己的输出。
 ##
 ## **这条口径 M2-b2 要换掉。** 它按人头算，而真羁绊问的是「多的那张卡是谁」——
-## 一张补上凯班第 4 档的卡和一张谁都不搭的卡，价值差一个数量级。
+## 一张能补上某组羁绊满档的卡，和一张谁都不搭的卡，价值差一个数量级。
 ## 换成按角色表求期望（和 [method PBValuation.expected_surplus] 同一套路）是那一步的事。
 ## 现在留着，是因为合成羁绊表上它和 [method bond_mult] 恒等，
 ## `test_bond_prediction_matches_the_real_formula` 锁着这条 ——
