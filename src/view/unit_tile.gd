@@ -33,12 +33,15 @@ signal exited(tile: PBUnitTile)
 ## 而指令卡跟着一路重画 —— 那既点不准，也看不清。
 signal picked(tile: PBUnitTile)
 
-## 有人把另一个格子拖到了这里。两个下标都是 [member slot]。
-signal dropped(from_zone: StringName, from_slot: int, to_zone: StringName, to_slot: int)
+## 有人把一张卡拖到了这个格子上。
+signal dropped(from_zone: StringName, unit_id: StringName, to_zone: StringName)
 
-## 格子归哪一区。拖放时靠它判断是「上场」「下场」还是「换位」。
-const ZONE_DEPLOY: StringName = &"deploy"
-const ZONE_BENCH: StringName = &"bench"
+## 一张卡此刻在哪一区。**三档互斥**，也就是屏幕上的三块地方：
+## 战场（在打）、仓库（存着）、任务栏（这一波出去做任务）。
+## 拖放就是在这三者之间搬，[method PBBattleView._on_card_moved] 一处兑现。
+const ZONE_FIELD: StringName = &"field"
+const ZONE_STASH: StringName = &"stash"
+const ZONE_QUEST: StringName = &"quest"
 
 ## 稀有度边框色。下标对齐 [enum PBUnit.Rarity]。
 const RARITY_COLORS: Array[Color] = [
@@ -80,7 +83,7 @@ const TILE_SIZE := Vector2(30.0, 34.0)
 ## 这个格子在本区里的下标。空格子也有下标 —— 拖到空格子上就是「放到这个位置」。
 var slot: int = 0
 
-var zone: StringName = ZONE_BENCH
+var zone: StringName = ZONE_STASH
 
 ## 格子里的卡。**`null` 表示空位**，空位仍然可以被拖入。
 var unit: PBUnit = null
@@ -172,24 +175,39 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+## 拖放载荷：**谁**从**哪一区**被拖起来了。
+##
+## **载的是角色 id，不是格子下标。** 下标那一版（M3-e 的编队页）在
+## 会滚动、会重排的名单上直接坏掉：拖到一半名单少一个人，
+## 后面所有人的下标挪一位，手上拖的就换了个人 —— 而那不报错。
+## [member PBRunState.formation] 按 id 存也是同一条理由。
+##
+## 空的返回 `{}`，调用方用 `is_empty()` 判。
+static func card_of(data: Variant) -> Dictionary:
+	if typeof(data) != TYPE_DICTIONARY:
+		return {}
+	var payload := data as Dictionary
+	if not payload.has("zone") or not payload.has("unit"):
+		return {}
+	return payload
+
+
 ## 引擎的拖放协议：按住空格子不产生拖动。
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if unit == null:
 		return null
 	set_drag_preview(_make_preview())
-	return {"zone": zone, "slot": slot}
+	return {"zone": zone, "unit": unit.key()}
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
-	if typeof(data) != TYPE_DICTIONARY:
-		return false
-	var payload := data as Dictionary
-	return payload.has("zone") and payload.has("slot")
+	return not card_of(data).is_empty()
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
-	var payload := data as Dictionary
-	dropped.emit(StringName(payload["zone"]), int(payload["slot"]), zone, slot)
+	var card := card_of(data)
+	if not card.is_empty():
+		dropped.emit(StringName(card["zone"]), StringName(card["unit"]), zone)
 
 
 ## 跟着鼠标走的那个影子。引擎会自己摆位置和释放，这里只负责画得像。

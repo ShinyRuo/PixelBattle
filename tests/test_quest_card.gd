@@ -4,6 +4,14 @@ extends GutTest
 ## §06 的验收原话是「**派了羁绊掉几档，准备阶段能一眼看出**」。
 ## 这一组断言就是照那句话逐条对的 —— 卡面缺哪一格，哪条就红。
 ##
+## ## M5-6：一半断言从标签搬到了说明卡
+##
+## 这块面板从 548 像素宽掉到 100（[constant PBLayout.E_QUEST]），
+## 三行散文一行都写不下，整句搬进了 [method PBQuestCard.tip_body]。
+## 所以「掉哪几组羁绊」「两个分支各剩多少 DPS」这些断言现在对着
+## 那几个组句函数，而不是面板上的 [Label] ——
+## **要验的本来就是那句话在不在，不是它画在哪一格**。
+##
 ## 任务是 M1 里**唯一真正的两难**（阵容不是，见 `test_valuation.gd` 里
 ## `test_picking_by_effective_power_is_strictly_optimal`），所以这张卡上的
 ## 每个数都直接决定玩家的选择，错了不报错、只表现为「玩家做了个错误决定」。
@@ -73,12 +81,13 @@ func test_the_card_names_which_bonds_dispatch_would_break() -> void:
 			broken.append(bond)
 	assert_false(broken.is_empty(), "这个局面派 %d 人应该真的会掉档，否则测不到东西" % need)
 
+	var body: String = card.tip_body(state, _cfg, plan)
 	for bond: PBBond in broken:
 		assert_true(
-			card._bond.text.contains(PBLocale.of_bond(bond)),
-			"掉档的羁绊要点名写出来（缺 %s）：%s" % [PBLocale.of_bond(bond), card._bond.text]
+			body.contains(PBLocale.of_bond(bond)),
+			"掉档的羁绊要点名写出来（缺 %s）：%s" % [PBLocale.of_bond(bond), body]
 		)
-	assert_true(card._bond.text.contains("战力 −"), "还要给出对应的战力损失：%s" % card._bond.text)
+	assert_true(body.contains("战力 −"), "还要给出对应的战力损失：%s" % body)
 
 
 func test_the_card_never_shows_a_raw_key_instead_of_a_name() -> void:
@@ -86,9 +95,11 @@ func test_the_card_never_shows_a_raw_key_instead_of_a_name() -> void:
 	# 那在文档注释里是有意为之，但**摆到卡面上就是 bug** ——
 	# 玩家会看到「bond.xxx 3→2 档」。
 	var state := _state_of(7)
+	var plan := _plan_of(6, 2)
 	var card := _card()
-	card.reset(state, _cfg, _plan_of(6, 2))
-	assert_false(card._bond.text.contains("bond."), "卡面漏出了 name_key：%s" % card._bond.text)
+	card.reset(state, _cfg, plan)
+	var body: String = card.tip_body(state, _cfg, plan)
+	assert_false(body.contains("bond."), "说明卡漏出了 name_key：%s" % body)
 
 
 func test_it_says_so_when_dispatch_breaks_nothing() -> void:
@@ -142,13 +153,11 @@ func _bonded_with(state: PBRunState, dispatch: int) -> Array[PBUnit]:
 	return units
 
 
-func test_the_card_measures_the_cost_against_the_cliff_not_against_base_damage() -> void:
-	# 第一版这里断的是「基地会掉多少血」，实测下来两个分支在几乎每一波
-	# 都是同一个 0（见 [method PBValuation.leak_threshold_dps] 的说明）——
-	# 单服务器排队没有中间态，那个量在悬崖前没有分辨率。
+func test_the_card_shows_both_branches_of_the_dispatch_cost() -> void:
+	# 卡面必须把**两个分支**都写出来。只写「接了还剩多少」的话玩家没有参照物，
+	# 那个数字读不出是多是少；两个数并排摆着，减法才做得成。
 	#
-	# 换成富余倍数之后两个分支才真的分得开。这一条就是钉那件事：
-	# **派人之后的富余必须严格小于不派**，否则代价在卡面上是看不见的。
+	# 断的是「派人之后必须严格更低」—— 相等就说明代价在卡面上是看不见的。
 	var state := _state_of(9)
 	var plan := _plan_of(12, 3)
 	var card := _card()
@@ -156,36 +165,46 @@ func test_the_card_measures_the_cost_against_the_cliff_not_against_base_damage()
 
 	var units := PBValuation.deployed_for(state, plan.wave.element, _cfg)
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
-	# 和卡面一样按真实射程结构量悬崖（M3-a）。这里少传 attackers 的话，
-	# 测试拿解析式排队模型算、卡面拿真战斗模型算，比的是两套战斗规则。
-	var preview := PBCombatRules.build_attackers(
-		units,
-		plan.wave.element,
-		state.atk_mult(_cfg),
-		state.bond_mult(_cfg),
-		PBEquipRules.unit_multipliers(units, state.equip_parts, _cfg),
-		_cfg
-	)
-	var cliff: float = PBValuation.leak_threshold_dps(
-		plan.wave, state.def_reduction(_cfg), _cfg, preview
-	)
 	var kept: float = PBValuation.dps_if_dispatched(state, plan.wave, units, 0, _cfg)
 	var sent: float = PBValuation.dps_if_dispatched(state, plan.wave, units, need, _cfg)
 
 	assert_gt(kept, sent, "派了人 DPS 必须掉 —— 不然这张卡上根本没有取舍")
-	assert_true(card._outcome.text.contains("%.0f DPS" % cliff), "悬崖要写出来：%s" % card._outcome.text)
-	assert_true(
-		card._outcome.text.contains("不接 %.0f（富余 %.2f×）" % [kept, kept / cliff]),
-		"不接的富余要照实写：%s" % card._outcome.text
-	)
-	assert_true(
-		card._outcome.text.contains("接了 %.0f（富余 %.2f×）" % [sent, sent / cliff]),
-		"接了的富余要照实写：%s" % card._outcome.text
-	)
-	# 显示精度也要够。后期两个分支挨得很近（实测第 40 波是 1.61× 对 1.55×），
-	# 一位小数会把它们四舍五入成同一个数，代价就在卡面上消失了 ——
-	# 这正是第一版犯的错，只是换了个地方犯。
-	assert_ne("富余 %.2f×" % (kept / cliff), "富余 %.2f×" % (sent / cliff), "两个分支不能渲染成同一个字符串")
+	var body: String = card.tip_body(state, _cfg, plan)
+	assert_true(body.contains("不接 %.0f DPS" % kept), "不接那一支要照实写：%s" % body)
+	assert_true(body.contains("接了 %.0f DPS" % sent), "接了那一支要照实写：%s" % body)
+	# 两个分支不能渲染成同一个字符串，否则「有取舍」这件事只存在于代码里。
+	assert_ne("%.0f" % kept, "%.0f" % sent, "两个分支不能四舍五入成同一个数")
+
+
+func test_refreshing_the_card_never_runs_a_battle() -> void:
+	# **准备阶段不许算战斗。** 这张卡在每一次 `_refresh_panels` 里都刷新一遍，
+	# 而那是每一次点击都会走的路 —— 这里的每一毫秒都直接变成点击延迟。
+	#
+	# 曾经有一行「本波打空要 x DPS」走 [method PBValuation.leak_threshold_dps]，
+	# 它二分 32 次、每次跑完一整场仗，实测 457 毫秒。表现是
+	# 「抽到第一张卡之后，点开仓库要等半秒」——**不报错，也不会被别的测试抓到**，
+	# 因为算出来的数完全正确，只是贵了三个数量级。
+	#
+	# 阈值放到 100 毫秒是有意的宽：这里要挡的是「又往里塞了一个战斗模拟」
+	# 这种量级的回归，不是几毫秒的抖动。慢机器上也不该误报。
+	var state := _state_of(12)
+	var plan := _plan_of(12, 3)
+	var card := _card()
+	card.reset(state, _cfg, plan)  # 先热一遍，别把首次加载算进去
+
+	var started: int = Time.get_ticks_usec()
+	for _i: int in 3:
+		card.refresh(PBSelection.new(), state, _cfg, plan)
+	var each: float = float(Time.get_ticks_usec() - started) / 3000.0
+	assert_lt(each, 100.0, "刷新一次任务卡花了 %.1f 毫秒 —— 里面多半又跑起战斗了" % each)
+
+	# 说明卡不在每次点击的路上（要玩家自己点「详情」），但它一样不许跑战斗 ——
+	# 那一行悬崖当初就藏在这几句里。
+	started = Time.get_ticks_usec()
+	for _i: int in 3:
+		card.tip_body(state, _cfg, plan)
+	var tip: float = float(Time.get_ticks_usec() - started) / 3000.0
+	assert_lt(tip, 100.0, "组一次说明卡花了 %.1f 毫秒 —— 里面多半又跑起战斗了" % tip)
 
 
 func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
@@ -199,8 +218,8 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 		var need: int = PBEconomyRules.quest_cost_units(grade)
 		if need > state.dispatch_available(_cfg):
 			continue
-		assert_true(card._head.text.contains("%d 金" % reward), "%d 级：%s" % [grade, card._head.text])
-		assert_true(card._head.text.contains("需派 %d 人" % need), card._head.text)
+		assert_true(card._terms.text.contains("%d 金" % reward), "%d 级：%s" % [grade, card._terms.text])
+		assert_true(card._need.text.contains("需派 %d 人" % need), card._need.text)
 		assert_true(
 			card._head.text.contains(String(PBEconomyRules.QUEST_GRADES[grade])), card._head.text
 		)
@@ -220,8 +239,10 @@ func test_it_says_there_are_too_few_people_instead_of_just_greying_out() -> void
 
 	assert_lt(state.dispatch_available(_cfg), 4, "这个卡池应该凑不出 SSS 要的 4 个人")
 	assert_true(card._toggle.disabled, "派不出去就不该能点")
-	assert_true(card._bond.text.contains("场上只有"), card._bond.text)
-	assert_true(card._bond.text.contains("派不出"), card._bond.text)
+	assert_eq(card._toggle.text, "人不够", "按钮上要写清是人不够，不是不划算")
+	assert_true(card._away.text.contains("场上只有"), card._away.text)
+	# 面板只有 100 像素宽，整句在说明卡里 —— 但那句必须还在。
+	assert_true(card.tip_body(state, _cfg, plan).contains("派不出"), card.tip_body(state, _cfg, plan))
 	assert_false(card.accepted(), "派不出去时不能算成已接")
 
 

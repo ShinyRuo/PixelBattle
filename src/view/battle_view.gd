@@ -133,6 +133,7 @@ var _hitstop_frames: int = 0
 @onready var _allies: PBAllyPool = $Deployed
 @onready var _telegraph: PBTelegraphPool = $Telegraph
 @onready var _floats: PBFloatTextPool = $Floats
+@onready var _lane: ColorRect = $Lane
 @onready var _base_rect: ColorRect = $Base
 @onready var _limit: ColorRect = $Limit
 @onready var _info: Label = $HUD/Info
@@ -141,11 +142,13 @@ var _hitstop_frames: int = 0
 @onready var _unit_info: PBUnitInfo = $HUD/UnitInfo
 @onready var _slots: PBFieldSlots = $HUD/Slots
 @onready var _quest: PBQuestCard = $HUD/Quest
-@onready var _bonds: PBBondPanel = $HUD/Bonds
-@onready var _offer: PBOfferDrawer = $HUD/Offer
-@onready var _equip: PBEquipDrawer = $HUD/Equip
-@onready var _stash: PBRosterDrawer = $HUD/Stash
-@onready var _beasts: PBBeastDrawer = $HUD/Beasts
+@onready var _offer: PBOfferModal = $HUD/Offer
+@onready var _parts: PBPartsBay = $HUD/Equip
+@onready var _gear: PBEquipBay = $HUD/Gear
+@onready var _tip: PBTooltip = $HUD/Tip
+@onready var _bay: PBRosterBay = $HUD/Stash
+@onready var _ground: PBDropArea = $HUD/Ground
+@onready var _beasts: PBBeastModal = $HUD/Beasts
 
 
 func _ready() -> void:
@@ -156,24 +159,47 @@ func _ready() -> void:
 	_cfg.use_tick_battle = true
 	_frames_per_tick = maxi(Engine.physics_ticks_per_second / _cfg.tick_rate, 1)
 
+	PBLayout.apply_to(_lane, _base_rect, _limit, _info, _preview, _field(), _cfg.deploy_limit_x)
+
 	_rng = PBRngStreams.new(_resolve_seed())
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 
 	_command.command.connect(_on_command)
 	_slots.slot_picked.connect(_on_slot_picked)
-	_slots.stash_toggled.connect(func() -> void: _toggle_drawer(_stash))
-	# 四块抽屉各自只管「我被点了什么」，开关由这里统一裁决（见 [PBDrawer]）。
+	_quest.slot_picked.connect(_on_slot_picked)
+	_quest.card_dropped.connect(_on_card_moved)
+	_bay.scrolled.connect(_refresh_panels)
+	_bay.card_dropped.connect(_on_card_moved)
+	# 战场是 Node2D，收不了引擎的拖放协议 —— 这一层透明矩形是它的收件人。
+	_ground.cover(PBLayout.B_FIELD, PBUnitTile.ZONE_FIELD, _unit_on_field_at)
+	_ground.grabbed.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
+	_ground.hovered.connect(_on_drag_over_field)
+	_ground.card_dropped.connect(
+		func(from: StringName, id: StringName, at: Vector2) -> void:
+			_on_card_moved(from, id, PBUnitTile.ZONE_FIELD, PBLayout.to_field(at, _field()))
+	)
+	# 两块弹层各自只管「我被点了什么」，开关由这里统一裁决（见 [PBModal]）。
 	_offer.picked.connect(_on_offer_picked)
-	_equip.equip_requested.connect(_on_equip_changed.bind(true))
-	_equip.unequip_requested.connect(_on_equip_changed.bind(false))
-	_stash.unit_picked.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
+	_gear.item_equipped.connect(_on_equip_changed.bind(true))
+	_parts.item_returned.connect(_on_equip_changed.bind(false))
+	_parts.tip_requested.connect(_tip.show_card)
+	_gear.tip_requested.connect(_tip.show_card)
+	_bay.unit_picked.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
 	_beasts.beast_chosen.connect(_on_beast_chosen)
 	# 任务卡自己记着接没接（[method PBQuestCard.accepted]），切换后只需重画。
 	# **不在这里改 `state.dispatched`** —— 那个字段归 `lock_plan` 管，
-	# 渲染层一个字段都不回写（见类顶部）。卡面本来就把两个分支并排显示，
+	# 渲染层一个字段都不回写（见类顶部）。说明卡本来就把两个分支并排显示，
 	# 玩家不需要靠「先提交再看效果」来了解代价。
 	_quest.quest_toggled.connect(func(_accepted: bool) -> void: _refresh_panels())
+	# 任务卡上那三句长话由这里组一遍再交给 tooltip —— 组它要 state / cfg / plan
+	# 三样，而任务卡一样都不持有（见 [signal PBQuestCard.detail_requested]）。
+	_quest.detail_requested.connect(
+		func(anchor: Rect2) -> void:
+			_tip.show_card(
+				anchor, "本波任务 · %s 级" % _quest_name(), _quest.tip_body(_state, _cfg, _plan)
+			)
+	)
 	_fast_forward_to(start_wave)
 	_enter_prepare()
 
@@ -194,10 +220,10 @@ func _on_command(command_id: StringName) -> void:
 	match command_id:
 		&"gacha":
 			# **摆牌和挑人是分开的两步**（§08 的三选一）：这里只掏钱摆三张，
-			# 挑哪一张是玩家在 [PBOfferDrawer] 上做的决定。
+			# 挑哪一张是玩家在 [PBOfferModal] 上做的决定。
 			# 直接走 `pull_once` 的话，脚本玩家的挑法会替真人做完这个决定。
 			if PBShopRules.open_offer(_state, _plan.wave, _cfg, _rng):
-				_toggle_drawer(_offer, true)
+				_open_modal(_offer)
 		&"equip":
 			_strategy.buy_equip_part(_state, _cfg, _rng)
 		&"economy_slot":
@@ -211,11 +237,11 @@ func _on_command(command_id: StringName) -> void:
 		PBCommandCard.CMD_LEVEL_UP:
 			PBShopRules.level_up(_state, _selection.unit_of(_state), _cfg)
 		PBCommandCard.CMD_BENCH:
-			_set_on_field(_selection.unit_of(_state), false)
+			_on_card_moved(PBUnitTile.ZONE_FIELD, _selection.unit_id, PBUnitTile.ZONE_STASH)
+			return
 		PBCommandCard.CMD_DEPLOY:
-			_set_on_field(_selection.unit_of(_state), true)
-		PBCommandCard.CMD_EQUIP:
-			_toggle_drawer(_equip, true)
+			_on_card_moved(PBUnitTile.ZONE_STASH, _selection.unit_id, PBUnitTile.ZONE_FIELD)
+			return
 		PBCommandCard.CMD_DISPATCH:
 			PBShopRules.toggle_dispatch(
 				_state,
@@ -224,7 +250,7 @@ func _on_command(command_id: StringName) -> void:
 				_cfg
 			)
 		PBCommandCard.CMD_BEAST_PICK:
-			_toggle_drawer(_beasts, true)
+			_open_modal(_beasts)
 		PBCommandCard.CMD_BEAST_UP:
 			# M3.5-e 漏了这一条：没有分支的指令会掉进下面那个 `_`，
 			# 于是「升级尾兽」被当成一条叫 `beast_up` 的科技去买 ——
@@ -272,23 +298,20 @@ func _select(kind: PBSelection.Kind, unit_id: StringName) -> void:
 	_refresh_panels()
 
 
-## 开这一块抽屉，**并把其余三块关掉**。[param force] 为真时只开不关，
-## 用在「点了指令要看某块」的场合；为假时是开关（再点一次收起来）。
+## 摊开这一层模态，**并把另一层关掉**。
 ##
-## 裁决集中在这里而不是各抽屉自己抢，见 [PBDrawer] 顶部。
-func _toggle_drawer(which: PBDrawer, force: bool = false) -> void:
-	var open: bool = force or not which.visible
-	for drawer: PBDrawer in [_offer, _equip, _stash, _beasts]:
-		if drawer != which:
-			drawer.close()
-	if open:
-		which.open()
-	else:
-		which.close()
+## 裁决集中在这里而不是各弹层自己抢，见 [PBModal] 顶部。两层都是
+## 「不选就不能继续」，同时摊着两层的话上面那一层挡住的是一个
+## 玩家已经欠下的回答 —— 而它不报错，只是下面那层永远点不到。
+func _open_modal(which: PBModal) -> void:
+	for modal: PBModal in [_offer, _beasts]:
+		if modal != which:
+			modal.close()
+	which.open()
 	_refresh_panels()
 
 
-## 玩家从三选一里挑了一张。挑完这块抽屉就没有内容了，直接收起来。
+## 玩家从三选一里挑了一张。挑完这一层就没有内容了，直接收起来。
 func _on_offer_picked(index: int) -> void:
 	if PBShopRules.take_offer(_state, index):
 		_offer.close()
@@ -316,17 +339,17 @@ func _on_beast_chosen(beast_id: StringName) -> void:
 	_refresh_panels()
 
 
-## 收掉现在开着的那一块抽屉。**没有开着的就返回 false**，
+## 收掉现在摊着的那一层模态。**没有摊着的就返回 false**，
 ## 让 `Esc` 接着去做它的第二件事（取消选中）。
 ##
-## 三选一那块不收 —— 那一组候选是掏了钱的，收起来它就找不回来了。
-func _close_open_drawer() -> bool:
-	for drawer: PBDrawer in [_equip, _stash, _beasts]:
-		if drawer.visible:
-			drawer.close()
-			_refresh_panels()
-			return true
-	return false
+## 三选一那层不收 —— 那一组候选是掏了钱的，收起来它就找不回来了
+## （[method PBOfferModal._closable] 也不给关闭按钮，两处是同一条规矩）。
+func _close_modal() -> bool:
+	if not _beasts.visible:
+		return false
+	_beasts.close()
+	_refresh_panels()
+	return true
 
 
 ## 这一波谁去做任务。**三种口径，选哪一种取决于阶段** ——
@@ -373,30 +396,21 @@ func _units_of(keys: Array[StringName]) -> Array[PBUnit]:
 	return out
 
 
-## 现在有没有抽屉摊着。预告行靠它决定要不要藏起来。
-func _any_drawer_open() -> bool:
-	for drawer: PBDrawer in [_offer, _equip, _stash, _beasts]:
-		if drawer.visible:
-			return true
-	return false
-
-
-## 把一个忍者放上出战席或收回仓库（§02 的指令卡）。
-##
-## **名单走 [PBStrategy] 的原语，界面不自己写 `state.lineup`** ——
-## 和花钱那条是同一个理由：状态只由那一层改，
-## 界面自己动字段迟早漏掉配套的在场名单刷新，而那种不同步不报错。
-func _set_on_field(unit: PBUnit, on_field: bool) -> void:
-	if unit == null:
+## 一张卡被拖到了另一个区（§02 的拖放三区，M5-4）。规则在 [PBCardMoves] ——
+## **指令卡上的「派上场 / 下场 / 派任务」走的是同一批函数**，
+## 各写一份的话「拖过去能做但按按钮做不到」迟早出现，而它不报错。
+func _on_card_moved(
+	from_zone: StringName, unit_id: StringName, to_zone: StringName, at := PBCardMoves.NO_SPOT
+) -> void:
+	if _phase != Phase.PREPARE or _run_over:
 		return
-	var roster: Array[PBUnit] = _strategy.deploy(_state, _plan.wave, _cfg)
-	if on_field:
-		if roster.has(unit) or roster.size() >= _state.open_slots(_cfg):
-			return
-		roster.append(unit)
-	else:
-		roster.erase(unit)
-	_strategy.set_lineup(_state, roster)
+	var unit := _state.roster.get(unit_id, null) as PBUnit
+	PBCardMoves.move(_state, _strategy, _plan, unit, from_zone, to_zone, at, _cfg)
+	# 搬完顺手选中他。走 `set_to` 不走 `_select` —— 后者再点同一个人是
+	# 「取消选中」，而拖完把选中取消掉等于反馈消失。
+	_selection.set_to(PBSelection.Kind.UNIT, unit_id)
+	_sync_deployed()
+	_refresh_panels()
 
 
 func _physics_process(_delta: float) -> void:
@@ -426,21 +440,11 @@ func _physics_process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# 战场上的点击（§02 的战斗中操作，M4-e）与拖动摆位（M4-f）。
 	# **不看 [member _paused]** —— §02 原话是「暂停的时候也能点击」。
+	# 准备阶段的战场归拖放协议管（M5-4，见 [PBDropArea]）。
 	if event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
-		if click.button_index != MOUSE_BUTTON_LEFT:
-			return
-		if _phase == Phase.PREPARE:
-			_on_place_button(click)
-		elif click.pressed:
+		if click.button_index == MOUSE_BUTTON_LEFT and click.pressed and _phase != Phase.PREPARE:
 			_on_field_click(click.position)
-		return
-	if event is InputEventMouseMotion and _picker.dragging != &"":
-		_picker.drag_to(
-			_state,
-			_cfg,
-			PBEnemyPool.to_field((event as InputEventMouseMotion).position, _field())
-		)
 		return
 	if not (event is InputEventKey) or not event.is_pressed() or event.is_echo():
 		return
@@ -478,16 +482,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			# 一次按键就能看见「凑羁绊」和「堆战力」差多少。
 			if _phase == Phase.PREPARE and not auto_play:
 				_toggle_field_policy()
-		KEY_V:
-			# 开/关仓库。左边那个「仓库」按钮走同一条路 ——
-			# 两条路各写一份迟早分叉（和任务卡的 Q 键同理）。
-			if _phase == Phase.PREPARE and not auto_play:
-				_toggle_drawer(_stash)
 		KEY_ESCAPE:
-			# **先收抽屉，再取消选中。** 一下按键做两件事会让人分不清
+			# **先收弹层，再取消选中。** 一下按键做两件事会让人分不清
 			# 刚才关掉的是哪一个；分两下按则每一下的后果都看得见。
 			# 战场上没有「空白处」可点（面板铺满了下半屏），所以这个键是必需的。
-			if _close_open_drawer():
+			if _close_modal():
 				return
 			# 战斗中还多一层：先退出「正在指定目标」（M4-e）。
 			# 一下按键同时取消瞄准和选中的话，玩家分不清刚才取消的是哪一个。
@@ -555,7 +554,7 @@ func _finish_prepare() -> void:
 	# 而账面上只表现为「金币怎么少了 300」。
 	if not _state.pending_offer.is_empty():
 		if not auto_play:
-			_toggle_drawer(_offer, true)
+			_open_modal(_offer)
 			return
 		# 自动模式下没有人去挑。**绝不能停在这里** ——
 		# `_physics_process` 每帧调一次 `_finish_prepare`，整局会卡死在准备阶段。
@@ -613,20 +612,20 @@ func _end_wave() -> void:
 ## 那两块因此分成了另一档：**战斗中可见，但内容整个换掉**
 ## （见 [method PBCommandCard.set_battle]）—— 升级、装备、派任务
 ## 都是准备阶段的决策，留着它们等于让玩家在战斗中花本该更早花的钱。
-##
-## 剩下三块（槽位列、任务卡、羁绊带）仍然只在准备阶段出现：
-## 它们全都占着战场那条道，而战斗中那条道是有人的。
 func _set_panels_visible(shown: bool) -> void:
 	_command.visible = shown or _phase == Phase.BATTLE
 	_unit_info.visible = _command.visible
 	_slots.visible = shown
 	_quest.visible = shown
-	_bonds.visible = shown
+	# 仓库常驻，但只在准备阶段：战斗中改名单是没有意义的操作（M5-3）。
+	# 战场那块收件人同理 —— 打起来之后不该还能把人拖来拖去（M5-4）。
+	_bay.visible = shown
+	_ground.visible = shown
 	if not shown:
-		# 抽屉全部收起来。战斗中留着一块的话它会盖在战场上，
+		# 弹层全部收起来。战斗中留着一层的话它会盖满整个画面，
 		# 而它上面的按钮此刻一个都不该生效。
-		for drawer: PBDrawer in [_offer, _equip, _stash, _beasts]:
-			drawer.close()
+		for modal: PBModal in [_offer, _beasts]:
+			modal.close()
 		# 一波打完选中就该散掉 —— 留着的话下一波开局指令卡里还挂着
 		# 上一波选的那个人，而他这一波可能压根没上场。
 		_selection.set_to(PBSelection.Kind.NONE)
@@ -666,18 +665,18 @@ func _refresh_panels() -> void:
 	var away: Array[PBUnit] = _dispatch_preview()
 	var deployed: Array[PBUnit] = _fighting_now(away)
 	_command.refresh(_selection, _state, _cfg, _plan, deployed, away)
-	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, deployed)
-	_slots.refresh(_selection, _state, _cfg, _plan.wave, deployed, away)
-	_quest.refresh(_state, _cfg, _plan)
-	_bonds.refresh(_state, _cfg, _strategy.field_policy == PBStrategy.Field.BOND_AWARE)
-	# 抽屉只在开着的时候重画 —— 关着的那三块每次都算一遍纯属浪费，
-	# 而装备栏那一份要跑一次完整的分配。
+	var aware: bool = _strategy.field_policy == PBStrategy.Field.BOND_AWARE
+	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, deployed, aware)
+	_slots.refresh(_selection, _state)
+	_quest.refresh(_selection, _state, _cfg, _plan, away)
+	# 弹层只在摊着的时候重画 —— 关着的那一层每次都算一遍纯属浪费。
 	if _offer.visible:
 		_offer.refresh(_state, _cfg, _plan.wave)
-	if _equip.visible:
-		_equip.refresh(_selection.unit_of(_state), _state, _cfg, deployed)
-	if _stash.visible:
-		_stash.refresh(_selection, _state, _cfg, _plan.wave, deployed, away)
+	_parts.refresh(_state, _cfg)
+	_gear.refresh(_selection.unit_of(_state), _state, _cfg, deployed)
+	_gear.visible = _selection.kind == PBSelection.Kind.UNIT
+	# 仓库是常驻面板（M5-3），不在「开着才画」那一档里。
+	_bay.refresh(_selection, _state, _cfg, _plan.wave, deployed, away)
 	if _beasts.visible:
 		_beasts.refresh(_state, _cfg)
 
@@ -707,8 +706,8 @@ func _on_field_click(at: Vector2) -> void:
 	if _battle == null:
 		return
 	var field := _field()
-	var spot := PBEnemyPool.to_field(at, field)
-	var pick: float = PICK_RADIUS_PX / PBEnemyPool.px_per_unit(field)
+	var spot := PBLayout.to_field(at, field)
+	var pick: float = PICK_RADIUS_PX / PBLayout.px_per_unit(field)
 	# 正在指定目标：只认敌人。点空地就当取消 —— 让「按错了」有一条退路。
 	if _picker.aiming:
 		_picker.aim(_selected_attacker(), _picker.enemy_at(_battle, spot, pick))
@@ -725,29 +724,31 @@ func _on_field_click(at: Vector2) -> void:
 	_refresh_battle_panels()
 
 
-## 准备阶段在战场上按下 / 松开左键（§02 的开战位置，M4-f）。
-##
-## ## 按下就选中、拖动就摆位，是同一个动作的两段
-##
-## 分成「先点选、再拖」两步的话，玩家要点两次才能挪一个人，
-## 而这是准备阶段最高频的操作。按下即选中还顺带把射程圈亮出来 ——
-## 摆位要有依据，而依据就是「他够得到哪」。
-func _on_place_button(click: InputEventMouseButton) -> void:
-	if not click.pressed:
-		_picker.dragging = &""
+## 拖动中，鼠标正停在战场上（M5-4）。**每一帧都写进状态，不是松手才写** ——
+## 松手才写的话方块不会跟着走，玩家会以为没拖起来（M4-f 的原话）。
+## 只有本来就在场上的人才跟着走：仓库那张卡还没上场，提前画上去
+## 等于替玩家做完了他还没做的决定。
+func _on_drag_over_field(from_zone: StringName, unit_id: StringName, at: Vector2) -> void:
+	if from_zone != PBUnitTile.ZONE_FIELD or _phase != Phase.PREPARE:
 		return
+	var unit := _state.roster.get(unit_id, null) as PBUnit
+	PBFormationRules.place(_state, unit, PBLayout.to_field(at, _field()), _cfg)
+	_sync_deployed()
+
+
+## 屏幕上 [param at] 那个点站着哪个上场的忍者。空 = 没人。
+## [PBDropArea] 拿它决定「按下去能不能拖起一个人」（M5-4）。
+func _unit_on_field_at(at: Vector2) -> StringName:
 	var units := _fighting_now(_dispatch_preview())
 	var field := _field()
 	var hit: int = PBFieldPicker.unit_at(
 		units,
 		_state.formation,
 		_cfg,
-		PBEnemyPool.to_field(click.position, field),
-		PICK_RADIUS_PX / PBEnemyPool.px_per_unit(field)
+		PBLayout.to_field(at, field),
+		PICK_RADIUS_PX / PBLayout.px_per_unit(field)
 	)
-	_picker.dragging = units[hit].key() if hit >= 0 else &""
-	if hit >= 0 and not _selection.is_same(PBSelection.Kind.UNIT, _picker.dragging):
-		_select(PBSelection.Kind.UNIT, _picker.dragging)
+	return units[hit].key() if hit >= 0 else &""
 
 
 func _restart() -> void:
@@ -853,9 +854,8 @@ func _sync_preview() -> void:
 	if _run_over:
 		_preview.text = ""
 		return
-	# 抽屉盖住这一行的位置（[constant PBDrawer.BAND]），但左边那 40px 盖不到 ——
-	# 不藏起来的话，抽屉开着时行首那几个字会从缝里漏出来。
-	_preview.visible = not _any_drawer_open()
+	# **M5-6 起不用再藏这一行了。** 抽屉那一版只盖住中间那一截，
+	# 行首几个字会从左边的缝里漏出来；模态的遮罩盖满全屏（[PBModal]）。
 	var next := PBRunSim.preview_wave(_state.wave_index + 1, _cfg, _rng)
 	var missing := _state.missing_counters()
 	var covered: int = PBWaveRules.WAVE_ELEMENTS.size() - missing.size()
@@ -869,7 +869,7 @@ func _sync_preview() -> void:
 
 	var keys: String = "空格暂停　1/2/3 倍速　R 重开　A 自动:%s" % ("开" if auto_play else "关")
 	if _phase == Phase.PREPARE and not auto_play:
-		keys = "拖动摆位　回车开打　Q 接任务　V 仓库　B 换带人法　Esc 取消　A 自动:关"
+		keys = "拖动摆位　回车开打　Q 接任务　B 换带人法　Esc 取消　A 自动:关"
 	_preview.text = (
 		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
 		% [
@@ -902,8 +902,8 @@ func _sync_placed(field: Vector2) -> void:
 		return
 	# 选中谁就画谁的射程圈 —— 摆位要有依据，而依据就是「他够得到哪」。
 	_allies.show_range(
-		PBEnemyPool.to_screen(spots[live], field),
-		_cfg.reach_distance(units[live].character.reach_tier()) * PBEnemyPool.px_per_unit(field)
+		PBLayout.to_screen(spots[live], field),
+		_cfg.reach_distance(units[live].character.reach_tier()) * PBLayout.px_per_unit(field)
 	)
 
 
@@ -917,7 +917,7 @@ func _sync_selected(field: Vector2) -> void:
 		_allies.show_range(Vector2.ZERO, 0.0)
 		return
 	_allies.show_range(
-		PBEnemyPool.to_screen(live.pos, field), live.reach * PBEnemyPool.px_per_unit(field)
+		PBLayout.to_screen(live.pos, field), live.reach * PBLayout.px_per_unit(field)
 	)
 	_unit_info.show_live(live)
 
@@ -932,32 +932,29 @@ func _field() -> Vector2:
 
 ## 基地血量画成一个高度随血量变化的条，长在战场那条道的左端。
 ##
-## 高度和落点跟着战场那条道走。**M3.5-e 改版之后这里一直是错的**：
-## 那时道从 95–300 缩到了 134–198，而这个条还按「底边在 y=300、最高 150」画，
-## 满血时整根条从 150 一直盖到 300 —— 把羁绊带和预告行压在下面。
-## 不报错，只是看起来像面板穿帮。所以现在下沿也是**算出来的**
-## （[method PBEnemyPool.lane_bottom]），不是又一个手写的常量。
+## 下沿是**算出来的**（[method PBLayout.lane_bottom]），不是手写的常量 ——
+## 手写那一版穿帮过一次，见 [method PBLayout.apply_to]。
 func _sync_base() -> void:
 	var ratio: float = clampf(_state.base_hp / _cfg.base_hp, 0.0, 1.0)
-	var bottom: float = PBEnemyPool.lane_bottom(_field())
-	_base_rect.size.y = lerpf(4.0, bottom - PBEnemyPool.LANE_TOP, ratio)
+	var bottom: float = PBLayout.lane_bottom(_field())
+	_base_rect.size.y = lerpf(4.0, bottom - PBLayout.FIELD_TOP, ratio)
 	_base_rect.position.y = bottom - _base_rect.size.y
 	_base_rect.color = PBSkin.GOOD.lerp(PBSkin.BAD, 1.0 - ratio)
 
 
-## 上场名单现在由 [PBFieldSlots] 那一列可点的头像承担（M3.5-e）。
+## 名单变了之后要跟着动的那两块：C/D 两个形象，和任务栏那 4 个槽。
 ##
-## M0 到 M3 这里画的是一列不可点的 `Polygon2D` 色块。换成头像格是因为
-## §02 的战场直接操作要求「**点一下忍者就能操作他**」——
-## 一个点不动的色块表达不了那件事，而两套并存会让屏幕上出现两列忍者。
+## **上场名单本身不在这里** —— 准备阶段它直接画在战场上
+## （[method _sync_placed]），M0 到 M3 那一列不可点的 `Polygon2D` 色块
+## 和 M3.5-e 到 M5-5 那一排头像都已经没了。
 ##
 ## 战斗阶段显示锁定的名单，准备阶段显示「现在开打的话会是谁」的预览。
 ## [method PBStrategy.deploy] 只读不改状态，拿来预览是安全的。
 func _sync_deployed() -> void:
-	if not _slots.visible:
+	if not _quest.visible:
 		return
-	var away: Array[PBUnit] = _dispatch_preview()
-	_slots.refresh(_selection, _state, _cfg, _plan.wave, _fighting_now(away), away)
+	_slots.refresh(_selection, _state)
+	_quest.refresh(_selection, _state, _cfg, _plan, _dispatch_preview())
 
 
 func _sync_info() -> void:

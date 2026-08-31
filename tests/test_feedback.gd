@@ -207,12 +207,12 @@ func test_the_telegraph_covers_exactly_what_the_strike_will_hit() -> void:
 
 	assert_eq(pool.shown(), 1, "该有一个圈")
 	assert_almost_eq(
-		pool.center_of(0), PBEnemyPool.to_screen(ult.spot, FIELD), Vector2(0.01, 0.01), "圈心对上落点"
+		pool.center_of(0), PBLayout.to_screen(ult.spot, FIELD), Vector2(0.01, 0.01), "圈心对上落点"
 	)
 	# **两轴共用同一个像素比例**，所以半径是一个数而不是两个 ——
 	# 各算各的话画出来是椭圆，而判定是圆。
 	assert_almost_eq(
-		pool.radius_of(0), ult.radius * PBEnemyPool.px_per_unit(FIELD), 0.01, "半径按同一个比例换算"
+		pool.radius_of(0), ult.radius * PBLayout.px_per_unit(FIELD), 0.01, "半径按同一个比例换算"
 	)
 
 

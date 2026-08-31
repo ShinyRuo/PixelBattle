@@ -28,6 +28,22 @@ const KINDS: Array[StringName] = [
 	&"tech_def",
 ]
 
+## §10 的三档装备分类。**名字写在这里而不是数据表里** ——
+## 分类是规则（挂不挂得上），显示名是文案，两者改动频率差很远。
+const CATEGORY_NAMES := {
+	PBEquipItem.Category.PHYSICAL: "物理装",
+	PBEquipItem.Category.MAGIC: "法术装",
+	PBEquipItem.Category.TANK: "坦克装",
+}
+
+## 每一档挂给谁才生效。**这是 §10 最容易踩的坑**：挂上去没反应
+## 十有八九是分类不匹配，而那件事在格子上一个字都看不出来。
+const CATEGORY_HINTS := {
+	PBEquipItem.Category.PHYSICAL: "只对物理属性的忍者生效",
+	PBEquipItem.Category.MAGIC: "只对五系忍者生效",
+	PBEquipItem.Category.TANK: "当前角色表里没有能吃它的人",
+}
+
 ## 四条科技分支的显示名（§07）。
 const TECH_NAMES := {
 	&"gold": "金币科技",
@@ -93,6 +109,30 @@ static func detail_of(kind: StringName, state: PBRunState, cfg: PBSimConfig) -> 
 		&"economy_slot":
 			return _detail_economy_slot(state, cfg, base, cost)
 	return _detail_tech(kind, state, cfg, base, cost)
+
+
+## 一件**成品**的说明卡正文（§10，M5-5）。标题由调用方给 —— 它已经查过名字了。
+##
+## 三件事按玩家会问的顺序排：**能不能挂给他**（分类匹配是 §10 最容易踩的坑）、
+## **挂上去值多少**、**要哪几个配件**。
+static func item_body(item: PBEquipItem, table: PBEquipTable) -> String:
+	var lines := PackedStringArray()
+	lines.append("%s　+%.0f%% 战力" % [CATEGORY_NAMES.get(item.category, "?"), item.power * 100.0])
+	if item.power <= 0.0:
+		# 照实说，不把防御效果折算成伤害（[member PBEquipItem.power] 的原话）。
+		lines.append(PBSkin.tint("当前战斗模型下不产生伤害", PBSkin.DIM))
+	var parts := PackedStringArray()
+	for part_id: StringName in item.recipe:
+		parts.append(PBLocale.text("equip_part.%s" % part_id))
+	lines.append(PBSkin.tint("配方　" + "　".join(parts), PBSkin.DIM))
+	if not table.is_synthetic():
+		lines.append(PBSkin.tint(CATEGORY_HINTS.get(item.category, ""), PBSkin.DIM))
+	return "\n".join(lines)
+
+
+## 一个**配件**的说明卡正文。配件本身没有效果，说清它是干什么的就够。
+static func part_body() -> String:
+	return PBSkin.tint("配件。按配方凑齐几种才合得出成品（§10）——\n忍具箱随机出货，所以一定会囤下用不上的。", PBSkin.DIM)
 
 
 static func _detail_equip(state: PBRunState, cfg: PBSimConfig, base: float, cost: int) -> String:

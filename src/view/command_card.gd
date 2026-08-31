@@ -28,7 +28,6 @@ const CMD_START: StringName = &"start"
 const CMD_LEVEL_UP: StringName = &"level_up"
 const CMD_BENCH: StringName = &"bench"
 const CMD_DEPLOY: StringName = &"deploy"
-const CMD_EQUIP: StringName = &"equip_open"
 const CMD_DISPATCH: StringName = &"dispatch"
 
 ## 尾兽的指令。**选和升是两条**：§11 的选定只发生一次且不可撤销，
@@ -49,8 +48,38 @@ const CMD_CLEAR_TARGET: StringName = &"clear_target"
 const COLUMNS: int = 3
 const ROWS: int = 3
 
-const PANEL_RECT := Rect2(402.0, 250.0, 234.0, 108.0)
-const CELL := Vector2(74.0, 26.0)
+const PANEL_RECT := PBLayout.J_COMMAND
+
+## 一格多大，以及格与格之间的步距。
+##
+## **两个数必须一起改。** M5-2 把面板从 548 缩到 174 时只改了框，
+## 格子还是 74×26 —— 第三列从 614 画到 688，**出界 48 像素**，
+## 而它不报错（见 [PBLayout] 顶部）。`test_layout.gd` 现在钉着这一条。
+##
+## 算式：`4 + 2 × 60 + 58 = 182 ≤ 188 − 4`，
+## 纵向 `10 + 2 × 24 + 23 = 81`，底下留 13 给提示行。
+const CELL := Vector2(58.0, 23.0)
+const CELL_STEP := Vector2(60.0, 24.0)
+
+## 格子从面板顶下面这么远开始 —— 上面那截是标题行。
+const GRID_TOP: float = 10.0
+
+## 提示行：**必须留在面板里**。溢出去会糊在信息栏和屏幕外面，
+## 而白字压深底两边都读不清。
+##
+## 三行格子占完之后只剩这 13 像素，也就是**一行、约 22 个汉字**
+## （176 像素宽 ÷ 字号 8）。所以下面每一句提示都写在这个预算里 ——
+## 写长了不报错，只是后半句被 `clip_text` 剪掉，
+## 而剪掉的往往正是「然后会怎样」那一半。
+##
+## **13 是字号 8 那一行的真实行高，不是随手取的余数。** 给 11
+## （也就是「剩多少给多少」）的话整行会被裁掉大半，屏幕上看着像空的 ——
+## 而那比写长了更糟：**它连第一句都不显示**。
+const HINT_TOP: float = 81.0
+const HINT_H: float = 13.0
+
+## 提示行一行装得下几个汉字。写提示时对着它数。
+const HINT_BUDGET: int = 22
 const FONT_SIZE: int = 8
 
 var _slots: Array[Button] = []
@@ -101,17 +130,15 @@ func _ready() -> void:
 		PBSkin.FONT_TITLE,
 		PBSkin.TITLE
 	)
-	# 提示条压在最后一行格子下面，**必须留在面板里** —— 溢出去会糊在
-	# 战场和信息栏上，白字压深底，两边都读不清。
 	_hint = PBSkin.label(
 		self,
-		PANEL_RECT.position + Vector2(6.0, 92.0),
+		PANEL_RECT.position + Vector2(6.0, HINT_TOP),
 		PANEL_RECT.size.x - 12.0,
 		PBSkin.FONT_BODY,
 		PBSkin.DIM
 	)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hint.size.y = 16.0
+	_hint.size.y = HINT_H
 
 	# 按上限一次建满，之后只改文字和可点性 —— 和敌人池、出战席同一条规矩（§14）。
 	_slots.resize(COLUMNS * ROWS)
@@ -119,7 +146,10 @@ func _ready() -> void:
 	for i: int in COLUMNS * ROWS:
 		var at := (
 			PANEL_RECT.position
-			+ Vector2(4.0 + float(i % COLUMNS) * (CELL.x + 2.0), 12.0 + float(i / COLUMNS) * (CELL.y + 1.0))
+			+ Vector2(
+				4.0 + float(i % COLUMNS) * CELL_STEP.x,
+				GRID_TOP + float(i / COLUMNS) * CELL_STEP.y
+			)
 		)
 		_slots[i] = _make_slot(i, at)
 		_bound[i] = &""
@@ -161,10 +191,10 @@ func refresh(
 			_fill_unit(selection.unit_of(state), state, cfg)
 		PBSelection.Kind.DISPATCHED:
 			_title.text = "忍者（出任务中）"
-			_hint.text = "他在做任务，这一波羁绊不算他。回来之前动不了。"
+			_hint.text = "做任务中：羁绊不算他，也动不了。"
 		_:
 			_title.text = "指令"
-			_hint.text = "点战场上的单位、大本营或尾兽槽，这里就换成它能做的事。"
+			_hint.text = "点谁，这里就换成谁能做的事。"
 
 
 ## 切到战斗中那一套指令（M4-e）。[param aiming] 为真表示正在等玩家点敌人，
@@ -203,7 +233,7 @@ func _fill_battle(selection: PBSelection) -> void:
 	_title.text = "战斗中"
 	var unit: PBUnit = selection.unit_of(_state)
 	if unit == null:
-		_hint.text = "点战场上的忍者选中他。空格暂停 —— 暂停时照样点得到，也照样能下指令。"
+		_hint.text = "点战场上的忍者选中他。空格暂停时照样点得到。"
 		return
 	_title.text = "忍者　%s" % PBLocale.of_character(unit.character)
 	_bind(
@@ -215,9 +245,11 @@ func _fill_battle(selection: PBSelection) -> void:
 	)
 	_bind(1, CMD_CLEAR_TARGET, "自动选敌", _target >= 0)
 	if _aiming:
-		_hint.text = "点一个敌人，他就改打那个。再按一次「攻击」取消。"
+		_hint.text = "点一个敌人改打他。再按「攻击」取消。"
 	elif _target >= 0:
-		_hint.text = "他正在点名打一个目标。够不着或者那个死了就自动接管 —— 不会站着发呆。"
+		# 「不会站着发呆」那半句删了 —— 它讲的是**没发生的事**，
+		# 而一行只有 22 个字（见 [constant HINT_BUDGET]）。
+		_hint.text = "点名中。够不着或目标死了就自动接管。"
 	else:
 		_hint.text = "按「攻击」再点敌人，可以指定他打谁。"
 
@@ -238,7 +270,7 @@ func _fill_base(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 func _fill_beast(state: PBRunState, cfg: PBSimConfig) -> void:
 	if state.beast_id == &"":
 		_bind(0, CMD_BEAST_PICK, "选尾兽\n九选一", true, PBSkin.Tone.PRIMARY)
-		_hint.text = "§11：开局从九只里选一只，全程不变。点开看每一只干什么。"
+		_hint.text = "九选一，开局定终身。点开逐只看详情。"
 		return
 	var cost: int = PBBeastRules.upgrade_cost(state.beast_level, cfg)
 	if cost < 0:
@@ -247,9 +279,10 @@ func _fill_beast(state: PBRunState, cfg: PBSimConfig) -> void:
 		return
 	_bind(0, CMD_BEAST_UP, "升级尾兽\n%d" % cost, cost <= state.gold)
 	# §11：等级只放大光环与大招伤害，**半径、聚拢、减速、重置 CD 一概不变**。
-	_hint.text = "尾兽 Lv%d → Lv%d，%d 金。等级只放大数值，机制不变。" % [
-		state.beast_level, state.beast_level + 1, cost
-	]
+	_hint.text = (
+		"Lv%d → Lv%d，%d 金。只放大数值，机制不变。"
+		% [state.beast_level, state.beast_level + 1, cost]
+	)
 
 
 func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
@@ -276,7 +309,8 @@ func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 		_bind(1, CMD_BENCH, "收回仓库", true)
 	else:
 		_bind(1, CMD_DEPLOY, "派上场", _deployed.size() + _away.size() < state.open_slots(cfg))
-	_bind(2, CMD_EQUIP, "装备\n%d/%d" % [_worn(unit, state, cfg), cfg.equip_items_per_unit], true)
+	# **「装备」那一格 M5-5 删了**：装备栏（[PBEquipBay]）现在跟着选中常驻显示，
+	# 一个「打开一直开着的东西」的按钮只会让人以为自己漏了一步。
 	_fill_dispatch(unit, state, cfg)
 
 
@@ -291,28 +325,18 @@ func _fill_dispatch(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	var going: bool = state.dispatch_manual.has(unit.key())
 	if going:
 		_bind(3, CMD_DISPATCH, "取消派遣\n%d/%d" % [chosen, need], true)
-		_hint.text = "他这一波去做任务：不上场、羁绊也不算他（§06）。"
+		_hint.text = "去做任务：不上场，羁绊也不算他。"
 		return
 	# 仓库里的人派出去一分代价都没有（他本来就不给羁绊），那样任务就是白送 ——
 	# §06 整节的张力在于「派谁」要付羁绊，所以门槛是「在不在场」。
 	var on_field: bool = state.field_units(cfg).has(unit)
 	_bind(3, CMD_DISPATCH, "派去任务\n%d/%d" % [chosen, need], on_field and chosen < need)
 	if not on_field:
-		_hint.text = "他不在场上，派出去不掉羁绊也不掉战力 —— 那样任务就是白送。"
+		_hint.text = "他不在场上 —— 派他去等于白送，先派上场。"
 	elif chosen >= need:
-		_hint.text = "本波任务只要 %d 人，已经选满了。想换人先取消一个。" % need
+		_hint.text = "本波只要 %d 人，已选满。换人先取消一个。" % need
 	else:
-		_hint.text = "升级抬的是二级属性（力/敏/智），顺着这张卡自己的成长走。"
-
-
-## 这个人身上挂着几件。**数的是自动分配之后的真名单**，不是玩家钦定的那几件 ——
-## 格子上写「0/3」而自动分配其实已经给了他两件的话，读起来像装备没生效。
-## 没上场的人只有钦定的那份可数（装备只发给上场的人，§10）。
-func _worn(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> int:
-	var index: int = _deployed.find(unit)
-	if index < 0:
-		return PBEquipRules.pinned_of(state.equipped, unit.key()).size()
-	return PBEquipRules.assign(_deployed, state.equip_parts, cfg, state.equipped)[index].size()
+		_hint.text = "升级抬的是二级属性（力/敏/智）。"
 
 
 func _bind(

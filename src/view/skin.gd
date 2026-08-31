@@ -104,6 +104,10 @@ static func label(
 	node.size = Vector2(width, float(font_size) + 5.0)
 	node.add_theme_font_size_override("font_size", font_size)
 	node.add_theme_color_override("font_color", color)
+	# **写不下就裁掉，不许漫出框外。** 面板一块块变窄之后（见 [PBLayout]），
+	# 溢出的那一截会盖在邻居身上 —— 而那看起来像是邻居画错了，
+	# 排查会从错的一头开始。裁掉至少把「这里写不下」直接摆在眼前。
+	node.clip_text = true
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
 	return node

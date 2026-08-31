@@ -93,7 +93,7 @@ func sync_allies(attackers: Array[PBAttacker], units: Array[PBUnit], field: Vect
 		# 尾兽那一个不画，见类顶部。
 		if attacker.slot < 0 or attacker.max_hp <= 0.0:
 			continue
-		var at := PBEnemyPool.to_screen(attacker.pos, field)
+		var at := PBLayout.to_screen(attacker.pos, field)
 		var unit: PBUnit = units[attacker.slot] if attacker.slot < units.size() else null
 		_place(shown, at, attacker, unit)
 		shown += 1
@@ -120,7 +120,7 @@ func sync_placed(units: Array[PBUnit], spots: Array[Vector2], field: Vector2) ->
 		_fills[i].visible = false
 		if not shown:
 			continue
-		_bodies[i].position = PBEnemyPool.to_screen(spots[i], field) - BODY * 0.5
+		_bodies[i].position = PBLayout.to_screen(spots[i], field) - BODY * 0.5
 		_bodies[i].color = PBEnemyPool.ELEMENT_COLORS.get(units[i].element, Color.WHITE)
 
 

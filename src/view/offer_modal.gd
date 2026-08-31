@@ -1,6 +1,6 @@
-class_name PBOfferDrawer
-extends PBDrawer
-## 抽卡三选一。§08，M3.5-f。
+class_name PBOfferModal
+extends PBModal
+## 抽卡三选一。§08，M3.5-f；M5-6 从抽屉改成模态。
 ##
 ## ## 为什么三选一要有自己的一块界面
 ##
@@ -18,21 +18,40 @@ extends PBDrawer
 ## 少了最后一条会出事：三张全是已有的卡时，玩家不看仓库根本不知道
 ## 自己在挑一张**只加星级进度**的卡，而界面上三张长得一模一样。
 ##
-## ## 掏钱和挑人是分开的两步
+## ## 掏钱和挑人是分开的两步，所以这一层关不掉
 ##
 ## 钱在摆牌那一刻就扣了（见 [method PBShopRules.open_offer]），
-## 所以这块面板**开着的时候不能开打** —— 那一组候选会连同那笔钱一起蒸发。
-## 拦在 [method PBBattleView._finish_prepare]。
+## 那一组候选连同那笔钱会随着开打一起蒸发（拦在
+## [method PBBattleView._finish_prepare]）。所以它是本项目唯一一块
+## **没有关闭按钮、`Esc` 也收不掉**的面板（[method _closable]）——
+## 给一个「关掉」的出口等于给一个把 300 金币变没的出口，
+## 而账面上只表现为「金币怎么少了」。
+##
+## ## 卡宽 188 不是随手取的
+##
+## 抽屉那一版是 186，而带子只有 508 宽 —— 三张 186 加步距要 574，
+## **右边那张有整整 65 像素画在屏幕外面**，从 M5-2 一直没人发现
+## （见 [PBLayout] 顶部）。模态层宽 600，这次是算过的：
+## `9 + 2×194 + 188 = 585 ≤ 600`。
 
 ## 玩家挑了第 [param index] 张。
 signal picked(index: int)
 
-const CARD_SIZE := Vector2(186.0, 84.0)
+const CARD_SIZE := Vector2(188.0, 86.0)
 const CARD_STEP: float = 194.0
 
 var _cards: Array[Button] = []
 var _tiles: Array[PBUnitTile] = []
 var _texts: Array[RichTextLabel] = []
+
+
+func _body_height() -> float:
+	return CARD_SIZE.y + 4.0
+
+
+## **不给退路。** 见类顶部那段。
+func _closable() -> bool:
+	return false
 
 
 func _build_body() -> void:
@@ -41,8 +60,9 @@ func _build_body() -> void:
 	# 按 [member PBSimConfig.gacha_offer_size] 的上限一次建满（§14）。
 	for i: int in PBSimConfig.new().gacha_offer_size:
 		var card := Button.new()
-		card.position = Vector2(8.0 + float(i) * CARD_STEP, 2.0)
+		card.position = Vector2(9.0 + float(i) * CARD_STEP, 2.0)
 		card.size = CARD_SIZE
+		card.focus_mode = Control.FOCUS_NONE
 		PBSkin.style_button(card, PBSkin.Tone.QUIET)
 		card.pressed.connect(func() -> void: picked.emit(i))
 		body().add_child(card)
@@ -51,14 +71,12 @@ func _build_body() -> void:
 		var tile := PBUnitTile.new()
 		tile.position = Vector2(8.0, 24.0)
 		card.add_child(tile)
-		# `_ready` 会把格子设成 STOP（它在编队页里要自己收拖放），
+		# `_ready` 会把格子设成 STOP（它在仓库里要自己收拖放），
 		# 装进按钮里就得让开 —— 否则卡面正中间那一小块点不动。
 		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_tiles.append(tile)
 
-		_texts.append(
-			PBSkin.rich(card, Rect2(44.0, 2.0, CARD_SIZE.x - 50.0, CARD_SIZE.y - 4.0))
-		)
+		_texts.append(PBSkin.rich(card, Rect2(44.0, 2.0, CARD_SIZE.x - 50.0, CARD_SIZE.y - 4.0)))
 
 
 ## 有没有一组候选正等着挑。开着它的时候不许开打（见类顶部）。

@@ -164,20 +164,57 @@ func test_dragging_moves_him_on_the_real_screen() -> void:
 	var field: Vector2 = root._field()
 	var spots := PBFormationRules.spots_of(units, root._state.formation, root._cfg)
 
-	var press := InputEventMouseButton.new()
-	press.button_index = MOUSE_BUTTON_LEFT
-	press.pressed = true
-	press.position = PBEnemyPool.to_screen(spots[0], field)
-	root._on_place_button(press)
-	assert_eq(root._picker.dragging, units[0].key(), "按在他身上就该抓住他")
-	assert_eq(root._selection.unit_id, units[0].key(), "顺带选中他 —— 射程圈要跟着亮")
+	# **拖动走引擎的拖放协议**（M5-4）：按下去问「这儿站着谁」，
+	# 拖动中每帧一次 `hovered`，松手一次 `card_dropped`。
+	var at := PBLayout.to_screen(spots[0], field)
+	assert_eq(root._unit_on_field_at(at), units[0].key(), "按在他身上就该抓得起来")
+	assert_eq(root._unit_on_field_at(Vector2(620.0, 40.0)), &"", "空地上抓不起人")
 
 	var goal := Vector2(0.08, 0.18)
-	root._picker.drag_to(root._state, root._cfg, goal)
+	root._ground.hovered.emit(
+		PBUnitTile.ZONE_FIELD, units[0].key(), PBLayout.to_screen(goal, field)
+	)
 	assert_almost_eq(
-		root._state.formation[units[0].key()], goal, EPS2, "拖到哪就摆到哪"
+		root._state.formation[units[0].key()], goal, EPS2, "拖到哪就跟到哪 —— 每帧都写，不是松手才写"
 	)
 
-	press.pressed = false
-	root._on_place_button(press)
-	assert_eq(root._picker.dragging, &"", "松手就该放下")
+
+func test_dragging_a_card_out_of_the_warehouse_puts_him_where_it_lands() -> void:
+	# **上场和摆位是同一个动作**（M5-4）。分成两步的话玩家要先「派上场」、
+	# 再去战场上把他拖到想要的位置，而他刚才那一下就是在说位置。
+	var root: Node2D = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	root.run_seed = FIXED_SEED
+	root.auto_play = false
+	root.start_wave = 6
+	add_child_autofree(root)
+	await wait_physics_frames(3)
+
+	# 先抽满仓库 —— 出战席装不下的那几个才会留在里面。
+	root._state.gold = 999999
+	for _i: int in 12:
+		root._on_command(&"gacha")
+		root._on_offer_picked(0)
+	var away: Array[PBUnit] = root._dispatch_preview()
+	var deployed: Array[PBUnit] = root._fighting_now(away)
+	var idle := PBRosterBay.idle_units(root._state, deployed, away)
+	assert_gt(idle.size(), 0, "抽了 12 次，仓库里该有挤不上场的人")
+
+	# **先把一个人从战场拖回仓库**（B → F），腾出一个出战位。
+	# 出战席满着的时候拖过去什么都不会发生 —— 挤掉一个已经在场的人
+	# 是玩家没要求过的事，而他不会知道被挤掉的是谁。
+	var benched: PBUnit = deployed[deployed.size() - 1]
+	root._on_card_moved(PBUnitTile.ZONE_FIELD, benched.key(), PBUnitTile.ZONE_STASH)
+	assert_false(
+		root._fighting_now(root._dispatch_preview()).has(benched), "拖回仓库就该下场"
+	)
+
+	var goal := Vector2(0.2, 0.3)
+	root._ground.card_dropped.emit(
+		PBUnitTile.ZONE_STASH, idle[0].key(), PBLayout.to_screen(goal, root._field())
+	)
+	assert_true(
+		root._fighting_now(root._dispatch_preview()).has(idle[0]), "拖到战场上就该上场"
+	)
+	assert_almost_eq(
+		root._state.formation[idle[0].key()], goal, EPS2, "而且就站在松手的那个点"
+	)

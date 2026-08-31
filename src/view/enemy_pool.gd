@@ -41,25 +41,6 @@ const ELEMENT_SIDES := {
 ## 敌人的绘制半径（像素）。`640×360` 下 5 像素约等于放大后的一个小怪。
 const ENEMY_RADIUS: float = 5.0
 
-## 战场那条道的上沿。**下沿不是常量** —— 见 [method lane_bottom]。
-##
-## M4-a 之前是 138–194 那条 56 像素的窄缝（出战席横排占了 96–130）。
-## 纵向开始算数之后 56 像素装不下任何阵型：近战射程 0.12 换算过来
-## 就是 67 像素，一个人的射程圈比整条道还高。
-##
-## 现在从 90 起，一直到 [method lane_bottom]（默认 196）。
-## 上沿卡在任务卡（收在 84）下面，下沿卡在羁绊带（从 200 起）上面 ——
-## **两头都不能越界**：M4-f 之后玩家会把忍者拖到道的边缘，
-## 而伸进面板底下的那一截会让人「消失」。
-##
-## 战斗中这一段是干净的：羁绊带、指令卡、信息栏都只在准备阶段显示。
-const LANE_TOP: float = 90.0
-
-## 战线的左右端点：右边出生，左边是基地。
-## 「前中后」映射到屏幕右中左，与敌人推进方向一致（§02）。
-const FIELD_RIGHT: float = 606.0
-const FIELD_LEFT: float = 46.0
-
 ## 克制高亮的亮边颜色。
 ##
 ## **必须对全部六种属性色都有对比度，所以只能用纯白。**
@@ -150,43 +131,6 @@ func flash(slot: int) -> void:
 		_flash[slot] = FLASH_FRAMES
 
 
-## 一个战场单位在屏幕上换算成多少像素。
-##
-## **两轴共用这一个比例。** 各算各的话，sim 里的一个圆在屏幕上会是椭圆 ——
-## 而 §02 的射程圈、大招落点预示都要求玩家看到的形状就是判定的形状。
-static func px_per_unit(field: Vector2) -> float:
-	return (FIELD_RIGHT - FIELD_LEFT) / maxf(field.x, 0.001)
-
-
-## 战场那条道的下沿。**从战场高度算出来，不是常量** ——
-## 写死一个数的话，改 [member PBSimConfig.field_height] 就会让画面
-## 和判定悄悄错开，而那种错开只表现为「打得到的敌人画在道外面」。
-static func lane_bottom(field: Vector2) -> float:
-	return LANE_TOP + field.y * px_per_unit(field)
-
-
-## 屏幕坐标 → 战场坐标。[method to_screen] 的逆，用来把鼠标点到的地方
-## 换算回 sim 认得的位置（§02 的战斗中点选，M4-e）。
-##
-## 和正向那一份**必须成对改**：各写各的话，玩家点到的和实际选中的
-## 会差几个像素，而那种偏差表现为「点边上一点就选不中」。
-static func to_field(at: Vector2, field: Vector2) -> Vector2:
-	var scale: float = px_per_unit(field)
-	return Vector2((at.x - FIELD_LEFT) / scale, (at.y - LANE_TOP) / scale)
-
-
-## 战场坐标 → 屏幕坐标。
-##
-## **全项目唯一一份。** 敌人、己方单位、落点预示、伤害飘字都走它 ——
-## 各写一份的话，「预示圈盖住的位置」和「真正挨打的位置」会差几个像素，
-## 而那种偏差看起来只是「大招好像打偏了」。
-##
-## [param field] 是 `Vector2(field_length, field_height)`。
-static func to_screen(at: Vector2, field: Vector2) -> Vector2:
-	var scale: float = px_per_unit(field)
-	return Vector2(FIELD_LEFT + at.x * scale, LANE_TOP + at.y * scale)
-
-
 ## 敌人在屏幕上的位置。
 ##
 ## M4-a 之前这里用「槽位号 × 黄金比」现编一个纵向散布 —— 那是渲染层
@@ -194,7 +138,7 @@ static func to_screen(at: Vector2, field: Vector2) -> Vector2:
 ## [member PBEnemy.lane]，那个式子搬进了 [method PBSimConfig.enemy_lane]：
 ## **画面一个像素都没变，但纵向从此算数了。**
 func screen_position(enemy: PBEnemy, field: Vector2) -> Vector2:
-	return to_screen(enemy.pos(), field)
+	return PBLayout.to_screen(enemy.pos(), field)
 
 
 func _decay_flash() -> void:

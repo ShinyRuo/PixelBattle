@@ -57,7 +57,7 @@ func sync_shots(shots: Array[PBProjectile], field: Vector2) -> void:
 		var dot: ColorRect = _dots[shown]
 		dot.visible = true
 		dot.color = ENEMY_COLOR if shot.at_ally else COLOR
-		dot.position = PBEnemyPool.to_screen(shot.pos, field) - SIZE * 0.5
+		dot.position = PBLayout.to_screen(shot.pos, field) - SIZE * 0.5
 		shown += 1
 	for i: int in range(shown, _dots.size()):
 		_dots[i].visible = false

@@ -82,18 +82,25 @@ func test_enemy_pool_is_preallocated_and_never_grows() -> void:
 
 
 func test_deployed_slots_are_preallocated_too() -> void:
-	# [PBFieldSlots] 里那两排可点的头像格。M4-f 起第一排是**仓库**
-	# （上场的人直接画在战场上、可以拖动摆位），第二排仍然是出任务中。
-	# 预分配那条规矩没变：按上限一次建满，之后只改内容（§14）。
+	# 头像格也走预分配那条规矩：按上限一次建满，之后只改内容（§14）。
+	#
+	# **三排头像先后搬走了**：仓库那一排去了常驻的 [PBRosterBay]（M5-3），
+	# 出任务那一排去了任务栏 [PBQuestCard]（M5-6）。[PBFieldSlots]
+	# 现在一个忍者格都不剩 —— 它只管尾兽和大本营那两个形象。
 	var root := _spawn_battle()
-	var tiles := (root.get_node("HUD/Slots") as PBFieldSlots).find_children(
+	var slots := (root.get_node("HUD/Quest") as PBQuestCard).find_children(
 		"", "PBUnitTile", true, false
 	)
+	assert_eq(slots.size(), PBQuestCard.SLOT_COUNT, "任务栏按 SSS 任务的 4 人建满")
 	assert_eq(
-		tiles.size(),
-		PBFieldSlots.ROW_MAX + 4,
-		"仓库那一排按上限建满，再加 4 个出任务格（§06 的 SSS 任务派 4 人）"
+		(root.get_node("HUD/Slots") as PBFieldSlots).find_children("", "PBUnitTile", true, false),
+		[],
+		"C/D 那两个形象上不该再挂忍者格"
 	)
+	var bay := (root.get_node("HUD/Stash") as PBRosterBay).find_children(
+		"", "PBUnitTile", true, false
+	)
+	assert_eq(bay.size(), PBRosterBay.CAP, "仓库按卡池上限一次建满，滚动只是挪位置")
 
 
 func test_pause_stops_the_logic() -> void:

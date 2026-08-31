@@ -1,20 +1,22 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://src/view/battle_view.gd" id="1_view"]
 [ext_resource type="Script" path="res://src/view/enemy_pool.gd" id="2_pool"]
 [ext_resource type="Script" path="res://src/view/command_card.gd" id="3_command"]
 [ext_resource type="Script" path="res://src/view/unit_info.gd" id="4_unitinfo"]
 [ext_resource type="Script" path="res://src/view/quest_card.gd" id="5_quest"]
-[ext_resource type="Script" path="res://src/view/bond_panel.gd" id="6_bonds"]
 [ext_resource type="Script" path="res://src/view/field_slots.gd" id="7_slots"]
-[ext_resource type="Script" path="res://src/view/offer_drawer.gd" id="8_offer"]
-[ext_resource type="Script" path="res://src/view/equip_drawer.gd" id="9_equip"]
-[ext_resource type="Script" path="res://src/view/roster_drawer.gd" id="10_stash"]
-[ext_resource type="Script" path="res://src/view/beast_drawer.gd" id="11_beasts"]
+[ext_resource type="Script" path="res://src/view/offer_modal.gd" id="8_offer"]
+[ext_resource type="Script" path="res://src/view/parts_bay.gd" id="9_equip"]
+[ext_resource type="Script" path="res://src/view/equip_bay.gd" id="17_gear"]
+[ext_resource type="Script" path="res://src/view/tooltip.gd" id="18_tip"]
+[ext_resource type="Script" path="res://src/view/roster_bay.gd" id="10_stash"]
+[ext_resource type="Script" path="res://src/view/beast_modal.gd" id="11_beasts"]
 [ext_resource type="Script" path="res://src/view/ally_pool.gd" id="12_allies"]
 [ext_resource type="Script" path="res://src/view/telegraph_pool.gd" id="13_telegraph"]
 [ext_resource type="Script" path="res://src/view/float_text_pool.gd" id="14_floats"]
 [ext_resource type="Script" path="res://src/view/shot_pool.gd" id="15_shots"]
+[ext_resource type="Script" path="res://src/view/drop_area.gd" id="16_ground"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_view")
@@ -25,24 +27,12 @@ offset_bottom = 360.0
 color = Color(0.08, 0.09, 0.12, 1)
 
 [node name="Lane" type="ColorRect" parent="."]
-offset_left = 40.0
-offset_top = 86.0
-offset_right = 614.0
-offset_bottom = 200.0
 color = Color(0.11, 0.12, 0.16, 1)
 
 [node name="Base" type="ColorRect" parent="."]
-offset_left = 36.0
-offset_top = 90.0
-offset_right = 46.0
-offset_bottom = 196.0
 color = Color(0.35, 0.75, 0.45, 1)
 
 [node name="Limit" type="ColorRect" parent="."]
-offset_left = 325.0
-offset_top = 90.0
-offset_right = 327.0
-offset_bottom = 196.0
 color = Color(0.52, 0.66, 0.88, 0.9)
 
 [node name="Telegraph" type="Node2D" parent="."]
@@ -63,12 +53,11 @@ script = ExtResource("14_floats")
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Info" type="Label" parent="HUD"]
-offset_left = 8.0
-offset_top = 5.0
-offset_right = 632.0
-offset_bottom = 25.0
 theme_override_font_sizes/font_size = 11
 text = "准备中"
+
+[node name="Ground" type="Control" parent="HUD"]
+script = ExtResource("16_ground")
 
 [node name="Command" type="Control" parent="HUD"]
 offset_right = 640.0
@@ -85,21 +74,12 @@ offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("5_quest")
 
-[node name="Bonds" type="Control" parent="HUD"]
-offset_right = 640.0
-offset_bottom = 360.0
-script = ExtResource("6_bonds")
-
 [node name="Slots" type="Control" parent="HUD"]
 offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("7_slots")
 
 [node name="Preview" type="Label" parent="HUD"]
-offset_left = 8.0
-offset_top = 232.0
-offset_right = 632.0
-offset_bottom = 248.0
 theme_override_font_sizes/font_size = 11
 text = ""
 
@@ -113,6 +93,11 @@ offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("9_equip")
 
+[node name="Gear" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("17_gear")
+
 [node name="Beasts" type="Control" parent="HUD"]
 offset_right = 640.0
 offset_bottom = 360.0
@@ -122,3 +107,8 @@ script = ExtResource("11_beasts")
 offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("8_offer")
+
+[node name="Tip" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("18_tip")

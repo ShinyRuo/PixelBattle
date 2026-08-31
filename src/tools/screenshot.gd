@@ -35,8 +35,7 @@ const KEY_NAMES := {
 	"b": KEY_B,  # 换带人方式（按战力 / 按羁绊）
 	"q": KEY_Q,  # 接/不接任务
 	"a": KEY_A,  # 自动推进
-	"v": KEY_V,  # 开/关仓库抽屉（M3.5-f）
-	"escape": KEY_ESCAPE,  # 收抽屉 / 取消选中（M3.5-e）
+	"escape": KEY_ESCAPE,  # 收弹层 / 取消选中（M3.5-e）
 }
 
 var _scene: Node
@@ -55,12 +54,29 @@ var _press: Array[int] = []
 ## 而那正是本工具存在的理由。
 var _hover: int = -1
 
-## 强行摊开某一块抽屉（`offer` / `equip` / `stash` / `beasts`）。空 = 不开。
+## 强行摊开一层模态（`offer` / `beasts`）。空 = 不开。
+## 仓库、忍具、装备栏都不在里面 —— M5-3 到 M5-5 之后它们是常驻面板。
 ##
-## 和 `--pick` 同一个理由：抽屉里有几块**只在特定操作之后才出现**
-## （三选一要先掏钱、选尾兽要先点空槽），而截图工具送不出那串操作。
-## 没有这个开关的话，「这四块排得下吗」只能靠手开游戏回答。
-var _drawer: String = ""
+## 和 `--pick` 同一个理由：这两层**只在特定操作之后才出现**
+## （三选一要先掏钱、选尾兽要先点指令），而截图工具送不出那串操作。
+## 没有这个开关的话，「这两层排得下吗」只能靠手开游戏回答 ——
+## 而抽屉那一版恰恰是这么伸出屏幕 65 像素而没人发现的（见 [PBLayout]）。
+var _modal: String = ""
+
+## 强行选中 C 或 D（`beast` / `base`）。空 = 不选。
+##
+## 指令卡（J）**选中谁就换成谁能做的事**，而最宽的那一套是大本营那七格
+## （「金币科技 Lv3」）—— 不选中它就永远看不到那一屏，
+## 而格子宽度放不放得下正是靠这张图判断的。
+var _select: String = ""
+
+## 局种子。**0 = 每次都换一局**，也就是默认行为。
+##
+## 给一个固定值，同一条命令就永远出同一张图 —— 于是排版改动可以
+## **逐字节对拍**：改之前截一张、改之后截一张，哈希一样就是「只搬了代码
+## 没动画面」。不给种子的话两张图连波次和金币都不一样，
+## 「这块面板是不是挪了两像素」只能靠肉眼猜。
+var _seed: int = 0
 
 
 func _initialize() -> void:
@@ -70,6 +86,8 @@ func _initialize() -> void:
 	# 准备阶段的四块面板只在「手动」时出现 —— 要看的正是它们。
 	_scene.set("auto_play", _auto)
 	_scene.set("start_wave", _wave)
+	if _seed != 0:
+		_scene.set("run_seed", _seed)
 	root.add_child(_scene)
 
 
@@ -91,8 +109,10 @@ func _process(_delta: float) -> bool:
 	# 选中排在按键之后一帧，让面板先摆好。
 	if _frames == PRESS_FRAME + 1 and _hover >= 0:
 		_hover_tile()
-	if _frames == PRESS_FRAME + 2 and _drawer != "":
-		_open_drawer()
+	if _frames == PRESS_FRAME + 1 and _select != "":
+		_pick_slot()
+	if _frames == PRESS_FRAME + 2 and _modal != "":
+		_open_modal()
 	if _frames < _warmup:
 		return false
 	var image := root.get_texture().get_image()
@@ -108,18 +128,18 @@ func _process(_delta: float) -> bool:
 	return true
 
 
-## 假装玩家点了出战席的第 [member _hover] 个忍者。
+## 假装玩家点了仓库里的第 [member _hover] 个忍者。
 ##
 ## 直接发格子自己的信号，而不是去 `warp_mouse` —— 后者要等引擎下一帧
 ## 派发点击，而截图只有三十帧，时序很容易错开。
 ## 这里少验的那一段（鼠标坐标 → 点击派发）是引擎的事，不是本项目的。
 func _hover_tile() -> void:
-	var slots := _scene.get_node_or_null("HUD/Slots") as PBFieldSlots
-	if slots == null or not slots.visible:
-		printerr("槽位那一列没显示（准备阶段才有）")
+	var bay := _scene.get_node_or_null("HUD/Stash") as PBRosterBay
+	if bay == null or not bay.visible:
+		printerr("仓库没显示（准备阶段才有）")
 		return
 	var seen: int = 0
-	for tile: PBUnitTile in slots.find_children("", "PBUnitTile", true, false):
+	for tile: PBUnitTile in bay.find_children("", "PBUnitTile", true, false):
 		if not tile.visible or tile.unit == null:
 			continue
 		if seen == _hover:
@@ -129,18 +149,28 @@ func _hover_tile() -> void:
 	printerr("场上没有第 %d 个忍者" % _hover)
 
 
-## 摊开一块抽屉。三选一那块要先真的掏一次钱 —— 摆着一组假候选
-## 会让截图里的卡面和游戏里的对不上，而排版正是靠这张图判断的。
-func _open_drawer() -> void:
-	var node := _scene.get_node_or_null("HUD/%s" % _drawer.capitalize()) as PBDrawer
-	if node == null:
-		printerr("没有这块抽屉：%s" % _drawer)
+## 假装玩家点了 C（尾兽）或 D（大本营）。走的是槽位自己发的信号，
+## 和 `_hover_tile` 同一条路 —— 不 `warp_mouse`，理由见那个函数。
+func _pick_slot() -> void:
+	var kind := PBSelection.Kind.BASE if _select == "base" else PBSelection.Kind.BEAST
+	if _select != "base" and _select != "beast":
+		printerr("--select 只认 base / beast，收到：%s" % _select)
 		return
-	if _drawer == "offer":
+	(_scene.get_node("HUD/Slots") as PBFieldSlots).slot_picked.emit(kind, &"")
+
+
+## 摊开一层模态。三选一那层要先真的掏一次钱 —— 摆着一组假候选
+## 会让截图里的卡面和游戏里的对不上，而排版正是靠这张图判断的。
+func _open_modal() -> void:
+	var node := _scene.get_node_or_null("HUD/%s" % _modal.capitalize()) as PBModal
+	if node == null:
+		printerr("没有这一层：%s" % _modal)
+		return
+	if _modal == "offer":
 		_scene._state.gold = 99999
 		_scene._on_command(&"gacha")
 		return
-	_scene._toggle_drawer(node, true)
+	_scene._open_modal(node)
 
 
 func _parse_args() -> void:
@@ -156,6 +186,9 @@ func _parse_args() -> void:
 				_out = args[i]
 			"--auto":
 				_auto = true
+			"--seed":
+				i += 1
+				_seed = int(args[i])
 			"--pick":
 				i += 1
 				_hover = int(args[i])
@@ -163,9 +196,12 @@ func _parse_args() -> void:
 				# 截图前多跑几帧。手感那几样要打起来才看得到。
 				i += 1
 				_warmup = maxi(int(args[i]), PRESS_FRAME + 3)
-			"--drawer":
+			"--select":
 				i += 1
-				_drawer = args[i].strip_edges().to_lower()
+				_select = args[i].strip_edges().to_lower()
+			"--modal":
+				i += 1
+				_modal = args[i].strip_edges().to_lower()
 			"--press":
 				# 逗号分隔，例如 `--press b` 或 `--press q,b`。
 				i += 1

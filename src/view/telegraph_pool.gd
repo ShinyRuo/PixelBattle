@@ -21,7 +21,7 @@ extends Node2D
 ## 于是根本不去躲 —— 而躲得开。
 ##
 ## 圆是**真圆**，不是椭圆：两轴共用同一个像素比例
-## （[method PBEnemyPool.px_per_unit]）。不共用的话画出来的形状
+## （[method PBLayout.px_per_unit]）。不共用的话画出来的形状
 ## 和判定的形状不是一回事，而那正是这一整块要兑现的东西。
 ##
 ## ## 越接近落地越亮
@@ -74,7 +74,7 @@ func _ready() -> void:
 ## [method PBBattleSim.attackers]，**只读**。
 ## [param field] 是 `Vector2(field_length, field_height)`。
 func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector2) -> void:
-	var scale: float = PBEnemyPool.px_per_unit(field)
+	var scale: float = PBLayout.px_per_unit(field)
 	_shown = 0
 	for attacker: PBAttacker in attackers:
 		if _shown >= CAPACITY:
@@ -85,7 +85,7 @@ func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector
 			continue
 		# 还剩多少比例的等待时间。落地那一刻是 1，刚下达时接近 0。
 		var total: int = maxi(ult.delay_ticks, 1)
-		_centers[_shown] = PBEnemyPool.to_screen(ult.spot, field)
+		_centers[_shown] = PBLayout.to_screen(ult.spot, field)
 		_radii[_shown] = ult.radius * scale
 		_closeness[_shown] = clampf(
 			1.0 - float(ult.lands_at - current_tick) / float(total), 0.0, 1.0

@@ -1,6 +1,10 @@
 class_name PBFieldPicker
 extends RefCounted
-## 战场上「点到了谁」：战斗中的点选与点名（M4-e），准备阶段的拖动摆位（M4-f）。§02。
+## 战场上「点到了谁」：战斗中的点选与点名（M4-e），准备阶段拖动摆位的命中判定。§02。
+##
+## **拖动本身 M5-4 起走引擎的拖放协议**（[PBDropArea]），不再自己监听鼠标 ——
+## 一个项目里两套拖动迟早在「拖到别的面板上松手」这件事上分叉。
+## 这里只剩下「屏幕上那个点是谁」。
 ##
 ## ## 为什么从 [PBBattleView] 里搬出来
 ##
@@ -26,11 +30,6 @@ extends RefCounted
 ## 一步到位的话，手一抖就把主力指到一个残血杂兵身上。
 var aiming: bool = false
 
-## 正在被拖着摆位置的那个忍者的 id（准备阶段，M4-f）。空 = 没在拖。
-##
-## 存 id 不存下标：拖到一半时名单可能重排（羁绊策略每帧重挑一次），
-## 而下标一变手上拖的就换了个人 —— 那不报错，只表现为「拖着拖着换人了」。
-var dragging: StringName = &""
 
 
 ## [param spot] 附近站着的是名单里的第几个。没点中返回 -1。
@@ -53,22 +52,6 @@ static func index_of(units: Array[PBUnit], unit_id: StringName) -> int:
 		if units[i].key() == unit_id:
 			return i
 	return -1
-
-
-## 把正在拖的那个人摆到 [param at]。没在拖就什么都不做。
-##
-## **每一帧都写进状态**，不是松手才写 —— 松手才写的话拖动过程中方块
-## 不会跟着走，玩家会以为没拖起来。
-##
-## 走 [method PBFormationRules.place]，不自己往 [member PBRunState.formation]
-## 里塞 Vector2：那条路会漏掉界限夹取，而一个摆在战场之外的忍者不报错，
-## 他只是画在屏幕外面然后一发都打不着。
-func drag_to(state: PBRunState, cfg: PBSimConfig, at: Vector2) -> void:
-	var unit := state.roster.get(dragging, null) as PBUnit
-	if unit == null:
-		dragging = &""
-		return
-	PBFormationRules.place(state, unit, at, cfg)
 
 
 ## 选中那个忍者这一波在场上的样子。没上场（或者压根没选人）就返回 null。

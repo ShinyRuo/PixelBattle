@@ -20,7 +20,7 @@ extends Control
 ## 指向不同的波次。写成一行「火系」的话，玩家读到的还是旧模型。
 
 ## 面板占底栏中段，右边留给指令卡（[constant PBCommandCard.PANEL_RECT]）。
-const PANEL_RECT := Rect2(46.0, 250.0, 350.0, 108.0)
+const PANEL_RECT := PBLayout.H_INFO
 const FONT_SIZE: int = 8
 
 ## 血条与蓝条。**先画满血的底再画当前值**，比只画一条读得快。
@@ -29,6 +29,10 @@ const BAR_SIZE := Vector2(96.0, 6.0)
 const HP_COLOR := Color(0.85, 0.30, 0.30)
 const MP_COLOR := Color(0.35, 0.55, 0.90)
 const BAR_BACK := Color(0.16, 0.17, 0.21)
+
+## 「再补一个就能进」最多提几组。面板只有 132 像素宽、七八行高，
+## 提第三条就会把「点战场上的忍者」那句挤掉。
+const MAX_HINTS: int = 2
 
 var _portrait: PBUnitTile
 var _head: Label
@@ -74,16 +78,18 @@ func _ready() -> void:
 
 
 ## 按当前选中重画。[param deployed] 是「现在开打的话会是谁」，用来算装备。
+## [param bond_aware] 是玩家现在用哪种带人方式（`B` 键切换），只在队伍账那一档用。
 func refresh(
 	selection: PBSelection,
 	state: PBRunState,
 	cfg: PBSimConfig,
 	wave: PBWave,
-	deployed: Array[PBUnit]
+	deployed: Array[PBUnit],
+	bond_aware: bool = false
 ) -> void:
 	var unit := selection.unit_of(state)
 	if unit == null:
-		_show_team(state, cfg, wave)
+		_show_team(state, cfg, wave, bond_aware)
 		return
 	_show_unit(unit, selection, state, cfg, wave, deployed)
 
@@ -104,21 +110,92 @@ func show_live(live: PBAttacker) -> void:
 	_set_bar(_mp_back, _mp_fill, 1.0 if live.max_mp <= 0.0 else live.mp / live.max_mp)
 
 
-## 没选人时显示整队的账。**空着不写等于浪费屏幕上最好的一块地方。**
-func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave) -> void:
+## 没选人时显示**整队的账**，也就是原来那条羁绊带（M5-5 并进来的）。
+##
+## ## 羁绊带为什么搬进这里
+##
+## 新布局（[PBLayout]）里 A~J 十个框没有一个是给它的，而它压在战场上
+## 又正好占着 M5-2 之后有人站的那一块。搬进这里不是找地方塞：
+## **这一栏没选中人时本来就是空的**，而「整队现在什么样」正是
+## 那个空档该回答的问题 —— 和指令卡「选中谁就显示谁能做的事」是同一条规矩。
+##
+## ## 第二行才是产出
+##
+## 「现在吃着哪些档」是结果，看一眼就够；
+## **「还差 1 人就能进满档，+18%」是可以立刻行动的信息** ——
+## 那正是「换人」从排序变成决策的那一刻。面板窄了之后先保它。
+func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: bool) -> void:
 	_portrait.visible = false
 	_set_bar(_hp_back, _hp_fill, 0.0)
 	_set_bar(_mp_back, _mp_fill, 0.0)
-	_head.text = "第 %d 波（%s）　金 %d　卡池 %d" % [
-		wave.index, PBUnitTile.ELEMENT_NAMES.get(wave.element, "?"), state.gold, state.roster.size()
+	var units := state.bonded_units(cfg)
+	_head.text = "第 %d 波（%s）　金 %d" % [
+		wave.index, PBUnitTile.ELEMENT_NAMES.get(wave.element, "?"), state.gold
 	]
 	var lines := PackedStringArray()
-	lines.append("羁绊 ×%.3f　在场 %d 人" % [state.bond_mult(cfg), state.bonded_units(cfg).size()])
+	lines.append(
+		"羁绊 ×%.2f　在场 %d　B:%s"
+		% [state.bond_mult(cfg), units.size(), "羁绊" if bond_aware else "战力"]
+	)
+	lines.append_array(_tier_lines(cfg, units))
 	if state.dispatched > 0:
-		lines.append("出任务 %d 人（这一波羁绊不算他们）" % state.dispatched)
-	lines.append("")
-	lines.append("点战场上的忍者看他的属性，点大本营花钱。")
+		lines.append(PBSkin.tint("出任务 %d 人（不算羁绊）" % state.dispatched, PBSkin.DIM))
+	lines.append_array(_next_tier_lines(cfg, units))
 	_body.text = "\n".join(lines)
+
+
+## 现在吃着哪些档。功能档缀在后面（M3-f）—— **载体是谁留给选中那个人看**，
+## 这一栏塞不下「要把某某排进出战席」。
+func _tier_lines(cfg: PBSimConfig, units: Array[PBUnit]) -> PackedStringArray:
+	var out := PackedStringArray()
+	if units.is_empty():
+		out.append(PBSkin.tint("在场没有人 —— 先抽卡", PBSkin.DIM))
+		return out
+	var tiers := PBBondRules.active_tiers(units, cfg.bonds)
+	for bond: PBBond in cfg.bonds.all():
+		var tier: int = int(tiers.get(bond.id, 0))
+		if tier <= 0:
+			continue
+		var full: String = "满" if tier >= bond.tier_counts.size() else "%d" % tier
+		var label: String = "· %s %s档" % [PBLocale.of_bond(bond), full]
+		var key: StringName = bond.function_at(PBBondRules.active_count(bond, units))
+		if key != &"":
+			label += "·" + PBLocale.of_bond_function(key)
+		out.append(label)
+	if out.is_empty():
+		out.append(PBSkin.tint("一组都没凑上", PBSkin.DIM))
+	return out
+
+
+## 差一点能吃到什么。**只提差 1–2 人的** —— 差 3 人以上一波之内凑不出来，
+## 摆上去只是噪音。按「补上去值多少」排序，窄面板只留最值钱的那两条。
+func _next_tier_lines(cfg: PBSimConfig, units: Array[PBUnit]) -> PackedStringArray:
+	var out := PackedStringArray()
+	if units.is_empty():
+		return out
+	var hints: Array[Dictionary] = []
+	for bond: PBBond in cfg.bonds.all():
+		var missing: int = PBBondRules.to_next_tier(bond, units)
+		if missing <= 0 or missing > 2:
+			continue
+		var active: int = PBBondRules.active_count(bond, units)
+		var gain: float = bond.bonus_at(active + missing) - bond.bonus_at(active)
+		if gain > 0.0:
+			hints.append({"name": PBLocale.of_bond(bond), "missing": missing, "gain": gain})
+	if hints.is_empty():
+		return out
+	hints.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool: return float(a["gain"]) > float(b["gain"])
+	)
+	out.append(PBSkin.tint("再补就能进：", PBSkin.TITLE))
+	for hint: Dictionary in hints.slice(0, MAX_HINTS):
+		out.append(
+			PBSkin.tint(
+				"· %s 差%d +%.0f%%" % [hint["name"], hint["missing"], float(hint["gain"]) * 100.0],
+				PBSkin.TITLE
+			)
+		)
+	return out
 
 
 func _show_unit(

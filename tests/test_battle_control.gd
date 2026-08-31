@@ -133,7 +133,7 @@ func test_clicking_a_ninja_selects_him_even_while_paused() -> void:
 	var root: Node2D = await _in_battle()
 	root._paused = true
 	var live: PBAttacker = root._battle.attackers()[0]
-	var at := PBEnemyPool.to_screen(live.pos, root._field())
+	var at := PBLayout.to_screen(live.pos, root._field())
 	root._on_field_click(at)
 	assert_eq(root._selection.kind, PBSelection.Kind.UNIT, "点中忍者该选中他")
 	assert_eq(
@@ -166,7 +166,7 @@ func test_clicking_an_enemy_while_aiming_names_it() -> void:
 			target = enemy
 			break
 	assert_not_null(target, "开打之后场上该有敌人")
-	root._on_field_click(PBEnemyPool.to_screen(target.pos(), root._field()))
+	root._on_field_click(PBLayout.to_screen(target.pos(), root._field()))
 
 	assert_eq(live.forced_target, target.slot, "点中的那个该被点名")
 	assert_false(root._picker.aiming, "点完就该退出指定状态")
