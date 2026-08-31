@@ -124,19 +124,15 @@ func _buy_best(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStre
 			best_rate = rate
 			best = Buy.TECH_POP
 
-	# 装备的收益要按「一件成品」量，因为配件凑不满 3 个不产生任何加成 ——
-	# 只量一个配件会算出 0 收益，装备永远不会被选中。
+	# 装备按**一个忍具箱**的期望收益比价（[method PBValuation.equip_box_gain]
+	# 已经把「还差几个指定配件 × 每种要开几箱」摊进去了）。
 	#
-	# 但**比价要摊回到单个配件**。按整件比会引入一个纯粹的模型假象：
-	# 一件成品要 3 倍配件价一次性拿出，而这个循环每有 150 金就会拿去抽卡，
+	# 摊薄这一步不能省。按整件成品比会引入一个纯粹的模型假象：
+	# 一件成品要 3 倍箱价一次性拿出，而这个循环每有 150 金就会拿去抽卡，
 	# 于是钱永远攒不到那一笔，装备连参加比价的资格都没有 ——
 	# 表现为「怎么加强装备都没人买」，看上去像经济学结论，其实是攒钱行为没建模。
-	# 摊薄之后收益率完全不变（三个配件的边际收益相同），可负担性却正常了。
 	if cfg.equip_part_cost <= state.gold and not equipment_is_full(state, cfg):
-		var per_part: float = (
-			PBValuation.equip_item_gain(state, cfg, base) / float(cfg.equip_parts_per_item)
-		)
-		var rate := _rate(per_part, cfg.equip_part_cost)
+		var rate := _rate(PBValuation.equip_box_gain(state, cfg, base), cfg.equip_part_cost)
 		if rate > best_rate:
 			best_rate = rate
 			best = Buy.EQUIP
@@ -171,7 +167,7 @@ func _execute(
 		Buy.TECH_POP:
 			return buy_tech(state, &"pop", cfg)
 		Buy.EQUIP:
-			return buy_equip_part(state, cfg)
+			return buy_equip_part(state, cfg, rng)
 		Buy.GACHA:
 			return pull_once(state, wave, cfg, rng)
 		Buy.KAKUZU:

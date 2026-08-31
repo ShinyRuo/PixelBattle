@@ -12,3 +12,4 @@ match_element = 4
 tier_counts = Array[int]([2, 4])
 tier_power = Array[float]([0.06, 0.16])
 tier_function_keys = Array[StringName]([&"", &""])
+tier_function_carriers = Array[StringName]([&"", &""])

@@ -56,13 +56,28 @@ static func passive_income(battle_seconds: float, tech_level: int, cfg: PBSimCon
 ## §07 明确写了「原版保留不动，别去修」—— 它稳赚却包装成会扣钱的老虎机，
 ## 用体感波动换玩家的注意力投入。M-1 照掷，因为「打不动就断粮」这条
 ## 反馈回路正是 §07「经济位 = 战力空位」硬下限的来源。
-static func kill_drop_income(kills: int, cfg: PBSimConfig, rng: RandomNumberGenerator) -> int:
+##
+## ## [param gold_floor]（§09 木叶三忍的功能档，M3-f）
+##
+## 「负收益不再触发，且金币收益提升」。这不是在**修**上面那台老虎机 ——
+## §07 说了别修。它是把「关掉波动」做成一个要凑齐一组羁绊、还要把载体
+## 排进出战席才拿得到的选项，两条设计同时在场，玩家自己选。
+##
+## **掷骰照掷，只改结果。** 少掷一次会让 `combat` 流错位，
+## 于是「带不带这组羁绊」会改变之后每一波的敌人和掉落 —— 那不是一个功能档
+## 该有的影响半径，而且它会让同种子的对拍失效（铁律 3）。
+static func kill_drop_income(
+	kills: int, cfg: PBSimConfig, rng: RandomNumberGenerator, gold_floor: bool = false
+) -> int:
+	var gain: int = cfg.kill_drop_gain
+	if gold_floor:
+		gain = int(round(float(gain) * cfg.bond_gold_gain_scale))
 	var total: int = 0
 	for _i: int in kills:
 		var roll: float = rng.randf()
 		if roll < 0.50:
-			total += cfg.kill_drop_gain
-		elif roll < 0.80:
+			total += gain
+		elif roll < 0.80 and not gold_floor:
 			total += cfg.kill_drop_loss
 	return total
 
@@ -116,6 +131,56 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 ##
 ## 属性因此**不再是等概率的** —— 它由角色表决定。那正是想要的：
 ## 「哪一系深、哪一系浅」变成了可以在 `data/` 里调的设计，而不是写死的 1/6。
+## 一次抽卡掷出的**一组候选**，玩家从中挑一张（§08，M3.5-e）。
+##
+## ## 为什么是三选一而不是抽三次
+##
+## 它把抽卡**从随机变成一个决策**：补羁绊缺的那个人、补空缺的克制系、
+## 还是单纯战力更高的那张 —— 那是 §09 和 §03 在准备阶段唯一的交汇点。
+##
+## ## 保底只保第一张
+##
+## 三张一起视为**一次**抽卡：保底触发时第一张钦定 SSR，另外两张照常掷。
+## 三张各保各的话，保底会变成刷 SSR 的最优路径 —— 那正是
+## [method roll_gacha] 里「保底只保到 SSR、不直接给 USR」防的同一件事。
+##
+## **消耗 `gacha` 流的次数从 1 变成 `count`。** 铁律 3 说三条流的状态进存档，
+## 次数变了老存档的续跑序列就对不上 —— 这是一次破坏性改动，记在 §08。
+static func roll_gacha_offer(
+	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator, count: int = 3
+) -> Array[PBUnit]:
+	var out: Array[PBUnit] = []
+	for i: int in maxi(count, 1):
+		# 保底只作用在第一张上，后面两张按普通概率掷。
+		var effective_pity: int = pity if i == 0 else 0
+		var unit := roll_gacha(wave_index, effective_pity, cfg, rng)
+		if unit != null:
+			out.append(unit)
+	return out
+
+
+## 一组候选里最高的稀有度。保底计数看它 —— **三张里有一张 SSR 就算命中**。
+static func best_rarity(offer: Array[PBUnit]) -> int:
+	var best: int = -1
+	for unit: PBUnit in offer:
+		best = maxi(best, int(unit.rarity))
+	return best
+
+
+## 重刷任务要多少钱（§06：`50 + 5n`，每波不限次数）。
+static func quest_reroll_cost(wave_index: int, cfg: PBSimConfig) -> int:
+	return int(cfg.quest_reroll_base + cfg.quest_reroll_rate * float(wave_index))
+
+
+## 把一个忍者从 [param level] 级升到下一级要多少钱。已满级返回 -1。
+##
+## **曲线是占位值**，§07 的科技树给了四条价格曲线但没给忍者等级 ——
+## 等级是 §03A 才引入的。形状抄科技树（`base × mult^Lv`），
+## 因为它和科技抢的是同一笔钱，同形状才比得出来该先买哪个。
+static func unit_level_cost(level: int, cfg: PBSimConfig) -> int:
+	return _cost_or_capped(level, cfg.unit_level_max, cfg.unit_level_cost, cfg.unit_level_mult)
+
+
 static func roll_gacha(
 	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator
 ) -> PBUnit:
@@ -183,7 +248,7 @@ static func quest_reward(grade: int, wave_index: int) -> int:
 	return int(row[2]) + int(row[3]) * wave_index
 
 
-## 该任务需要派出几名待命忍者。派遣期间他们的羁绊不生效（§06）。
+## 该任务需要派出几名忍者。派遣期间他们不上场、羁绊也不生效（§06）。
 static func quest_cost_units(grade: int) -> int:
 	return int(QUEST_TABLE[grade][1])
 

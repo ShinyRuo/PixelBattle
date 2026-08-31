@@ -7,20 +7,59 @@ extends RefCounted
 ## 所以同样输入下两者的结果应该很接近。`tests/test_battle_sim.gd` 里
 ## 有一组对拍断言把这个一致性锁住 —— 改坏任何一边都会红。
 ##
-## ## 每个 tick 干四件事，顺序不能换
+## ## 每个 tick 干六件事，顺序不能换
 ##
-## 1. **激活到点出场的敌人** —— 没出场的打不了也不动
-## 2. **分配伤害** —— 打最接近基地的，打死了溢出伤害接着打下一个
-## 3. **推进位置** —— 先打后走：一个敌人在抵达那一 tick 仍然可以被打死，
-##    这与排队模型的 `would_die_at <= arrives_at` 是同一条边界
-## 4. **结算抵达基地的** —— 扣基地血，移出战场
+## 1. **大招** —— 先结算落地的，再下达新的，见 [method _resolve_ultimates]
+## 2. **己方跑动** —— 射程内没目标就往前压，见 [method _move_attackers]
+## 3. **己方分配伤害** —— 每个攻击者各自在射程内选目标，见 [method _deal_damage]
+## 4. **敌人还手** —— 咬住射程内的己方单位，见 [method _enemies_attack]
+## 5. **推进位置** —— 先打后走：一个敌人在抵达那一 tick 仍然可以被打死，
+##    这与排队模型的 `would_die_at <= arrives_at` 是同一条边界。
+##    **咬住了人的敌人这一 tick 不动**；抵达基地的算漏怪
+## 6. **防挤** —— 把重合的单位推开，见 [method _separate]
 ##
-## ## M0 还没有的东西
+## 己方先打是有意的：一个刚被打死的敌人不该在同一 tick 还手，
+## 反过来则会让「抢先手」变成一个玩家无法感知却影响每一场的隐形规则。
 ##
-## - **AOE 与单体没有区别**：伤害只打最前面那个。这是和排队模型对拍的前提，
-##   也是 §04 那条「纯 AOE 在精英波吃力」的验收仍然答不了的原因。技能是 M3
-## - **敌人不还手**：只有漏怪伤基地，己方单位不会被打死
-## - **没有射程和前中后列**：§02 的纵深要配合技能射程才有意义
+## ## M3-a：从一个标量 DPS 换成一组 [PBAttacker]
+##
+## M0 的模型里整队是**一个**标量 DPS，每 tick 全砸在最前面那个敌人身上。
+## 那是「单服务台排队」，而 M0 已经证明它在数学上不存在中间态 ——
+## 战场空旷 / 单波 12 秒 / BOSS 比精英轻松三条缺口同出于此。
+##
+## **不传 [param attackers] 时，本类把整队折成一个覆盖全场的单体攻击者，
+## 行为与 M0 逐字节相同** —— 现有的对拍断言因此一行不用改。
+## 那条退化路径是有意留的，理由见 [method PBAttacker.whole_field]。
+##
+## ## M3-b：大招与落点
+##
+## 每个攻击者可以带一个 [PBUltimate]：长冷却、一次性、**有落点**，
+## 而且落点在下达时定死、若干 tick 之后才落地。那个延迟是 §02
+## 「PC 可预判走位」成立的前提，理由见 [PBUltimate] 顶部。
+## 落点怎么挑由 [PBAimRules] 决定 —— 手机端看当前帧，PC 端看落地那一刻。
+##
+## ## M3.5-b：敌人还手，忍者会死
+##
+## 敌人拿到攻速与射程，会**咬住射程内最近的己方单位**并停止推进；
+## 己方单位有血、有防、有防元素，会被打死，死了就不再输出也不再放大招。
+## **每波开波全员满血复活**（§03A）—— 一波之内的失误有真实代价，
+## 但不会毁掉整局。
+##
+## **`max_hp == 0` 的攻击者敌人看不见**，那是 [method PBAttacker.whole_field]
+## 造出来的退化标量。这条约定让 M3-a 的对拍锚点原样活着，不用加配置开关。
+##
+## ## 还没有的东西
+##
+## - **普攻输出恒定**：没有出手间隔，只有前排先死导致的输出下降
+## - **装备与羁绊只加攻不加防**：§10 那两件防御装、§11 一尾的减伤光环
+##   仍然按「诚实的 0」填着，接上它们是装备改造那一步的事
+
+## 同屏最多几发子弹（M4-b）。
+##
+## 出战席 10 人，最慢的攻速约 0.85 次/秒（间隔 24 tick），最快也就几 tick 一发；
+## 飞完全场 0.35 秒 = 7 tick。也就是说同时在飞的远不到 10 发。
+## 64 是个宽到不用再想的数，而池子按上限一次建满（§14）。
+const SHOT_CAPACITY: int = 64
 
 ## 安全阀：单波最多跑这么多 tick。
 ##
@@ -34,15 +73,43 @@ var _wave: PBWave
 var _enemies: Array[PBEnemy] = []
 var _outcome: PBCombatOutcome
 
-## 每 tick 己方打出的伤害总量。M0 的输出是恒定的 —— 前排先死导致输出下降
-## 之类的波内动态要等真单位系统，那是 M3。
-var _damage_per_tick: float = 0.0
+## 本波的己方攻击者，按出战席顺序。**遍历顺序固定，不排序、不打乱** ——
+## 两个攻击者同 tick 打同一个目标时，谁先打决定了溢出伤害归谁，
+## 顺序一变结果就变，而那种差异在批量统计里只表现为「波次悄悄偏了一点」。
+var _attackers: Array[PBAttacker] = []
 
 ## 一个敌人漏进基地扣多少血，防御科技减伤已经算进去了。
 var _leak_damage: float = 0.0
 
+## 飞行中的子弹（M4-b）。**一次建满、之后只改字段**，和敌人池同一条规矩（§14）。
+var _shots: Array[PBProjectile] = []
+
+## 子弹每 tick 飞多远。由 `projectile_cross_seconds` 反推，不是新拍的参数。
+var _shot_speed: float = 0.0
+
 var _enemy_speed: float = 0.0
 var _tick: int = 0
+
+## 大招落点策略（§02 的双端差异）。从配置抄一份，一波之内不变。
+var _aim_policy: PBAimRules.Policy = PBAimRules.Policy.AUTO
+
+## 手动档最多攒多少 tick 就得放。由 `ultimate_max_hold_seconds` 换算。
+var _max_hold_ticks: int = 0
+
+## 场上的减速与全队增伤（M3-d，§11 的一尾 / 五尾 / 二尾）。
+##
+## **两个都是「场」的属性，不是单位的属性。** 减速存到每个敌人身上的话，
+## 减速期间新出场的敌人会漏掉它；增伤存到每个攻击者身上的话，
+## 每次生效和失效都要遍历改一遍缓存的每 tick 伤害。存在这里只有一份，
+## 到期就是一个下标比较。
+##
+## **同类效果后来者覆盖前者**，不叠加也不取最强。当前一局只有一只尾兽、
+## 冷却 75 秒，两次同类效果不可能重叠；等 §09 的功能档进来真会重叠时，
+## 「怎么叠」是一个要有依据的设计决定，不该现在拍一个。
+var _slow_scale: float = 1.0
+var _slow_until: int = -1
+var _buff_scale: float = 1.0
+var _buff_until: int = -1
 
 ## 队伍最前面那个还活着的敌人在 [member _enemies] 里的下标。
 ##
@@ -51,11 +118,34 @@ var _tick: int = 0
 var _front: int = 0
 
 
-func _init(wave: PBWave, dps: float, def_reduction: float, cfg: PBSimConfig) -> void:
+## [param attackers] 为空时走退化路径：整队折成一个覆盖全场的单体攻击者，
+## 此时 [param dps] 就是整队 DPS，行为与 M0 完全相同。
+## 给了攻击者列表时 [param dps] 不参与战斗结算 —— 它只是个报数用的汇总量，
+## 而汇总量按定义等于各攻击者之和（见 [method PBCombatRules.build_attackers]）。
+func _init(
+	wave: PBWave,
+	dps: float,
+	def_reduction: float,
+	cfg: PBSimConfig,
+	attackers: Array[PBAttacker] = []
+) -> void:
 	_cfg = cfg
 	_wave = wave
 	_outcome = PBCombatOutcome.new()
-	_damage_per_tick = maxf(dps, 0.0) / float(cfg.tick_rate)
+	_aim_policy = cfg.aim_policy
+	_max_hold_ticks = int(round(cfg.ultimate_max_hold_seconds * float(cfg.tick_rate)))
+	_attackers = attackers
+	if _attackers.is_empty():
+		var solo: Array[PBAttacker] = [PBAttacker.whole_field(dps, cfg.field_diagonal())]
+		_attackers = solo
+	for attacker: PBAttacker in _attackers:
+		attacker.prime(cfg.tick_rate)
+		# 开波满血（§03A）。和大招的冷却一样，攻击者对象会跨波、跨探测复用，
+		# 不重置的话上一场的残血会漏进这一场，表现为「同一支队伍越探越弱」。
+		attacker.revive()
+		# 大招对象跨波、跨探测复用，不清的话上一场剩下的冷却会漏进这一场。
+		if attacker.ultimate != null:
+			attacker.ultimate.reset()
 
 	var leak_mult: float = cfg.boss_leak_mult if wave.is_boss() else 1.0
 	_leak_damage = wave.atk_each * leak_mult * (1.0 - clampf(def_reduction, 0.0, 0.95))
@@ -64,6 +154,13 @@ func _init(wave: PBWave, dps: float, def_reduction: float, cfg: PBSimConfig) -> 
 	# 这里没有引入新的拍脑袋参数，只是换了个表达。
 	var march_ticks: float = maxf(cfg.march_seconds, 0.001) * float(cfg.tick_rate)
 	_enemy_speed = cfg.field_length / march_ticks
+	# 子弹速度同理由「飞完全场要几秒」反推。0 秒 = 瞬时命中。
+	if cfg.projectile_cross_seconds > 0.0:
+		_shot_speed = cfg.field_length / (cfg.projectile_cross_seconds * float(cfg.tick_rate))
+
+	_shots.resize(SHOT_CAPACITY)
+	for i: int in SHOT_CAPACITY:
+		_shots[i] = PBProjectile.new()
 
 	_spawn_all(wave, cfg)
 
@@ -73,8 +170,16 @@ func step() -> void:
 	if is_finished():
 		return
 	_tick += 1
+	_resolve_ultimates()
+	_move_attackers()
+	# **飞行结算排在出手之前**（M4-b）：这一 tick 发出去的子弹不该在
+	# 同一 tick 落地，否则飞行时间等于 0，离散出手就退回成瞬时伤害了。
+	# 这和大招「先结算落地的、再下达新的」是同一条理由。
+	_advance_shots()
 	_deal_damage()
+	_enemies_attack()
 	_advance_and_leak()
+	_separate()
 
 
 ## 一路跑到战斗结束，返回结算结果。批量模拟走这个入口。
@@ -101,6 +206,20 @@ func enemies() -> Array[PBEnemy]:
 	return _enemies
 
 
+## 全部己方攻击者，含已经阵亡的。**渲染层只读，不要改。**
+##
+## 战场上要画得出自己的忍者（§02 第 8 点）—— M3-a 把整队标量拆成一组
+## [PBAttacker] 之后，「谁站在哪、还剩多少血」第一次是有答案的，
+## 而那个答案在这里之前没有出口，画面上于是只有敌人。
+func attackers() -> Array[PBAttacker]:
+	return _attackers
+
+
+## 飞行中的子弹，含已经回池的（`alive` 为 false）。**渲染层只读，不要改。**
+func shots() -> Array[PBProjectile]:
+	return _shots
+
+
 func current_tick() -> int:
 	return _tick
 
@@ -120,31 +239,574 @@ func active_enemies() -> Array[PBEnemy]:
 func _spawn_all(wave: PBWave, cfg: PBSimConfig) -> void:
 	_enemies.resize(wave.count)
 	var window_ticks: float = cfg.spawn_window * float(cfg.tick_rate)
+	# 出手间隔与一发的伤害：和己方同一条换算（[method PBAttacker.prime]）——
+	# 由间隔反推一发打多少，平均输出因此分毫不差。
+	var interval: int = maxi(
+		int(round(float(cfg.tick_rate) / maxf(cfg.enemy_attack_speed, 0.001))), 1
+	)
+	var per_shot: float = (
+		wave.atk_each * cfg.enemy_attack_speed * float(interval) / float(cfg.tick_rate)
+	)
 	for i: int in wave.count:
 		var enemy := PBEnemy.new()
 		enemy.slot = i
 		var at_tick: int = 0
 		if wave.count > 1:
 			at_tick = int(round(window_ticks * float(i) / float(wave.count - 1)))
-		enemy.spawn(wave, _enemy_speed, cfg.field_length, at_tick)
+		# 出生在方阵里（M4-d）：第一列在战场边缘，后面几列排在战场之外。
+		enemy.spawn(wave, _enemy_speed, cfg.enemy_start_x(i), at_tick, cfg.enemy_lane(i))
+		# 远近两种打法（M4-c）。谁是远程按槽位定死，不掷骰 ——
+		# 理由见 [member PBSimConfig.enemy_ranged_share]。
+		if cfg.enemy_is_ranged(i):
+			enemy.arm(cfg.enemy_reach_ranged, interval, per_shot, _shot_speed)
+		else:
+			enemy.arm(cfg.enemy_reach, interval, per_shot, 0.0)
 		_enemies[i] = enemy
 
 
-## 把这一 tick 的伤害打出去。打最接近基地的，溢出的接着打下一个。
+## 大招：先结算落地的，再下达新的。**顺序不能反。**
+##
+## 反过来的话，同一 tick 下达的大招会在下达的那一瞬间就落地，
+## 施法延迟等于 0 —— 而那个延迟正是 §02 分层验收的全部依据
+## （见 [PBUltimate] 顶部）。
+func _resolve_ultimates() -> void:
+	for attacker: PBAttacker in _attackers:
+		var ult: PBUltimate = attacker.ultimate
+		if ult == null:
+			continue
+		# 已经下达的照样落地，哪怕施法者中途死了 —— 大招已经出手了。
+		# 那是 §02 施法延迟的直接后果，也是「预判」这件事的对称代价。
+		if ult.is_pending() and _tick >= ult.lands_at:
+			_land_ultimate(ult)
+	for attacker: PBAttacker in _attackers:
+		attacker.regen_mana()
+	for attacker: PBAttacker in _attackers:
+		var ult: PBUltimate = attacker.ultimate
+		if ult == null or not attacker.alive or not ult.is_ready(_tick):
+			continue
+		# 第二道门槛（M3.5-d）：冷却转好了还得有蓝。
+		# 这道门槛让六尾的「重置全体 CD」不再是免费的连放。
+		if not attacker.can_pay(ult.mp_cost):
+			continue
+		var spot := PBAimRules.pick_spot(
+			_aim_policy,
+			_enemies,
+			_tick,
+			ult,
+			_tick - ult.ready_at,
+			_cfg.ultimate_min_targets,
+			_cfg.ultimate_hold_targets,
+			_max_hold_ticks
+		)
+		if PBUltimate.is_spot(spot):
+			# 蓝在**下达**时扣，不是落地时 —— 落地时扣的话，
+			# 施法延迟那段窗口里还能再下达一发（蓝还没扣掉），
+			# 于是延迟越长反而放得越多，和冷却从落地算是同一个道理。
+			attacker.pay(ult.mp_cost)
+			ult.cast(spot, _tick)
+	_skip_dead()
+
+
+## 一发大招落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
+##
+## 和 [method _strike_area] 一样**不结算溢出** —— 大招的价值写在命中数上
+## （§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
+## 再让它吃溢出的话，一发大招在密集波里等于无限伤害。
+##
+## 落地之后还要结算三样**全场**效果（M3-d）：减速、全队增伤、重置冷却。
+## 它们和圈人无关，所以放在循环外面。
+func _land_ultimate(ult: PBUltimate) -> void:
+	var hits: int = 0
+	for i: int in range(_front, _enemies.size()):
+		if ult.max_targets > 0 and hits >= ult.max_targets:
+			break
+		var enemy: PBEnemy = _enemies[i]
+		if not enemy.has_spawned(_tick):
+			break
+		if not enemy.alive:
+			continue
+		# M4-a 起是真圆（[member PBUltimate.radius]）。
+		if enemy.pos().distance_to(ult.spot) > ult.radius:
+			continue
+		hits += 1
+		if enemy.take_damage(ult.damage):
+			_outcome.kills += 1
+			continue
+		# 活下来的才挪 —— 挪一个尸体没有意义，而且会让「聚拢值多少」虚高。
+		if ult.gather:
+			# 聚拢是**两轴一起**拖到落点上：只拖 x 的话一圈人会被拉成
+			# 一条横线，而「聚成一堆」正是这个机制唯一的产出。
+			enemy.distance = ult.spot.x
+			enemy.lane = ult.spot.y
+		elif ult.knockback > 0.0:
+			# 击退只作用在推进轴上 —— 它买的是「敌人晚到基地多久」。
+			# 上限是**他自己的出生点**，不是战场长度：方阵后面几列出生在
+			# 战场之外，拿战场长度封顶会把他们往前拽（见 [member PBEnemy.start_x]）。
+			enemy.distance = minf(enemy.distance + ult.knockback, enemy.start_x)
+	_apply_field_effects(ult)
+	ult.land(_tick)
+
+
+## 大招落地时的三样全场效果：减速、全队增伤、重置**其他**大招的冷却。
+##
+## 重置清的是别人不是自己 —— 自己也清的话它会在同一 tick 反复自我重置。
+## 这一条（§11 六尾）的强度与队伍里大招的总量成正比，而不是和它自己的
+## 数值成正比，所以它在数据上伤害为 0 却可能是最强的一只。
+func _apply_field_effects(ult: PBUltimate) -> void:
+	if ult.slow_ticks > 0 and ult.slow_scale < 1.0:
+		_slow_scale = ult.slow_scale
+		_slow_until = _tick + ult.slow_ticks
+	if ult.buff_ticks > 0 and ult.team_damage_scale > 1.0:
+		_buff_scale = ult.team_damage_scale
+		_buff_until = _tick + ult.buff_ticks
+	if not ult.reset_cooldowns:
+		return
+	for attacker: PBAttacker in _attackers:
+		var other: PBUltimate = attacker.ultimate
+		if other != null and other != ult and not other.is_pending():
+			other.ready_at = _tick
+
+
+## 这一 tick 敌人走多快。1.0 是正常速度，减速生效期间小于 1。
+func _speed_scale() -> float:
+	return _slow_scale if _tick <= _slow_until else 1.0
+
+
+## 这一 tick 的普攻伤害倍率。1.0 是正常，全队增伤生效期间大于 1。
+func _damage_scale() -> float:
+	return _buff_scale if _tick <= _buff_until else 1.0
+
+
+## 把这一 tick 的伤害打出去。**每个攻击者各自选目标，互不共享伤害池。**
+##
+## 「不共享」是这次改造的全部意义所在：整队一个池子就是单服务台排队，
+## 而单服务台没有中间态。各打各的之后，射程外的敌人对某个攻击者不存在，
+## 于是同一波敌人会被分批处理，战场上才可能长期有人。
+func _deal_damage() -> void:
+	for attacker: PBAttacker in _attackers:
+		# 死人不输出。M3.5-b 之前这一行不存在，因为没有人会死。
+		# 冷却没转好也不出手（M4-b）—— 连续输出那条退化路径间隔是 1 tick，
+		# 所以它每 tick 都过得了这道门，行为和离散化之前一模一样。
+		if not attacker.alive or not attacker.ready_to_fire(_tick):
+			continue
+		var fired: bool = (
+			_strike_area(attacker)
+			if attacker.shape == PBAttacker.Shape.AOE
+			else _strike_single(attacker)
+		)
+		# **打空了不进冷却。** 进的话，射程内暂时没人的那几 tick 会白白
+		# 吃掉一个间隔，等敌人走进来时他还得再等 —— 表现是「远程有时候发呆」。
+		if fired:
+			attacker.on_fired(_tick)
+	_skip_dead()
+
+
+## 子弹飞一个 tick，够到目标就结算（M4-b）。
+##
+## 目标死了子弹就消失，**不改打别人** —— 理由写在 [PBProjectile] 顶部。
+func _advance_shots() -> void:
+	for shot: PBProjectile in _shots:
+		if not shot.alive:
+			continue
+		if shot.at_ally:
+			_fly_at_ally(shot)
+		else:
+			_fly_at_enemy(shot)
+	_skip_dead()
+
+
+func _fly_at_enemy(shot: PBProjectile) -> void:
+	var enemy: PBEnemy = _enemies[shot.target]
+	if not enemy.alive:
+		shot.retire()
+		return
+	if not shot.fly(enemy.pos()):
+		return
+	if enemy.take_damage(shot.damage):
+		_outcome.kills += 1
+	shot.retire()
+
+
+## 敌人的子弹（M4-c）。伤害在**命中时**才按防御与属性折算 ——
+## 出膛时算的话，飞行途中换了减伤（装备、光环）就对不上了，
+## 而那种偏差只表现为「同一发子弹有时候疼有时候不疼」。
+func _fly_at_ally(shot: PBProjectile) -> void:
+	var target: PBAttacker = _attackers[shot.target]
+	if not target.is_targetable():
+		shot.retire()
+		return
+	if not shot.fly(target.pos):
+		return
+	if target.take_damage(
+		PBStatRules.strike_damage(
+			shot.damage, shot.element, target.defence, target.def_element, _cfg
+		)
+	):
+		_outcome.allies_lost += 1
+	shot.retire()
+
+
+## 找一发空子弹。池子满了返回 null —— 那时**这一发就没了**，
+## 不扩池也不覆盖别人：扩池会在热路径里分配（§14），
+## 覆盖会让一发已经在飞的伤害凭空消失，而两者都不报错。
+func _free_shot() -> PBProjectile:
+	for shot: PBProjectile in _shots:
+		if not shot.alive:
+			return shot
+	return null
+
+
+## 己方跑动（§02 / §03A，M3.5-c）。**射程内没目标就往前压，有目标就站住开火。**
+##
+## ## 为什么不是「一路跑向最近的敌人」
+##
+## 那会推翻 §02 的射程梯度：所有人都跑到最前面接敌，战斗退回成 M3-a 之前的
+## 单点集火，而那条梯度正是「场上稳定有人」的唯一来源（1.7 → 6.0）。
+##
+## 所以跑动被 [member PBAttacker.leash] 拴在自己的站位附近，
+## 而且**只在打不着的时候才往前** —— 于是超远程几乎不动（它本来就够得着），
+## 近战会真的迎上去。射程档因此从「站在哪一列」变成「跑到多近就停」，
+## 梯度靠停火距离维持，不靠固定坐标。
+##
+## ## 三条互斥的状态，顺序就是优先级（M4-c）
+##
+## 1. **够得着 → 站住。** 交战中绝不挪窝
+## 2. **够不着 → 按自己的打法靠过去**（近战贴身、远程只前压）
+## 3. **场上一个活人都没有 → 慢慢走回自己的位置**
+##
+## 第 1 条是 M4-c 修掉的那个 bug：在它之前，「够得着」走的是「回家」那一支，
+## 于是敌人贴到脸上时忍者**边打边往基地退**。看起来荒谬，代码里却很自然 ——
+## 「回家」是默认值，而「压上去」是唯一的例外分支，中间那档没人写。
+##
+## 第 3 条不能省：不退的话，一波打完全队会停在最前沿，
+## 下一波开波的阵型就不是玩家排的那个了。
+func _move_attackers() -> void:
+	for attacker: PBAttacker in _attackers:
+		if not attacker.alive or attacker.move_speed <= 0.0:
+			continue
+		var target := _nearest_enemy(attacker)
+		if target == null:
+			attacker.pos = attacker.pos.move_toward(attacker.home, attacker.move_speed)
+			continue
+		if attacker.can_reach(target.pos()):
+			continue
+		if attacker.shot_speed > 0.0:
+			_press_forward(attacker, target)
+		else:
+			_close_in(attacker, target)
+
+
+## 远程：**只在推进轴上前压**，压到刚好够得着为止。
+##
+## 不走二维是有意的：远程的射程圈本来就罩着大半条道，横着挪一步能多够到的人
+## 远比竖着挪多。让他们也追着敌人上下跑的话，一队远程会跟着最近的目标
+## 来回甩动，而那不是玩家排的阵型。
+func _press_forward(attacker: PBAttacker, target: PBEnemy) -> void:
+	# 二维之后「刚好够得着」要先扣掉纵向差的那一截，见 [method PBAttacker.reach_stop_x]。
+	var want: float = minf(attacker.reach_stop_x(target.pos()), attacker.home.x + attacker.leash)
+	attacker.pos.x = _step_toward(attacker.pos.x, maxf(want, attacker.home.x), attacker.move_speed)
+
+
+## 近战：**二维贴上去**，停在自己的接触距离上。
+##
+## 停在射程边缘而不是踩到对方身上：踩上去的话防挤会立刻把两边推开，
+## 而推开之后又够不着了 —— 整场战斗表现为近战在敌人身上来回抖。
+##
+## 皮带绳按**二维距离**量（[member PBAttacker.leash]）。放开它就等于
+## 「自由跑向敌人」，所有人挤到最前面接敌，§02 的射程梯度
+## （「场上稳定有人」的唯一来源，实测 1.7 → 6.0）就没了。
+func _close_in(attacker: PBAttacker, target: PBEnemy) -> void:
+	var at := target.pos()
+	var gap: Vector2 = at - attacker.pos
+	var want: float = gap.length()
+	var stop: Vector2 = at if want <= 0.0 else at - gap / want * attacker.reach
+	var from_home: Vector2 = stop - attacker.home
+	var leashed: float = from_home.length()
+	if leashed > attacker.leash:
+		stop = attacker.home + from_home / leashed * attacker.leash
+	attacker.pos = attacker.pos.move_toward(stop, attacker.move_speed)
+
+
+## 离 [param attacker] 最近的、已出场且活着的敌人。没有就返回 null。
+##
+## ## 为什么从「打得最深的那个」换成「离我最近的」
+##
+## M3.5-c 挑的是最深的那个，理由是省一遍扫描，而且「守方该迎向威胁最大的」。
+## 那在一维、所有人共用一个目标时说得通；**近战 AI 一进来就不成立了** ——
+## 一个站在下半场的近战会越过身边的敌人去追一个远在另一条泳道的「最深」目标，
+## 而玩家看到的是他从怪堆里穿过去。
+##
+## 代价是每个攻击者各扫一遍（10 × 48 ≈ 480 次比较/tick），
+## 和 [method _enemies_attack] 那一遍同量级，不是新的数量级。
+func _nearest_enemy(attacker: PBAttacker) -> PBEnemy:
+	# 玩家点名了就朝那个走（§02，M4-e）—— **哪怕现在够不着**，
+	# 那正是「点他」的意思。皮带绳照旧拴着，所以他不会横穿半个战场。
+	if attacker.forced_target >= 0 and attacker.forced_target < _enemies.size():
+		var named: PBEnemy = _enemies[attacker.forced_target]
+		if named.alive and named.has_spawned(_tick):
+			return named
+	var best: PBEnemy = null
+	var best_gap: float = 0.0
+	for i: int in range(_front, _enemies.size()):
+		var enemy: PBEnemy = _enemies[i]
+		if not enemy.has_spawned(_tick):
+			# 后面的出场更晚，这一 tick 不会再有目标了。
+			break
+		if not enemy.alive:
+			continue
+		var gap: float = attacker.pos.distance_to(enemy.pos())
+		if best == null or gap < best_gap:
+			best = enemy
+			best_gap = gap
+	return best
+
+
+static func _step_toward(from: float, to: float, step: float) -> float:
+	if absf(to - from) <= step:
+		return to
+	return from + (step if to > from else -step)
+
+
+## 防挤：把重合的单位推开（§03A，M3.5-c）。**两边都做。**
+##
+## ## 敌人这一侧顺带修一个观感问题
+##
+## 聚拢（§02 的拉拽、§11 的七尾、§09 的功能档）会把一群敌人拖到**同一个点**，
+## 画出来是一个单位 —— 玩家看不出大招起没起作用。展开成队列之后聚拢仍然有效
+## （间距 0.012 远小于大招半径 0.12），但看得出来是「一堆人」。
+##
+## ## 只往远离基地的方向推，而且保序
+##
+## [member _front] 那个游标建立在「数组顺序 == 距离顺序」上。
+## 推挤要是能换序，游标就会跳过还活着的敌人，表现为「后排敌人突然不动了」。
+## 所以敌人只从队头往队尾依次往后垫，己方只往基地那侧让 ——
+## **两边都不会有人被推得更靠近基地**，也就不会凭空多出漏怪。
+func _separate() -> void:
+	var gap: float = _cfg.unit_min_gap
+	if gap <= 0.0:
+		return
+	var previous: PBEnemy = null
+	for i: int in range(_front, _enemies.size()):
+		var enemy: PBEnemy = _enemies[i]
+		if not enemy.has_spawned(_tick):
+			break
+		if not enemy.alive:
+			continue
+		# **M4-a：不同泳道上的两个人本来就没挤在一起。**
+		# 之前战场是一维的，「同一个 x」就等于重合；现在纵向算数了，
+		# 照旧一律往后垫的话，48 个各占一条泳道的敌人会被排成一条长队 ——
+		# 那正是「敌人一个一个出现」那个观感的一半来源。
+		if (
+			previous != null
+			and absf(enemy.lane - previous.lane) < gap
+			and enemy.distance < previous.distance + gap
+		):
+			# **不再钳在 `field_length` 上**（M4-d）：整波在战场之外的方阵里
+			# 一次全刷，后面几列本来就站在边缘之外。钳住的话他们会被一起
+			# 拽回边缘叠成一堆，而那正是防挤要防的事。
+			# 往后垫是安全的 —— 敌人只会朝基地走，垫出去的迟早走回来。
+			enemy.distance = previous.distance + gap
+		previous = enemy
+
+	_separate_attackers(gap)
+
+
+## 己方这一侧走**两两互推**，不走敌人那种从队头往队尾垫的顺序扫描。
+##
+## 顺序扫描的前提是「数组顺序 == 距离顺序」，敌人天然满足（按出场排队），
+## **己方不满足** —— 出战席顺序和站位没有关系，一个后排可能排在前排前面。
+## 照着扫的话，一个站 0.10 的超远程会把站 0.30 的近战一路推到 0.09，
+## 整个阵型塌向基地，而且每 tick 塌一点，看起来像「全队在慢慢后退」。
+##
+## 两两互推是 O(n²)，但 n 是出战人数（上限 10），一 tick 一百次比较 ——
+## 比每 tick 排一次序还便宜，而且不分配任何对象（§14 对 sim 层的要求）。
+func _separate_attackers(gap: float) -> void:
+	for i: int in _attackers.size():
+		var a: PBAttacker = _attackers[i]
+		if not a.is_targetable():
+			continue
+		for j: int in range(i + 1, _attackers.size()):
+			var b: PBAttacker = _attackers[j]
+			if not b.is_targetable():
+				continue
+			var offset: Vector2 = b.pos - a.pos
+			var span: float = offset.length()
+			if span >= gap:
+				continue
+			# 恰好重合时按下标定方向 —— 随便挑一边会让同一份输入
+			# 每次跑出不同的结果，而确定性是铁律 3 的一半。
+			# 重合时沿推进轴分开，和一维时代同一个方向。
+			var dir: Vector2 = (
+				offset / span if span > 0.0 else Vector2(1.0 if j > i else -1.0, 0.0)
+			)
+			var push: Vector2 = dir * (gap - span) * 0.5
+			a.pos = a.pos - push
+			b.pos = b.pos + push
+			a.pos.x = maxf(a.pos.x, 0.0)
+			b.pos.x = maxf(b.pos.x, 0.0)
+
+
+## 敌人还手（§03A，M3.5-b）。**咬住射程内最近的己方单位，并停止推进。**
+##
+## ## 为什么咬住了就不走
+##
+## 那是 War3 的交战行为，也是这套玩法成立的前提：忍者是一堵**墙**，
+## 漏怪意味着墙破了，而不是「时间到了自然会漏」。
+## 边打边走的话，防御和血量只能影响「这个人还能输出几秒」，
+## 影响不了「敌人到没到基地」—— 坦克、前排、§02 的站位全部贬值。
+##
+## ## 目标是「离我最近的」，不是「血最少的」
+##
+## 挑血最少的等于让敌人有集火 AI，那会让玩家的站位失去意义
+## （站哪都会被点名）。挑最近的之后，**站得靠前的先挨打**，
+## 于是「谁站前排」成为一个有后果的决定 —— 而站位是射程的派生量（§02），
+## 玩家因此可以通过选人来选谁扛。
+func _enemies_attack() -> void:
+	for i: int in range(_front, _enemies.size()):
+		var enemy: PBEnemy = _enemies[i]
+		enemy.engaged = false
+		if not enemy.has_spawned(_tick):
+			break
+		if not enemy.alive or enemy.damage_per_shot <= 0.0:
+			continue
+		var target := _nearest_defender(enemy)
+		if target == null:
+			continue
+		# **只有近战会咬住不走**（M4-c）。
+		#
+		# ## 远程敌人停下来的话会真的死锁
+		#
+		# 它的射程（0.30）比己方近战（0.12）长得多，所以它会停在一个
+		# 「我打得到你、你打不到我」的位置上。双方都杀不死对方，敌人又不推进 ——
+		# 整波永远打不完，只能靠 [constant MAX_TICKS] 刹车。
+		# 一队全近战的阵容会直接把游戏卡在那一波上十几分钟。
+		#
+		# ## 所以远程边走边射，而这正好是它该有的样子
+		#
+		# 墙是给近战准备的：近战撞上前排就停，坦克因此有意义。
+		# 射手绕不过这堵墙，但**他根本不需要停** —— 他一路往前推、
+		# 沿途开火，玩家必须**杀掉**他而不是**挡住**他。
+		# 那是敌人分远近之后多出来的唯一新问题，也是它值得存在的理由。
+		#
+		# 「咬住了就不走」和出手冷却**不绑在一起**：绑了的话近战会在
+		# 两次出手之间一步一步往前挪，而墙就会漏。
+		enemy.engaged = enemy.shot_speed <= 0.0
+		if not enemy.ready_to_fire(_tick):
+			continue
+		enemy.on_fired(_tick)
+		# 远程的那一份走弹道（M4-c），减伤与克制在命中时才折算。
+		if enemy.shot_speed > 0.0:
+			var shot := _free_shot()
+			if shot != null:
+				shot.launch(
+					enemy.pos(),
+					_attackers.find(target),
+					enemy.damage_per_shot,
+					enemy.shot_speed,
+					true,
+					enemy.element
+				)
+			continue
+		var damage: float = PBStatRules.strike_damage(
+			enemy.damage_per_shot, enemy.element, target.defence, target.def_element, _cfg
+		)
+		if target.take_damage(damage):
+			_outcome.allies_lost += 1
+
+
+## 这个敌人射程内离它最近的、还活着的己方单位。没有就返回 null。
+##
+## 遍历顺序固定（出战席顺序），平手时先找到的赢 —— 和
+## [member _attackers] 那条「不排序不打乱」是同一个理由：
+## 顺序一变结果就变，而那种差异只表现为「波次悄悄偏了一点」。
+func _nearest_defender(enemy: PBEnemy) -> PBAttacker:
+	var best: PBAttacker = null
+	var best_gap: float = 0.0
+	var at := enemy.pos()
+	for attacker: PBAttacker in _attackers:
+		if not attacker.is_targetable():
+			continue
+		var gap: float = at.distance_to(attacker.pos)
+		if gap > enemy.reach:
+			continue
+		if best == null or gap < best_gap:
+			best = attacker
+			best_gap = gap
+	return best
+
+
+## 单体攻击：打射程内最接近基地的那个。**打不到人返回 false。**
+##
+## ## 两条路：一发子弹，还是一股连续伤害
+##
+## [member PBAttacker.attack_speed] 大于 0 时这是**一次离散出手**：
+## 一发打一个，远程放子弹（飞几 tick 才结算），近战当场见血。
+## **不结算溢出** —— 一发打死了目标，多出来的伤害没有地方去，
+## 那是「命中才结算」的代价，见 [PBProjectile] 顶部。
+##
+## 攻速为 0 时走的是 M3-a 之前那条**连续输出**的退化路径
+## （[method PBAttacker.whole_field]），它必须与 [PBCombatRules] 的解析式
+## 排队模型逐字段一致，而那个模型的前提之一就是**溢出无损转移**。
+## 所以溢出那一段留着，只在这一档下走。
+func _strike_single(attacker: PBAttacker) -> bool:
+	if attacker.attack_speed <= 0.0:
+		return _pour_damage(attacker)
+	var target := _first_reachable(attacker)
+	if target == null:
+		return false
+	var damage: float = attacker.damage_per_shot() * _damage_scale()
+	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
+	if attacker.shot_speed <= 0.0:
+		if target.take_damage(damage):
+			_outcome.kills += 1
+		return true
+	var shot := _free_shot()
+	if shot == null:
+		return false
+	shot.launch(attacker.pos, target.slot, damage, attacker.shot_speed)
+	return true
+
+
+## 射程内最接近基地的那个活敌人。没有就返回 null。
+##
+## **玩家点名的那个优先**（§02，M4-e）—— 但只在他还活着且够得着的时候。
+## 够不着就照常自动选，不是站着不打：「我点了他，结果这个忍者整场发呆」
+## 是玩家最不能接受的一种听话，理由见 [member PBAttacker.forced_target]。
+func _first_reachable(attacker: PBAttacker) -> PBEnemy:
+	if attacker.forced_target >= 0 and attacker.forced_target < _enemies.size():
+		var named: PBEnemy = _enemies[attacker.forced_target]
+		if (
+			named.alive
+			and named.has_spawned(_tick)
+			and attacker.can_reach(named.pos())
+		):
+			return named
+	for i: int in range(_front, _enemies.size()):
+		var enemy: PBEnemy = _enemies[i]
+		if not enemy.has_spawned(_tick):
+			# 后面的出场更晚，这一 tick 不会再有可打的目标了。
+			break
+		if enemy.alive and attacker.can_reach(enemy.pos()):
+			return enemy
+	return null
+
+
+## 连续输出那条退化路径：一股伤害顺着队列往下浇，打死了溢出接着打下一个。
 ##
 ## 溢出必须结算：高 DPS 一 tick 能打死好几个，漏掉溢出会让战斗时长
-## 被系统性拉长，而那正是 §01「单波 30–45 秒」验收要看的数。
-func _deal_damage() -> void:
-	var remaining: float = _damage_per_tick
+## 被系统性拉长 —— 而这条路径存在的全部理由就是与解析式排队模型对拍。
+func _pour_damage(attacker: PBAttacker) -> bool:
+	var remaining: float = attacker.damage_per_shot() * _damage_scale()
+	var hit: bool = false
 	var index: int = _front
 	while remaining > 0.0 and index < _enemies.size():
 		var enemy: PBEnemy = _enemies[index]
-		if not enemy.is_active(_tick):
-			# 后面的出场更晚，这一 tick 不会再有可打的目标了。
+		if not enemy.has_spawned(_tick):
 			break
-		if not enemy.alive:
+		if not enemy.alive or not attacker.can_reach(enemy.pos()):
 			index += 1
 			continue
+		hit = true
 		var before: float = enemy.hp
 		if enemy.take_damage(remaining):
 			_outcome.kills += 1
@@ -152,18 +814,52 @@ func _deal_damage() -> void:
 			index += 1
 		else:
 			remaining = 0.0
-	_skip_dead()
+	return hit
+
+
+## 范围攻击：对射程内最靠近基地的若干个目标**各打一份完整伤害**。
+## **一个都够不着时返回 false。**
+##
+## 不结算溢出，是与单体型的实质区别：AOE 的价值写在命中数上
+## （§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
+## 再让它吃溢出的话，一个 AOE 攻击者在密集波里等于无限伤害。
+##
+## **范围型不发子弹**（M4-b）：一发子弹只追一个目标，而这里要同时打几个。
+## 要给它一个飞行中的形态，得先回答「范围伤害在半空中是什么形状」——
+## 那和大招的落点是同一个问题，而大招已经有一整套答案（[PBUltimate]）。
+## 在角色表真的需要「会飞的范围普攻」之前，多一套实现只会多一处分叉。
+func _strike_area(attacker: PBAttacker) -> bool:
+	var damage: float = attacker.damage_per_shot() * _damage_scale()
+	if damage <= 0.0:
+		return false
+	var hits: int = 0
+	var index: int = _front
+	while hits < attacker.max_targets and index < _enemies.size():
+		var enemy: PBEnemy = _enemies[index]
+		if not enemy.has_spawned(_tick):
+			break
+		index += 1
+		if not enemy.alive or not attacker.can_reach(enemy.pos()):
+			continue
+		if enemy.take_damage(damage):
+			_outcome.kills += 1
+		hits += 1
+	return hits > 0
 
 
 ## 全体前进，抵达基地的算漏怪。
 func _advance_and_leak() -> void:
+	var speed_scale: float = _speed_scale()
 	for i: int in range(_front, _enemies.size()):
 		var enemy: PBEnemy = _enemies[i]
-		if not enemy.is_active(_tick):
+		if not enemy.has_spawned(_tick):
 			break
 		if not enemy.alive:
 			continue
-		if enemy.advance():
+		# 咬住了人的这一 tick 不动 —— 忍者是一堵墙，不是路边的减速带。
+		if enemy.engaged:
+			continue
+		if enemy.advance(speed_scale):
 			enemy.alive = false
 			_outcome.leaked += 1
 			_outcome.base_damage += _leak_damage

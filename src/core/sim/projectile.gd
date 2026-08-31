@@ -1,0 +1,101 @@
+class_name PBProjectile
+extends RefCounted
+## 一发飞行中的远程攻击。§02，M4-b。
+##
+## ## 为什么子弹是 sim 里的实体，不是渲染层的表演
+##
+## 渲染层画一道假弹道是便宜的，但它会撒谎：伤害早在几帧前就结算完了，
+## 于是子弹会飞向一具尸体，而射速和真实输出没有任何关系。
+## 那和「把大招落点画成圆」是同一类错误 —— 玩家看到的东西不是判定的东西。
+##
+## 真弹道要先把出手**离散化**（每 N tick 打一发，见 [member PBAttacker.attack_speed]），
+## 子弹才有东西可承载。做了之后角色表里那个「攻速」第一次被战斗读到，
+## 而铁律 4（element 挂在伤害事件上）第一次有了真正的载体 ——
+## 在这之前一个角色的普攻是一条没有边界的连续流，没有「一次伤害事件」可言。
+##
+## ## 这个类会被对象池复用，不要在战斗中 `.new()`
+##
+## 和 [PBEnemy] 同一条规矩（§14）。复用的入口是 [method launch]。
+##
+## ## 目标死了子弹就消失，不改打别人
+##
+## 那是「命中才结算」的直接后果，也是离散出手唯一的真实损耗：
+## 连续输出模型里溢出伤害会无损转移给下一个，而那才是不真实的那一半。
+## 追着换目标的话，一发子弹等于永远不会浪费，离散和连续就没有区别了。
+
+## 还在飞。对象池靠它找空位。
+var alive: bool = false
+
+## 战场坐标，与 [member PBAttacker.pos] 同一套。
+var pos: Vector2 = Vector2.ZERO
+
+## 追的是第几个。**存下标不存引用** —— §12 的存档要序列化这个，
+## 而引用序列化不了。下标指向哪个数组由 [member at_ally] 决定。
+var target: int = -1
+
+## 这一发是敌人射向己方的（M4-c）。false = 己方射向敌人。
+##
+## ## 为什么是一个开关而不是两个池子
+##
+## 飞行、命中判定、目标死了就消失 —— 三条规则两个方向逐字相同。
+## 分两份实现的话，「己方子弹的命中距离」和「敌人子弹的命中距离」
+## 迟早对不上，而那种分叉不报错，只表现为「某一边的子弹好像更准」。
+var at_ally: bool = false
+
+## 命中时打多少。
+##
+## ## 两个方向的口径不一样，这是既有的不对称，不是这里新造的
+##
+## **己方射向敌人**：属性克制、科技、羁绊、装备全部已经乘进来了
+## （和 [member PBAttacker.dps] 一样，战斗层只认这个数）。
+## **敌人射向己方**：这里存的是**裸伤害**，减伤与克制在命中那一刻才折算 ——
+## 因为它要读挨打那个人的防御和防元素，而那是飞行途中可能变的东西。
+var damage: float = 0.0
+
+## 这一发按哪一系算克制（§14 铁律 4：**element 挂在伤害事件上，不挂在单位上**）。
+##
+## 只有射向己方的那一半读它（见 [member damage]）。铁律在这里第二次真正用上 ——
+## 第一次是大招（[member PBUltimate.element]），而普攻在离散化之前
+## 根本没有「一次伤害事件」这种东西可以挂。
+var element: PBElement.Type = PBElement.Type.PHYSICAL
+
+## 每 tick 飞多远。由 [member PBSimConfig.projectile_cross_seconds] 反推。
+var speed: float = 0.0
+
+
+## 把这个实例重置成一发刚出膛的子弹。对象池复用走这里，不要 `.new()`。
+func launch(
+	from: Vector2,
+	at: int,
+	hit_for: float,
+	per_tick: float,
+	toward_ally: bool = false,
+	of_element: PBElement.Type = PBElement.Type.PHYSICAL
+) -> void:
+	alive = true
+	pos = from
+	target = at
+	damage = hit_for
+	speed = per_tick
+	at_ally = toward_ally
+	element = of_element
+
+
+## 朝 [param goal] 飞一个 tick。返回这一 tick 是否够到了目标。
+##
+## 判据是「这一步跨得过去」而不是「距离小于某个阈值」：
+## 阈值要么让快子弹永远跳过目标（穿过去继续飞），要么让慢子弹提前命中。
+## 用步长本身当阈值，两种都不会发生。
+func fly(goal: Vector2) -> bool:
+	var gap: float = pos.distance_to(goal)
+	if gap <= speed or speed <= 0.0:
+		pos = goal
+		return true
+	pos += (goal - pos) / gap * speed
+	return false
+
+
+## 打完了 / 目标没了。回到池子里等下一次 [method launch]。
+func retire() -> void:
+	alive = false
+	target = -1

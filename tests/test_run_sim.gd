@@ -89,7 +89,9 @@ func test_income_streams_add_up_to_the_gold_that_actually_moved() -> void:
 		var rng := PBRngStreams.new(seed_value)
 		for _wave: int in 12:
 			var plan := PBRunSim.plan_wave(state, strategy, cfg, rng)
-			var outcome := PBCombatRules.resolve(plan.wave, plan.dps, state.def_reduction(cfg), cfg)
+			# 走 resolve_battle 而不是直接挑模型：M3-a 起两个模型不再等价
+			# （解析式装不下射程），自己挑一个就是在拿另一套战斗规则对拍。
+			var outcome := PBRunSim.resolve_battle(plan, state.def_reduction(cfg), cfg)
 			PBRunSim.settle_wave(state, plan, outcome, cfg, rng)
 			if state.base_hp <= 0.0:
 				break
@@ -132,7 +134,9 @@ func test_the_split_preparation_path_is_bit_identical_to_the_batch_path() -> voi
 				strategy.accept_quest(state, plan.wave, plan.quest_grade, cfg),
 				cfg
 			)
-			var outcome := PBCombatRules.resolve(plan.wave, plan.dps, state.def_reduction(cfg), cfg)
+			# 走 resolve_battle 而不是直接挑模型：M3-a 起两个模型不再等价
+			# （解析式装不下射程），自己挑一个就是在拿另一套战斗规则对拍。
+			var outcome := PBRunSim.resolve_battle(plan, state.def_reduction(cfg), cfg)
 			PBRunSim.settle_wave(state, plan, outcome, cfg, rng)
 			if state.base_hp <= 0.0:
 				break

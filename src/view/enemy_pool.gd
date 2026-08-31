@@ -41,9 +41,19 @@ const ELEMENT_SIDES := {
 ## 敌人的绘制半径（像素）。`640×360` 下 5 像素约等于放大后的一个小怪。
 const ENEMY_RADIUS: float = 5.0
 
-## 敌人在纵向上散布的范围，避免 48 个挤成一条线。
-const LANE_TOP: float = 95.0
-const LANE_BOTTOM: float = 300.0
+## 战场那条道的上沿。**下沿不是常量** —— 见 [method lane_bottom]。
+##
+## M4-a 之前是 138–194 那条 56 像素的窄缝（出战席横排占了 96–130）。
+## 纵向开始算数之后 56 像素装不下任何阵型：近战射程 0.12 换算过来
+## 就是 67 像素，一个人的射程圈比整条道还高。
+##
+## 现在从 90 起，一直到 [method lane_bottom]（默认 196）。
+## 上沿卡在任务卡（收在 84）下面，下沿卡在羁绊带（从 200 起）上面 ——
+## **两头都不能越界**：M4-f 之后玩家会把忍者拖到道的边缘，
+## 而伸进面板底下的那一截会让人「消失」。
+##
+## 战斗中这一段是干净的：羁绊带、指令卡、信息栏都只在准备阶段显示。
+const LANE_TOP: float = 90.0
 
 ## 战线的左右端点：右边出生，左边是基地。
 ## 「前中后」映射到屏幕右中左，与敌人推进方向一致（§02）。
@@ -61,8 +71,19 @@ const RING_COLOR := Color(1.0, 1.0, 1.0, 0.9)
 ## 亮边比本体大多少。要够大才能在 `640×360` 下看出是一圈边而不是描边毛刺。
 const RING_SCALE: float = 2.1
 
+## 挨打之后白闪几帧。§02 的「命中反馈」，M3.5-h。
+##
+## **只有几帧**：逐 tick 的普攻是连续的，闪久了整片战场会一直亮着，
+## 那时闪光就不再代表「刚挨了一下」，而只是背景噪声。
+const FLASH_FRAMES: int = 4
+const FLASH_COLOR := Color(1.0, 1.0, 1.0)
+
 var _nodes: Array[Polygon2D] = []
 var _rings: Array[Polygon2D] = []
+
+## 每个槽位还剩几帧白闪。**渲染层自己的状态，不进 sim** ——
+## 它是「上一帧到这一帧之间发生了什么」，而 sim 里只有「现在是什么样」。
+var _flash: PackedInt32Array = PackedInt32Array()
 
 
 func _ready() -> void:
@@ -71,6 +92,7 @@ func _ready() -> void:
 	var cfg := PBSimConfig.new()
 	_rings.resize(cfg.count_cap)
 	_nodes.resize(cfg.count_cap)
+	_flash.resize(cfg.count_cap)
 	# 亮边先加，才会画在本体后面 —— Godot 的 2D 绘制顺序就是子节点顺序。
 	for i: int in cfg.count_cap:
 		var ring := Polygon2D.new()
@@ -93,7 +115,7 @@ func _ready() -> void:
 ## [param show_counter_ring] 为真时给敌人加一圈亮边，表示当前阵容克得住它。
 ## 整波敌人属性相同（§04），所以这是个整波级别的开关，不用逐个判断。
 func sync_enemies(
-	enemies: Array[PBEnemy], current_tick: int, field_length: float, show_counter_ring: bool = false
+	enemies: Array[PBEnemy], current_tick: int, field: Vector2, show_counter_ring: bool = false
 ) -> void:
 	for i: int in _nodes.size():
 		var node: Polygon2D = _nodes[i]
@@ -108,34 +130,93 @@ func sync_enemies(
 			ring.visible = false
 			continue
 		node.visible = true
-		node.position = _position_of(enemy, field_length)
+		node.position = screen_position(enemy, field)
 		node.color = _color_of(enemy)
 		if node.polygon.is_empty():
 			node.polygon = _shape_for(enemy.element)
 			ring.polygon = _shape_for(enemy.element, RING_SCALE)
 		ring.visible = show_counter_ring
 		ring.position = node.position
+	_decay_flash()
 
 
-## 敌人在屏幕上的位置。x 由推进进度决定，y 按槽位散开。
-func _position_of(enemy: PBEnemy, field_length: float) -> Vector2:
-	# progress 是 0–1 的归一化进度 —— sim 层不知道屏幕多宽，
-	# 换分辨率时只有这一行要改。
-	var t: float = enemy.progress(field_length)
-	var x: float = lerpf(FIELD_RIGHT, FIELD_LEFT, t)
-	# 用槽位号做确定性散布，不掷骰 —— 掷骰会让同一个种子的两次回放长得不一样，
-	# 而战报回放（§13）要求画面也可复现。
-	var lane: float = fmod(float(enemy.slot) * 0.6180339887, 1.0)
-	return Vector2(x, lerpf(LANE_TOP, LANE_BOTTOM, lane))
+## 这个槽位刚挨了一下，白闪一下（§02 的命中反馈，M3.5-h）。
+##
+## 由 [PBBattleView] 按 [PBDamageWatch] 报的结果调 —— **谁挨打是逐帧比对
+## 血量差得出来的**，sim 里没有这个事件。加一个事件到 sim 层的话，
+## 那是给渲染层的方便去改确定性模拟，代价完全不对等。
+func flash(slot: int) -> void:
+	if slot >= 0 and slot < _flash.size():
+		_flash[slot] = FLASH_FRAMES
 
 
-## 颜色。血量越低越暗，给一点「快死了」的即时反馈。
+## 一个战场单位在屏幕上换算成多少像素。
+##
+## **两轴共用这一个比例。** 各算各的话，sim 里的一个圆在屏幕上会是椭圆 ——
+## 而 §02 的射程圈、大招落点预示都要求玩家看到的形状就是判定的形状。
+static func px_per_unit(field: Vector2) -> float:
+	return (FIELD_RIGHT - FIELD_LEFT) / maxf(field.x, 0.001)
+
+
+## 战场那条道的下沿。**从战场高度算出来，不是常量** ——
+## 写死一个数的话，改 [member PBSimConfig.field_height] 就会让画面
+## 和判定悄悄错开，而那种错开只表现为「打得到的敌人画在道外面」。
+static func lane_bottom(field: Vector2) -> float:
+	return LANE_TOP + field.y * px_per_unit(field)
+
+
+## 屏幕坐标 → 战场坐标。[method to_screen] 的逆，用来把鼠标点到的地方
+## 换算回 sim 认得的位置（§02 的战斗中点选，M4-e）。
+##
+## 和正向那一份**必须成对改**：各写各的话，玩家点到的和实际选中的
+## 会差几个像素，而那种偏差表现为「点边上一点就选不中」。
+static func to_field(at: Vector2, field: Vector2) -> Vector2:
+	var scale: float = px_per_unit(field)
+	return Vector2((at.x - FIELD_LEFT) / scale, (at.y - LANE_TOP) / scale)
+
+
+## 战场坐标 → 屏幕坐标。
+##
+## **全项目唯一一份。** 敌人、己方单位、落点预示、伤害飘字都走它 ——
+## 各写一份的话，「预示圈盖住的位置」和「真正挨打的位置」会差几个像素，
+## 而那种偏差看起来只是「大招好像打偏了」。
+##
+## [param field] 是 `Vector2(field_length, field_height)`。
+static func to_screen(at: Vector2, field: Vector2) -> Vector2:
+	var scale: float = px_per_unit(field)
+	return Vector2(FIELD_LEFT + at.x * scale, LANE_TOP + at.y * scale)
+
+
+## 敌人在屏幕上的位置。
+##
+## M4-a 之前这里用「槽位号 × 黄金比」现编一个纵向散布 —— 那是渲染层
+## **自己发明的装饰**，sim 一个字节都不知道。现在泳道是
+## [member PBEnemy.lane]，那个式子搬进了 [method PBSimConfig.enemy_lane]：
+## **画面一个像素都没变，但纵向从此算数了。**
+func screen_position(enemy: PBEnemy, field: Vector2) -> Vector2:
+	return to_screen(enemy.pos(), field)
+
+
+func _decay_flash() -> void:
+	for i: int in _flash.size():
+		if _flash[i] > 0:
+			_flash[i] -= 1
+
+
+## 颜色。血量越低越暗，给一点「快死了」的即时反馈；刚挨打的往白里提。
+##
+## 两层不冲突：**暗是状态（还剩多少血），白是事件（刚才挨了一下）**。
+## 只有暗的那一层时，一个满血 BOSS 挨了整整一波普攻，画面上一点动静都没有。
 func _color_of(enemy: PBEnemy) -> Color:
 	var base: Color = ELEMENT_COLORS.get(enemy.element, Color.WHITE)
 	var health: float = 1.0
 	if enemy.max_hp > 0.0:
 		health = clampf(enemy.hp / enemy.max_hp, 0.0, 1.0)
-	return base.lerp(Color(0.15, 0.15, 0.15), (1.0 - health) * 0.6)
+	var color := base.lerp(Color(0.15, 0.15, 0.15), (1.0 - health) * 0.6)
+	var left: int = _flash[enemy.slot] if enemy.slot < _flash.size() else 0
+	if left <= 0:
+		return color
+	return color.lerp(FLASH_COLOR, float(left) / float(FLASH_FRAMES) * 0.8)
 
 
 ## 生成某一系的多边形剪影。[param scale] 用来做比本体大一圈的亮边。

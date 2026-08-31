@@ -7,7 +7,7 @@ extends Control
 ##
 ## ## 为什么它是 M1 里唯一真正的决策
 ##
-## 阵容不是（[PBRosterPanel] 里说了为什么：按有效战力取前 N 严格最优）。
+## 阵容不是（M1 那会儿按有效战力取前 N 严格最优，不构成决策）。
 ## 花钱只是排序，买不买得起是唯一的约束。
 ## **只有任务是两难**：接了这一波变弱，不接这一辈子变穷。
 ##
@@ -32,8 +32,8 @@ signal quest_toggled(accepted: bool)
 
 ## 顶栏：左边是信息，右边是那个按钮。夹在 HUD 的 Info 行（y≈5）
 ## 与两个准备面板（y=96）之间。
-const PANEL_RECT := Rect2(46.0, 28.0, 548.0, 62.0)
-const BUTTON_SIZE := Vector2(100.0, 26.0)
+const PANEL_RECT := Rect2(46.0, 28.0, 548.0, 56.0)
+const BUTTON_SIZE := Vector2(100.0, 24.0)
 const FONT_SIZE: int = 9
 
 var _accepted: bool = false
@@ -48,24 +48,19 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0.06, 0.07, 0.10, 0.92)
-	backdrop.position = PANEL_RECT.position
-	backdrop.size = PANEL_RECT.size
-	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(backdrop)
+	PBSkin.panel(self, PANEL_RECT)
 
 	var width: float = PANEL_RECT.size.x - BUTTON_SIZE.x - 24.0
-	_head = _add_label(PANEL_RECT.position + Vector2(8.0, 4.0), width)
-	_bond = _add_label(PANEL_RECT.position + Vector2(8.0, 22.0), width)
-	_outcome = _add_label(PANEL_RECT.position + Vector2(8.0, 40.0), width)
+	_head = _add_label(PANEL_RECT.position + Vector2(8.0, 2.0), width, PBSkin.TITLE)
+	_bond = _add_label(PANEL_RECT.position + Vector2(8.0, 20.0), width, PBSkin.TEXT)
+	_outcome = _add_label(PANEL_RECT.position + Vector2(8.0, 36.0), width, PBSkin.TEXT)
 
 	_toggle = Button.new()
 	_toggle.position = (
-		PANEL_RECT.position + Vector2(PANEL_RECT.size.x - BUTTON_SIZE.x - 8.0, 18.0)
+		PANEL_RECT.position + Vector2(PANEL_RECT.size.x - BUTTON_SIZE.x - 8.0, 16.0)
 	)
 	_toggle.size = BUTTON_SIZE
-	_toggle.add_theme_font_size_override("font_size", FONT_SIZE + 1)
+	PBSkin.style_button(_toggle, PBSkin.Tone.PLAIN, FONT_SIZE)
 	_toggle.pressed.connect(_on_pressed)
 	add_child(_toggle)
 
@@ -90,15 +85,19 @@ func reset(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 func refresh(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 	var grade: int = plan.quest_grade
 	var need: int = PBEconomyRules.quest_cost_units(grade)
-	var spare: int = state.standby_available(cfg)
+	var spare: int = state.dispatch_available(cfg)
 	var reward: int = PBEconomyRules.quest_reward(grade, plan.wave.index)
 
 	# 人不够就派不出去。这时候卡面要说清是「人不够」而不是「不划算」，
 	# 否则玩家会去调阵容找一个根本不存在的原因。
+	#
+	# **门槛口径 M3.5-i 换过一次。** 旧的是 `standby_available`（溢出到板凳上
+	# 的那几个），而指令卡的「派去任务」放行的是**在场**的人 —— 两把尺子，
+	# 于是会出现「已经挑了 2 个人，卡面还说待命台 0 人派不出去」。
 	if need > spare:
 		_accepted = false
 		_head.text = "本波任务　%s 级　奖励 %d 金　需派 %d 人" % [_grade_name(grade), reward, need]
-		_bond.text = "待命台只有 %d 人，派不出去 —— 先去左边多抽几张卡。" % spare
+		_bond.text = "场上只有 %d 人，派不出 %d 人 —— 先去左边多抽几张卡。" % [spare, need]
 		_outcome.text = ""
 		_toggle.text = "派不出"
 		_toggle.disabled = true
@@ -107,10 +106,26 @@ func refresh(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 	_toggle.disabled = false
 	_toggle.text = "接下任务" if not _accepted else "已接 · 取消"
 	_head.text = (
-		"本波任务　%s 级　奖励 %d 金　需派 %d 人（待命台 %d 人可派）　Q 键切换" % [_grade_name(grade), reward, need, spare]
+		"本波任务　%s 级　奖励 %d 金　需派 %d 人　%s　Q 键切换"
+		% [_grade_name(grade), reward, need, _picked_text(state, need)]
 	)
 	_bond.text = _bond_text(state, cfg, need)
 	_outcome.text = _outcome_text(state, cfg, plan, need)
+
+
+## 玩家自己挑了几个人去（§06，M3.5-g）。
+##
+## **没挑够要说清楚会发生什么**：名单只在人数刚好对上时才算数
+## （[member PBRunState.dispatch_manual]），否则整份作废、退回末尾规则。
+## 不写的话，挑了一半的玩家会以为自己挑的那个一定会去，
+## 而实际上系统按板凳末尾另派了一批 —— 那个落差在结算之后才看得见。
+func _picked_text(state: PBRunState, need: int) -> String:
+	var chosen: int = state.dispatch_manual.size()
+	if chosen == 0:
+		return "自动派名单末尾 %d 人（点忍者可以自己挑）" % need
+	if chosen < need:
+		return "已挑 %d/%d —— 挑不够就整份作废，仍按名单末尾派" % [chosen, need]
+	return "已挑 %d/%d 人（自己挑的）" % [chosen, need]
 
 
 ## §06 那句「派了羁绊掉几档」。
@@ -144,10 +159,11 @@ func _bond_text(state: PBRunState, cfg: PBSimConfig, need: int) -> String:
 		if now < was:
 			broken.append("%s %d→%d 档" % [PBLocale.of_bond(bond), was, now])
 
-	# 板凳够深时被派走的人本来就没在给任何一组羁绊补档 —— 这一波派遣是白捡的钱。
-	# 这一格是整张卡里最值钱的信息，值得单独说一句。
+	# 被派走的人没在给任何一组羁绊补档时，代价只剩「少一个打手」。
+	# **不能再写「战力不变」**：M3.5-i 之前派的是不上场的板凳，那句是对的；
+	# 现在派的是在场的人，他这一波真的不打了。
 	if broken.is_empty():
-		return "派了：没有羁绊会掉档（派的是板凳末尾，谁都没顶着档位）　战力不变"
+		return "派了：没有羁绊会掉档（派的那几个谁都没顶着档位）　但他们这一波不上场"
 
 	var base: float = PBValuation.mean_dps(state, cfg)
 	var loss: float = PBValuation.dispatch_loss(state, cfg, base, need)
@@ -170,7 +186,24 @@ func _outcome_text(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan, need: 
 		return "还没有人上场 —— 先去左边抽卡。"
 	# 名单还没锁（`lock_plan` 要等玩家点开打），所以按「现在开打会派谁」预览一份。
 	var units: Array[PBUnit] = PBValuation.deployed_for(state, plan.wave.element, cfg)
-	var cliff: float = PBValuation.leak_threshold_dps(plan.wave, state.def_reduction(cfg), cfg)
+	# 悬崖按这份预览名单的**真实射程结构**量（M3-a）。拿解析式排队模型算的话，
+	# 卡面上那句「本波打空要 x DPS」说的是另一套战斗规则里的事，
+	# 而玩家会照着它做决定 —— CLAUDE.md 那条「四块面板与比价同源」管的就是这个。
+	var preview := PBCombatRules.build_attackers(
+		units,
+		plan.wave.element,
+		state.atk_mult(cfg),
+		state.bond_mult(cfg),
+		PBCombatRules.unit_multipliers(units, state, cfg),
+		cfg,
+		PBBeastRules.beast_of(state, cfg),
+		state.beast_level,
+		0,
+		PBBondRules.active_functions(state.bonded_units(cfg), units, cfg.bonds)
+	)
+	var cliff: float = PBValuation.leak_threshold_dps(
+		plan.wave, state.def_reduction(cfg), cfg, preview
+	)
 	var kept: float = PBValuation.dps_if_dispatched(state, plan.wave, units, 0, cfg)
 	var sent: float = PBValuation.dps_if_dispatched(state, plan.wave, units, need, cfg)
 	return (
@@ -193,7 +226,7 @@ func _margin(dps: float, cliff: float) -> String:
 
 
 ## 切换接/不接。按钮和 Q 键走同一条路 —— 两条路各写一份迟早分叉。
-## 派不出去（待命台人不够）时什么都不做。
+## 派不出去（场上人不够）时什么都不做。
 func toggle() -> void:
 	if _toggle.disabled:
 		return
@@ -209,10 +242,5 @@ func _grade_name(grade: int) -> String:
 	return String(PBEconomyRules.QUEST_GRADES[grade])
 
 
-func _add_label(at: Vector2, width: float) -> Label:
-	var label := Label.new()
-	label.position = at
-	label.size = Vector2(width, 16.0)
-	label.add_theme_font_size_override("font_size", FONT_SIZE)
-	add_child(label)
-	return label
+func _add_label(at: Vector2, width: float, color: Color) -> Label:
+	return PBSkin.label(self, at, width, FONT_SIZE, color)

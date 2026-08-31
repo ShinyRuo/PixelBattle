@@ -25,7 +25,7 @@ enum Dispatch {
 	SMART,  ## BOSS 波前一波收手，其余照接
 }
 
-## 带谁上场（出战席 + 待命台）。M2-c 之后这是**技能阶梯的主要来源**。
+## 带谁上场。M2-c 之后这是**技能阶梯的主要来源**。
 ##
 ## §01 要求三档玩家拉开 15–25 / 40–60 / 100+ 波，而 M1 实测整条技能阶梯
 ## 只有 1.30× —— 根因是加法杠杆在指数曲线上换不到波次差。
@@ -43,6 +43,27 @@ var id: StringName = &"base"
 
 var dispatch_policy: Dispatch = Dispatch.SMART
 
+## 开局选哪只尾兽（§11）。**空 = 不带**，那是对照组。
+##
+## 为什么默认不带：接上尾兽这一步不该顺手改动所有既有的配平数字 ——
+## 那样「尾兽值多少」和「配平漂了多少」就分不开了。
+## 扫描用 `batch_sim --beast <id>` 逐只跑一遍，
+## 而 §11 要的那条判据（**机制型不能被数值型挤掉**）就是这九次的排序。
+##
+## 正式上架时这里要翻成一个真 id，见路线图的待决策表。
+var beast_id: StringName = &""
+
+## 尾兽升到几级就停（§11：`400 × 1.6^Lv`，上限 10）。**0 = 不升级。**
+##
+## 做成一个目标等级而不是让 [PBValuation] 给尾兽定价，是有意的：
+## 给机制型尾兽定价要先知道「一次聚拢值多少波次」，
+## **而那正是这一步要量的东西** —— 先定价等于拿一个还不知道的数去决定买不买，
+## 而且那个价必然偏向数值型（光环是现成的 DPS 倍率，聚拢不是），
+## 正好是 §11 警告的那种挤压。
+##
+## 固定目标等级则对九只一视同仁，横向比较因此干净。
+var beast_level_target: int = 0
+
 ## 默认不会凑羁绊 —— 大多数流派是「某种打法」的对照组，不是「会玩的玩家」。
 var field_policy: Field = Field.RAW_POWER
 
@@ -54,16 +75,89 @@ func prepare(_state: PBRunState, _wave: PBWave, _cfg: PBSimConfig, _rng: PBRngSt
 	pass
 
 
-## 选出本波上场的单位。默认取对本波有效战力最高的前 N 个。
+## 开局带哪只尾兽。**整局只问一次**（§11：开局选定、全程不变）。
+##
+## 表里没有这个 id 就当没带 —— 命令行敲错了名字时，
+## 静默按「不带」跑总好过静默按「随便哪只」跑：前者跑出来的是对照组，
+## 数字明显偏低，一眼看得出不对；后者混在九次扫描里认不出来。
+func choose_beast(cfg: PBSimConfig) -> StringName:
+	if beast_id == &"" or cfg.beasts == null or cfg.beasts.by_id(beast_id) == null:
+		return &""
+	return beast_id
+
+
+## 升尾兽等级，一直升到 [member beast_level_target] 或者钱不够为止。
+##
+## **每波准备阶段调一次**，由 [method PBRunSim.plan_wave] 统一调用而不是
+## 让每个流派各自记得调 —— 漏调一个流派不会报错，只会让那一格的扫描
+## 悄悄跑的是 Lv1，而九只尾兽横向比较正是靠这一格对齐。
+func upgrade_beast(state: PBRunState, cfg: PBSimConfig) -> void:
+	if state.beast_id == &"":
+		return
+	while state.beast_level < mini(beast_level_target, cfg.beast_level_max):
+		var cost := PBBeastRules.upgrade_cost(state.beast_level, cfg)
+		if cost < 0 or not state.spend(cost):
+			return
+		state.beast_level += 1
+
+
+## 选出本波上场的单位。
+##
+## 玩家钦定了名单（[member PBRunState.lineup]）就照那份来，
+## 否则取对本波有效战力最高的前 N 个 —— 那是脚本玩家和自动模式走的路。
 func deploy(state: PBRunState, wave: PBWave, cfg: PBSimConfig) -> Array[PBUnit]:
-	return pick_by_effect(state, wave, cfg, open_slots(state, cfg))
+	# 判据是 [member PBRunState.lineup_manual] 而不是「名单空不空」——
+	# 玩家可以把人全拖下场，那时名单是空的但仍然是手排的。
+	if not state.lineup_manual:
+		return pick_by_effect(state, wave, cfg, open_slots(state, cfg))
+	# 仍然要过一遍 `bring_to_field`：在场名单（羁绊按它算）必须包含钦定的人，
+	# 漏了就会出现「点上场了但羁绊不算他」——不报错，只是数字不对。
+	bring_to_field(state, cfg)
+	return lineup_units(state, cfg)
+
+
+## 手动名单对应的卡。名单里已经卖掉/不存在的 id 会被跳过。
+##
+## 超出出战席容量的部分**截掉而不是报错**：人口科技可以降级吗？不能，
+## 但 `open_slots` 会随经济位增加而变小 —— 玩家上了一个经济位之后，
+## 上一波钦定的六人名单就装不下了。截掉是唯一不会静默出错的做法。
+func lineup_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
+	var out: Array[PBUnit] = []
+	var slots: int = open_slots(state, cfg)
+	for key: StringName in state.lineup:
+		if out.size() >= slots:
+			break
+		var unit := state.roster.get(key, null) as PBUnit
+		if unit != null:
+			out.append(unit)
+	return out
+
+
+## 玩家改了出战席。[param manual] 传 false 就是**交回自动排**。
+##
+## ## 为什么「交回自动」不能用空数组表示
+##
+## 玩家可以把人**全部拖下场** —— 那是一个合法的手排结果（空出战席），
+## 和「不排了，你按战力挑吧」是两回事。两者混用的话，
+## 拖空之后下一次刷新会把整队自动填回来，看起来像编队页在跟人作对。
+##
+## 走这里而不是让界面直接写 [member PBRunState.lineup]，理由和花钱一样
+## （见 [PBBattleView] 的 `_on_purchase`）：状态只由这一层的原语改，
+## 界面自己动字段迟早会漏掉配套的清理，而那种不同步不报错。
+func set_lineup(state: PBRunState, units: Array[PBUnit], manual: bool = true) -> void:
+	state.lineup_manual = manual
+	state.lineup.clear()
+	if not manual:
+		return
+	for unit: PBUnit in units:
+		state.lineup.append(unit.key())
 
 
 ## 接不接这个任务。[param grade] 是 [constant PBEconomyRules.QUEST_TABLE] 的行号。
 func accept_quest(state: PBRunState, wave: PBWave, grade: int, cfg: PBSimConfig) -> bool:
 	if dispatch_policy == Dispatch.NEVER:
 		return false
-	if PBEconomyRules.quest_cost_units(grade) > standby_available(state, cfg):
+	if PBEconomyRules.quest_cost_units(grade) > dispatch_available(state, cfg):
 		return false
 	if dispatch_policy == Dispatch.ALWAYS:
 		return true
@@ -77,31 +171,72 @@ func open_slots(state: PBRunState, cfg: PBSimConfig) -> int:
 	return state.open_slots(cfg)
 
 
-## 待命台上现在有几个人可以被派出去。实现在 [method PBRunState.standby_available] ——
+## 现在有几个人派得出去做任务。实现在 [method PBRunState.dispatch_available] ——
 ## 界面层也要问同一个问题，公式只能有一份。
-func standby_available(state: PBRunState, cfg: PBSimConfig) -> int:
-	return state.standby_available(cfg)
+func dispatch_available(state: PBRunState, cfg: PBSimConfig) -> int:
+	return state.dispatch_available(cfg)
 
 
-## 挑出这一波**带上场**的卡（出战席 + 待命台），并记进 [member PBRunState.field]。
+## 挑出这一波**带上场**的卡，并记进 [member PBRunState.field]。
 ##
 ## **全部 `pick_by_*` 都从这里取候选**，所以覆盖了 `deploy` 的流派也自动
-## 走同一套在场规则 —— 出战席必然是在场名单的子集，
-## 而 §05 的「待命台不参战但羁绊全额生效」也就自动成立。
-func bring_to_field(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
-	var capacity: int = state.deploy_capacity(cfg) + state.standby_capacity(cfg)
-	var chosen: Array[PBUnit]
+## 走同一套在场规则。玩家钦定的人**优先占位**，剩下的格子才按策略补 ——
+## 否则会出现「点上场了但羁绊不算他」：在场名单是按战力/羁绊挑的，
+## 钦定一个战力低的人就会被挤出去。
+##
+## **M3.5-i 之后容量就是出战席**（待命台删了，见 [member PBRunState.field]），
+## 于是「在场」与「上场」是同一批人。
+##
+## ## 这一层现在必须知道本波属性
+##
+## [param wave_element] 传负数表示「按裸战力排」（对照组走这条）。
+##
+## 待命台还在的时候这里按裸战力排就够了：在场名单比出战席大一截，
+## [method pick_by_effect] 还能在那截板凳里按属性换人。**现在在场就是出战席，
+## 这一步不看属性的话「每波换上克制系」（§03）就没有发生的余地** ——
+## 换人和不换人会挑出同一批人，而那不报错，只表现为
+## 「属性系统在扫描里突然一分钱都不值」。
+func bring_to_field(
+	state: PBRunState, cfg: PBSimConfig, wave_element: int = -1
+) -> Array[PBUnit]:
+	var capacity: int = state.open_slots(cfg)
+	var chosen: Array[PBUnit] = lineup_units(state, cfg)
+	var taken: Dictionary = {}
+	for unit: PBUnit in chosen:
+		taken[unit.key()] = true
+
+	var rest: Array[PBUnit]
 	if field_policy == Field.BOND_AWARE:
-		chosen = PBBondRules.choose_field(state.all_units(), capacity, state.open_slots(cfg), cfg)
+		# 两个参数现在恒等（容量就是出战席）。留着第二个不是冗余：
+		# `choose_field` 的契约是「挑 capacity 个，其中前 deploy_slots 个算输出」，
+		# 待命台没了只是让调用方两个都传同一个数。
+		#
+		# **这一支仍然不看本波属性**，那是 M2 的设计（在场名单是整局带着的队伍）。
+		# 待命台没了之后它的后果变重了：凑羁绊的玩家等于放弃了换克制系。
+		# CLAUDE.md 记着的那条张力（§03 换人 vs §09 凑羁绊抢同一批位子）
+		# 现在是全额对撞，归数值回归。
+		rest = PBBondRules.choose_field(state.all_units(), capacity, capacity, cfg)
+	elif wave_element >= 0:
+		rest = state.all_units()
+		var element := wave_element as PBElement.Type
+		rest.sort_custom(
+			func(a: PBUnit, b: PBUnit) -> bool:
+				return a.effective_power(element, cfg) > b.effective_power(element, cfg)
+		)
 	else:
-		chosen = state.sorted_by_power(cfg).slice(0, capacity)
+		rest = state.sorted_by_power(cfg)
+	for unit: PBUnit in rest:
+		if chosen.size() >= capacity:
+			break
+		if not taken.has(unit.key()):
+			chosen.append(unit)
 	state.set_field(chosen)
 	return chosen
 
 
 ## 按「对本波的有效战力」取前 [param slots] 个 —— 即每波换上克制系。
 func pick_by_effect(state: PBRunState, wave: PBWave, cfg: PBSimConfig, slots: int) -> Array[PBUnit]:
-	var pool := bring_to_field(state, cfg)
+	var pool := bring_to_field(state, cfg, int(wave.element))
 	pool.sort_custom(
 		func(a: PBUnit, b: PBUnit) -> bool:
 			return a.effective_power(wave.element, cfg) > b.effective_power(wave.element, cfg)
@@ -130,18 +265,28 @@ func pick_by_element(
 	return pool.slice(0, maxi(slots, 0))
 
 
-## 抽一张卡并入库，同时维护 §08 的保底计数。买不起返回 false。
+## 抽一张卡并入库 —— **掏钱摆出三张，再自己挑一张**（§08，M3.5-e）。
+##
+## 规则那一半在 [PBShopRules]（花多少、掷什么、进不进得了仓库），
+## 这里只剩决定那一半：**挑第几张**。那正是三选一新增的东西，
+## 也是脚本玩家和真人玩家真正不同的地方。
 func pull_once(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> bool:
-	if not state.spend(cfg.gacha_cost):
+	if not PBShopRules.open_offer(state, wave, cfg, rng):
 		return false
-	var unit := PBEconomyRules.roll_gacha(wave.index, state.gacha_pity, cfg, rng.gacha)
-	state.add_unit(unit)
-	state.gacha_pulls += 1
-	if int(unit.rarity) >= int(PBUnit.Rarity.SSR):
-		state.gacha_pity = 0
-	else:
-		state.gacha_pity += 1
-	return true
+	return PBShopRules.take_offer(state, _choose_from_offer(state.pending_offer, cfg))
+
+
+## 三张里挑哪一张。**默认按裸战力挑**，够用但不聪明 ——
+## 会算账的玩家该同时看羁绊和克制覆盖，那是 `rational` 该覆盖的事。
+##
+## 名字带下划线是因为它是一个**给子类覆盖的钩子**，不是给外面调的：
+## 界面走的是 [PBShopRules] 那两条，玩家自己就是那个 `_choose_from_offer`。
+func _choose_from_offer(offer: Array[PBUnit], cfg: PBSimConfig) -> int:
+	var best: int = 0
+	for i: int in offer.size():
+		if offer[i].power(cfg) > offer[best].power(cfg):
+			best = i
+	return best
 
 
 ## 把剩下的钱换成战力，一直花到买不动为止。`balanced` 与 `pure_power` 共用，
@@ -168,42 +313,65 @@ func spend_on_power(
 		elif gacha_still_pays(state, cfg) or equipment_is_full(state, cfg):
 			if not pull_once(state, wave, cfg, rng):
 				return
-		elif not buy_equip_part(state, cfg):
+		elif not buy_equip_part(state, cfg, rng):
 			return
 
 
 ## 抽卡是否仍然比装备划算。
 ##
-## 判据是**板凳坐不坐得满**，不是卡池抽没抽完 —— 两者差很远。
+## 判据是**位置坐不坐得满**，不是卡池抽没抽完 —— 两者差很远。
 ## 出战席最多 10 人，多出来的卡只在「换克制系」时轮换用，
-## 手上有两倍板凳容量的卡之后，再多一张几乎不可能挤进当前的上场名单，
-## 边际收益断崖式下跌。而装备是按人头加成的，只要板凳没装满就一直有效。
+## 手上有两倍席位容量的卡之后，再多一张几乎不可能挤进当前的上场名单，
+## 边际收益断崖式下跌。而装备是按人头加成的，只要席位没装满就一直有效。
+##
+## **M3.5-i 删掉待命台把这个门槛砍了一半**（原来数的是出战席 + 待命台）。
+## 那是「席位」这个词的含义变了，不是判据变了 —— 归数值回归复核。
 ##
 ## 早先这里写的是「卡池抽到 80% 才转装备」，结果玩家到死卡池才 36/48，
 ## 门槛从来没打开过，装备平均只买到 0.5 个（满装要 90 个）——
 ## 于是金币坑形同虚设，经济系统被误判成「不重要」。
 func gacha_still_pays(state: PBRunState, cfg: PBSimConfig) -> bool:
-	var bench: int = state.deploy_capacity(cfg) + state.standby_capacity(cfg)
-	return state.roster.size() < bench * 2
+	return state.roster.size() < state.deploy_capacity(cfg) * 2
 
 
-## 买一个装备配件（§10 的替身曲线）。买不起返回 false。
+## 开一个忍具箱（§10：300 金，7 种配件等概率出 1）。买不起返回 false。
 ##
 ## 这是后期金币的主要去处。抽卡在卡池抽满后边际收益趋近于零，
 ## 而装备在装满整队之前每一件都实打实 —— 两者的边际曲线正好相反，
 ## 所以「该抽卡还是该买装备」在中后期是个真决策。
-func buy_equip_part(state: PBRunState, cfg: PBSimConfig) -> bool:
+##
+## **出货走 `gacha` 流**（§14 铁律 3 只有三条流，花钱买的随机归它）。
+## M3-c 之前配件不分种类、开箱不掷骰，所以这是一个**新增的随机消费点** ——
+## 它会移动 `gacha` 流后面全部抽卡的结果，M3-c 之前的波次数字因此不可直接对比。
+func buy_equip_part(state: PBRunState, cfg: PBSimConfig, rng: PBRngStreams) -> bool:
+	var pool: Array[StringName] = cfg.equipment.parts
+	if pool.is_empty():
+		return false
 	if not state.spend(cfg.equip_part_cost):
 		return false
-	state.equip_parts += 1
+	PBEquipRules.add_part(state.equip_parts, pool[rng.gacha.randi_range(0, pool.size() - 1)])
 	return true
 
 
 ## 出战席是否已经装备到满，再买就溢出了。
+##
+## 数的是**合得出来**的成品件数，不是「配件总数 ÷ 配方大小」——
+## 真配方点名要哪几种，囤着一堆用不上的配件也合不出东西来。
+##
+## 已知的一处宽松：合出来但没人吃得下的成品也算进去了。
+## 那只会让玩家**更早**停手，而 [PBStratRational] 另有一道估值闸
+## （吃不下时 [method PBValuation.equip_box_gain] 直接返回 0），
+## 所以这个近似不会把钱花到没用的地方去。写死数的话反而要复制一遍分配逻辑，
+## 而这个函数在批量扫描里一波要被调几十次。
 func equipment_is_full(state: PBRunState, cfg: PBSimConfig) -> bool:
-	var slots: int = maxi(state.deploy_capacity(cfg) - state.economy_slot_count, 0)
-	var items: int = state.equip_parts / cfg.equip_parts_per_item
-	return items >= slots * cfg.equip_items_per_unit
+	var deployed := PBValuation.deployed_by_raw_power(state, cfg)
+	if deployed.is_empty():
+		return true
+	var owned := PBEquipRules.craftable(state.equip_parts, cfg.equipment)
+	var total: int = 0
+	for item_id: StringName in owned:
+		total += int(owned[item_id])
+	return total >= PBEquipRules.open_item_slots(deployed, cfg)
 
 
 ## 升一级科技。买不起或已满级返回 false。

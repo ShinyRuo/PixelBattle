@@ -76,18 +76,198 @@ static func resolve(
 ## 这个求和是 §03 成立与否的支点：只有当 [param deployed] 里真的换上了
 ## 克制系单位，2.0 的倍率才吃得到。全员固定上场的五系阵容平均只有 1.10，
 ## 和物理的 1.05 几乎没差别。
+## [param equip_mults] 是**逐人**的装备倍率（与 [param deployed] 同序）。
+## 空数组表示没有装备，全员按 1.0 算。
+##
+## M3-c 之前这里是一个全队标量 —— §10 的分类匹配（法术装挂不上物理角色）
+## 在标量里表达不出来，而装备对 §03 属性系统的稀释正来自那个「对谁都一样有用」。
 static func team_dps(
 	deployed: Array[PBUnit],
 	wave_element: PBElement.Type,
 	atk_tech_mult: float,
 	bond_mult: float,
-	equip_mult: float,
+	equip_mults: PackedFloat64Array,
 	cfg: PBSimConfig
 ) -> float:
+	var mult: float = atk_tech_mult * bond_mult
 	var total: float = 0.0
-	for unit: PBUnit in deployed:
-		total += unit.effective_power(wave_element, cfg)
-	return total * atk_tech_mult * bond_mult * equip_mult
+	for i: int in deployed.size():
+		var equip: float = equip_mults[i] if i < equip_mults.size() else 1.0
+		total += deployed[i].effective_power(wave_element, cfg) * equip
+	return total * mult
+
+
+## 逐人的**全部**乘算加成：装备（§10）× 尾兽光环（§11）。与 [param units] 同序。
+##
+## ## 为什么要有这么一层
+##
+## [method team_dps] 和 [method build_attackers] 都收一个逐人倍率数组，
+## 而调用它们的地方有四处（战斗、估值两处、任务卡预览）。
+## M3-c 时那四处各写着同一句 `PBEquipRules.unit_multipliers(...)`；
+## M3-d 加了尾兽光环，四处就要各自改成「装备 × 尾兽」。
+##
+## **漏改一处不会报错**，只会让那条路径上的战力比实际低一点 ——
+## 而那四处里有两处是估值，估值偏低的表现是「会算账的玩家做出略差的选择」，
+## 从现象反推几乎不可能。所以折叠只做一次，加第三种加成时也只改这里。
+static func unit_multipliers(
+	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
+) -> PackedFloat64Array:
+	var equip := PBEquipRules.unit_multipliers(units, state.equip_parts, cfg, state.equipped)
+	var beast := PBBeastRules.beast_of(state, cfg)
+	if beast == null:
+		return equip
+	var aura := PBBeastRules.unit_multipliers(units, beast, state.beast_level, cfg)
+	var out := PackedFloat64Array()
+	out.resize(units.size())
+	for i: int in units.size():
+		var equip_mult: float = equip[i] if i < equip.size() else 1.0
+		var aura_mult: float = aura[i] if i < aura.size() else 1.0
+		out[i] = equip_mult * aura_mult
+	return out
+
+
+## 把上场名单摊成一组 [PBAttacker]，交给 [PBBattleSim] 逐 tick 推。
+##
+## **和 [method team_dps] 必须是同一套算法的两种输出**：这里每个攻击者的
+## `dps` 就是那个求和的一项，两者只差浮点结合律。分成两份各写一遍的话，
+## 「界面上报的战力」和「战场上真打出来的伤害」会慢慢分叉，且不报任何错 ——
+## `test_battle_sim.gd` 里有一条断言把这个恒等式锁住。
+##
+## 射程与站位来自角色（[method PBCharacter.reach_tier]），
+## 具体距离来自配置（[method PBSimConfig.reach_distance]）——
+## 角色表说「这是个远程」，配置说「远程能打多远」，两件事分开才扫得动。
+##
+## ## 尾兽（M3-d）
+##
+## 带了尾兽就在末尾**多挂一个 `dps = 0` 的攻击者**，它只有大招。
+## 挂在这里而不是让 [PBBattleSim] 自己去查尾兽表，是因为尾兽大招的伤害
+## 以「全队几秒输出」计量（[member PBBeast.ultimate_damage_seconds]），
+## 而那个分母只有在全部角色都摊开之后才知道 —— 正是本函数的返回值。
+##
+## ## 羁绊功能档（M3-f）
+##
+## [param bond_functions] 是 [method PBBondRules.active_functions] 的结果，
+## `{ 载体角色 id: [功能键…] }`。功能装在**已经建好的**大招上，
+## 理由见 [method PBBondFunctionRules.apply_to_ultimate]。
+##
+## > 本函数已经到了 `.gdlintrc` 的参数上限（10 个）。**再加一种加成时
+## > 不要接第 11 个参数**，该把「队伍这一波的全部加成」折成一个对象了 ——
+## > 现在还没折，是因为九个参数里有六个是从 M-1 就在的原始量，
+## > 硬折会让一次数据结构改动混进一次功能改动里。
+static func build_attackers(
+	deployed: Array[PBUnit],
+	wave_element: PBElement.Type,
+	atk_tech_mult: float,
+	bond_mult: float,
+	equip_mults: PackedFloat64Array,
+	cfg: PBSimConfig,
+	beast: PBBeast = null,
+	beast_level: int = 1,
+	beast_cooldown_ticks: int = 0,
+	bond_functions: Dictionary = {}
+) -> Array[PBAttacker]:
+	var team_mult: float = atk_tech_mult * bond_mult
+	var out: Array[PBAttacker] = []
+	out.resize(deployed.size())
+	# 带聚拢大招的名额按出战席顺序发前 n 个。**按比例而不是按角色表**，
+	# 理由见 [member PBSimConfig.ultimate_gather_share]。
+	var gather_count: int = int(
+		round(clampf(cfg.ultimate_gather_share, 0.0, 1.0) * float(deployed.size()))
+	)
+	var cd_scale: float = PBBeastRules.ultimate_cd_scale(beast)
+	for i: int in deployed.size():
+		var unit: PBUnit = deployed[i]
+		var tier := unit.character.reach_tier()
+		# 装备是逐人的：这个人吃到几件、吃不吃得下，由 [PBEquipRules] 分配。
+		var mult: float = team_mult * (equip_mults[i] if i < equip_mults.size() else 1.0)
+		var attacker := PBAttacker.new()
+		attacker.slot = i
+		attacker.dps = unit.effective_power(wave_element, cfg) * mult
+		# 挨打这一半（§03A，M3.5-b）。**血与防不吃 `mult`** ——
+		# 装备、羁绊、尾兽光环目前全是进攻向的，把它们乘到防守上
+		# 等于凭空发明一份没人设计过的加成。§10 的两件防御装
+		# 和 §11 一尾的减伤光环接上来时，那才是它们的落点。
+		var stats := unit.stats(cfg)
+		attacker.max_hp = stats.hp
+		attacker.defence = stats.def
+		attacker.def_element = unit.def_element
+		# 蓝（M3.5-d）：智力抬池子，回速按池子的比例走 —— 所以它同时抬两样。
+		attacker.max_mp = stats.mp
+		attacker.mp_regen = stats.mp * cfg.mp_regen_rate / float(cfg.tick_rate)
+		attacker.reach = cfg.reach_distance(tier)
+		# 站位：x 由射程档派生（§02），y 是泳道 —— **M4-a 之前没有 y**，
+		# 纵向是渲染层自己编的。默认均分，M4-f 之后由玩家拖动决定。
+		attacker.pos = Vector2(cfg.reach_column(tier), cfg.ally_lane(i, deployed.size()))
+		# 跑动（M3.5-c）：站位从「站在哪一列」变成「从哪一列出发」。
+		# 皮带绳把前压拴在自己那一列附近 —— 放开的话所有人挤到最前面接敌，
+		# §02 的射程梯度（「场上稳定有人」的唯一来源）就没了。
+		attacker.home = attacker.pos
+		attacker.leash = cfg.unit_leash
+		attacker.move_speed = cfg.field_length / maxf(
+			cfg.unit_move_seconds * float(cfg.tick_rate), 1.0
+		)
+		attacker.shape = unit.character.attack_shape
+		attacker.max_targets = cfg.aoe_max_targets
+		# 出手节奏与子弹（M4-b）。**攻速第一次被战斗读到** ——
+		# 在这之前它只进 `dps = atk × 攻速` 这个乘积，信息栏上写着
+		# 「攻速 1.11」而战斗里是一条没有边界的连续伤害流。
+		attacker.attack_speed = stats.attack_speed
+		# 近战不发子弹（接触即伤），五系远程才有弹道。
+		attacker.shot_speed = (
+			0.0
+			if tier == PBCharacter.Reach.MELEE
+			else cfg.field_length / maxf(
+				cfg.projectile_cross_seconds * float(cfg.tick_rate), 1.0
+			)
+		)
+		attacker.ultimate = _build_ultimate(unit, wave_element, mult, i < gather_count, cfg)
+		# 羁绊功能档（§09，M3-f）：这个人是不是某组凑满了的羁绊的载体。
+		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
+			PBBondFunctionRules.apply_to_ultimate(attacker.ultimate, key, cfg)
+		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
+		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
+		attacker.ultimate.cooldown_ticks = maxi(
+			int(round(float(attacker.ultimate.cooldown_ticks) * cd_scale)), 1
+		)
+		out[i] = attacker
+
+	var beast_attacker := PBBeastRules.build_ultimate_attacker(
+		beast, beast_level, total_dps(out), wave_element, cfg, beast_cooldown_ticks
+	)
+	if beast_attacker != null:
+		out.append(beast_attacker)
+	return out
+
+
+## 造一个单位这一波的大招（§02，M3-b）。
+##
+## **伤害按大招自己的属性算克制，不按单位的**（§03 铁律 4：element 挂在
+## 伤害事件上）。所以「本体土属性、大招火系」的角色，普攻和大招会在
+## 同一波里吃到不同的倍率 —— 那正是那条铁律想留出来的空间。
+static func _build_ultimate(
+	unit: PBUnit, wave_element: PBElement.Type, mult: float, gather: bool, cfg: PBSimConfig
+) -> PBUltimate:
+	var ult := PBUltimate.new()
+	ult.element = unit.character.ultimate_element()
+	var rel := PBElement.relation(ult.element, wave_element)
+	ult.damage = unit.power(cfg) * cfg.damage_multiplier(rel) * mult * cfg.ultimate_power_mult
+	ult.radius = cfg.ultimate_radius
+	ult.cooldown_ticks = int(round(cfg.ultimate_cooldown_seconds * float(cfg.tick_rate)))
+	ult.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
+	ult.mp_cost = cfg.ultimate_mp_cost
+	ult.gather = gather
+	return ult
+
+
+## 一组攻击者的 DPS 之和 —— 也就是对外报的「队伍战力」。
+##
+## 报数走这里而不是再调一次 [method team_dps]，是为了让两者**不可能**分叉：
+## 界面上的数就是战场上真会打出来的伤害，因为它是同一批对象加出来的。
+static func total_dps(attackers: Array[PBAttacker]) -> float:
+	var total: float = 0.0
+	for attacker: PBAttacker in attackers:
+		total += attacker.dps
+	return total
 
 
 ## 第 [param index] 个敌人的出场时刻（秒）。整波在 `spawn_window` 内均匀出完。

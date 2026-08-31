@@ -21,6 +21,10 @@ extends SceneTree
 ## 这是它和其余 `src/tools/` 下的脚本唯一的不同。
 
 ## 截图前先跑几个渲染帧。太少的话面板还没布局完，截出来是空白控件。
+##
+## `--frames` 可以调大：手感那几样（伤害飘字、命中白闪、落点预示带）
+## 只在真打起来之后才出现，而 30 帧的时候战斗刚开始 0.3 秒，
+## 屏幕上还没有任何一发伤害 —— 那张图什么都验不了。
 const WARMUP_FRAMES: int = 30
 
 ## 第几帧把按键送进去。要早于截图，好让面板有帧可以重画。
@@ -31,14 +35,32 @@ const KEY_NAMES := {
 	"b": KEY_B,  # 换带人方式（按战力 / 按羁绊）
 	"q": KEY_Q,  # 接/不接任务
 	"a": KEY_A,  # 自动推进
+	"v": KEY_V,  # 开/关仓库抽屉（M3.5-f）
+	"escape": KEY_ESCAPE,  # 收抽屉 / 取消选中（M3.5-e）
 }
 
 var _scene: Node
 var _frames: int = 0
+var _warmup: int = WARMUP_FRAMES
 var _wave: int = 20
 var _out: String = "res://build/shot.png"
 var _auto: bool = false
 var _press: Array[int] = []
+
+## 强行「点」出战席的第几个忍者。-1 表示不点。
+##
+## 战场直接操作（§02）之后，信息栏和指令卡**只在选中之后才有内容** ——
+## 截图工具送的是按键，点不到格子。没有这个开关的话，
+## 「这两块排得下吗、读得懂吗」只能靠手开游戏回答，
+## 而那正是本工具存在的理由。
+var _hover: int = -1
+
+## 强行摊开某一块抽屉（`offer` / `equip` / `stash` / `beasts`）。空 = 不开。
+##
+## 和 `--pick` 同一个理由：抽屉里有几块**只在特定操作之后才出现**
+## （三选一要先掏钱、选尾兽要先点空槽），而截图工具送不出那串操作。
+## 没有这个开关的话，「这四块排得下吗」只能靠手开游戏回答。
+var _drawer: String = ""
 
 
 func _initialize() -> void:
@@ -66,7 +88,12 @@ func _process(_delta: float) -> bool:
 			event.keycode = keycode
 			event.pressed = true
 			Input.parse_input_event(event)
-	if _frames < WARMUP_FRAMES:
+	# 选中排在按键之后一帧，让面板先摆好。
+	if _frames == PRESS_FRAME + 1 and _hover >= 0:
+		_hover_tile()
+	if _frames == PRESS_FRAME + 2 and _drawer != "":
+		_open_drawer()
+	if _frames < _warmup:
 		return false
 	var image := root.get_texture().get_image()
 	var path := _out
@@ -79,6 +106,41 @@ func _process(_delta: float) -> bool:
 	else:
 		print("截图已存：%s　%dx%d　第 %d 波" % [path, image.get_width(), image.get_height(), _wave])
 	return true
+
+
+## 假装玩家点了出战席的第 [member _hover] 个忍者。
+##
+## 直接发格子自己的信号，而不是去 `warp_mouse` —— 后者要等引擎下一帧
+## 派发点击，而截图只有三十帧，时序很容易错开。
+## 这里少验的那一段（鼠标坐标 → 点击派发）是引擎的事，不是本项目的。
+func _hover_tile() -> void:
+	var slots := _scene.get_node_or_null("HUD/Slots") as PBFieldSlots
+	if slots == null or not slots.visible:
+		printerr("槽位那一列没显示（准备阶段才有）")
+		return
+	var seen: int = 0
+	for tile: PBUnitTile in slots.find_children("", "PBUnitTile", true, false):
+		if not tile.visible or tile.unit == null:
+			continue
+		if seen == _hover:
+			tile.picked.emit(tile)
+			return
+		seen += 1
+	printerr("场上没有第 %d 个忍者" % _hover)
+
+
+## 摊开一块抽屉。三选一那块要先真的掏一次钱 —— 摆着一组假候选
+## 会让截图里的卡面和游戏里的对不上，而排版正是靠这张图判断的。
+func _open_drawer() -> void:
+	var node := _scene.get_node_or_null("HUD/%s" % _drawer.capitalize()) as PBDrawer
+	if node == null:
+		printerr("没有这块抽屉：%s" % _drawer)
+		return
+	if _drawer == "offer":
+		_scene._state.gold = 99999
+		_scene._on_command(&"gacha")
+		return
+	_scene._toggle_drawer(node, true)
 
 
 func _parse_args() -> void:
@@ -94,6 +156,16 @@ func _parse_args() -> void:
 				_out = args[i]
 			"--auto":
 				_auto = true
+			"--pick":
+				i += 1
+				_hover = int(args[i])
+			"--frames":
+				# 截图前多跑几帧。手感那几样要打起来才看得到。
+				i += 1
+				_warmup = maxi(int(args[i]), PRESS_FRAME + 3)
+			"--drawer":
+				i += 1
+				_drawer = args[i].strip_edges().to_lower()
 			"--press":
 				# 逗号分隔，例如 `--press b` 或 `--press q,b`。
 				i += 1

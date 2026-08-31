@@ -9,7 +9,7 @@ extends RefCounted
 ## （主场景、批量模拟、单波节奏、压力曲线）就要各自记住「装哪几张表」——
 ## **而漏装一张不会报错**，只会静默退回合成表，跑出来的数值和真游戏对不上。
 ##
-## M3 还要加装备表和尾兽表。每加一张表就去四个地方各补一行，
+## M3 又加了装备表（M3-c）和尾兽表（M3-d）。每加一张表就去四个地方各补一行，
 ## 漏掉一处的概率随表数增长，且那种失败没有任何声响。
 ## 所以入口收成一个：**新表只在本文件里接一次。**
 ##
@@ -25,4 +25,6 @@ static func config() -> PBSimConfig:
 static func install(cfg: PBSimConfig) -> PBSimConfig:
 	PBCharacterLoader.install(cfg)
 	PBBondLoader.install(cfg)
+	PBEquipLoader.install(cfg)
+	PBBeastLoader.install(cfg)
 	return cfg

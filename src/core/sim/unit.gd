@@ -32,13 +32,22 @@ var element: PBElement.Type = PBElement.Type.PHYSICAL
 ## 稀有度。同样从 [member character] 复制，理由同上。
 var rarity: Rarity = Rarity.R
 
+## 防元素（§03A）。别人打它时按哪一系算克制。同样从 [member character] 复制。
+var def_element: PBElement.Type = PBElement.Type.PHYSICAL
+
 ## 已持有的张数。第 1 张即 1 星，之后每 3 张升 1 星。
 var copies: int = 1
+
+## 等级（§03A，M3.5-a）。花金币升，不打怪掉经验 ——
+## 掉经验的话「谁站前排」会顺带决定「谁升得快」，
+## 而站位是射程的派生量（§02），那条链路会把两个本该独立的系统绑在一起。
+var level: int = 1
 
 
 func _init(unit_character: PBCharacter) -> void:
 	character = unit_character
 	element = unit_character.element
+	def_element = unit_character.def_element
 	rarity = unit_character.rarity
 
 
@@ -60,10 +69,28 @@ func star() -> int:
 	return 1 + int(floor(float(copies - 1) / 3.0))
 
 
+## 这张卡此刻的全部属性（§03A）。等级与星级都算进去了。
+##
+## **每次调用都重算，不缓存。** 等级会变、星级会变、以后装备和光环也会 ——
+## 缓存就要处理失效，而失效漏一处的表现是「升了级战力没涨」，从现象反推不出来。
+## 真成为热点时再在调用方那一层缓存，那里知道什么时候该失效。
+func stats(cfg: PBSimConfig) -> PBStats:
+	return PBStatRules.of(character, level, star(), cfg)
+
+
 ## 这张卡的每秒基础伤害，未计属性克制、科技、羁绊。
+##
+## ## M3.5-a 起它是属性表的派生量
+##
+## 以前是 `rarity_power[稀有度] × 星级倍率` 一条阶梯。现在等于
+## **攻击力 × 攻速**，而那两个数由 §03A 的二级属性算出来。
+##
+## 保留这个函数、保留「每秒伤害」这个口径，是为了让这一步成为
+## **可对拍的重构**：战斗层、估值、四块面板读到的仍是同一种量，
+## 换模型带来的数值变化因此可以和接线错误分开看 ——
+## 本案已经这么做过四次（角色表、羁绊、装备、尾兽）。
 func power(cfg: PBSimConfig) -> float:
-	var base: float = cfg.rarity_power[int(rarity)]
-	return base * (1.0 + cfg.star_power_mult * float(star() - 1))
+	return stats(cfg).dps()
 
 
 ## 在 [param wave_element] 这一波的实际每秒伤害 —— 已计入属性克制。

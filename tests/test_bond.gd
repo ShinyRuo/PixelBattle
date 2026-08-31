@@ -44,8 +44,8 @@ func test_the_synthetic_table_reproduces_the_stand_in_curve() -> void:
 	# **本文件的正题。** 合成羁绊表在任何（人数, 派遣数）上都必须给出
 	# 和旧公式 `1 + 0.06 × min(在场 − 派遣, 12)` 一模一样的倍率。
 	#
-	# 扫到 24 张卡是有意的：在场上限是 出战 10 + 待命 6 = 16，
-	# 羁绊计数上限是 12，两个上限都要扫过去才算扫全。
+	# 扫到 24 张卡是有意的：把在场上限（M3.5-i 之后是出战席的 10）
+	# 和羁绊计数上限（12）都扫过去才算扫全。
 	var state := PBRunSim.new_state(_cfg)
 	state.tech_pop = _cfg.tech_pop_max
 	for i: int in 24:
@@ -73,18 +73,29 @@ func test_dispatch_still_costs_bond_tiers() -> void:
 	assert_lt(state.bond_mult(_cfg), kept, "派出去的人羁绊应该失效（§06）")
 
 
-func test_the_count_is_capped_so_a_deep_bench_dispatches_for_free() -> void:
-	# 卡池够大时派遣是**完全免费**的 —— 掉的档被计数上限吃掉了。
+func test_the_count_is_capped_so_a_deep_roster_dispatches_for_free() -> void:
+	# 在场人数够多时派遣**不掉羁绊** —— 掉的档被计数上限吃掉了。
 	# 这是派遣决策里最反直觉的一格，任务卡专门显示它（M1-d）。
+	#
+	# 「不掉羁绊」不等于「免费」：M3.5-i 删掉待命台之后派出去的人
+	# 真的不上场，少那一份输出是另一笔账（见 [method PBValuation.dispatch_loss]）。
+	# 本条只管羁绊这一半。
+	#
+	# ## 上限在出厂配置下已经够不着了
+	#
+	# 在场上限从「出战 10 + 待命 6 = 16」掉到了 10，而
+	# [member PBSimConfig.bond_unit_cap] 还是 12 —— **派任何人都会掉档**。
+	# 所以这里把上限压到一个够得着的值再测：验的是**规则**还在，
+	# 而「出厂那个 12 该改成多少」是数值回归的事，不该由一条测试顺手拍板。
+	_cfg.bond_unit_cap = 5
+	_cfg.bonds = PBBondTable.synthetic(_cfg.bond_power_per_unit, _cfg.bond_unit_cap)
 	var state := PBRunSim.new_state(_cfg)
 	state.tech_pop = _cfg.tech_pop_max
 	for i: int in 20:
 		state.add_unit(_distinct(i))
 	# 前提：在场人数减掉派遣之后仍然压得住计数上限，否则测的是别的东西。
-	var on_field: int = mini(
-		state.roster.size(), state.deploy_capacity(_cfg) + state.standby_capacity(_cfg)
-	)
-	assert_gte(on_field - 3, _cfg.bond_unit_cap, "这批卡得多到派 3 个人还压得住上限")
+	var on_field: int = mini(state.roster.size(), state.open_slots(_cfg))
+	assert_gte(on_field - 3, _cfg.bond_unit_cap, "在场人数得多到派 3 个人还压得住上限")
 
 	var kept: float = state.bond_mult(_cfg)
 	state.dispatched = 3

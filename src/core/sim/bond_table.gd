@@ -44,21 +44,22 @@ static func synthetic(per_unit: float, cap: int) -> PBBondTable:
 ## 和 [method PBCharacterTable.add] 一样只返回状态、不打日志：
 ## 报错留给装载器，它手上有 `.tres` 的路径，能指出是哪份数据写错了。
 ##
-## 拒收的情况：缺 id、id 重复、档位两条数组不等长、档位人数不是升序。
-## **后两条尤其要拦** —— 档位表写歪了不会崩，只会让某一档静默失效，
-## 而那种偏差只表现为「这组羁绊好像没什么用」。
+## 拒收的情况：缺 id、id 重复、档位两条数组不等长、档位人数不是升序、
+## **功能键不在词汇表里**、功能有键却没指定载体。
+##
+## 这几条尤其要拦 —— 档位表写歪了不会崩，只会让某一档静默失效，
+## 而那种偏差只表现为「这组羁绊好像没什么用」。功能档那两条同理：
+## `&"gathr"` 拼错一个字母，[method PBBondFunctionRules.apply_to_ultimate]
+## 会安静地什么都不做。
 func add(bond: PBBond) -> bool:
 	if bond == null or bond.id == &"":
 		return false
 	if _by_id.has(bond.id):
 		return false
-	if bond.tier_counts.size() != bond.tier_power.size():
+	if not _tiers_are_sane(bond):
 		return false
-	for i: int in bond.tier_counts.size():
-		if bond.tier_counts[i] <= 0:
-			return false
-		if i > 0 and bond.tier_counts[i] <= bond.tier_counts[i - 1]:
-			return false
+	if not _functions_are_sane(bond):
+		return false
 	_all.append(bond)
 	_by_id[bond.id] = bond
 	return true
@@ -74,3 +75,33 @@ func all() -> Array[PBBond]:
 
 func by_id(bond_id: StringName) -> PBBond:
 	return _by_id.get(bond_id, null) as PBBond
+
+
+## 档位那两条数组说得通吗：等长、人数为正、且严格升序。
+func _tiers_are_sane(bond: PBBond) -> bool:
+	if bond.tier_counts.size() != bond.tier_power.size():
+		return false
+	for i: int in bond.tier_counts.size():
+		if bond.tier_counts[i] <= 0:
+			return false
+		if i > 0 and bond.tier_counts[i] <= bond.tier_counts[i - 1]:
+			return false
+	return true
+
+
+## 功能档那两条数组说得通吗（§09，M3-f）。
+##
+## 两条数组都允许**比档位少**（含完全空着）—— 纯数值档的羁绊不用为了
+## 通过检查去填一排 `&""`，属性型兜底那六组正是这种。
+func _functions_are_sane(bond: PBBond) -> bool:
+	for i: int in bond.tier_function_keys.size():
+		var key: StringName = bond.tier_function_keys[i]
+		if key == &"":
+			continue
+		if not PBBondFunctionRules.is_known(key):
+			return false
+		# 有功能就必须有载体：没载体的功能在战斗层无处可挂，
+		# 表现为「凑满了但什么都没发生」。
+		if i >= bond.tier_function_carriers.size() or bond.tier_function_carriers[i] == &"":
+			return false
+	return true

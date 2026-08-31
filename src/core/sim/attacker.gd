@@ -1,0 +1,348 @@
+class_name PBAttacker
+extends RefCounted
+## 战场上的**一个己方攻击者**。M3-a 起，战斗从「整队一个标量 DPS」换成一组攻击者。
+##
+## ## 为什么必须把标量拆开
+##
+## M0 已经证明：**单目标集火在数学上不存在「场上稳定有几个人」的中间态** ——
+## 清得比出得快就是空场，慢就是雪崩。三条设计缺口（战场长期没有敌人 /
+## 单波只有 12 秒 / BOSS 波比精英波还轻松）是同一个根因的三种表现。
+##
+## 真塔防看得见一群敌人，是因为多个单位**按各自的射程各打各的**，
+## 敌人在整段行军里被慢慢磨。而「谁打谁」需要一个承载体 ——
+## 标量 DPS 里既没有位置也没有射程，那件事无处可写。
+##
+## ## 站位是射程的派生量，不是独立字段
+##
+## §02 的前中后三列映射到屏幕的右中左，与敌人推进方向一致：
+## 射程短的必须站前排才够得着，射程长的站后排照样打得到。
+## 两者本来就是同一件事的两种说法，**存两份迟早对不上**。
+## 玩家手动排阵型是后续的 UI 步骤，那时站位才成为一个独立决策。
+##
+## ## 与 [PBUnit] 的分工
+##
+## [PBUnit] 是玩家手上的那张卡（跨波存在，进存档）；本类是**这一波战斗里
+## 那张卡在场上的样子**（一波一份，倍率已经乘死）。战斗结束就扔掉。
+
+## 攻击型。§02 那条乘法关系 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`
+## 里的中间那个因子，就是靠这个枚举存在的。
+##
+## §04 用波型把两者的价值分开（潮水波是 AOE 的高光，精英波是单体的高光），
+## 所以这两种不能只是数值差异，必须是**结算方式**的差异。
+enum Shape {
+	SINGLE,  ## 单体：全部伤害砸在一个目标上，打死了溢出接着打下一个
+	AOE,  ## 范围：对射程内最多 [member max_targets] 个目标各打一份，不结算溢出
+}
+
+## 每秒伤害。属性克制、攻击科技、羁绊、装备**全部已经乘进来了** ——
+## 战斗层不认识那些系统，它只认这个数。
+var dps: float = 0.0
+
+## 战场坐标（M4-a 起是二维）。x 与 [member PBEnemy.distance] **同一根轴、
+## 同一个单位**：0 是基地，[member PBSimConfig.field_length] 是敌人的出生点；
+## y 是泳道，0 到 [member PBSimConfig.field_height]。
+##
+## M4-a 之前这是一个 float，纵向只存在于渲染层 —— 见 [member PBEnemy.lane]。
+var pos: Vector2 = Vector2.ZERO
+
+## 射程，**以 [member pos] 为圆心的一个真圆**（M4-a 起）。
+##
+## 之前是一段区间 `[position - reach, position + reach]`。对称而不是只朝
+## 出生点那侧，是因为敌人会**走过头** —— 一个已经越过前排的敌人仍然在
+## 前排的攻击范围里，直到它走出射程。升成圆之后这条性质原样保留。
+var reach: float = 0.0
+
+var shape: Shape = Shape.SINGLE
+
+# ── 挨打这一半（§03A，M3.5-b）─────────────────────────────────
+
+## 血量上限。**0 表示「这不是一个真单位，只是一个标量」——敌人看不见它。**
+##
+## ## 这条约定守着一个对拍锚点
+##
+## [method whole_field] 造出来的退化攻击者就是 0：它是 M3-a 之前那个
+## 整队标量 DPS 的等价物，而那条退化路径要与 [PBCombatRules] 的解析式
+## 排队模型**逐字段一致**（「敌人不还手」是那个模型的前提之一）。
+##
+## 用「血是不是 0」而不是加一个 `cfg.enemies_fight_back` 开关，
+## 是因为开关会有人忘了设：一个没血的东西挨不了打，这件事不需要配置，
+## 它就是那个对象的性质。
+var max_hp: float = 0.0
+
+var hp: float = 0.0
+
+## 防御。经 [method PBStatRules.damage_reduction] 折成减伤。
+##
+## 名字不叫 `def` 是怕和别的语言的关键字混淆，读代码的人会卡一下。
+var defence: float = 0.0
+
+## **防元素**（§03A）：敌人打它时按哪一系算克制。
+##
+## 和 [member dps] 里已经乘死的那个「攻元素克制」是**两个方向**：
+## 那一份是「我打得动谁」，这一份是「我扛得住谁」。
+## 拆开之后一张卡在两条线上指向不同的波次，攻防两轴才不会同进同退。
+var def_element: PBElement.Type = PBElement.Type.PHYSICAL
+
+## 还活着。死了就不再输出、也不再被选为目标；**每波开波满血复活**
+## （[method revive]），一波之内的失误有真实代价但不会毁掉整局。
+var alive: bool = true
+
+## 蓝量上限（§03A，M3.5-d）。智力抬的就是这一项。**0 表示不用蓝**——
+## 尾兽的大招攻击者就是 0，它的稀缺性靠跨波冷却而不是蓝。
+var max_mp: float = 0.0
+
+var mp: float = 0.0
+
+## 每 tick 回多少蓝。按蓝上限的固定比例算，所以**智力同时抬池子和回速** ——
+## 只抬池子的话，高智力只意味着「能存更多发」，攒满的速度一样，
+## 那个属性就只在连放时有意义，平时等于没有。
+var mp_regen: float = 0.0
+
+# ── 跑动（§02 / §03A，M3.5-c）─────────────────────────────────
+
+## 出生站位。x 由射程档派生（§02），y 是泳道。
+## **跑动是围着它做的，不是取代它。**
+var home: Vector2 = Vector2.ZERO
+
+## 每 tick 能挪多远。**0 表示这东西不动** —— [method whole_field] 造的
+## 退化标量就是 0，所以 M3-a 那条对拍路径不受跑动影响。
+var move_speed: float = 0.0
+
+## 最多能离开 [member home] 多远（往敌人那侧）。
+##
+## ## 为什么必须有这根皮带绳
+##
+## 「自由跑向敌人」会**推翻 §02 的射程梯度**：所有人都跑到最前面接敌，
+## 战斗退回成 M3-a 之前的单点集火，而那条梯度正是「场上稳定有人」的
+## 唯一来源（实测场上平均人数 1.7 → 6.0）。
+##
+## 拴住之后跑动是**围着自己那一列的小幅前压**：射程内没目标就往前挪，
+## 有目标就站住开火，清干净了慢慢退回原位。看得见在跑，结构不变。
+var leash: float = 0.0
+
+## AOE 一次能命中几个。单体型不读这个字段。
+var max_targets: int = 1
+
+# ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
+
+## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
+##
+## ## 0 表示「不分次，每 tick 连续输出」
+##
+## 那正是 M3-a 之前那个标量 DPS 的语义，也是 [method whole_field]
+## 造出来的退化攻击者走的路 —— [PBCombatRules] 的解析式排队模型
+## 假设的就是一条没有边界的连续伤害流，**对拍锚点靠这一档活着**。
+##
+## ## 离散化之后溢出伤害没有了
+##
+## 连续模型里一 tick 打死几个、剩下的伤害接着打下一个，那是「连续」的直接后果。
+## 一发子弹打死了目标，多出来的伤害没有地方去 —— 那是离散唯一的真实损耗，
+## 也是「命中才结算」这件事的代价。**这一条会明显拉长单波时长**，归数值回归。
+var attack_speed: float = 0.0
+
+## 子弹每 tick 飞多远。**0 表示不发子弹**（近战：接触即伤）。
+##
+## 挂在攻击者身上而不是查射程档，和 [member move_speed] 用 0 表示「不动」
+## 是同一条规矩：一个不发子弹的东西不需要配置开关，那就是它的性质。
+var shot_speed: float = 0.0
+
+## 第几 tick 起可以出下一手。和 [member PBUltimate.ready_at] 同一套写法。
+var next_shot_at: int = 0
+
+## 玩家在战斗中点名要打的敌人下标。**-1 表示照常自动选目标**（§02，M4-e）。
+##
+## ## 为什么点名只是一个偏好，不是一条命令
+##
+## 点名的那个敌人可能被别人打死、可能走出射程、可能压根还没进射程。
+## 这三种情况下**自动规则接管**，不是站着不打 —— 「我点了他，
+## 结果这个忍者整场发呆」是玩家最不能接受的一种听话。
+##
+## 点名也**不会自动清掉**：目标死了下一波换新敌人，下标还在。
+## 所以每波开波要重置（[method revive]），而不是靠「目标死了就清」——
+## 那样一个隔着射程点名的目标会在他走进来之前就被清掉，
+## 而玩家看到的是「点了没用」。
+var forced_target: int = -1
+
+## 渲染层用来认人的槽位号，等于它在出战席里的下标。
+var slot: int = 0
+
+## 这个单位的大招（§02，M3-b）。**`null` 表示没有** ——
+## [method whole_field] 造出来的那个退化攻击者就没有，
+## 所以 M3-a 那条对拍不受大招系统影响。
+var ultimate: PBUltimate = null
+
+## 一发打多少、隔几 tick 一发。由 [method prime] 从 [member dps] 与
+## [member attack_speed] 换算，不要手写。
+##
+## 缓存而不是每 tick 现算：一波几百 tick × 十个攻击者，
+## 而它们的输入在一波之内都不变。
+var _damage_per_shot: float = 0.0
+var _interval_ticks: int = 1
+
+
+## 造一个覆盖整个战场的单体攻击者 —— **M3-a 之前那个标量 DPS 的等价物**。
+##
+## 保留它不是为了兼容旧调用点，是为了留住**对拍能力**：
+## 整队折成这么一个攻击者时，逐 tick 模型必须与 [PBCombatRules] 的
+## 解析式排队模型逐字段一致。那条断言是「射程改造有没有改坏原有语义」的
+## 唯一判据 —— 拆掉它，以后任何一次目标分配的改动都没有参照物了。
+## [param field_diagonal] 必须是战场的**对角**长度
+## （[method PBSimConfig.field_diagonal]），不是 `field_length`。
+## 升成二维之后最远的敌人在**角落**上，用长度的话它够不着，
+## 而现象是「解析式排队模型的对拍突然差了几个 tick」。
+static func whole_field(team_dps: float, field_diagonal: float) -> PBAttacker:
+	var out := PBAttacker.new()
+	out.dps = maxf(team_dps, 0.0)
+	out.pos = Vector2.ZERO
+	out.reach = field_diagonal
+	out.shape = Shape.SINGLE
+	return out
+
+
+## 复制一份。**用于「把整队按比例缩放，看它在哪一档开始漏怪」那类探测** ——
+## 探测要反复改 [member dps]，直接改真正上场的那批攻击者会污染本波的计划。
+func clone() -> PBAttacker:
+	var out := PBAttacker.new()
+	out.dps = dps
+	out.pos = pos
+	out.reach = reach
+	out.shape = shape
+	out.max_targets = max_targets
+	out.attack_speed = attack_speed
+	out.shot_speed = shot_speed
+	out.slot = slot
+	out.max_hp = max_hp
+	out.hp = max_hp
+	out.defence = defence
+	out.def_element = def_element
+	out.home = home
+	out.move_speed = move_speed
+	out.leash = leash
+	out.max_mp = max_mp
+	out.mp = max_mp
+	out.mp_regen = mp_regen
+	if ultimate != null:
+		out.ultimate = ultimate.clone()
+	return out
+
+
+## 开波：满血站起来。[PBBattleSim] 在构造时对每个攻击者调一次。
+##
+## §03A 定的是「每波开始时全员满血满蓝复活」—— 一波之内的失误有真实代价，
+## 但不会毁掉整局。**必须显式做**，不能靠「攻击者是每波新建的」：
+## 悬崖二分那类探测会 [method clone] 出几十份反复跑，
+## 不重置的话上一场剩下的残血会漏进下一场，表现为「同一支队伍越探越弱」。
+func revive() -> void:
+	alive = true
+	hp = max_hp
+	mp = max_mp
+	pos = home if move_speed > 0.0 else pos
+	# **按槽位错开第一发**（M4-b）。全队同时开火的话，十个人的子弹
+	# 每隔一个间隔叠成一道，画面上像一发；错开之后才看得出是一队人在射击。
+	# 用槽位而不是掷骰 —— 同一个种子的两次回放必须长得一样（§13）。
+	next_shot_at = posmod(slot, _interval_ticks)
+	# 点名是一波一份（见 [member forced_target]）。
+	forced_target = -1
+
+
+## 回一 tick 的蓝。上限封顶。
+func regen_mana() -> void:
+	if max_mp <= 0.0 or not alive:
+		return
+	mp = minf(mp + mp_regen, max_mp)
+
+
+## 蓝够不够放这一发。**没有蓝条的单位（[member max_mp] 为 0）永远够** ——
+## 尾兽和退化标量走的就是这条，它们不参与蓝这套账。
+func can_pay(cost: float) -> bool:
+	if max_mp <= 0.0 or cost <= 0.0:
+		return true
+	return mp >= cost
+
+
+## 扣蓝。调用前先问 [method can_pay]。
+func pay(cost: float) -> void:
+	if max_mp <= 0.0:
+		return
+	mp = maxf(mp - cost, 0.0)
+
+
+## 敌人挑不挑得中它。见 [member max_hp] —— 没血的东西是个标量，不是单位。
+func is_targetable() -> bool:
+	return alive and max_hp > 0.0
+
+
+## 挨一下打。返回这次是否把它打死了。
+func take_damage(amount: float) -> bool:
+	if not is_targetable():
+		return false
+	hp -= amount
+	if hp <= 0.0:
+		hp = 0.0
+		alive = false
+		return true
+	return false
+
+
+## 这个单位一发大招打多少。没有大招就是 0。
+##
+## 缩放探测要按「普攻 + 大招」的**总产出**等比例缩，只缩普攻的话，
+## 队伍越弱大招占比越高，缩到最后大招一发定生死 —— 那量出来的悬崖
+## 是另一支队伍的悬崖。
+func ultimate_damage() -> float:
+	return 0.0 if ultimate == null else ultimate.damage
+
+
+## 把 [member dps] 与 [member attack_speed] 换算成「隔几 tick 打多少」。
+## 战斗开始前调一次。
+##
+## **一发的伤害由间隔反推，不是 `dps ÷ 攻速`。** 间隔取整之后两者会差一点点，
+## 而按间隔算的那份能保证**平均 DPS 分毫不差** —— 那是离散化敢做的前提：
+## 它改的是节奏，不是总量。
+func prime(tick_rate: int) -> void:
+	var rate: int = maxi(tick_rate, 1)
+	# 攻速为 0 = 连续输出那条退化路径，间隔就是 1 tick（见 [member attack_speed]）。
+	_interval_ticks = 1
+	if attack_speed > 0.0:
+		_interval_ticks = maxi(int(round(float(rate) / attack_speed)), 1)
+	_damage_per_shot = maxf(dps, 0.0) * float(_interval_ticks) / float(rate)
+
+
+## 一发打多少。
+func damage_per_shot() -> float:
+	return _damage_per_shot
+
+
+## 隔几 tick 出一手。1 = 每 tick（连续输出那条退化路径）。
+func attack_interval() -> int:
+	return _interval_ticks
+
+
+## 这一 tick 出不出得了手。
+func ready_to_fire(tick: int) -> bool:
+	return alive and tick >= next_shot_at
+
+
+## 出了一手，转入下一次的间隔。
+func on_fired(tick: int) -> void:
+	next_shot_at = tick + _interval_ticks
+
+
+## 这个点上的敌人打不打得到。[param at] 走 [method PBEnemy.pos]。
+##
+## M4-a 起是**欧氏距离**，不再是「x 差多少」——「射程圈」这四个字
+## 从此说的是真的。副作用是每个人的有效射程都略微缩水
+## （斜着量总比横着量长），归数值回归。
+func can_reach(at: Vector2) -> bool:
+	return pos.distance_to(at) <= reach
+
+
+## 想够到 [param at] 的话，x 最远能停在哪。
+##
+## 二维之后「往前压到刚好够得着」不再是 `目标 − 射程`：
+## 纵向差掉的那一截要从射程里先扣掉，剩下的才是 x 上的余量。
+## 纵向就已经超出射程时返回 [param at] 的 x —— 也就是「只能贴上去」，
+## 由皮带绳（[member leash]）去拦。
+func reach_stop_x(at: Vector2) -> float:
+	var budget: float = reach * reach - (at.y - pos.y) * (at.y - pos.y)
+	return at.x - (sqrt(budget) if budget > 0.0 else 0.0)

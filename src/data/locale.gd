@@ -56,6 +56,17 @@ static func of_bond(bond: PBBond) -> String:
 	return text(bond.name_key)
 
 
+## 一个羁绊功能档的显示名（§09 的聚拢 / 吸附 / 定身 / 减速…）。
+##
+## 键名走 `bond.fn.<功能键>` 拼出来，而不是在 [PBBond] 里再存一份 ——
+## 功能键本身已经是全局唯一的标识（[constant PBBondFunctionRules.ALL]），
+## 再存一份显示名的键只会多一处能对不上的地方。
+static func of_bond_function(key: StringName) -> String:
+	if key == &"":
+		return ""
+	return text("bond.fn.%s" % key)
+
+
 ## 有几条翻译。测试用来确认表真的装上了。
 static func size() -> int:
 	if not _loaded:

@@ -19,17 +19,19 @@ extends Control
 ## **「还差 1 人就能进满档，+18%」是可以立刻行动的信息** ——
 ## 那正是「换人」从排序变成决策的那一刻。
 ##
-## §09 的功能档（聚拢/吸附/定身/减速）要 M3 的大招系统，M2 全是数值档，
-## 所以这里显示的是加成百分比。功能档落地后这一行要改成显示解锁的机制名，
-## [member PBBond.tier_function_keys] 已经为此留好了位置。
+## ## 功能档在这里只写「解锁了什么」，不写「谁带」（M3-f）
+##
+## 第一行现在会在档位后面缀上机制名（`凯班 满档·聚拢`）。**载体是谁、
+## 上没上场，留给忍者信息栏**（[PBUnitInfo]）—— 那里才是能立刻行动的地方，
+## 这条带子只有 32px 高，塞进「要把某某排进出战席」会把它挤爆。
 
 ## 屏幕 640×360，纵向排得很满：Info 5–25、任务卡 28–90、
 ## 两块准备面板 96–302、**羁绊带 304–336**、下一波预告 338–358。
 ##
 ## 第一版摆在 322–356，和「下一波预告」那个常驻标签（334–354）直接叠在一起，
 ## 底下那行糊成一团 —— 截图一看就知道。腾地方的办法是把两块准备面板
-## 各压 18px（见 [constant PBPreparePanel.PANEL_RECT]），不是把这条挤薄。
-const PANEL_RECT := Rect2(46.0, 304.0, 548.0, 32.0)
+## 各压 18px，不是把这条挤薄。
+const PANEL_RECT := Rect2(46.0, 200.0, 548.0, 30.0)
 const FONT_SIZE: int = 9
 
 ## 第二行最多提几组，多了这一行会被挤爆。按「补上去值多少」排序后取前几名。
@@ -43,15 +45,10 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0.06, 0.07, 0.10, 0.92)
-	backdrop.position = PANEL_RECT.position
-	backdrop.size = PANEL_RECT.size
-	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(backdrop)
+	PBSkin.panel(self, PANEL_RECT)
 
-	_active = _add_label(PANEL_RECT.position + Vector2(8.0, 1.0))
-	_next = _add_label(PANEL_RECT.position + Vector2(8.0, 16.0))
+	_active = _add_label(PANEL_RECT.position + Vector2(8.0, 1.0), PBSkin.TEXT)
+	_next = _add_label(PANEL_RECT.position + Vector2(8.0, 15.0), PBSkin.TITLE)
 
 
 ## 按当前在场名单刷新。[param bond_aware] 是玩家现在用哪种带人方式（`B` 键切换）。
@@ -81,7 +78,11 @@ func _active_text(
 		if tier <= 0:
 			continue
 		var full: String = "满" if tier >= bond.tier_counts.size() else "%d" % tier
-		parts.append("%s %s档" % [PBLocale.of_bond(bond), full])
+		var label: String = "%s %s档" % [PBLocale.of_bond(bond), full]
+		var key: StringName = bond.function_at(PBBondRules.active_count(bond, units))
+		if key != &"":
+			label += "·%s" % PBLocale.of_bond_function(key)
+		parts.append(label)
 	return (
 		"羁绊 ×%.2f（在场 %d · B 键 %s）　%s"
 		% [state.bond_mult(cfg), units.size(), mode, String("　").join(parts)]
@@ -119,10 +120,10 @@ func _next_text(cfg: PBSimConfig, units: Array[PBUnit]) -> String:
 	return "再补一个就能进：　%s" % String("　").join(parts)
 
 
-func _add_label(at: Vector2) -> Label:
-	var label := Label.new()
-	label.position = at
-	label.size = Vector2(PANEL_RECT.size.x - 16.0, 14.0)
-	label.add_theme_font_size_override("font_size", FONT_SIZE)
-	add_child(label)
+## 摆不下就掐掉尾巴加省略号。**不换行** —— 这条带子只有 30px 高，
+## 一换行第二行就顶掉「再补一个就能进」那句，而那句才是这块面板的产出。
+func _add_label(at: Vector2, color: Color) -> Label:
+	var label := PBSkin.label(self, at, PANEL_RECT.size.x - 16.0, FONT_SIZE, color)
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	return label

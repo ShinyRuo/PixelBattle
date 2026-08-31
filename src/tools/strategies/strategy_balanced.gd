@@ -37,9 +37,9 @@ func _buy_economy(state: PBRunState, cfg: PBSimConfig) -> void:
 			return
 
 
-## 仓库里的卡多到出战席加待命台都坐不下时，才值得开位置。
+## 仓库里的卡多到出战席都坐不下时，才值得开位置。
 func _buy_population(state: PBRunState, cfg: PBSimConfig) -> void:
-	while state.roster.size() > state.deploy_capacity(cfg) + state.standby_capacity(cfg):
+	while state.roster.size() > state.deploy_capacity(cfg):
 		if not buy_tech(state, &"pop", cfg):
 			return
 

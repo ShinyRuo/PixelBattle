@@ -13,10 +13,17 @@ const BATTLE_SCENE := "res://scenes/battle.tscn"
 const FIXED_SEED: int = 20260827
 
 
-func _spawn_battle(seed_value: int = FIXED_SEED) -> Node2D:
+## [param auto] 决定开局是自动推进还是停在准备阶段等玩家。
+##
+## **这里默认 true，而画面本身的默认是 false**（M3-e 改的：开局第一眼
+## 该看到准备阶段，不是一场自己打起来的第一波）。这个文件里多数用例
+## 要的是「已经在打的那一局」，每条各写一行开自动纯属噪声。
+## 画面的默认值由 `test_auto_play_advances_without_any_input` 单独守着。
+func _spawn_battle(seed_value: int = FIXED_SEED, auto: bool = true) -> Node2D:
 	var scene: PackedScene = load(BATTLE_SCENE)
 	var root: Node2D = scene.instantiate()
 	root.run_seed = seed_value
+	root.auto_play = auto
 	add_child_autofree(root)
 	return root
 
@@ -75,9 +82,18 @@ func test_enemy_pool_is_preallocated_and_never_grows() -> void:
 
 
 func test_deployed_slots_are_preallocated_too() -> void:
+	# [PBFieldSlots] 里那两排可点的头像格。M4-f 起第一排是**仓库**
+	# （上场的人直接画在战场上、可以拖动摆位），第二排仍然是出任务中。
+	# 预分配那条规矩没变：按上限一次建满，之后只改内容（§14）。
 	var root := _spawn_battle()
-	var cfg := PBSimConfig.new()
-	assert_eq(root.get_node("Deployed").get_child_count(), cfg.deploy_slots_max, "上场位节点应按出战席上限一次建满")
+	var tiles := (root.get_node("HUD/Slots") as PBFieldSlots).find_children(
+		"", "PBUnitTile", true, false
+	)
+	assert_eq(
+		tiles.size(),
+		PBFieldSlots.ROW_MAX + 4,
+		"仓库那一排按上限建满，再加 4 个出任务格（§06 的 SSS 任务派 4 人）"
+	)
 
 
 func test_pause_stops_the_logic() -> void:
@@ -113,6 +129,10 @@ func test_view_never_writes_back_to_sim_state() -> void:
 	var gold_before: int = root._state.gold
 	var wave_before: int = root._state.wave_index
 	var hp_before: float = root._state.base_hp
+	# **暂停之后再等**（M4-d）：一次全刷之后单波短得多，四十几帧足够打完一波，
+	# 于是「金币变了」量到的是正常结算而不是回写。暂停期间 `_sync_visuals`
+	# 照样每帧跑 —— 而那正是这条要盯的东西。
+	root._paused = true
 	await wait_physics_frames(45)
 	assert_eq(root._state.gold, gold_before, "一波没打完，金币不该变")
 	assert_eq(root._state.wave_index, wave_before, "一波没打完，波次不该变")
@@ -194,8 +214,13 @@ func test_preparation_is_its_own_phase_and_waits_for_the_player() -> void:
 	# 手动模式下不花钱就没有卡、DPS 为零 —— 这是诚实的后果，
 	# 开局金币（§07 的 starting_gold）存在的理由就是让第一波买得起人。
 	assert_eq(root._state.roster.size(), 0, "手动模式下不该有人替玩家花钱")
-	root._on_purchase(&"gacha")
-	assert_eq(root._state.roster.size(), 1, "点一次抽卡应该真的抽到一张")
+	# M3.5-f 起抽卡是**两步**（§08 的三选一）：先摆三张，再挑一张。
+	# 摆完就直接进仓库的话，「挑哪张」这个决策又被界面替玩家做掉了。
+	root._on_command(&"gacha")
+	assert_eq(root._state.pending_offer.size(), 3, "点抽卡应该摆出三张候选")
+	assert_eq(root._state.roster.size(), 0, "还没挑，仓库里不该有人")
+	root._on_offer_picked(0)
+	assert_eq(root._state.roster.size(), 1, "挑完那一张才进仓库")
 
 	root._finish_prepare()
 	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "锁定名单后应进入战斗")
@@ -205,8 +230,14 @@ func test_preparation_is_its_own_phase_and_waits_for_the_player() -> void:
 func test_auto_play_advances_without_any_input() -> void:
 	# §01 点名要自动推进（「PC：开自动推进，一次坐 30~60 分钟」）。
 	# 它同时是 M1 的回归工具：开着的时候决策序列与批量模拟完全一致。
+	#
+	# **画面的默认是关的**（M3-e 改的）：开局第一眼该看到准备阶段，
+	# 而不是一场自己打起来的第一波。所以先验默认值，再显式打开验行为。
+	var fresh: Node2D = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	assert_false(fresh.auto_play, "默认应停在准备阶段等玩家（M3-e）")
+	fresh.free()
+
 	var root := _spawn_battle()
-	assert_true(root.auto_play, "默认应开着自动推进")
 	await wait_physics_frames(10)
 	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "自动模式下不该停在准备阶段")
 
@@ -224,14 +255,14 @@ func test_the_shop_spends_through_the_shared_primitives() -> void:
 	root._state.gold = 9999
 
 	var gold_before: int = root._state.gold
-	root._on_purchase(&"gacha")
+	root._on_command(&"gacha")
 	assert_eq(root._state.gold, gold_before - cfg.gacha_cost, "抽卡应扣掉单抽的钱")
 	assert_eq(root._state.gacha_pulls, 1, "抽卡次数要计数 —— 保底靠它")
 
-	root._on_purchase(&"equip")
-	assert_eq(root._state.equip_parts, 1, "买配件应真的进仓库")
+	root._on_command(&"equip")
+	assert_eq(PBEquipRules.part_total(root._state.equip_parts), 1, "买配件应真的进仓库")
 
-	root._on_purchase(&"tech_atk")
+	root._on_command(&"tech_atk")
 	assert_eq(root._state.tech_atk, 1, "升攻击科技应真的升级")
 
 
@@ -242,7 +273,7 @@ func test_the_shop_only_reacts_during_preparation() -> void:
 	await wait_physics_frames(10)
 	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "这时候应该已经在打了")
 	var gold_before: int = root._state.gold
-	root._on_purchase(&"gacha")
+	root._on_command(&"gacha")
 	assert_eq(root._state.gold, gold_before, "战斗阶段的购买请求应被忽略")
 
 
@@ -252,23 +283,23 @@ func test_the_shop_labels_carry_the_numbers_a_decision_needs() -> void:
 	var cfg := PBSimConfig.new()
 	var state := PBRunSim.new_state(cfg)
 	state.add_unit(PBUnit.of(cfg, PBElement.Type.FIRE, PBUnit.Rarity.SR))
-	var panel := PBPreparePanel.new()
-	add_child_autofree(panel)
-	panel.refresh(state, cfg)
-
-	for kind: StringName in PBPreparePanel.KINDS:
-		var text: String = (panel._buttons[kind] as Button).text
-		var cost: int = panel._cost_of(kind, state, cfg)
-		assert_ne(text, "", "%s 按钮应该有文字" % kind)
+	# M3.5-e 起格子上写短的、悬停时提示条上写长的（指令卡的格子放不下整句），
+	# 但两截出自同一处（[PBShopLabels]），所以这一条改为直接查那一层。
+	for kind: StringName in PBShopLabels.KINDS:
+		var short: String = PBShopLabels.short_of(kind, state, cfg)
+		var detail: String = PBShopLabels.detail_of(kind, state, cfg)
+		var cost: int = PBShopLabels.cost_of(kind, state, cfg)
+		assert_ne(short, "", "%s 格子应该有文字" % kind)
 		if cost >= 0:
-			assert_true(text.contains(str(cost)), "%s 的按钮上必须写着它要多少钱：%s" % [kind, text])
+			assert_true(short.contains(str(cost)), "%s 的格子上必须写着它要多少钱：%s" % [kind, short])
+			assert_true(detail.contains(str(cost)), "%s 的提示里也要有价格：%s" % [kind, detail])
 
 	# 每一类的「收益」口径不同，各自都得写出来，不能只写价格。
-	var gacha_text: String = (panel._buttons[&"gacha"] as Button).text
+	var gacha_text: String = PBShopLabels.detail_of(&"gacha", state, cfg)
 	assert_true(gacha_text.contains("战力"), "抽卡要写期望战力增幅：%s" % gacha_text)
-	var gold_text: String = (panel._buttons[&"tech_gold"] as Button).text
+	var gold_text: String = PBShopLabels.detail_of(&"tech_gold", state, cfg)
 	assert_true(gold_text.contains("金"), "金币科技的收益是金币不是战力：%s" % gold_text)
-	var economy_slot_text: String = (panel._buttons[&"economy_slot"] as Button).text
+	var economy_slot_text: String = PBShopLabels.detail_of(&"economy_slot", state, cfg)
 	assert_true(
 		economy_slot_text.contains("战力") and economy_slot_text.contains("每波"),
 		"经济位必须同时写明战力代价与金币收益 —— 那个取舍就是 §07 本身：%s" % economy_slot_text

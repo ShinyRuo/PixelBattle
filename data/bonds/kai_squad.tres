@@ -11,4 +11,5 @@ member_ids = Array[StringName]([&"might_guy", &"rock_lee", &"tenten", &"neji_hyu
 match_element = 5
 tier_counts = Array[int]([2, 3, 4])
 tier_power = Array[float]([0.1, 0.24, 0.42])
-tier_function_keys = Array[StringName]([&"", &"", &""])
+tier_function_keys = Array[StringName]([&"", &"gather", &"pull"])
+tier_function_carriers = Array[StringName]([&"", &"rock_lee", &"rock_lee"])

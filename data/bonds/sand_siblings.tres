@@ -11,4 +11,5 @@ member_ids = Array[StringName]([&"gaara", &"temari", &"kankuro"])
 match_element = 3
 tier_counts = Array[int]([2, 3])
 tier_power = Array[float]([0.1, 0.28])
-tier_function_keys = Array[StringName]([&"", &""])
+tier_function_keys = Array[StringName]([&"", &"slow_field"])
+tier_function_carriers = Array[StringName]([&"", &"gaara"])

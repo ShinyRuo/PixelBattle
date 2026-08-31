@@ -73,7 +73,12 @@ func _run_once(cfg: PBSimConfig, run_seed: int) -> void:
 
 	while state.wave_index <= cfg.max_wave:
 		var plan := PBRunSim.plan_wave(state, strategy, cfg, rng)
-		var cliff: float = PBValuation.leak_threshold_dps(plan.wave, state.def_reduction(cfg), cfg)
+		# 传在场的攻击者：悬崖必须按**真实战斗模型**量。不传的话这份诊断
+		# 走的是解析式排队模型，对射程完全不敏感 —— 换了战斗模型也一个数不动，
+		# 而「BOSS 波比精英波还轻松」正是要靠这张表回答的。
+		var cliff: float = PBValuation.leak_threshold_dps(
+			plan.wave, state.def_reduction(cfg), cfg, plan.attackers
+		)
 		(
 			_samples
 			. append(
@@ -87,7 +92,7 @@ func _run_once(cfg: PBSimConfig, run_seed: int) -> void:
 				]
 			)
 		)
-		var outcome := PBCombatRules.resolve(plan.wave, plan.dps, state.def_reduction(cfg), cfg)
+		var outcome := PBRunSim.resolve_battle(plan, state.def_reduction(cfg), cfg)
 		PBRunSim.settle_wave(state, plan, outcome, cfg, rng)
 		if state.base_hp <= 0.0:
 			_deaths.append(_samples.size() - 1)

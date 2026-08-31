@@ -59,13 +59,34 @@ enum Match {
 ## 各档给的战力加成（**该档的总加成**，不是增量）。与 [member tier_counts] 等长。
 @export var tier_power: Array[float] = []
 
-## 各档解锁的功能，空表示纯数值档。
+## 各档解锁的功能，空表示纯数值档。取值见 [PBBondFunctionRules] 的那组常量。
 ##
-## **M2 全是空的** —— 功能档（聚拢 / 吸附 / 定身 / 减速）要大招系统、
-## 多目标分配、敌人位置操纵，三样都在 M3。字段先立着，是因为 §09 的硬性规范
-## 「每个羁绊的最高档必须解锁一个机制」是这套设计的核心，
-## 不留位置的话 M3 要动数据格式，已有的 `.tres` 全得改。
+## M2 全是空的（那时大招系统还不存在）；**M3-f 填上了 5 组命名羁绊**。
 @export var tier_function_keys: Array[StringName] = []
+
+## 各档的功能由**谁**来带，元素是 [member PBCharacter.id]，与
+## [member tier_function_keys] 等长。空表示这一档没有功能。
+##
+## ## 为什么功能要指定载体，而不是全组共享
+##
+## §09 的原话是「李洛克大招获得聚拢」「鹿丸大招定身」——**一个组只出一个载体**。
+## 发给全组的话，凯班满档会同时有 4 发聚拢，功能就变成了乘以人数的倍率，
+## 而 §09 立功能档的全部理由正是**让高手的优势离开倍率、进入机制**
+## （见本节末尾那条结构性冲突）。一发聚拢和四发聚拢是两种东西：
+## 前者是一次要判断时机的操作，后者只是更高的伤害。
+##
+## ## 载体没上场，功能就不兑现
+##
+## 羁绊的**数值**档按「在场」算（§09），但功能挂在载体的大招上，
+## 而不上场的人没有大招。所以功能档多一条门槛：
+## 凑齐人数 **且** 载体真的在打这一波。
+##
+## **M3.5-i 之前这条门槛更重**：那时在场 = 出战席 + 待命台，
+## 把载体排进出战席意味着挤掉一个人。待命台删掉之后在场就是出战席，
+## 门槛只剩「别把载体派去做任务」。方向没变，力度弱了 ——
+## 要不要补回来归数值回归。抽不到载体的局仍然不算废：
+## §11 的七尾是纯聚拢大招，正是为「不依赖特定羁绊的聚怪路径」而存在的。
+@export var tier_function_carriers: Array[StringName] = []
 
 
 ## 这个单位算不算本组的成员。
@@ -111,6 +132,22 @@ func bonus_at(active: int) -> float:
 	if tier <= 0 or tier > tier_power.size():
 		return 0.0
 	return tier_power[tier - 1]
+
+
+## 到场 [param active] 个成员时解锁哪个功能。空表示这一档是纯数值档。
+func function_at(active: int) -> StringName:
+	var tier: int = tier_at(active)
+	if tier <= 0 or tier > tier_function_keys.size():
+		return &""
+	return tier_function_keys[tier - 1]
+
+
+## 到场 [param active] 个成员时，功能由哪个角色带。空表示没有功能或没指定载体。
+func function_carrier_at(active: int) -> StringName:
+	var tier: int = tier_at(active)
+	if tier <= 0 or tier > tier_function_carriers.size():
+		return &""
+	return tier_function_carriers[tier - 1]
 
 
 ## 满档需要几个人。名单/属性池不够这个数时，这组羁绊的最高档是够不着的。

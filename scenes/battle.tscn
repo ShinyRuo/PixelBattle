@@ -1,11 +1,20 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://src/view/battle_view.gd" id="1_view"]
 [ext_resource type="Script" path="res://src/view/enemy_pool.gd" id="2_pool"]
-[ext_resource type="Script" path="res://src/view/prepare_panel.gd" id="3_prepare"]
-[ext_resource type="Script" path="res://src/view/roster_panel.gd" id="4_roster"]
+[ext_resource type="Script" path="res://src/view/command_card.gd" id="3_command"]
+[ext_resource type="Script" path="res://src/view/unit_info.gd" id="4_unitinfo"]
 [ext_resource type="Script" path="res://src/view/quest_card.gd" id="5_quest"]
 [ext_resource type="Script" path="res://src/view/bond_panel.gd" id="6_bonds"]
+[ext_resource type="Script" path="res://src/view/field_slots.gd" id="7_slots"]
+[ext_resource type="Script" path="res://src/view/offer_drawer.gd" id="8_offer"]
+[ext_resource type="Script" path="res://src/view/equip_drawer.gd" id="9_equip"]
+[ext_resource type="Script" path="res://src/view/roster_drawer.gd" id="10_stash"]
+[ext_resource type="Script" path="res://src/view/beast_drawer.gd" id="11_beasts"]
+[ext_resource type="Script" path="res://src/view/ally_pool.gd" id="12_allies"]
+[ext_resource type="Script" path="res://src/view/telegraph_pool.gd" id="13_telegraph"]
+[ext_resource type="Script" path="res://src/view/float_text_pool.gd" id="14_floats"]
+[ext_resource type="Script" path="res://src/view/shot_pool.gd" id="15_shots"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_view")
@@ -17,22 +26,39 @@ color = Color(0.08, 0.09, 0.12, 1)
 
 [node name="Lane" type="ColorRect" parent="."]
 offset_left = 40.0
-offset_top = 92.0
+offset_top = 86.0
 offset_right = 614.0
-offset_bottom = 306.0
+offset_bottom = 200.0
 color = Color(0.11, 0.12, 0.16, 1)
 
 [node name="Base" type="ColorRect" parent="."]
-offset_left = 10.0
-offset_top = 150.0
-offset_right = 26.0
-offset_bottom = 300.0
+offset_left = 36.0
+offset_top = 90.0
+offset_right = 46.0
+offset_bottom = 196.0
 color = Color(0.35, 0.75, 0.45, 1)
 
+[node name="Limit" type="ColorRect" parent="."]
+offset_left = 325.0
+offset_top = 90.0
+offset_right = 327.0
+offset_bottom = 196.0
+color = Color(0.52, 0.66, 0.88, 0.9)
+
+[node name="Telegraph" type="Node2D" parent="."]
+script = ExtResource("13_telegraph")
+
 [node name="Deployed" type="Node2D" parent="."]
+script = ExtResource("12_allies")
 
 [node name="Enemies" type="Node2D" parent="."]
 script = ExtResource("2_pool")
+
+[node name="Shots" type="Node2D" parent="."]
+script = ExtResource("15_shots")
+
+[node name="Floats" type="Node2D" parent="."]
+script = ExtResource("14_floats")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -44,15 +70,15 @@ offset_bottom = 25.0
 theme_override_font_sizes/font_size = 11
 text = "准备中"
 
-[node name="Prepare" type="Control" parent="HUD"]
+[node name="Command" type="Control" parent="HUD"]
 offset_right = 640.0
 offset_bottom = 360.0
-script = ExtResource("3_prepare")
+script = ExtResource("3_command")
 
-[node name="Roster" type="Control" parent="HUD"]
+[node name="UnitInfo" type="Control" parent="HUD"]
 offset_right = 640.0
 offset_bottom = 360.0
-script = ExtResource("4_roster")
+script = ExtResource("4_unitinfo")
 
 [node name="Quest" type="Control" parent="HUD"]
 offset_right = 640.0
@@ -64,10 +90,35 @@ offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("6_bonds")
 
+[node name="Slots" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("7_slots")
+
 [node name="Preview" type="Label" parent="HUD"]
 offset_left = 8.0
-offset_top = 338.0
+offset_top = 232.0
 offset_right = 632.0
-offset_bottom = 358.0
+offset_bottom = 248.0
 theme_override_font_sizes/font_size = 11
 text = ""
+
+[node name="Stash" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("10_stash")
+
+[node name="Equip" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("9_equip")
+
+[node name="Beasts" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("11_beasts")
+
+[node name="Offer" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("8_offer")

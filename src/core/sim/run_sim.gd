@@ -24,6 +24,10 @@ const TARGET_DURATION_MAX: float = 45.0
 static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunResult:
 	var rng := PBRngStreams.new(run_seed)
 	var state := new_state(cfg)
+	# §11：尾兽**开局选定、全程不变**。所以它在开波循环之外落定一次，
+	# 而不是每波问一遍 —— 每波能换的话，「在哪一波交底牌」这个决策就没了，
+	# 玩家只要每波换上最克这一波的那只即可。
+	state.beast_id = strategy.choose_beast(cfg)
 
 	var result := PBRunResult.new()
 	result.strategy_id = strategy.id
@@ -32,7 +36,7 @@ static func run(cfg: PBSimConfig, strategy: PBStrategy, run_seed: int) -> PBRunR
 
 	while state.wave_index <= cfg.max_wave:
 		var plan := plan_wave(state, strategy, cfg, rng)
-		var outcome := _resolve_battle(plan.wave, plan.dps, state.def_reduction(cfg), cfg)
+		var outcome := resolve_battle(plan, state.def_reduction(cfg), cfg)
 		settle_wave(state, plan, outcome, cfg, rng, result)
 		if state.base_hp <= 0.0:
 			break
@@ -76,6 +80,10 @@ static func plan_wave(
 	state: PBRunState, strategy: PBStrategy, cfg: PBSimConfig, rng: PBRngStreams
 ) -> PBWavePlan:
 	var plan := begin_wave(state, cfg, rng)
+	# 尾兽升级问在 `prepare` 之前：它和抽卡、科技抢同一笔钱，
+	# 而 §11 的升级曲线（`400 × 1.6^Lv`）比科技陡 —— 顺序反了的话，
+	# 钱会先被抽卡吃光，尾兽等级永远停在 1，那条曲线等于没接。
+	strategy.upgrade_beast(state, cfg)
 	strategy.prepare(state, plan.wave, cfg, rng)
 	lock_plan(
 		state,
@@ -105,6 +113,32 @@ static func begin_wave(state: PBRunState, cfg: PBSimConfig, rng: PBRngStreams) -
 	return plan
 
 
+## 花金币重刷本波的任务（§06，M3.5-e）。买不起返回 false。
+##
+## ## 它打破了「每波恰好消耗 quest 流一次」
+##
+## [method begin_wave] 那条注释写着「本函数只消费 `quest` 流一次」，
+## 因为在此之前每波的任务是掷完就定死的。重刷之后**次数由玩家决定**，
+## 于是同一颗种子跑出来的局不再唯一 —— 那不是 bug，是玩家的选择进了随机流。
+##
+## **代价是存档必须存流状态**（铁律 3 本来就要求，这里第一次真正用上）：
+## 存不下的话，读档之后接着刷出来的任务和存档前不是同一条序列。
+##
+## 重刷**不三选一**，和 §08 的抽卡刻意不同：任务只有「接不接」一个决策，
+## 再套一层三选一等于把同一个决策问两遍。
+static func reroll_quest(
+	state: PBRunState, plan: PBWavePlan, cfg: PBSimConfig, rng: PBRngStreams
+) -> bool:
+	# 已经锁定的不能再刷 —— 锁定时派遣人数已经落定，改任务等级会让
+	# 「派了几个人」和「这个任务要几个人」对不上，而那不报错。
+	if plan.quest_accepted:
+		return false
+	if not state.spend(PBEconomyRules.quest_reroll_cost(plan.wave.index, cfg)):
+		return false
+	plan.quest_grade = PBEconomyRules.roll_quest(rng.quest)
+	return true
+
+
 ## 锁定：确定上场名单与派遣，算出有效 DPS。**准备阶段结束时调一次。**
 ##
 ## 派遣必须在算 DPS 之前落定 —— 派出去的人羁绊失效（§06），
@@ -123,14 +157,45 @@ static func lock_plan(
 	state.dispatched = (
 		PBEconomyRules.quest_cost_units(plan.quest_grade) if plan.quest_accepted else 0
 	)
-	plan.dps = PBCombatRules.team_dps(
+	# 把「派出去的是哪几个」记下来给界面（§02）。**在算羁绊之前记** ——
+	# 它读的是同一条末尾规则，晚一步 `dispatched` 就可能已经被清了。
+	state.dispatched_ids.clear()
+	for unit: PBUnit in state.dispatch_picks(cfg):
+		state.dispatched_ids.append(unit.key())
+	# 被派走的人这一波不上场。**脚本流派永远不会走进这个 filter** ——
+	# 末尾规则派的是板凳，而板凳本来就不在 `deployed` 里，所以既有配平数字不动。
+	# 玩家钦定时才可能派掉一个出战席上的人（M3.5-g），漏了这一步他会
+	# **既在做任务又在打仗**，而两边都不报错。
+	if not state.dispatched_ids.is_empty():
+		var fighting: Array[PBUnit] = []
+		for unit: PBUnit in plan.deployed:
+			if not state.dispatched_ids.has(unit.key()):
+				fighting.append(unit)
+		plan.deployed = fighting
+	# 功能档必须在 `dispatched` 落定之后算 —— 派出去的人羁绊失效（§06），
+	# 顺序反了会让「派遣」不再掉功能档，而那正是派遣该付的代价。
+	plan.bond_functions = PBBondRules.active_functions(
+		state.bonded_units(cfg), plan.deployed, cfg.bonds
+	)
+	plan.attackers = PBCombatRules.build_attackers(
 		plan.deployed,
 		plan.wave.element,
 		state.atk_mult(cfg),
 		state.bond_mult(cfg),
-		state.equip_mult(cfg),
-		cfg
+		PBCombatRules.unit_multipliers(plan.deployed, state, cfg),
+		cfg,
+		PBBeastRules.beast_of(state, cfg),
+		state.beast_level,
+		state.beast_cooldown_ticks,
+		plan.bond_functions
 	)
+	# 玩家拖出来的开战位置盖在自动站位上（§02，M4-f）。
+	# **排在建攻击者之后**：建攻击者是把卡摊成「这一波场上的样子」，
+	# 摆位是玩家的一次输入，覆盖在那个结果上。名单空着时它什么都不做，
+	# 所以自动站位那条路一个字节都没动。
+	PBFormationRules.apply(plan.attackers, plan.deployed, state.formation, cfg)
+	# 报出去的战力就是这批攻击者的和，不另算一份 —— 见 [member PBWavePlan.dps]。
+	plan.dps = PBCombatRules.total_dps(plan.attackers)
 
 
 ## 结算一波：累计统计、四条收入入账、扣基地血、清掉派遣标记。
@@ -146,23 +211,40 @@ static func settle_wave(
 	result: PBRunResult = null
 ) -> void:
 	_collect(state, result, outcome, plan.quest_accepted)
-	_settle_income(state, plan.wave, outcome, plan.quest_grade, plan.quest_accepted, cfg, rng)
+	_settle_income(state, plan, outcome, cfg, rng)
 	state.base_hp -= outcome.base_damage
 	state.dispatched = 0
+	state.dispatched_ids.clear()
+	# 钦定名单也是一波一份。留着的话，下一波任务人数一变它就悄悄失效
+	# （长度对不上就退回末尾规则），玩家看到的是「我选的人怎么没去」。
+	state.dispatch_manual.clear()
+	# 尾兽的冷却跨波接着走 —— 它是底牌，稀缺性全靠这一行（§11）。
+	var beast_attacker := PBBeastRules.attacker_in(plan.attackers)
+	if beast_attacker != null and beast_attacker.ultimate != null:
+		state.beast_cooldown_ticks = beast_attacker.ultimate.cooldown_left(outcome.ticks)
 	if result != null:
 		result.wave_reached = state.wave_index
 
 
-## 结算一波战斗。走哪个模型由 [member PBSimConfig.use_tick_battle] 决定。
+## 结算一波战斗。**任何要打一波的地方都走这里，不要自己挑模型。**
 ##
-## 两个模型语义一致、结果对得上（`test_battle_sim.gd` 有对拍断言锁着）。
-## 批量校数值默认走解析式（快），游戏跑起来一定是逐 tick（要看到敌人在动）。
-static func _resolve_battle(
-	wave: PBWave, dps: float, def_reduction: float, cfg: PBSimConfig
+## M3-a 之前两个模型语义一致（都是单目标集火），谁调哪个都无所谓。
+## **现在不是了**：逐 tick 模型有射程和多目标分配，解析式排队模型没有，
+## 两者会给出不同的波次结果。所以「选哪个模型」必须只有一处 ——
+## 快进用解析式、正常打用逐 tick 的话，快进出来的存档和真打出来的对不上，
+## 而且不报任何错。
+##
+## [PBCombatRules.resolve] 因此退居为**退化情形的参照物**：它仍然是本模型在
+## 「满射程 · 单体 · 集火」下的闭式解，`test_attacker.gd` 拿它对拍，
+## 但它不再是任何一条真实游玩路径。
+static func resolve_battle(
+	plan: PBWavePlan, def_reduction: float, cfg: PBSimConfig
 ) -> PBCombatOutcome:
 	if cfg.use_tick_battle:
-		return PBBattleSim.new(wave, dps, def_reduction, cfg).run_to_end()
-	return PBCombatRules.resolve(wave, dps, def_reduction, cfg)
+		return PBBattleSim.new(
+			plan.wave, plan.dps, def_reduction, cfg, plan.attackers
+		).run_to_end()
+	return PBCombatRules.resolve(plan.wave, plan.dps, def_reduction, cfg)
 
 
 ## 把本波的过程数据累进统计。
@@ -187,30 +269,42 @@ static func _collect(
 
 ## 四条收入流入账（§07）。
 ##
-## 注意纲水的击杀收入在 M-1 里**无条件生效** —— 真实游戏里它要占一个出战位。
+## 注意击杀掉落在 M-1 里**无条件生效** —— 真实游戏里它要占一个出战位。
 ## 这么简化是因为路线图的四个问题都不问「该不该上击杀掉落」，而它对所有策略
 ## 是同一个常数，不影响策略之间的相对比较。经济位保留了占位代价，
 ## 因为「经济位 = 战力空位」那条张力（§07）正是靠它度量的。
+##
+## M3-f 起它多了一个条件分支：木叶三忍的功能档关掉那台老虎机的负收益。
+## 收的是整个 [param plan] 而不是拆开的四个量，因为功能表也在计划里 ——
+## 参数表再长下去，「哪几个量属于这一波」这件事就只有函数签名知道了。
 static func _settle_income(
 	state: PBRunState,
-	wave: PBWave,
+	plan: PBWavePlan,
 	outcome: PBCombatOutcome,
-	quest_grade: int,
-	accepted: bool,
 	cfg: PBSimConfig,
 	rng: PBRngStreams
 ) -> void:
+	var wave: PBWave = plan.wave
 	state.earn(wave.reward_gold, &"wave")
 	state.earn(
 		PBEconomyRules.passive_income(outcome.battle_seconds, state.tech_gold, cfg), &"passive"
 	)
-	state.earn(PBEconomyRules.kill_drop_income(outcome.kills, cfg, rng.combat), &"kill_drop")
+	# 木叶三忍的功能档（§09）在这里兑现：负收益不再触发，正收益提高。
+	state.earn(
+		PBEconomyRules.kill_drop_income(
+			outcome.kills,
+			cfg,
+			rng.combat,
+			PBBondFunctionRules.grants_gold_floor(plan.bond_functions)
+		),
+		&"kill_drop"
+	)
 	state.earn(
 		PBEconomyRules.economy_slot_income(state.economy_slot_count, wave.index, cfg),
 		&"economy_slot"
 	)
-	if accepted:
-		state.earn(PBEconomyRules.quest_reward(quest_grade, wave.index), &"quest")
+	if plan.quest_accepted:
+		state.earn(PBEconomyRules.quest_reward(plan.quest_grade, wave.index), &"quest")
 
 
 ## 把「羁绊倍率」和「出战席裸战力」分开记下来。M2-c。
@@ -237,6 +331,6 @@ static func _snapshot(state: PBRunState, result: PBRunResult) -> void:
 	result.final_tech_atk = state.tech_atk
 	result.final_tech_def = state.tech_def
 	result.final_roster_size = state.roster.size()
-	result.final_equip_parts = state.equip_parts
+	result.final_equip_parts = PBEquipRules.part_total(state.equip_parts)
 	result.gold_spent = state.gold_spent
 	result.gold_by_source = state.gold_by_source.duplicate()

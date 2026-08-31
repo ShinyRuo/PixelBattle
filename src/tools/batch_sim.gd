@@ -40,8 +40,41 @@ var _rarity_slope: float = 0.0
 var _spawn_window: float = 0.0
 var _march_seconds: float = 0.0
 
-## 批量模拟走逐 tick 战斗模型而不是解析式。用来测两者的结果差异与耗时代价。
-var _tick_battle: bool = false
+## 强行退回解析式排队模型。**平时绝对不要用。**
+##
+## M3-a 之前这里是反过来的：默认解析式，`--tick-battle` 才走逐 tick。
+## 那时两个模型语义一致（都是单目标集火），谁跑哪条都得到同样的结论。
+##
+## **射程进来之后前提没了** —— 解析式装不下射程，它是另一套战斗规则。
+## 而这个开关当时写的是无条件赋值（`cfg.use_tick_battle = _tick_battle`），
+## 于是配置默认值翻成 true 之后，批量模拟**照旧在跑旧模型**，
+## 而且不报任何错：跑出来的数一切正常，只是描述的是一个玩家碰不到的游戏。
+##
+## 现在默认跟随配置，只有显式要对拍时才用它退回去。
+var _analytic: bool = false
+
+## 大招落点策略：`none` / `auto` / `lead`。空表示用 [PBSimConfig] 的默认值。
+##
+## **§02 那两条验收就是拿这个开关量的**，同一批种子跑三档再相除：
+##
+## - `lead ÷ auto` → 「手动带来 15–25% 的效率提升」
+## - `auto ÷ lead` → 「纯自动落点 ≥ 手动的 78%」
+## - `auto ÷ none` → 大招系统整体值多少（前两条的分母正不正常靠它判断）
+var _aim: StringName = &""
+
+## 一发大招 = 角色基础战力的多少倍。0 表示用默认值。
+##
+## **§02 那对分层验收的成败主要卡在这个数上。** 落点选得准不准，
+## 影响的是大招那一份输出；大招占总输出的比例越低，
+## 这个技巧的影响就被普攻稀释得越厉害，直到测不出来为止。
+## 首次接上时（默认 6.0）实测手动只比自动强 0.6%，而 §02 要 15–25%。
+var _ult_power: float = 0.0
+
+## 多大比例的出战单位带聚拢大招。-1 表示用默认值。
+##
+## §02 要求约 4–6 名角色带拉拽，但**没有依据决定是哪几个**。
+## 这个开关让「聚拢值多少」先量出来，量完再回头分配角色。
+var _gather_share: float = -1.0
 
 ## 开局金币覆盖值。-1 表示用 [PBSimConfig] 的默认值。
 var _starting_gold: int = -1
@@ -70,6 +103,21 @@ var _only_strategy: StringName = &""
 ## 扫这两个开关时流派必须挑 `rational`，其余流派根本不会考虑上不上经济位。
 var _economy_slot_base: float = -1.0
 var _economy_slot_rate: float = -1.0
+
+## 这一局带哪只尾兽（§11）。空表示不带 —— **那是对照组，不是配置错误**。
+##
+## §11 有一条硬要求：「七尾（纯聚拢）和六尾（重置全体大招 CD）是机制型尾兽，
+## **不能被数值型挤掉**。」那条要求只能横向量：同一批种子把九只各跑一遍，
+## 再和「不带」比。**判据是排序，不是绝对波次** ——
+## 如果八尾（纯 +12% 全体攻击，大招在当前模型下恒为 0）排在七尾、六尾前面，
+## 那就是数值型正在挤压机制型，要动的是数值不是机制。
+var _beast: StringName = &""
+
+## 尾兽升到几级（§11：`400 × 1.6^Lv`，上限 10）。0 表示不升级，全程 Lv1。
+##
+## 九连扫描默认跑 Lv1：**升级会把「哪只尾兽强」和「谁更吃得下金币」搅在一起**，
+## 而前者才是 §11 那条要求要看的。量完排序再打开这个开关看等级曲线。
+var _beast_level: int = 0
 
 ## 覆盖流派自带的派遣策略（`never` / `always` / `smart`）。空表示不覆盖。
 ##
@@ -112,7 +160,8 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 		cfg.spawn_window = _spawn_window
 	if _march_seconds > 0.0:
 		cfg.march_seconds = _march_seconds
-	cfg.use_tick_battle = _tick_battle
+	if _analytic:
+		cfg.use_tick_battle = false
 	if _starting_gold >= 0:
 		cfg.starting_gold = _starting_gold
 	if _equip_part_cost > 0:
@@ -123,14 +172,33 @@ func _run_cell(growth: float, strategy_id: StringName) -> Array[PBRunResult]:
 		cfg.economy_slot_base = _economy_slot_base
 	if _economy_slot_rate >= 0.0:
 		cfg.economy_slot_rate = _economy_slot_rate
+	if _aim != &"":
+		cfg.aim_policy = _aim_policy_of(_aim)
+	if _ult_power > 0.0:
+		cfg.ultimate_power_mult = _ult_power
+	if _gather_share >= 0.0:
+		cfg.ultimate_gather_share = _gather_share
 	var out: Array[PBRunResult] = []
 	for i: int in _runs:
 		# 同一个 i 在所有格子上用同一个种子：不同流派面对**同一串**波型与抽卡运气，
 		# 流派之间的差值因此不含运气成分。这是配对比较，比各跑各的省一个数量级的样本量。
 		var strategy := PBStrategyRegistry.make(strategy_id)
 		_apply_dispatch(strategy)
+		strategy.beast_id = _beast
+		strategy.beast_level_target = _beast_level
 		out.append(PBRunSim.run(cfg, strategy, _seed_base + i))
 	return out
+
+
+## 命令行上的策略名翻成枚举。认不出来的当默认的 `auto`。
+func _aim_policy_of(name: StringName) -> PBAimRules.Policy:
+	match name:
+		&"none":
+			return PBAimRules.Policy.NONE
+		&"lead":
+			return PBAimRules.Policy.LEAD
+		_:
+			return PBAimRules.Policy.AUTO
 
 
 func _apply_dispatch(strategy: PBStrategy) -> void:
@@ -392,7 +460,7 @@ func _parse_args() -> void:
 	var args := OS.get_cmdline_user_args()
 	# 无值开关先单独扫一遍：下面那个循环靠 args[i + 1] 取值，
 	# 会跳过最后一个参数，写在末尾的开关就丢了。
-	_tick_battle = args.has("--tick-battle")
+	_analytic = args.has("--analytic")
 	for i: int in args.size():
 		if i + 1 >= args.size():
 			continue
@@ -428,3 +496,13 @@ func _parse_args() -> void:
 				_economy_slot_base = maxf(value.to_float(), 0.0)
 			"--economy-slot-rate":
 				_economy_slot_rate = maxf(value.to_float(), 0.0)
+			"--aim":
+				_aim = StringName(value)
+			"--ult-power":
+				_ult_power = maxf(value.to_float(), 0.0)
+			"--gather-share":
+				_gather_share = clampf(value.to_float(), 0.0, 1.0)
+			"--beast":
+				_beast = StringName(value)
+			"--beast-level":
+				_beast_level = maxi(value.to_int(), 0)

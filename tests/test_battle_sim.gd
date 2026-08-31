@@ -14,6 +14,11 @@ var _rng: RandomNumberGenerator
 
 func before_each() -> void:
 	_cfg = PBSimConfig.new()
+	# **整波从同一条起跑线出发**（M4-d）。排队模型的前提就是那个 ——
+	# 它是一条一维队列，不知道「方阵后面几列出生在战场之外」这回事。
+	# 留着阵型深度的话，对拍会差出后排走进战场那几十个 tick，
+	# 而那个差和伤害模型一点关系都没有。
+	_cfg.spawn_column_gap = 0.0
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = 20260827
 
@@ -96,6 +101,10 @@ func test_stepping_to_the_end_matches_run_to_end() -> void:
 
 func test_enemies_do_not_exist_before_their_spawn_tick() -> void:
 	# 整波在 spawn_window 内陆续出场，不是一开始全在场上。
+	#
+	# **M4-d 把默认窗口改成了 0（一次全刷），所以这里要自己开一个** ——
+	# 机制还在，解析式排队模型也还在读它，只是不再是默认玩法。
+	_cfg.spawn_window = 10.0
 	var wave := _wave(40)
 	var sim := _sim(wave, 0.0)
 	assert_gt(wave.count, 1, "这一波应该有多个敌人，否则测不出出场节奏")
@@ -125,6 +134,10 @@ func test_overflow_damage_carries_to_the_next_enemy() -> void:
 func test_damage_cannot_reach_enemies_that_have_not_spawned() -> void:
 	# 溢出伤害只在**已出场**的敌人之间传递。打不到还没出现的敌人 ——
 	# 否则整个出场节奏就失去意义，一波会在第 1 tick 被秒掉。
+	#
+	# 同样要自己开出怪窗口（M4-d 把默认改成了 0）：一次全刷的话
+	# 场上本来就没有「还没出场的敌人」，这一条无从测起。
+	_cfg.spawn_window = 10.0
 	var wave := _wave(15)
 	assert_gt(wave.count, 3, "这一波要有足够多的敌人")
 	var sim := _sim(wave, wave.total_hp() * float(_cfg.tick_rate))

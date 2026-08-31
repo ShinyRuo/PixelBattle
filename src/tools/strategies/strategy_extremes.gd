@@ -63,7 +63,7 @@ class PurePower:
 		dispatch_policy = Dispatch.ALWAYS
 
 	func prepare(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> void:
-		while state.roster.size() > state.deploy_capacity(cfg) + state.standby_capacity(cfg):
+		while state.roster.size() > state.deploy_capacity(cfg):
 			if not buy_tech(state, &"pop", cfg):
 				break
 		# 和 balanced 用同一套花钱逻辑，唯一的差别就是上面一分钱没投金币科技。

@@ -29,6 +29,19 @@ func _roster_of(count: int) -> PBRunState:
 	return state
 
 
+## 用**本地** rng 洗一份牌。`Array.shuffle()` 读的是全局 RNG，
+## 那正是 §14 铁律 3 禁掉的东西 —— 它的状态由同一个进程里跑过的一切决定，
+## 于是「测试红不红」取决于前面跑了哪些文件，改一个无关的测试就可能翻面。
+func _shuffled(units: Array[PBUnit], rng: RandomNumberGenerator) -> Array[PBUnit]:
+	var out := units.duplicate()
+	for i: int in range(out.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var swap: PBUnit = out[i]
+		out[i] = out[j]
+		out[j] = swap
+	return out
+
+
 func test_picking_by_effective_power_is_strictly_optimal() -> void:
 	# **这条是「阵容面板只展示、不让玩家自由选人」那个决定的依据。**
 	#
@@ -38,6 +51,13 @@ func test_picking_by_effective_power_is_strictly_optimal() -> void:
 	#
 	# 这里拿三种别的排法对比：裸战力排、倒序排、随机排。
 	# 哪一种赢了，上面那个结论就不成立，阵容 UI 就该改成可选。
+	#
+	# **三种排法都必须从在场名单里挑，不能从全仓挑。** M2-c 之后
+	# [method PBValuation.deployed_for] 只在在场名单里选人（出战席必然是它的子集），
+	# 拿全仓的随机样本去比就是两个不同的池子在对比 —— 运气好的样本能从
+	# 板凳外捞到更强的卡，赢了也不说明「按有效战力排不是最优」。
+	# 这个口径错误一直在，只是靠 `Array.shuffle()` 读全局 RNG 的运气盖着；
+	# 换成本地 rng 之后它是确定性的，永远不会再靠运气红或绿。
 	var state := _roster_of(24)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 991
@@ -52,15 +72,13 @@ func test_picking_by_effective_power_is_strictly_optimal() -> void:
 		var by_raw := PBValuation.deployed_by_raw_power(state, _cfg)
 		assert_gte(best, PBValuation.dps_of(by_raw, element, state, _cfg), "按裸战力排不该更强")
 
-		var reversed: Array[PBUnit] = state.all_units()
+		var reversed: Array[PBUnit] = state.field_units(_cfg)
 		reversed.reverse()
 		var tail := reversed.slice(0, slots)
 		assert_gte(best, PBValuation.dps_of(tail, element, state, _cfg), "倒序排不该更强")
 
 		for _try: int in 5:
-			var shuffled: Array[PBUnit] = state.all_units()
-			shuffled.shuffle()
-			var sample := shuffled.slice(0, slots)
+			var sample := _shuffled(state.field_units(_cfg), rng).slice(0, slots)
 			assert_gte(best, PBValuation.dps_of(sample, element, state, _cfg), "随便排不该更强")
 
 
@@ -132,58 +150,53 @@ func test_the_leak_threshold_is_the_real_cliff() -> void:
 		)
 
 
-func test_dispatching_costs_dps_until_the_bench_passes_the_bond_cap() -> void:
-	# 派出去的人羁绊失效（§06），所以代价是**整队一起降** ——
-	# 被派的是待命台上本来就不上场的人，他们自己的输出一点没少。
-	# 这一点手推很容易推反，所以钉一条。
-	var thin := _roster_of(7)
-	var loss: float = PBValuation.dispatch_loss(thin, _cfg, PBValuation.mean_dps(thin, _cfg), 3)
-	assert_gt(loss, 0.0, "板凳没到羁绊上限时，派人一定要付代价")
-
-	# 卡池深到超过 bond_unit_cap 之后，派遣是白捡的钱。
+func test_dispatching_always_costs_dps_and_costs_more_the_more_you_send() -> void:
+	# 派出去的代价有**两截**：羁绊失效（整队一起降）+ 他这一波不上场。
 	#
-	# 前置条件是**派完之后还在上限之上**，不是「派之前在上限之上」——
-	# 后者是我第一版写的，它松得刚好放过了真正的失败情形：
-	# 板凳 15 人、上限 12、派 4 个人，派之前是 12 档，派之后掉到 11。
-	# 抽 40 次是为了凑够唯一卡 —— 重复卡在仓库里会合并，抽 20 次只有十几张。
-	var deep := _roster_of(40)
-	assert_gte(deep.roster.size() - 4, _cfg.bond_unit_cap, "派完之后仍要在羁绊上限之上")
-	var free_loss: float = PBValuation.dispatch_loss(
-		deep, _cfg, PBValuation.mean_dps(deep, _cfg), 4
-	)
-	assert_almost_eq(free_loss, 0.0, 1e-9, "过了羁绊上限，派人不该再掉战力")
+	# ## 这一条 M3.5-i 换过一次判据
+	#
+	# 旧版断的是「卡池深过 `bond_unit_cap` 之后派遣是白捡的钱」——
+	# 那在待命台还在的时候成立：派的是不上场的板凳，掉的档又被计数上限吃掉。
+	# **待命台删掉之后那一支不存在了**：在场上限从 16 掉到 10（出战席），
+	# 而计数上限是 12，够都够不着；何况派走的人现在真的离场。
+	#
+	# 所以现在钉的是新规矩下必须成立的那两条：代价恒为正、且派得越多越贵。
+	# 「出厂那个 12 该改成多少」是数值回归的事，不该由一条测试顺手拍板。
+	var state := _roster_of(12)
+	var base: float = PBValuation.mean_dps(state, _cfg)
+	var one: float = PBValuation.dispatch_loss(state, _cfg, base, 1)
+	var three: float = PBValuation.dispatch_loss(state, _cfg, base, 3)
+	assert_gt(one, 0.0, "派人一定要付代价 —— 不然 §06 那个取舍在模型里不存在")
+	assert_gt(three, one, "派得越多越贵")
 
 
-func test_the_roster_panel_shows_the_multiplier_on_every_deployed_card() -> void:
-	# §03 说原版最大的短板是克制关系不可见。面板每一格都要写出倍率，
-	# 否则玩家还是只能靠背。
+func test_the_info_panel_shows_both_element_multipliers() -> void:
+	# §03 说原版最大的短板是克制关系不可见，而 §03A 把它拆成了两条线：
+	# **攻元素克不克得动这一波、防元素扛不扛得住这一波**。
+	# 只写一个「火系」的话，玩家读到的还是旧模型。
 	var state := _roster_of(12)
 	var wave := PBWaveRules.build(3, _cfg, RandomNumberGenerator.new())
-	var panel := PBRosterPanel.new()
-	add_child_autofree(panel)
-	panel.refresh(state, _cfg, wave)
-
 	var deployed := PBValuation.deployed_for(state, wave.element, _cfg)
 	assert_gt(deployed.size(), 0, "这个卡池应该派得出人")
-	for i: int in deployed.size():
-		var text: String = (panel._slots[i] as Label).text
-		var expected: float = (
-			deployed[i].effective_power(wave.element, _cfg) / deployed[i].power(_cfg)
-		)
-		assert_true(text.contains("×%.2f" % expected), "第 %d 格应写明克制倍率：%s" % [i, text])
 
-	# 没坐满的位置要看得出是空的，而不是留着上一波的残留。
-	for i: int in range(deployed.size(), _cfg.deploy_slots_max):
-		assert_eq((panel._slots[i] as Label).text, "—", "空位应显示成空")
-
-
-func test_the_roster_panel_says_so_when_the_counter_is_missing() -> void:
-	# 「为什么这一波突然打不动」是原版最恼人的一处 —— §03 点名要补。
-	var state := PBRunSim.new_state(_cfg)
-	for i: int in 6:
-		state.add_unit(PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR, i % 2))
-	var wave := PBWaveRules.build(1, _cfg, RandomNumberGenerator.new())
-	var panel := PBRosterPanel.new()
+	var panel := PBUnitInfo.new()
 	add_child_autofree(panel)
-	panel.refresh(state, _cfg, wave)
-	assert_true(panel._rotation.text.contains("缺"), "纯物理卡池应明确提示缺克星：%s" % panel._rotation.text)
+	var unit: PBUnit = deployed[0]
+	panel.refresh(PBSelection.of_unit(unit.key()), state, _cfg, wave, deployed)
+
+	var text: String = panel._body.text
+	var attack: float = _cfg.damage_multiplier(PBElement.relation(unit.element, wave.element))
+	var defend: float = _cfg.damage_multiplier(PBElement.relation(wave.element, unit.def_element))
+	assert_true(text.contains("×%.2f" % attack), "该写明攻元素对本波的倍率：%s" % text)
+	assert_true(text.contains("×%.2f" % defend), "也该写明挨打的倍率：%s" % text)
+
+
+func test_the_info_panel_falls_back_to_the_team_account_with_nobody_selected() -> void:
+	# 没选人时把整队的账写在这里 —— 空着不写等于浪费屏幕上最好的一块地方。
+	var state := _roster_of(6)
+	var wave := PBWaveRules.build(3, _cfg, RandomNumberGenerator.new())
+	var panel := PBUnitInfo.new()
+	add_child_autofree(panel)
+	var nobody: Array[PBUnit] = []
+	panel.refresh(PBSelection.new(), state, _cfg, wave, nobody)
+	assert_true(panel._body.text.contains("羁绊"), "没选人时该显示整队的账：%s" % panel._body.text)

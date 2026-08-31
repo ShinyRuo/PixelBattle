@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PBEquipItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/equip_item.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"blunt_blade"
+name_key = "equip.blunt_blade"
+category = 0
+recipe = Array[StringName]([&"senbon", &"kunai", &"kunai"])
+power = 0.20

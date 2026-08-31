@@ -150,18 +150,14 @@ func test_the_gacha_valuation_stays_in_the_same_currency_as_the_real_bonds() -> 
 	assert_lt(gain, 0.15, "再抽一张的羁绊增益 %.3f 大得不像一档，检查分子分母是不是同一个口径" % gain)
 
 
-func test_a_full_bench_stops_valuing_bonds_from_new_cards() -> void:
+func test_a_full_roster_stops_valuing_bonds_from_new_cards() -> void:
 	# 在场席位满了，新卡上不了场，对羁绊就没有贡献。
 	# 这是刻意的**低估**（见 [method PBValuation.expected_bond_gain]）——
 	# M2-c 开放选人之后要换成「挤掉谁」。
 	var state := PBRunSim.new_state(_cfg)
 	for character: PBCharacter in _characters.all():
 		state.add_unit(PBUnit.new(character))
-	assert_gt(
-		state.roster.size(),
-		state.deploy_capacity(_cfg) + state.standby_capacity(_cfg),
-		"这批卡应该多到坐不下"
-	)
+	assert_gt(state.roster.size(), state.open_slots(_cfg), "这批卡应该多到坐不下")
 	assert_eq(PBValuation.expected_bond_gain(state, _cfg), 0.0, "坐不下的时候新卡不该再算羁绊收益")
 
 

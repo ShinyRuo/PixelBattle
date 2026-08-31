@@ -47,6 +47,13 @@ var _spawn_window: float = 0.0
 var _march_seconds: float = 0.0
 var _hp_base: float = 0.0
 
+## 退回 M3-a 之前的战斗模型：整队折成一个覆盖全场的单体攻击者，集火最前面那个。
+##
+## 存在的理由是**这份诊断的结论全是对比得来的**。「场上平均 5.4 个人」
+## 单看是个孤零零的数字，只有和同一个种子下的旧模型摆在一起，
+## 才说得出射程改造到底兑现了多少。见 [method PBAttacker.whole_field]。
+var _focus_fire: bool = false
+
 
 func _initialize() -> void:
 	_parse_args()
@@ -74,7 +81,11 @@ func _play(cfg: PBSimConfig) -> Array[Dictionary]:
 
 	while state.wave_index <= cfg.max_wave:
 		var plan := PBRunSim.plan_wave(state, strategy, cfg, rng)
-		var battle := PBBattleSim.new(plan.wave, plan.dps, state.def_reduction(cfg), cfg)
+		# 三元表达式在这里不行：`[]` 是无类型 Array，赋给 Array[PBAttacker] 会运行时报错。
+		var squad: Array[PBAttacker] = []
+		if not _focus_fire:
+			squad = plan.attackers
+		var battle := PBBattleSim.new(plan.wave, plan.dps, state.def_reduction(cfg), cfg, squad)
 		var peak: int = 0
 		var alive_sum: int = 0
 		while not battle.is_finished() and battle.current_tick() < PBBattleSim.MAX_TICKS:
@@ -131,8 +142,14 @@ func _print_table(rows: Array[Dictionary], cfg: PBSimConfig) -> void:
 	print("")
 	print(
 		(
-			"单波节奏诊断　种子 %d　流派 %s　spawn_window=%.1fs　march=%.1fs"
-			% [_seed, _strategy_id, cfg.spawn_window, cfg.march_seconds]
+			"单波节奏诊断　种子 %d　流派 %s　战斗模型 %s　spawn_window=%.1fs　march=%.1fs"
+			% [
+				_seed,
+				_strategy_id,
+				"集火（M3-a 之前）" if _focus_fire else "射程+多目标",
+				cfg.spawn_window,
+				cfg.march_seconds,
+			]
 		)
 	)
 	print("")
@@ -185,6 +202,8 @@ func _print_summary(rows: Array[Dictionary]) -> void:
 
 func _parse_args() -> void:
 	var args := OS.get_cmdline_user_args()
+	# 无值开关先单独扫一遍：下面那个循环靠 args[i + 1] 取值，会跳过最后一个参数。
+	_focus_fire = args.has("--focus-fire")
 	for i: int in args.size():
 		if i + 1 >= args.size():
 			continue

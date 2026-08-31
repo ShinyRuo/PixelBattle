@@ -18,12 +18,34 @@ extends Resource
 ## 本类是**角色本身**（不可变，全局唯一一份）；[PBUnit] 是**玩家手上的那张卡**
 ## （有张数、有星级，一局一份）。两者一对多。
 ##
-## ## 已知的省略（§09 写了但 M2-a 不做）
+## ## 已知的省略
 ##
-## - `base_stats: PBStats` —— 现在战力只有一条 `rarity_power` 阶梯，没有多维属性
-## - `skill_ids: Array[StringName]` —— 技能/大招系统在 M3
+## - `skill_ids: Array[StringName]` —— 技能表还没有；大招现在由 [PBUltimate]
+##   按统一规则生成，角色只能覆盖它的属性（[member ultimate_element_override]）
 ##
-## 两者都等有了对应系统再加，现在放进来只是占位字段，会误导人以为它们生效了。
+## §09 那行 `base_stats: PBStats` 从 M2-a 起一直空着（那时战力只有一条
+## `rarity_power` 阶梯），**M3.5-a 把它兑现了** —— 见下面那一批二级属性字段。
+
+## 射程档。M3-a 新增，配合 §02 的前中后三列。
+##
+## 做成**档位**而不是一个裸浮点，有两个理由：
+##
+## 1. 三个档正好对上 §02 的三列，站位因此是射程的派生量而不是第二份数据
+## 2. 具体距离是要扫的参数，写在 [PBSimConfig] 里才扫得动；
+##    写进 30 个 `.tres` 等于把可调参数散进数据文件
+enum Reach {
+	AUTO,  ## 按属性取默认：物理近战，五系远程。**`.tres` 不写就是这一档**
+	MELEE,  ## 近战，站前排
+	RANGED,  ## 远程，站中排
+	LONG,  ## 超远程，站后排
+}
+
+## 主属性（§03A）。**攻击力只由这一项决定**，另外两项各管自己那条线
+## （力量 → 血，敏捷 → 防与攻速，智力 → 蓝）。
+##
+## 原作是 War3 的 RPG 地图，这套「三属性 + 一个主属性吃攻击」的骨架直接沿用 ——
+## 它已经被验证过几十年，而且玩家一眼就懂。
+enum Primary { STRENGTH, AGILITY, INTELLECT }
 
 ## 全局唯一 id。**代码里不出现角色名，一律走 id**（§14 铁律 5）。
 ##
@@ -37,18 +59,119 @@ extends Resource
 ## 查图集用的键。M2 是白模阶段，先留着不用（真美术在 M5）。
 @export var icon_key: String = ""
 
-## 输出属性（§03）。
+## **攻元素**：这个角色打出去的伤害算哪一系（§03 / §03A）。
 ##
 ## **注意 §03 的铁律：真正的 `element` 是挂在伤害事件上的，不是挂在单位上。**
-## 现在一个角色只有一个技能，两者恰好重合。M3 接真技能表时必须拆开，
-## 否则「迪达拉本体土属性但大招是火系」这类角色做不出来。
+## 大招可以另配一系，见 [member ultimate_element_override]。
+##
+## M3.5 起攻防拆成两个元素，本字段收窄成「它打什么系」，
+## 名字没改是因为它同时是**羁绊的属性型兜底档的匹配依据**（§03A）——
+## 那是 §03「每波换克制系上场」时玩家看的那个数，
+## 而且现有六组属性羁绊与它们的全部测试都建在这个字段上。
 @export var element: PBElement.Type = PBElement.Type.PHYSICAL
+
+## **防元素**：别人打它时按哪一系算克制（§03A，M3.5-a）。
+##
+## ## 为什么要和攻元素分开
+##
+## 合成一个的话，一张卡在「它打谁」和「它扛谁」两条线上永远指向同一波 ——
+## 攻防两轴同进同退，拆开就没有意义了。分开之后玩家要同时问两个问题：
+## 攻元素克不克得动这一波、防元素扛不扛得住这一波。
+##
+## **敌人两个元素都用波次元素**（§04 的轮转表一行不改），
+## 所以一波之内两个问题指向同一个敌人元素，学得会、算得清。
+@export var def_element: PBElement.Type = PBElement.Type.PHYSICAL
+
+# ── 二级属性与系数（§03A，M3.5-a）───────────────────────────────
+#
+# **这一批数是占位值**，由生成脚本按稀有度 + 射程档 + 主属性铺出来，
+# 没有扫描依据。它们的形状（哪些字段、谁影响谁）是设计，数字不是。
+
+## 主属性。攻击力由它决定 —— 原作是 War3 的 RPG 地图，沿用那套骨架。
+@export var primary: Primary = Primary.STRENGTH
+
+## 1 级时的二级属性。
+@export var strength: float = 18.0
+@export var agility: float = 12.0
+@export var intellect: float = 12.0
+
+## 每升一级二级属性各涨多少。**逐角色不同，这是「定位」的数据来源** ——
+## 主属性涨得快的那一项决定了这张卡往哪个方向成长。
+@export var strength_growth: float = 2.6
+@export var agility_growth: float = 1.4
+@export var intellect_growth: float = 1.4
+
+## 基础属性的固定部分（二级属性还没加成时的值）。
+@export var hp_base: float = 200.0
+@export var mp_base: float = 60.0
+@export var atk_base: float = 60.0
+@export var def_base: float = 1.0
+
+## 基础攻速（每秒攻击几次）。
+@export var attack_speed_base: float = 1.0
+
+## 二级属性 → 基础属性的转化系数。**逐角色不同**：
+## 高 [member hp_per_strength] 的是坦克，高 [member atk_per_primary] 的是输出，
+## 这和稀有度是两条独立的轴（§08 的稀有度阶梯只管「整体强多少」）。
+@export var hp_per_strength: float = 16.0
+@export var mp_per_intellect: float = 8.0
+@export var atk_per_primary: float = 1.0
+@export var def_per_agility: float = 0.22
+@export var attack_speed_per_agility: float = 0.008
 
 ## 稀有度（§08）。
 ##
 ## 类型借用 [enum PBUnit.Rarity]。§09 的规格里叫 `PBRarity.Type`，
 ## 改名是纯粹的调用点搬迁、零行为变化，等有必要时再做。
 @export var rarity: PBUnit.Rarity = PBUnit.Rarity.R
+
+## 射程档（§02，M3-a）。默认 [constant Reach.AUTO] —— 见 [method reach_tier]。
+@export var reach: Reach = Reach.AUTO
+
+## 单体还是范围（§04 靠它把潮水波与精英波的价值分开）。
+##
+## 枚举借用 [enum PBAttacker.Shape]，与 [member rarity] 借用
+## [enum PBUnit.Rarity] 是同一个理由：调用点都写在战斗层，
+## 让数据层再定义一个同义枚举只会多一处要同步的地方。
+##
+## **M3-a 全表都是单体**，一个都没分配出去。不是忘了：
+## 谁该是 AOE 要么由技能表决定（M3 的大招那一步），要么得有扫描依据，
+## 现在拍十几个角色成 AOE 会污染 M3-a 正在量的三条缺口。
+@export var attack_shape: PBAttacker.Shape = PBAttacker.Shape.SINGLE
+
+
+## 大招的伤害属性，**-1 表示与 [member element] 相同**。
+##
+## §03 的铁律是「element 挂在伤害事件上，不挂在单位上」。M2 之前
+## 一个角色只有一个输出来源，两者恰好重合，铁律看起来像句空话 ——
+## **大招是它第一次真正用上的地方**：本体土属性、大招火系这种角色
+## （§09 点名的迪达拉）没有这一行就做不出来。
+##
+## 用 -1 当哨兵而不是给 [enum PBElement.Type] 加一个 `AUTO` ——
+## 那个枚举是 §03 的克制环本身，往里塞一个不参与克制的值，
+## 会让每一处遍历五系的代码都要多记一条例外。
+@export var ultimate_element_override: int = -1
+
+
+## 大招实际打什么属性。见 [member ultimate_element_override]。
+func ultimate_element() -> PBElement.Type:
+	if ultimate_element_override < 0:
+		return element
+	return ultimate_element_override as PBElement.Type
+
+
+## 实际射程档。[constant Reach.AUTO] 在这里落成具体档位。
+##
+## 默认规则只有一条：**物理近战，五系远程。**
+## §03 把物理定位成「这波我没配对」的保底补丁，恒定 1.05 不吃克制；
+## 让它换取的是站位 —— 站前排先接敌、覆盖面窄。
+## 这样物理位的存在价值不只是一个数字，也是一个空间位置。
+func reach_tier() -> Reach:
+	if reach != Reach.AUTO:
+		return reach
+	if element == PBElement.Type.PHYSICAL:
+		return Reach.MELEE
+	return Reach.RANGED
 
 
 ## 造一个角色。字段全部只读语义 —— 造完不要再改。
@@ -63,4 +186,8 @@ static func make(
 	out.element = character_element
 	out.rarity = character_rarity
 	out.name_key = character_name_key if character_name_key != "" else String(character_id)
+	# §03A：代码造出来的角色也得有属性表，否则每个人都吃默认值 ——
+	# **R 和 USR 的战力会一模一样**，而那不会让任何断言变红。
+	# 真角色表的同一套数字由生成脚本写进 `.tres`，规则见 [method PBStatRules.fill_placeholder]。
+	PBStatRules.fill_placeholder(out)
 	return out

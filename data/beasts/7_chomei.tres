@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PBBeast" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/beast.gd" id="1_beast"]
+
+[resource]
+script = ExtResource("1_beast")
+id = &"chomei"
+name_key = "beast.chomei"
+aura_power = 0.1
+aura_element = -1
+aura_member_ids = Array[StringName]([])
+aura_ultimate_cd_scale = 1.0
+aura_def_reduction = 0.0
+ultimate_cooldown_seconds = 0.0
+ultimate_damage_seconds = 0.0
+ultimate_element = -1
+ultimate_radius = 0.35
+ultimate_max_targets = 0
+ultimate_gather = true
+ultimate_knockback = 0.0
+ultimate_slow_scale = 1.0
+ultimate_slow_seconds = 0.0
+ultimate_team_damage_scale = 1.0
+ultimate_buff_seconds = 0.0
+ultimate_reset_cooldowns = false

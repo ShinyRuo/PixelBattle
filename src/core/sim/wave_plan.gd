@@ -16,7 +16,26 @@ var wave: PBWave
 var deployed: Array[PBUnit] = []
 
 ## 己方对本波的有效每秒伤害，属性克制、攻击科技、羁绊、装备全部计入。
+##
+## **它是 [member attackers] 的和，不是另算的一份。** 界面上报的战力
+## 和战场上真打出来的伤害必须是同一个数 —— 各算一遍的话两者会慢慢分叉，
+## 而且不报任何错。见 [method PBCombatRules.build_attackers]。
 var dps: float = 0.0
+
+## 本波的己方攻击者，每人一个（M3-a）。战斗按各自的射程分配目标。
+##
+## M3-a 之前这里只有上面那个标量：整队每 tick 全砸在最前面那个敌人身上。
+## 那是单服务台排队，而 M0 已经证明它在数学上不存在「场上稳定有几个人」
+## 的中间态 —— 三条设计缺口同出于此。见 [PBAttacker]。
+var attackers: Array[PBAttacker] = []
+
+## 本波解锁的羁绊功能档，`{ 载体角色 id: [功能键…] }`（§09，M3-f）。
+##
+## 存在计划里而不是让战斗和结算各算一遍，是因为它同时被两条路消费：
+## 战斗那条装在大招上，结算那条决定击杀掉落扣不扣钱。
+## 而它依赖 `state.dispatched`（派遣出去的人羁绊失效，§06），
+## **各算一遍的话，在 `dispatched` 被清零之后再算就会多算一档**，且不报错。
+var bond_functions: Dictionary = {}
 
 ## 本波刷出的任务在 [constant PBEconomyRules.QUEST_TABLE] 里的行号。
 var quest_grade: int = 0

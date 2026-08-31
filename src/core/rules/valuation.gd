@@ -18,7 +18,7 @@ extends RefCounted
 ##    一张火系卡只在其中一波吃到 2.0 倍。只看当前波会系统性低估抽卡、
 ##    高估装备（装备是无属性加成）。
 ## 2. **确定性支出用「改一下、量一次、改回来」**，不推公式。
-##    人口科技会同时影响上场人数、待命台格数和羁绊，手推的公式漏掉任何一项
+##    人口科技会同时影响上场人数和羁绊，手推的公式漏掉任何一项
 ##    都不会报错，只会让估值悄悄失准。
 
 
@@ -27,12 +27,13 @@ static func mean_dps(state: PBRunState, cfg: PBSimConfig) -> float:
 	var total: float = 0.0
 	for wave_element: int in PBWaveRules.WAVE_ELEMENTS:
 		var element := wave_element as PBElement.Type
+		var deployed := deployed_for(state, element, cfg)
 		total += PBCombatRules.team_dps(
-			deployed_for(state, element, cfg),
+			deployed,
 			element,
 			state.atk_mult(cfg),
 			state.bond_mult(cfg),
-			state.equip_mult(cfg),
+			PBCombatRules.unit_multipliers(deployed, state, cfg),
 			cfg
 		)
 	return total / float(PBWaveRules.WAVE_ELEMENTS.size())
@@ -43,14 +44,41 @@ static func mean_dps(state: PBRunState, cfg: PBSimConfig) -> float:
 static func deployed_for(
 	state: PBRunState, element: PBElement.Type, cfg: PBSimConfig
 ) -> Array[PBUnit]:
-	# M2-c 之后只在**在场名单**里挑 —— 出战席必然是在场名单的子集，
-	# 拿全仓去挑会让估值假设一支实际带不上场的队伍。
-	var pool := state.field_units(cfg)
+	var pool := available_units(state, cfg)
 	pool.sort_custom(
 		func(a: PBUnit, b: PBUnit) -> bool:
 			return a.effective_power(element, cfg) > b.effective_power(element, cfg)
 	)
 	return pool.slice(0, state.open_slots(cfg))
+
+
+## 现在还能被排上场的卡：**全仓，减掉派出去做任务的**。
+##
+## ## 为什么候选是全仓而不是在场名单
+##
+## M2-c 到 M3.5-h 这里读的是 [method PBRunState.field_units]，因为那时
+## 在场名单（出战席 + 待命台）比出战席大一截，「每波换克制系」是在那截
+## 板凳里换的。**M3.5-i 删掉待命台之后在场就是出战席** ——
+## 再从在场名单里挑等于从自己里面挑自己，[method deployed_for] 和
+## [method deployed_by_raw_power] 会返回同一批人，
+## 「换人多赚多少」恒等于 0，而 §03 整套属性系统的估值就此归零。
+## 换人从此是**从仓库里换**，这里跟着改。
+##
+## ## 为什么要减掉派遣
+##
+## 待命台还在的时候派的是不上场的板凳，上场名单不受影响；
+## 现在派的是在场的人，他这一波真的不打了。不减的话
+## 「派了掉多少战力」只量到羁绊那一半，而少掉的那个打手才是大头 ——
+## 卡面上的数会系统性偏乐观，且不报错。
+static func available_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
+	var away := state.dispatch_picks(cfg)
+	if away.is_empty():
+		return state.all_units()
+	var out: Array[PBUnit] = []
+	for unit: PBUnit in state.all_units():
+		if not away.has(unit):
+			out.append(unit)
+	return out
 
 
 ## 面对 [param element] 这一波，**不换人**会派谁上场 —— 按裸战力排，完全不看属性。
@@ -60,7 +88,7 @@ static func deployed_for(
 ## 玩家看不到。阵容面板把两条并排显示，是为了让「每波换克制系」这件事
 ## **在玩的时候就能感觉到**，而不是只能从策划那儿听说。
 static func deployed_by_raw_power(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
-	var pool := state.field_units(cfg)
+	var pool := available_units(state, cfg)
 	pool.sort_custom(func(a: PBUnit, b: PBUnit) -> bool: return a.power(cfg) > b.power(cfg))
 	return pool.slice(0, state.open_slots(cfg))
 
@@ -70,7 +98,12 @@ static func dps_of(
 	units: Array[PBUnit], element: PBElement.Type, state: PBRunState, cfg: PBSimConfig
 ) -> float:
 	return PBCombatRules.team_dps(
-		units, element, state.atk_mult(cfg), state.bond_mult(cfg), state.equip_mult(cfg), cfg
+		units,
+		element,
+		state.atk_mult(cfg),
+		state.bond_mult(cfg),
+		PBCombatRules.unit_multipliers(units, state, cfg),
+		cfg
 	)
 
 
@@ -96,15 +129,84 @@ static func tech_gain(
 	return 0.0
 
 
-## 买一件成品装备（[member PBSimConfig.equip_parts_per_item] 个配件）
-## 能让队伍 DPS 涨百分之几。
-static func equip_item_gain(state: PBRunState, cfg: PBSimConfig, base: float) -> float:
-	if base <= 0.0:
+## 买**一个忍具箱**能让队伍 DPS 涨百分之几（期望值）。
+##
+## ## 为什么不能直接问「多三个配件值多少」
+##
+## M3-c 之前配件不分种类，「凑够 N 个 = 一件成品」，所以加 N 个配件再量一次
+## 就是答案。真合成树上来之后这个问法坏掉了，坏在两处：
+##
+## 1. **忍具箱随机出货，配方却点名要哪几种。** 加三个「配件」这件事不再有定义
+## 2. **梯度是台阶状的。** 多买一个配件，十有八九什么也合不出来，
+##    直接量的话收益是 0 —— 会算账的玩家于是永远不买装备，
+##    而这恰恰是 §10 最怕的那个结论（「一个都不买」= 金币坑不存在）
+##
+## 所以改成算期望：**先看差最少的那件成品还差几个配件**，
+## 每个**指定**种类的配件平均要开 `种类数` 个箱子才出一个，
+## 于是「一箱的价值 = 那件成品的收益 ÷ 期望箱数」。
+## 这个估计是平滑的，玩家因此能看见坡度而不是台阶。
+static func equip_box_gain(state: PBRunState, cfg: PBSimConfig, base: float) -> float:
+	if base <= 0.0 or cfg.equipment == null:
 		return 0.0
-	state.equip_parts += cfg.equip_parts_per_item
+	var target := _next_equip_item(state, cfg)
+	if target == null:
+		return 0.0
+
+	# 已经凑齐时按 1 算：这一箱的价值是「立刻多一件成品」，不是无穷大。
+	var missing: int = maxi(_missing_parts(state, target), 1)
+	var boxes: float = float(missing) * float(maxi(cfg.equipment.parts.size(), 1))
+	if boxes <= 0.0:
+		return 0.0
+
+	# 把这件成品的配方直接塞进仓库，量一次，再原样退回来。
+	# 「改一下、量一次、改回来」是本文件的既定口径：人口科技那类
+	# 牵连多处的效果手推公式一定会漏项，而漏了不报错。
+	for part_id: StringName in target.recipe:
+		PBEquipRules.add_part(state.equip_parts, part_id)
 	var after: float = mean_dps(state, cfg)
-	state.equip_parts -= cfg.equip_parts_per_item
-	return after / base - 1.0
+	for part_id: StringName in target.recipe:
+		state.equip_parts[part_id] = int(state.equip_parts[part_id]) - 1
+	return (after / base - 1.0) / boxes
+
+
+## 还差几个配件才能合出 [param target]。
+static func _missing_parts(state: PBRunState, target: PBEquipItem) -> int:
+	var counted: Dictionary = {}
+	var missing: int = 0
+	for part_id: StringName in target.recipe:
+		if counted.has(part_id):
+			continue
+		counted[part_id] = true
+		missing += maxi(target.needs(part_id) - int(state.equip_parts.get(part_id, 0)), 0)
+	return missing
+
+
+## 下一件值得凑的成品：**在有人吃得下的那些里面，挑差得最少的**。
+##
+## 「有人吃得下」这一条是分类匹配的直接后果 —— 一队全是火系的阵容
+## 去凑物理装，凑出来也挂不上，那笔钱等于扔了。
+static func _next_equip_item(state: PBRunState, cfg: PBSimConfig) -> PBEquipItem:
+	var deployed := deployed_by_raw_power(state, cfg)
+	var synthetic: bool = cfg.equipment.is_synthetic()
+	var best: PBEquipItem = null
+	var best_missing: int = 0
+	for entry: PBEquipItem in cfg.equipment.items:
+		if entry.power <= 0.0:
+			continue
+		if not synthetic and not _anyone_fits(deployed, entry):
+			continue
+		var missing: int = _missing_parts(state, entry)
+		if best == null or missing < best_missing:
+			best = entry
+			best_missing = missing
+	return best
+
+
+static func _anyone_fits(deployed: Array[PBUnit], entry: PBEquipItem) -> bool:
+	for unit: PBUnit in deployed:
+		if entry.fits(unit.element):
+			return true
+	return false
 
 
 ## 上一个经济位会让队伍 DPS 掉百分之几 —— 它占掉一个出战位（§07）。
@@ -122,8 +224,10 @@ static func economy_slot_loss(state: PBRunState, cfg: PBSimConfig, base: float) 
 
 ## 派 [param units] 个人出去做任务，队伍 DPS 掉百分之几（§06）。
 ##
-## 派出去的人羁绊失效，所以代价是**整队一起降**，不是少了那几个人的输出 ——
-## 被派的是待命台上本来就不上场的人。这一点手推很容易推反。
+## 代价有**两截**：派出去的人羁绊失效（整队一起降），而且他这一波不上场
+## （少一份输出）。M3.5-i 删掉待命台之前只有前一截 —— 那时派的是板凳，
+## 本来就不上场。两截都由 [method deployed_for] 一处兑现，这里只负责
+## 「把 `dispatched` 改一下、量一次、改回来」。
 ##
 ## 返回的是**纯代价**，正数表示损失。收益那一半是金币，币种不同 ——
 ## 换算不在这里做，见 [PBQuestCard] 为什么它把两边并排显示而不合成一个数。
@@ -138,12 +242,23 @@ static func dispatch_loss(state: PBRunState, cfg: PBSimConfig, base: float, unit
 
 
 ## 派 [param units] 个人出去之后，这一波还剩多少 DPS。零副作用。
+##
+## **走 [method PBRunState.dispatch_picks] 问「派的是谁」，和
+## [method PBRunSim.lock_plan] 同一条规则。** 早先这里只改 `dispatched`
+## （也就是只算羁绊那一截），注释里还挂着「它只知道派几个不知道派谁」
+## 那条免责声明 —— 那在待命台还在的时候无害，因为派走的人本来就不上场。
+## 现在派走的人真的从战场上消失，少那一份输出才是大头。
 static func dps_if_dispatched(
 	state: PBRunState, wave: PBWave, deployed: Array[PBUnit], units: int, cfg: PBSimConfig
 ) -> float:
 	var before: int = state.dispatched
 	state.dispatched = units
-	var dps: float = dps_of(deployed, wave.element, state, cfg)
+	var away := state.dispatch_picks(cfg, units)
+	var fighting: Array[PBUnit] = []
+	for unit: PBUnit in deployed:
+		if not away.has(unit):
+			fighting.append(unit)
+	var dps: float = dps_of(fighting, wave.element, state, cfg)
 	state.dispatched = before
 	return dps
 
@@ -164,12 +279,37 @@ static func dps_if_dispatched(
 ## 富余倍数有分辨率，而且它正是玩家看不见的那个东西 ——
 ## 不给的话整局读起来是「好好好、死」。
 ##
-## 二分靠的是 [method PBCombatRules.resolve] 对 dps 单调，
+## 二分靠的是战斗结算对 dps 单调，
 ## 那条性质由 `test_more_dps_never_produces_more_leaks` 锁着。
-static func leak_threshold_dps(wave: PBWave, def_reduction: float, cfg: PBSimConfig) -> float:
+##
+## ## [param attackers] 决定用哪套战斗规则量这个悬崖（M3-a）
+##
+## 给了在场的那批攻击者，就**按真实战斗模型**二分：整队按比例缩放，
+## 射程与站位结构保持不变，看缩到哪一档开始漏怪。
+##
+## 不给就退回解析式排队模型 —— 那是「满射程 · 单体 · 集火」下的闭式解。
+## **两者在有射程之后会给出不同的悬崖**，因为射程决定了敌人在被打之前
+## 要先走多远。所以凡是拿这个数去做判断的地方都该把攻击者传进来，
+## 否则界面上那句「离打不动还差多远」说的是另一套战斗规则里的事。
+static func leak_threshold_dps(
+	wave: PBWave, def_reduction: float, cfg: PBSimConfig, attackers: Array[PBAttacker] = []
+) -> float:
+	# 探测要反复改 dps，所以复制一份 —— 直接改真正上场的那批会污染本波的计划。
+	var squad: Array[PBAttacker] = []
+	var share := PackedFloat64Array()
+	var ult_share := PackedFloat64Array()
+	var squad_dps: float = PBCombatRules.total_dps(attackers)
+	if squad_dps > 0.0:
+		for attacker: PBAttacker in attackers:
+			squad.append(attacker.clone())
+			share.append(attacker.dps / squad_dps)
+			# 大招也要跟着等比例缩。只缩普攻的话，队伍缩得越弱大招占比越高，
+			# 缩到最后是一发大招定生死 —— 那量出来的是另一支队伍的悬崖。
+			ult_share.append(attacker.ultimate_damage() / squad_dps)
+
 	var high: float = maxf(wave.hp_each, 1.0)
 	var guard: int = 0
-	while guard < 64 and PBCombatRules.resolve(wave, high, def_reduction, cfg).leaked > 0:
+	while guard < 64 and _leaks_at(wave, high, def_reduction, cfg, squad, share, ult_share):
 		high *= 2.0
 		guard += 1
 	if guard >= 64:
@@ -177,11 +317,34 @@ static func leak_threshold_dps(wave: PBWave, def_reduction: float, cfg: PBSimCon
 	var low: float = 0.0
 	for _i: int in 32:
 		var mid: float = (low + high) * 0.5
-		if PBCombatRules.resolve(wave, mid, def_reduction, cfg).leaked > 0:
+		if _leaks_at(wave, mid, def_reduction, cfg, squad, share, ult_share):
 			low = mid
 		else:
 			high = mid
 	return high
+
+
+## 队伍总输出是 [param total] 时，这一波漏不漏怪。
+##
+## [param squad] 为空走解析式排队模型；否则把整队缩放到 [param total]
+## 再跑真战斗模型 —— [param share] 是每个攻击者原本占总输出的比例，
+## **按比例缩放而不是均分**，否则缩放本身就改变了阵容结构，量出来的不是同一支队伍。
+static func _leaks_at(
+	wave: PBWave,
+	total: float,
+	def_reduction: float,
+	cfg: PBSimConfig,
+	squad: Array[PBAttacker],
+	share: PackedFloat64Array,
+	ult_share: PackedFloat64Array
+) -> bool:
+	if squad.is_empty():
+		return PBCombatRules.resolve(wave, total, def_reduction, cfg).leaked > 0
+	for i: int in squad.size():
+		squad[i].dps = total * share[i]
+		if squad[i].ultimate != null:
+			squad[i].ultimate.damage = total * ult_share[i]
+	return PBBattleSim.new(wave, total, def_reduction, cfg, squad).run_to_end().leaked > 0
 
 
 ## 抽一张卡的**期望**增幅。抽卡是随机的，量不出来，只能算。
@@ -252,7 +415,7 @@ static func gacha_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 ## 也不要重蹈上面那个高估的覆辙。
 static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 	var units := state.bonded_units(cfg)
-	if units.size() >= state.deploy_capacity(cfg) + state.standby_capacity(cfg):
+	if units.size() >= state.open_slots(cfg):
 		return 0.0
 	var base: float = 1.0 + PBBondRules.power_bonus(units, cfg.bonds)
 	if base <= 0.0:

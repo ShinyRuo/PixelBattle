@@ -124,8 +124,11 @@ func test_it_says_so_when_dispatch_breaks_nothing() -> void:
 	assert_eq(sent, kept, "这个局面应该一档都不掉，否则测不到「免费」那一支")
 
 	var text: String = _card()._bond_text(state, _cfg, 1)
-	assert_true(text.contains("没有羁绊会掉档"), "免费的时候要明说：%s" % text)
-	assert_true(text.contains("战力不变"), text)
+	assert_true(text.contains("没有羁绊会掉档"), "一档都不掉的时候要明说：%s" % text)
+	# **不能再写「战力不变」。** M3.5-i 删掉待命台之前派的是不上场的板凳，
+	# 那句是对的；现在派的是在场的人，他这一波真的不打了。
+	assert_true(text.contains("这一波不上场"), text)
+	assert_false(text.contains("战力不变"), "派出去的人现在会离场，战力不可能不变：%s" % text)
 
 
 ## 派 [param dispatch] 个人之后还有谁在给羁绊计数。**用完必须还原** ——
@@ -153,7 +156,19 @@ func test_the_card_measures_the_cost_against_the_cliff_not_against_base_damage()
 
 	var units := PBValuation.deployed_for(state, plan.wave.element, _cfg)
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
-	var cliff: float = PBValuation.leak_threshold_dps(plan.wave, state.def_reduction(_cfg), _cfg)
+	# 和卡面一样按真实射程结构量悬崖（M3-a）。这里少传 attackers 的话，
+	# 测试拿解析式排队模型算、卡面拿真战斗模型算，比的是两套战斗规则。
+	var preview := PBCombatRules.build_attackers(
+		units,
+		plan.wave.element,
+		state.atk_mult(_cfg),
+		state.bond_mult(_cfg),
+		PBEquipRules.unit_multipliers(units, state.equip_parts, _cfg),
+		_cfg
+	)
+	var cliff: float = PBValuation.leak_threshold_dps(
+		plan.wave, state.def_reduction(_cfg), _cfg, preview
+	)
 	var kept: float = PBValuation.dps_if_dispatched(state, plan.wave, units, 0, _cfg)
 	var sent: float = PBValuation.dps_if_dispatched(state, plan.wave, units, need, _cfg)
 
@@ -182,7 +197,7 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 		card.reset(state, _cfg, plan)
 		var reward: int = PBEconomyRules.quest_reward(grade, plan.wave.index)
 		var need: int = PBEconomyRules.quest_cost_units(grade)
-		if need > state.standby_available(_cfg):
+		if need > state.dispatch_available(_cfg):
 			continue
 		assert_true(card._head.text.contains("%d 金" % reward), "%d 级：%s" % [grade, card._head.text])
 		assert_true(card._head.text.contains("需派 %d 人" % need), card._head.text)
@@ -191,17 +206,22 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 		)
 
 
-func test_it_says_the_bench_is_too_thin_instead_of_just_greying_out() -> void:
+func test_it_says_there_are_too_few_people_instead_of_just_greying_out() -> void:
 	# 派不出去的时候要说清是「人不够」而不是「不划算」，
 	# 否则玩家会去调阵容找一个根本不存在的原因。
+	#
+	# **门槛口径 M3.5-i 换过一次。** 旧的是 `standby_available`（溢出到板凳上的
+	# 那几个），而指令卡的「派去任务」放行的是**在场**的人 —— 两把尺子，
+	# 于是会出现「已经挑了 2 个人，卡面还说待命台 0 人派不出去」。
 	var state := _state_of(3)
-	var plan := _plan_of(2, 4)  # SSS 要派 4 人，这个卡池连待命台都没坐上
+	var plan := _plan_of(2, 4)  # SSS 要派 4 人，这个卡池只有 3 张
 	var card := _card()
 	card.reset(state, _cfg, plan)
 
-	assert_eq(state.standby_available(_cfg), 0, "这个卡池待命台应该是空的")
+	assert_lt(state.dispatch_available(_cfg), 4, "这个卡池应该凑不出 SSS 要的 4 个人")
 	assert_true(card._toggle.disabled, "派不出去就不该能点")
-	assert_true(card._bond.text.contains("派不出去"), card._bond.text)
+	assert_true(card._bond.text.contains("场上只有"), card._bond.text)
+	assert_true(card._bond.text.contains("派不出"), card._bond.text)
 	assert_false(card.accepted(), "派不出去时不能算成已接")
 
 

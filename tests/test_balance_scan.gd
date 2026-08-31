@@ -37,14 +37,39 @@ const DEEP_ENV: String = "PB_DEEP"
 
 const SEEDS: Array[int] = [20260827, 991, 4242, 70707, 13]
 
-## 经济位那三条只用前三个种子 —— 它们比的是同一批种子下的配对差值，
-## 加种子只会更慢，不会更准。
-const SLOT_SEEDS: Array[int] = [20260827, 4242, 991]
+## 经济位那两条用的种子。
+##
+## **原来只有三个，那是个欠功率的仪器。** 它量的是一个约 1% 的配对差值，
+## 而单局波次的种子间方差远大于 1% —— 三个种子测不出这个量级，
+## 一直是靠运气绿的。M3-a 换战斗模型之后它翻了面（113 vs 118 波），
+## 但同一个对比加到 12 个种子是 43.5 vs 43.1，**结论其实没变**。
+##
+## 十个种子把它变成一个真能用的仪器。代价是慢档再慢几十秒，
+## 而慢档本来就是 opt-in 的（`-Deep`）—— 一个测不准的结论型断言比慢危险得多。
+const SLOT_SEEDS: Array[int] = [20260827, 4242, 991, 70707, 13, 55, 8123, 4096, 31337, 606]
+
+## 「经济位不是陷阱」允许的劣势带宽。
+##
+## 判据是**不得显著更差**，不是**一定不更差**：即使加到十个种子，
+## 一个 ±1% 量级的配对差值仍然带着噪声，写成严格不等号等于要求运气。
+## 2% 以内算噪声，超过 2% 才是「选了它真的更差」。
+const SLOT_TOLERANCE: float = 0.98
 
 var _cache: Dictionary = {}
 
 
-func should_skip_script() -> Variant:
+## 返回类型**故意不标注**。父类 [method GutTest.should_skip_script] 声明的是
+## `-> Variant`，而 GUT 逐个文件调 `warnings_manager.load_script_using_custom_warnings()`
+## 重载脚本时，只要本文件不是目录里第一个被解析的，那次重载就会把这个显式
+## `-> Variant` 判成「与父类签名不符」，整个文件 **解析失败**。
+##
+## 后果正是 §「自检契约」里那条要防的事：GUT 只打一行 WARNING 就跳过整个文件、
+## 照样返回 0，用例数悄悄少一截。这个坑从这个文件建起就在，
+## 只是它当时字典序排第一、前面没有别的文件先加载，一直没被触发 ——
+## M3-a 新增的 `test_attacker.gd` 是第一个排在它前面的文件。
+##
+## 不标注等价于 Variant，签名比较因此走不到那条路径上。**别把它加回来。**
+func should_skip_script():
 	if OS.get_environment(DEEP_ENV) != "":
 		return false
 	return "慢档配平扫描 —— 用 .\\scripts\\check.ps1 -Deep 跑"
@@ -57,13 +82,23 @@ func should_skip_script() -> Variant:
 ##
 ## 省得不少：「默认配置 + rational」这一组在下面六条里被要了 21 次，
 ## 而不同的种子只有 5 个。
+##
+## ## 配置必须走 [method PBGameData.config]，不能是裸的 `PBSimConfig.new()`
+##
+## 裸构造拿到的是 M-1 的**合成卡池 + 替身羁绊曲线**，不是游戏真跑的那份数据。
+## M2 把两张表都换成了 `data/` 下的真表，而这个文件没跟上 ——
+## 于是整个慢档扫描一直在给一副游戏里不存在的牌下配平结论。
+##
+## 这不是理论风险，实测两边会给出**相反**的结论：同样十个种子，
+## 「上经济位」在合成表下是 −2.35%（陷阱），在真表下是 +2.29%（不是陷阱）。
+## §07 那条验收按前者会被判定成需要重新定价，而真游戏里它根本没坏。
 func _run(
 	seed_value: int, part_cost: int = 0, strategy_id: StringName = &"rational", mute_slot := false
 ) -> PBRunResult:
 	var key: String = "%d|%d|%s|%s" % [seed_value, part_cost, strategy_id, mute_slot]
 	if _cache.has(key):
 		return _cache[key]
-	var cfg := PBSimConfig.new()
+	var cfg := PBGameData.config()
 	if part_cost > 0:
 		cfg.equip_part_cost = part_cost
 	if mute_slot:
@@ -153,13 +188,21 @@ func test_the_economy_slot_is_not_a_trap() -> void:
 	# （43.0 → 42.1 波）。因为波次奖金和任务奖励都随波次涨，只有它不涨，
 	# 而它占掉的那个出战位越到后期越值钱。
 	#
-	# 对照组把经济位收益调成 0，等价于「没有这张卡」。有它不该比没它差。
+	# 对照组把经济位收益调成 0，等价于「没有这张卡」。有它不该**显著**比没它差。
+	# 为什么是「显著」而不是「不得更差」，见 [constant SLOT_TOLERANCE]。
 	var with_slot: int = 0
 	var without: int = 0
 	for seed_value: int in SLOT_SEEDS:
 		with_slot += _run(seed_value).wave_reached
 		without += _run(seed_value, 0, &"rational", true).wave_reached
-	assert_gte(with_slot, without, "上经济位不该让会算账的玩家变差 —— 那就是把它做成了陷阱")
+	assert_gte(
+		float(with_slot),
+		float(without) * SLOT_TOLERANCE,
+		(
+			"上经济位不该让会算账的玩家变差 —— 那就是把它做成了陷阱（有 %d 波 / 无 %d 波）"
+			% [with_slot, without]
+		)
+	)
 
 
 func test_the_economy_slot_does_not_dominate() -> void:

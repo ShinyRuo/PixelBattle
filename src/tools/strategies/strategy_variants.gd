@@ -51,8 +51,12 @@ class PurePhysical:
 	## M2-c 之后 `pick_by_element` 是在**在场名单**里筛的，而默认的在场名单
 	## 按裸战力选 —— 那样这个流派会因为「带错人」而变弱，
 	## 而「带错人」不是它要度量的东西（它度量的是 §03 的物理保底补丁值多少）。
-	func bring_to_field(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
-		var capacity: int = state.deploy_capacity(cfg) + state.standby_capacity(cfg)
+	## [param _wave_element] 用不上：这个流派**永远**先带物理，
+	## 「换克制系」正是它要放弃的那个变量。
+	func bring_to_field(
+		state: PBRunState, cfg: PBSimConfig, _wave_element: int = -1
+	) -> Array[PBUnit]:
+		var capacity: int = state.open_slots(cfg)
 		var physical: Array[PBUnit] = []
 		var rest: Array[PBUnit] = []
 		for unit: PBUnit in state.sorted_by_power(cfg):

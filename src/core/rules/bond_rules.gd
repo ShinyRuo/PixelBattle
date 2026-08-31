@@ -4,10 +4,13 @@ extends RefCounted
 ##
 ## ## 谁算数
 ##
-## §09 的生效规则：**出战席与待命台双场景全额生效、无衰减**，
+## §09 的生效规则：**在场的人全额生效、无衰减**，
 ## 但**派遣出去做任务的人羁绊暂时失效**（§06 新增）。
-## 所以「算数的人」= 在场（出战 + 待命）且未被派遣的那批，
+## 所以「算数的人」= 在场且未被派遣的那批，
 ## 由 [method PBRunState.bonded_units] 挑出来，本类只负责拿到名单之后算。
+##
+## M3.5-i 删掉待命台之后「在场」就是出战席（[member PBRunState.field]），
+## 于是这批人只比真上场的少了派出去做任务的那几个。
 ##
 ## ## 加成是各组相加，不是相乘
 ##
@@ -50,6 +53,50 @@ static func active_tiers(units: Array[PBUnit], table: PBBondTable) -> Dictionary
 		var tier: int = bond.tier_at(active_count(bond, units))
 		if tier > 0:
 			out[bond.id] = tier
+	return out
+
+
+## 现在解锁了哪些功能档，`{ 载体角色 id: [功能键…] }`。§09 / M3-f。
+##
+## ## 两份名单，各管一半
+##
+## [param bonded] 是**算档位的人**（在场，减去派遣出去的，§06/§09）；
+## [param deployed] 是**真上场的人**。档位按前者数，功能按后者兑现 ——
+## 不在场上的人没有大招，功能挂不上去。理由写在
+## [member PBBond.tier_function_carriers]。
+##
+## **M3.5-i 删掉待命台之后这两份名单几乎重合**：差的只剩派出去做任务的人。
+## 那条门槛因此从「腾一个出战位给载体」缩成「别把载体派去做任务」——
+## 弱了一截，但方向没变，要不要补回来归数值回归。
+##
+## ## 为什么值是数组而不是一个键
+##
+## §09 说「同一角色可同时属于多个羁绊」。现在 5 组的载体互不相同，
+## 但 M5 要扩到 12–15 组（晓、五影、日向、人柱力…），一个角色同时是
+## 两组的载体只是时间问题。那时用单值字典会**静默丢掉一个功能** ——
+## 后写的那组覆盖先写的，不报错，玩家只会觉得「这组羁绊好像没生效」。
+static func active_functions(
+	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
+) -> Dictionary:
+	var out: Dictionary = {}
+	if table == null:
+		return out
+	var on_field: Dictionary = {}
+	for unit: PBUnit in deployed:
+		on_field[unit.character.id] = true
+	for bond: PBBond in table.all():
+		var active: int = active_count(bond, bonded)
+		var key: StringName = bond.function_at(active)
+		if key == &"":
+			continue
+		var carrier: StringName = bond.function_carrier_at(active)
+		if carrier == &"" or not on_field.has(carrier):
+			continue
+		if not out.has(carrier):
+			out[carrier] = [] as Array[StringName]
+		var keys: Array = out[carrier]
+		if not keys.has(key):
+			keys.append(key)
 	return out
 
 
