@@ -165,14 +165,26 @@ func test_enough_counter_cards_exist_to_fill_the_bench() -> void:
 	assert_gte(per_element, _cfg.deploy_slots_base, "单一属性的角色数应够填满初始出战席")
 
 
-func test_star_ups_need_three_copies() -> void:
-	# §08：同卡 3 张升 1 星。
-	var unit := PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.R)
-	assert_eq(unit.star(), 1, "第 1 张是 1 星")
-	unit.copies = 3
-	assert_eq(unit.star(), 1, "3 张仍是 1 星")
-	unit.copies = 4
-	assert_eq(unit.star(), 2, "第 4 张升到 2 星")
-	unit.copies = 7
-	assert_eq(unit.star(), 3, "第 7 张升到 3 星")
-	assert_gt(unit.power(_cfg), PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.R).power(_cfg))
+func test_a_duplicate_draw_is_another_person_not_a_star() -> void:
+	# **M5-9 换掉了 §08 的「同卡 3 张升 1 星」。** 那条规则下抽到重复的
+	# 等于白抽 —— 一张卡什么都不变（要三张才跳一次），而界面上没有
+	# 任何地方显示张数，玩家看到的就是「这一抽没了」。
+	var state := PBRunSim.new_state(_cfg)
+	var first := PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.R)
+	var second := PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.R)
+	state.add_unit(first)
+	state.add_unit(second)
+	assert_eq(state.roster.size(), 2, "两张同名卡是两个人，各占一格")
+	assert_ne(first.key(), second.key(), "**键必须不同** —— 同键的话装备会挂到另一个身上")
+	assert_eq(first.character.id, second.character.id, "但仍然是同一个角色")
+	assert_eq(second.star(), 1, "星级不再由张数派生")
+	assert_eq(first.power(_cfg), second.power(_cfg), "两个人一样强")
+
+
+func test_the_first_copy_keeps_the_bare_character_id() -> void:
+	# 「一个角色一张卡」这个既有情形下，存档、在场名单、摆位、装备
+	# 四份状态里的键**一字不差** —— 本项目每次换身份层都留这条退化路径。
+	var state := PBRunSim.new_state(_cfg)
+	var unit := PBUnit.of(_cfg, PBElement.Type.WATER, PBUnit.Rarity.SR)
+	state.add_unit(unit)
+	assert_eq(unit.key(), unit.character.id, "第一张仍然是光秃秃的角色 id")

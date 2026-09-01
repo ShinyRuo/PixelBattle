@@ -22,13 +22,32 @@ extends RefCounted
 ## 而且同屏有 48 + 10 个。给每一个都挂上输入区等于让引擎每帧做五十几次
 ## 命中测试，而这里一次点击只做一遍。
 
-## 玩家按了「攻击」、正在等他点一个敌人。
+## 正在等玩家点战场上的一个点，以及等他点来干什么。
 ##
-## ## 为什么指定目标要分两步
+## ## 为什么这两件事都要分两步
 ##
 ## 「按 A 再点地面」是 War3 那套，而且它让点错有一个可以后悔的中间态 ——
-## 一步到位的话，手一抖就把主力指到一个残血杂兵身上。
-var aiming: bool = false
+## 一步到位的话，手一抖就把主力指到一个残血杂兵身上，
+## 或者把攒了 20 秒的忍术扔在空地上。
+##
+## ## 为什么是一个枚举，不是两个 bool
+##
+## 两个 bool 就有四种组合，其中「两个都开」是个说不清的状态 ——
+## 那一下点击到底是指定目标还是下忍术？枚举里它不存在。
+enum Aim {
+	OFF,  ## 没在等
+	TARGET,  ## 「攻击」：等他点一个敌人（M4-e）
+	ULTIMATE,  ## 「忍术」：等他点一个落点（M5-9）
+}
+
+var aim_mode: Aim = Aim.OFF
+
+
+## 正在等他点一个敌人。留着这个名字是因为它比 `aim_mode == Aim.TARGET` 好读，
+## **而且只读** —— 状态只有 [member aim_mode] 一份。
+var aiming: bool:
+	get:
+		return aim_mode == Aim.TARGET
 
 
 
@@ -105,15 +124,19 @@ func enemy_at(battle: PBBattleSim, spot: Vector2, pick: float) -> PBEnemy:
 
 ## 让 [param live] 改打 [param enemy]。任一为 null 就什么都不做。
 ##
-## **写的是 [member PBAttacker.forced_target] 这一个字段**，而它只是一个偏好：
-## 那个敌人死了、走出射程了、还没进射程，自动规则都会接管
-## （见 [method PBBattleSim._first_reachable]）。渲染层能碰 sim 的地方
-## 只有这一处，理由是它本来就是「玩家的指令」——
+## 点名只是一个**偏好**：那个敌人死了、走出射程了、还没进射程，
+## 自动规则都会接管（见 [method PBBattleSim._first_reachable]）。
+## 渲染层能碰 sim 的地方只有这一处，理由是它本来就是「玩家的指令」——
 ## 而指令就该是玩家能改的那种状态。
-func aim(live: PBAttacker, enemy: PBEnemy) -> void:
-	if live == null or enemy == null:
+##
+## **走 [method PBBattleSim.name_target]，不自己写那个字段**：点名要立刻
+## 改变「他要打谁」（那根绿线），而重算那件事的规则在 sim 里，
+## 且**暂停时 sim 的每 tick 那一遍不跑**。自己写一遍的话，
+## 玩家在暂停下点完敌人画面一动不动，直到他取消暂停。
+func aim(battle: PBBattleSim, live: PBAttacker, enemy: PBEnemy) -> void:
+	if battle == null or live == null or enemy == null:
 		return
-	live.forced_target = enemy.slot
+	battle.name_target(live, enemy.slot)
 
 
 ## 交还给自动规则。
@@ -121,7 +144,15 @@ func aim(live: PBAttacker, enemy: PBEnemy) -> void:
 ## **这是唯一一条能清掉点名的路。** 「目标死了就自动清」听起来更聪明，
 ## 但那样一个隔着射程点名的目标会在他走进来之前就被清掉，
 ## 而玩家看到的是「点了没用」。
-func release(live: PBAttacker) -> void:
-	if live != null:
-		live.forced_target = -1
-	aiming = false
+func release(battle: PBBattleSim, live: PBAttacker) -> void:
+	if battle != null and live != null:
+		battle.name_target(live, -1)
+	aim_mode = Aim.OFF
+
+
+## 玩家按了「攻击」或「忍术」（M4-e / M5-9）。**再按一次退出**。
+##
+## 一步到位（按一下就打最近的）的话那两格没有意义 —— 那本来就是自动规则。
+## 两者互斥是 [member aim_mode] 这个字段本身保证的，不靠调用方记得清另一个。
+func toggle(want: Aim) -> void:
+	aim_mode = Aim.OFF if aim_mode == want else want

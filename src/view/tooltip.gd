@@ -19,6 +19,20 @@ extends Control
 ## 会连着弹出五张卡。而且**手机没有悬停** —— §01 要求 PC + 手机双端，
 ## 一个只在 PC 上存在的信息通道等于在手机上把那段信息删了。
 ##
+## ## 点哪儿都关得掉（M5-7）
+##
+## M5-5 到 M5-6 之间**没有任何地方调过 [method hide_card]** ——
+## 弹出来的卡会一直盖在战场上，玩家只能重开一局。那是个纯 bug，
+## 但它暴露的是一个设计缺口：**一张不会自己消失的说明卡没有出口。**
+##
+## 补法是一块盖满全屏、吃掉一次点击的 [member _catch]。
+## 那一下点击**不会同时落到底下的东西上** —— 那是所有弹出层的标准行为，
+## 也正是玩家的预期：他先关掉挡路的东西，再点他要点的。
+## 「顺手穿透过去」听起来更方便，实际是每次都误触一个按钮。
+##
+## `Esc` 是第二条路，排在收模态之前（见 [method PBBattleView._unhandled_input]）——
+## 手上有东西盖着的时候，那一下的意思一定是「先把它收掉」。
+##
 ## ## 它自己不知道任何游戏规则
 ##
 ## 调用方给标题和正文，这一层只管排版和「别超出屏幕」。
@@ -36,11 +50,21 @@ var _panel: Panel
 var _title: Label
 var _body: RichTextLabel
 
+## 盖满全屏、吃掉一次点击的那一层。**它就是「关掉」这个操作**，见类顶部。
+var _catch: Control
+
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
+	# 加在最前面：卡片和文字要画在它上面，而它只负责收鼠标。
+	# 藏起来的控件收不到事件，所以卡片没摊开时它一点都不挡路。
+	_catch = Control.new()
+	_catch.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_catch.mouse_filter = Control.MOUSE_FILTER_STOP
+	_catch.gui_input.connect(_on_catch)
+	add_child(_catch)
 	_panel = PBSkin.panel(self, Rect2(Vector2.ZERO, Vector2(CARD_WIDTH, 40.0)), PBSkin.PANEL_SOLID)
 	_title = PBSkin.label(self, Vector2.ZERO, CARD_WIDTH - 10.0, PBSkin.FONT_TITLE, PBSkin.TITLE)
 	_body = PBSkin.rich(self, Rect2(Vector2.ZERO, Vector2(CARD_WIDTH - 10.0, 60.0)))
@@ -72,7 +96,24 @@ func show_card(anchor: Rect2, title: String, body: String) -> void:
 	_body.size.x = CARD_WIDTH - 10.0
 
 
-## 收起来。**任何一次点击都该先收它** —— 一张不会自己消失的说明卡
+## 摊着没有。`Esc` 那条链靠它决定这一下该收谁。
+func is_open() -> bool:
+	return visible
+
+
+## 收起来。**任何一次点击都会先收它** —— 一张不会自己消失的说明卡
 ## 会一直盖着底下的东西，而玩家以为界面卡住了。
 func hide_card() -> void:
 	visible = false
+
+
+## 点在卡片外面（其实卡片上也算）—— 收掉，并且**吃掉这一下**。
+##
+## `accept_event()` 不能省：不吃的话这次点击会继续传到
+## [method PBBattleView._unhandled_input]，于是「关掉说明卡」
+## 顺带在战场上选中了一个人，而玩家只按了一下。
+func _on_catch(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton) or not (event as InputEventMouseButton).pressed:
+		return
+	hide_card()
+	accept_event()

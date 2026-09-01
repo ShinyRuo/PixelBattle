@@ -123,7 +123,10 @@ func deploy(state: PBRunState, wave: PBWave, cfg: PBSimConfig) -> Array[PBUnit]:
 ## 上一波钦定的六人名单就装不下了。截掉是唯一不会静默出错的做法。
 func lineup_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
 	var out: Array[PBUnit] = []
-	var slots: int = open_slots(state, cfg)
+	# 上限是 [method PBRunState.field_slots]：**出任务的那几个不占人口**（M5-9）。
+	# 用 `open_slots` 的话，派两个人出去之后玩家钦定的六人名单会被截掉两个 ——
+	# 而被截掉的不一定是出任务的那两个。
+	var slots: int = state.field_slots(cfg)
 	for key: StringName in state.lineup:
 		if out.size() >= slots:
 			break
@@ -199,7 +202,9 @@ func dispatch_available(state: PBRunState, cfg: PBSimConfig) -> int:
 func bring_to_field(
 	state: PBRunState, cfg: PBSimConfig, wave_element: int = -1
 ) -> Array[PBUnit]:
-	var capacity: int = state.open_slots(cfg)
+	# 同 [method lineup_units]：出任务的那几个不占人口（M5-9）。
+	# `dispatch_manual` 空着时它等于 `open_slots`，脚本流派那一路一个字节不动。
+	var capacity: int = state.field_slots(cfg)
 	var chosen: Array[PBUnit] = lineup_units(state, cfg)
 	var taken: Dictionary = {}
 	for unit: PBUnit in chosen:

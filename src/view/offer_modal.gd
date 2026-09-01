@@ -147,12 +147,20 @@ func _bond_text(unit: PBUnit, cfg: PBSimConfig) -> String:
 	return PBSkin.tint("羁绊 " + "·".join(parts), PBSkin.ACCENT)
 
 
-## 已经有这张卡的话，挑它只推进星级进度（§08：同卡 3 张升 1 星）。
+## 已经有这个角色的话说一声，**但它不再是一句警告**（M5-9）。
 ##
-## **这一行是三选一里最容易被界面吃掉的信息**：三张卡长得一样，
-## 而其中一张只加进度、另外两张是全新战力，差一个数量级。
+## 在那之前重复卡只推进星级进度（§08：同卡 3 张升 1 星），也就是说
+## 三张长得一样的卡里有一张几乎等于白抽 —— 那一行是三选一里最容易
+## 被界面吃掉的信息。现在重复抽到的是**另一个人**：他立刻能上场、
+## 能升级、能带装备，作为战力和新卡一样。
+##
+## 仍然写出来，因为它有一处真差别：**羁绊按角色算档**
+## （[method PBBondRules.active_count]），同名的第二个人一组都不多。
 func _owned_text(unit: PBUnit, state: PBRunState) -> String:
-	var have := state.roster.get(unit.key(), null) as PBUnit
-	if have == null:
+	var have: int = 0
+	for owned: PBUnit in state.roster.values():
+		if owned.character.id == unit.character.id:
+			have += 1
+	if have == 0:
 		return PBSkin.tint("新卡", PBSkin.GOOD)
-	return PBSkin.tint("已有 %d 张 —— 挑它只加星级进度" % have.copies, PBSkin.WARN)
+	return PBSkin.tint("已有 %d 个 —— 再来一个，但不加羁绊" % have, PBSkin.WARN)

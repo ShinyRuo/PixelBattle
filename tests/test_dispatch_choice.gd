@@ -119,19 +119,80 @@ func test_who_still_counts_is_always_the_complement() -> void:
 		assert_false(counted.has(unit), "被派出去的不该还在算羁绊")
 
 
-func test_only_people_on_the_field_can_be_sent() -> void:
-	# 仓库里的人本来就不给羁绊，派他们一分代价都没有 —— 那样任务就是白送，
-	# §06 整节的张力归零。
+func test_a_warehouse_card_can_be_sent_even_with_the_field_full() -> void:
+	# 人口满时这条路**静默失败**：卡弹回来，没有任何解释（M5-13 修）。
+	# 而从战场上拖过去却做得到 —— 同一件事两条路，一条通一条不通。
+	#
+	# 死结在顺序上：座位数 `field_slots` = 人口 + 已经派出去几个，
+	# 所以在这一笔派遣记下来之前，多出来的那一格还不存在。
 	var state := _stocked_state()
-	var on_field := state.field_units(_cfg)
+	var strategy := PBStratBalanced.new()
+	var plan := PBRunSim.begin_wave(state, _cfg, _rng)
+	var roster := strategy.deploy(state, plan.wave, _cfg)
+	assert_eq(roster.size(), state.field_slots(_cfg), "前提：人口是满的")
 	var stashed: PBUnit = null
 	for unit: PBUnit in state.all_units():
-		if not on_field.has(unit):
+		if not roster.has(unit):
 			stashed = unit
 			break
-	assert_not_null(stashed, "卡池比在场容量大，应该有人在仓库里")
-	assert_false(PBShopRules.toggle_dispatch(state, stashed, 3, _cfg), "仓库里的人派不出去")
-	assert_eq(state.dispatch_manual.size(), 0, "而且不该留下半个记录")
+	assert_not_null(stashed, "前提：卡池比人口大，仓库里还有人")
+
+	PBCardMoves.move(
+		state,
+		strategy,
+		plan,
+		stashed,
+		PBUnitTile.ZONE_STASH,
+		PBUnitTile.ZONE_QUEST,
+		PBCardMoves.NO_SPOT,
+		_cfg
+	)
+	assert_true(state.dispatch_manual.has(stashed.key()), "人口满也该进得了任务栏")
+	# 「记了派遣」和「进 field 名单」是同一件事的两半（见
+	# [method PBCardMoves._send_to_quest]）：只做前一半的话，
+	# `dispatch_picks` 在 `field_units` 里找不到他，**整份名单作废退回末尾规则**。
+	assert_true(state.field_units(_cfg).has(stashed), "而且要同时进 field 名单")
+	state.dispatched = state.dispatch_manual.size()
+	assert_true(state.dispatch_picks(_cfg).has(stashed), "结算时点得到他")
+	assert_false(state.bonded_units(_cfg).has(stashed), "他这一波不算羁绊")
+
+
+func test_the_dispatch_command_does_what_dragging_there_does() -> void:
+	# 指令卡上那一格在 M5-13 之前直接调 [method PBShopRules.toggle_dispatch]，
+	# **只改了两处状态里的一处** —— 于是「拖得进但按不进」这种不一致
+	# 有了滋生的地方，而它不报错。
+	var dragged := _sent_by(true)
+	var pressed := _sent_by(false)
+	assert_eq(pressed[0], dragged[0], "两条路该记下同一份派遣名单")
+	assert_eq(pressed[1], dragged[1], "field 名单也该一模一样")
+
+
+## 把仓库里第一个人送进任务栏：[param drag] 为真走拖放，否则走指令卡那一格。
+## 返回 `[派遣名单, field 名单]`。
+func _sent_by(drag: bool) -> Array:
+	var state := _stocked_state()
+	var strategy := PBStratBalanced.new()
+	var plan := PBRunSim.begin_wave(state, _cfg, _rng)
+	var roster := strategy.deploy(state, plan.wave, _cfg)
+	var stashed: PBUnit = null
+	for unit: PBUnit in state.all_units():
+		if not roster.has(unit):
+			stashed = unit
+			break
+	if drag:
+		PBCardMoves.move(
+			state,
+			strategy,
+			plan,
+			stashed,
+			PBUnitTile.ZONE_STASH,
+			PBUnitTile.ZONE_QUEST,
+			PBCardMoves.NO_SPOT,
+			_cfg
+		)
+	else:
+		PBCardMoves.toggle_quest(state, strategy, plan, stashed, _cfg)
+	return [state.dispatch_manual.duplicate(), state.field.duplicate()]
 
 
 func test_the_pick_stops_at_the_headcount_the_quest_asks_for() -> void:
@@ -169,19 +230,37 @@ func test_a_dispatched_starter_does_not_also_fight() -> void:
 		assert_false(state.dispatched_ids.has(unit.key()), "上场名单里不该有任何一个出任务的人")
 
 
-func test_the_pick_is_cleared_after_the_wave() -> void:
-	# 留着的话，下一波任务人数一变它就悄悄失效（长度对不上就退回末尾规则），
-	# 玩家看到的是「我选的人怎么没去」。
+func test_the_quest_slots_keep_their_people_next_wave() -> void:
+	# 派遣的语义是「**这个人**去做任务」，不是「这一波去做任务」（M5-12）。
+	# 一波一清的话，玩家一张卡都没动过，人却自己回到了战场上。
 	var state := _stocked_state()
 	var strategy := PBStratBalanced.new()
 	var plan := PBRunSim.begin_wave(state, _cfg, _rng)
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
 	for unit: PBUnit in state.field_units(_cfg):
 		PBShopRules.toggle_dispatch(state, unit, need, _cfg)
+	var picked := state.dispatch_manual.duplicate()
+	assert_false(picked.is_empty(), "前提：真往任务栏里放了人")
 	PBRunSim.lock_plan(state, plan, strategy.deploy(state, plan.wave, _cfg), true, _cfg)
 	PBRunSim.settle_wave(state, plan, PBRunSim.resolve_battle(plan, 0.0, _cfg), _cfg, _rng)
-	assert_eq(state.dispatch_manual.size(), 0, "结算之后钦定名单该清空")
-	assert_eq(state.dispatched, 0, "派遣人数也该清零")
+	assert_eq(state.dispatch_manual, picked, "结算之后他们还站在任务栏里")
+	assert_eq(state.dispatched, 0, "但这一波的派遣人数该清零")
+
+
+func test_a_quest_slot_frees_up_when_that_card_is_gone() -> void:
+	# 留着一个已经不在卡池里的 key，[method PBRunState.field_slots]
+	# 会永远为一个不存在的人多留一个位置 —— 玩家看到的是
+	# 「人口那一格明明还有空位，却怎么也拖不上去」。
+	var state := _stocked_state()
+	var strategy := PBStratBalanced.new()
+	var plan := PBRunSim.begin_wave(state, _cfg, _rng)
+	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
+	var going: PBUnit = state.field_units(_cfg)[0]
+	assert_true(PBShopRules.toggle_dispatch(state, going, need, _cfg), "先把他派出去")
+	PBRunSim.lock_plan(state, plan, strategy.deploy(state, plan.wave, _cfg), true, _cfg)
+	state.roster.erase(going.key())
+	PBRunSim.settle_wave(state, plan, PBRunSim.resolve_battle(plan, 0.0, _cfg), _cfg, _rng)
+	assert_false(state.dispatch_manual.has(going.key()), "卡没了，槽也该空出来")
 
 
 # ── 两把尺子（M3.5-i 修的三个 bug）────────────────────────────
@@ -240,3 +319,30 @@ func test_a_dispatched_ninja_leaves_the_deploy_row_right_away() -> void:
 	var away: Array[PBUnit] = root._dispatch_preview()
 	assert_true(away.has(star), "他该出现在出任务那一排")
 	assert_false(root._fighting_now(away).has(star), "就不该同时还在出战席那一排")
+
+
+func test_someone_on_a_quest_does_not_eat_a_population_slot() -> void:
+	# **玩家报的那一条**（M5-9）：「人口只代表出战人口，现在把出任务的
+	# 也算进去了」。派两个人出去 = 这一波少两个打手**且补不上**，
+	# 而仓库里明明还站着人 —— 他看到的是「人口 4，场上只有 2 个，还加不进去」。
+	#
+	# 派遣的代价因此回到 §06 说的那一条：**掉羁绊**。
+	# 「少一个打手」那半是可以用仓库里的人补回来的。
+	var state := _stocked_state()
+	var room: int = state.open_slots(_cfg)
+	assert_eq(state.field_slots(_cfg), room, "没人出任务时两个数必须相等")
+
+	var going: PBUnit = state.field_units(_cfg)[0]
+	PBShopRules.toggle_dispatch(state, going, PBEconomyRules.QUEST_SLOTS, _cfg)
+	assert_eq(state.field_slots(_cfg), room + 1, "派一个出去就该空出一格")
+	assert_eq(state.open_slots(_cfg), room, "但人口本身不变 —— 那是「几个人在打」")
+
+
+func test_the_scripted_player_still_sees_exactly_the_old_capacity() -> void:
+	# 上面那条是**只在玩家钦定名单非空时**才生效的（[member
+	# PBRunState.dispatch_manual]）。脚本流派恒定走 [member PBRunState.dispatched]
+	# 的末尾规则，那一路一个字节都不动 —— 全部既有配平数字不变。
+	var state := _stocked_state()
+	state.dispatched = 3
+	assert_true(state.dispatch_manual.is_empty(), "脚本流派从不填这份名单")
+	assert_eq(state.field_slots(_cfg), state.open_slots(_cfg), "所以容量和以前一模一样")

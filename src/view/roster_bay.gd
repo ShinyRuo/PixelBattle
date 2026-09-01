@@ -30,6 +30,19 @@ extends Control
 ## 一根 12 像素的条要吃掉一整列格子。这里改成
 ## **裁剪 + 行偏移 + 滚轮**：`clip_contents` 负责不漏出框外，
 ## 滚了几行只是把整片格子往上挪。
+##
+## ## 为什么本类自己也实现了一遍拖放协议（M5-7）
+##
+## 那块 [PBDropArea] 和裁剪层 [member _clip] 是**兄弟**，而裁剪层盖在它上面。
+## 引擎找放置目标时只沿**父链**往上走（`Viewport::_gui_drop`）——
+## 从裁剪层往上是本类，中间根本经过不了那个兄弟。
+##
+## 后果是：**整块仓库只有正好落在某张卡上才收得住**，
+## 空位、空仓库、卡与卡之间的缝隙全都不接。玩家从战场上拖一个人回来，
+## 十次有八次弹回去，而且**不报错**。
+##
+## 补法是让本类自己回答 `_can_drop_data` —— 父链走到这儿就成了。
+## 那块 [PBDropArea] 留着，它管标题行和四周留白那一圈。
 
 ## 玩家点了仓库里的一张卡。
 signal unit_picked(unit_id: StringName)
@@ -51,11 +64,13 @@ const TITLE_H: float = 12.0
 ## 框四周留白。左右各 4，下面留 2 —— 上面那一格给标题。
 const PAD: float = 4.0
 
-## 卡池上限：角色表就 30 个，而重复抽到的卡并成星级（[member PBUnit.copies]），
-## 所以仓库天然到不了 31 张。**这个数是按它一次建满池子用的**（§14），
-## 不是一条会拦住玩家的规则 —— 角色表哪天扩到 31 个，
-## 才需要回答「满了怎么办」。
-const CAP: int = 30
+## 一次建满多少张卡（§14：战斗中零新建节点）。
+##
+## **M5-9 起仓库不再有天然上限** —— 重复抽到的是另一个人，
+## 所以张数只受抽卡次数限制，整局能到上百。这里是**显示容量**，
+## 不是一条规则：超出的部分滚不到，而那是个真缺口，
+## 记在待决策表上（角色表 30 个 × 常见重复数，60 够用很久）。
+const CAP: int = 60
 
 var _tiles: Array[PBUnitTile] = []
 var _ring: ColorRect
@@ -163,6 +178,23 @@ static func idle_units(
 		if not deployed.has(unit) and not away.has(unit):
 			out.append(unit)
 	return out
+
+
+## 裁剪层里的空位也要收得住拖放，见类顶部那段。
+##
+## **只认卡，不认装备**：忍具拖到仓库上没有意义，而返回 true 会让
+## 引擎把「可以放」的光标显示出来，然后松手什么都不发生 ——
+## 那比直接不接更像坏了。
+func _can_drop_data(_at: Vector2, data: Variant) -> bool:
+	return not PBUnitTile.card_of(data).is_empty()
+
+
+func _drop_data(_at: Vector2, data: Variant) -> void:
+	var card := PBUnitTile.card_of(data)
+	if not card.is_empty():
+		card_dropped.emit(
+			StringName(card["zone"]), StringName(card["unit"]), PBUnitTile.ZONE_STASH
+		)
 
 
 ## 滚轮翻行。**钳在两头**，滚过尾巴会得到一个空框。

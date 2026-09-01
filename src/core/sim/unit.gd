@@ -35,8 +35,17 @@ var rarity: Rarity = Rarity.R
 ## 防元素（§03A）。别人打它时按哪一系算克制。同样从 [member character] 复制。
 var def_element: PBElement.Type = PBElement.Type.PHYSICAL
 
-## 已持有的张数。第 1 张即 1 星，之后每 3 张升 1 星。
-var copies: int = 1
+## 星级。§08 原本是「同卡 3 张升 1 星」，**M5-9 之后重复卡不再并进来** ——
+## 抽到重复的忍者是**另一个人**，各自上场、各自升级、各自带装备。
+##
+## 字段留着是因为星级仍然乘在基础属性上（[method PBStatRules.of]），
+## 而「怎么升星」是一条会换的规则；升星那条路重开时改的是**谁写它**，
+## 不是整套属性计算。
+var star_level: int = 1
+
+## 同一个角色的第几份（0 起）。**只用来把两张同名卡区分开**，
+## 不参与任何数值 —— 见 [method key]。
+var serial: int = 0
 
 ## 等级（§03A，M3.5-a）。花金币升，不打怪掉经验 ——
 ## 掉经验的话「谁站前排」会顺带决定「谁升得快」，
@@ -64,9 +73,9 @@ static func of(
 	return PBUnit.new(character)
 
 
-## 当前星级，从 1 起。§08：同卡 3 张升 1 星。
+## 当前星级，从 1 起。见 [member star_level]。
 func star() -> int:
-	return 1 + int(floor(float(copies - 1) / 3.0))
+	return maxi(star_level, 1)
 
 
 ## 这张卡此刻的全部属性（§03A）。等级与星级都算进去了。
@@ -105,8 +114,24 @@ func effective_power(wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
 	return power(cfg) * cfg.damage_multiplier(rel)
 
 
-## 这张卡的唯一身份 —— 就是角色 id（§14 铁律 5）。
+## 这张卡的唯一身份。仓库字典的键，也是 §12 存档里记「我有哪些卡」的那个值。
 ##
-## 它是仓库字典的键，也是 §12 存档里记「我有哪些卡」的那个值。
+## ## 为什么它不再等于角色 id（M5-9）
+##
+## **抽到重复的忍者现在是另一个人**：两个鸣人各自上场、各自升级、
+## 各自带装备、各自摆位。而在场名单、摆位、装备、派遣四份状态
+## 存的都是这个键 —— 两张卡共用一个键的话，「给这个鸣人挂一件装备」
+## 会同时挂到另一个身上，**而且不报错**。
+##
+## ## 第一张仍然是光秃秃的角色 id
+##
+## 那让「一个角色一张卡」这个既有情形下的存档、名单、摆位一字不差 ——
+## 本项目每次换身份层都这么做（角色表、羁绊、装备、尾兽四次）。
+## 重复的那几张才带 `#1`、`#2`。
+##
+## **认角色要用 `character.id`，不是这个。** 羁绊按角色算档
+## （[method PBBondRules.active_count]）、尾兽光环按角色点名
+## （[member PBBeast.aura_member_ids]）—— 那些地方拿这个键去比，
+## 表现是「重复卡刷满羁绊」或者「光环认不出他」。
 func key() -> StringName:
-	return character.id
+	return character.id if serial <= 0 else StringName("%s#%d" % [character.id, serial])

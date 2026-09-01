@@ -69,7 +69,7 @@ func test_the_card_names_which_bonds_dispatch_would_break() -> void:
 	var state := _state_of(7)
 	var plan := _plan_of(6, 2)  # A 级，派 3 人
 	var card := _card()
-	card.reset(state, _cfg, plan)
+	card.reset(state, plan)
 
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
 	var kept := PBBondRules.active_tiers(_bonded_with(state, 0), _cfg.bonds)
@@ -97,7 +97,7 @@ func test_the_card_never_shows_a_raw_key_instead_of_a_name() -> void:
 	var state := _state_of(7)
 	var plan := _plan_of(6, 2)
 	var card := _card()
-	card.reset(state, _cfg, plan)
+	card.reset(state, plan)
 	var body: String = card.tip_body(state, _cfg, plan)
 	assert_false(body.contains("bond."), "说明卡漏出了 name_key：%s" % body)
 
@@ -161,7 +161,7 @@ func test_the_card_shows_both_branches_of_the_dispatch_cost() -> void:
 	var state := _state_of(9)
 	var plan := _plan_of(12, 3)
 	var card := _card()
-	card.reset(state, _cfg, plan)
+	card.reset(state, plan)
 
 	var units := PBValuation.deployed_for(state, plan.wave.element, _cfg)
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
@@ -190,11 +190,11 @@ func test_refreshing_the_card_never_runs_a_battle() -> void:
 	var state := _state_of(12)
 	var plan := _plan_of(12, 3)
 	var card := _card()
-	card.reset(state, _cfg, plan)  # 先热一遍，别把首次加载算进去
+	card.reset(state, plan)  # 先热一遍，别把首次加载算进去
 
 	var started: int = Time.get_ticks_usec()
 	for _i: int in 3:
-		card.refresh(PBSelection.new(), state, _cfg, plan)
+		card.refresh(PBSelection.new(), state, plan)
 	var each: float = float(Time.get_ticks_usec() - started) / 3000.0
 	assert_lt(each, 100.0, "刷新一次任务卡花了 %.1f 毫秒 —— 里面多半又跑起战斗了" % each)
 
@@ -213,7 +213,7 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 	for grade: int in PBEconomyRules.QUEST_TABLE.size():
 		var plan := _plan_of(15, grade)
 		var card := _card()
-		card.reset(state, _cfg, plan)
+		card.reset(state, plan)
 		var reward: int = PBEconomyRules.quest_reward(grade, plan.wave.index)
 		var need: int = PBEconomyRules.quest_cost_units(grade)
 		if need > state.dispatch_available(_cfg):
@@ -225,49 +225,56 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 		)
 
 
-func test_it_says_there_are_too_few_people_instead_of_just_greying_out() -> void:
-	# 派不出去的时候要说清是「人不够」而不是「不划算」，
-	# 否则玩家会去调阵容找一个根本不存在的原因。
-	#
-	# **门槛口径 M3.5-i 换过一次。** 旧的是 `standby_available`（溢出到板凳上的
-	# 那几个），而指令卡的「派去任务」放行的是**在场**的人 —— 两把尺子，
-	# 于是会出现「已经挑了 2 个人，卡面还说待命台 0 人派不出去」。
-	var state := _state_of(3)
-	var plan := _plan_of(2, 4)  # SSS 要派 4 人，这个卡池只有 3 张
+func test_the_panel_says_pass_or_fail_before_the_wave_starts() -> void:
+	# **人数不符是一次有代价的失误**：那几个人照样离场，只是拿不到奖励。
+	# 把它留到结算才说等于让玩家事后才知道自己错了 ——
+	# 所以三种状态都要在开打**之前**读得出来。
+	var state := _state_of(9)
+	# 1 号是 B 级 —— `QUEST_TABLE` 里要 2 个人（2 号的 A 级要 3 个）。
+	var plan := _plan_of(6, 1)
 	var card := _card()
-	card.reset(state, _cfg, plan)
+	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
+	assert_eq(need, 2, "这一档该要 2 个人，否则下面三支测不全")
 
-	assert_lt(state.dispatch_available(_cfg), 4, "这个卡池应该凑不出 SSS 要的 4 个人")
-	assert_true(card._toggle.disabled, "派不出去就不该能点")
-	assert_eq(card._toggle.text, "人不够", "按钮上要写清是人不够，不是不划算")
-	assert_true(card._away.text.contains("场上只有"), card._away.text)
-	# 面板只有 100 像素宽，整句在说明卡里 —— 但那句必须还在。
-	assert_true(card.tip_body(state, _cfg, plan).contains("派不出"), card.tip_body(state, _cfg, plan))
-	assert_false(card.accepted(), "派不出去时不能算成已接")
+	card.reset(state, plan)
+	assert_true(card._away.text.contains("未派"), card._away.text)
+	assert_false(PBQuestCard.is_done(state, plan), "空着不算完成")
+
+	state.dispatch_manual.append(state.roster.values()[0].key())
+	card.reset(state, plan)
+	assert_true(card._away.text.contains("失败"), "差一个就得当场写明失败：%s" % card._away.text)
+	assert_false(PBQuestCard.is_done(state, plan), "1/2 不算完成")
+
+	state.dispatch_manual.append(state.roster.values()[1].key())
+	card.reset(state, plan)
+	assert_true(card._away.text.contains("可完成"), card._away.text)
+	assert_true(PBQuestCard.is_done(state, plan), "拖满了就算接下了")
 
 
-func test_it_starts_unaccepted_every_wave() -> void:
-	# 默认不接：没决定就是没决定。默认接的话，一个没注意到这张卡的玩家
-	# 会莫名其妙在 BOSS 波掉羁绊，而他连自己付了代价都不知道。
+func test_too_many_is_a_failure_too() -> void:
+	# **槽位比需求多是有意的**（[constant PBEconomyRules.QUEST_SLOTS] = 4）。
+	# 槽数跟着需求走的话玩家塞不进多余的人，「人数不符」这条判定
+	# 就只剩「塞不满」一种，塞多了不可能发生 —— 那等于半条规则。
+	var state := _state_of(9)
+	var plan := _plan_of(6, 1)  # B 级，要 2 个人
+	var card := _card()
+	for i: int in 3:
+		state.dispatch_manual.append(state.roster.values()[i].key())
+	card.reset(state, plan)
+	assert_false(PBQuestCard.is_done(state, plan), "3 个人去做一个 2 人的任务也是失败")
+	assert_true(card._away.text.contains("失败"), card._away.text)
+	assert_gt(PBEconomyRules.QUEST_SLOTS, 2, "槽位必须多于本波需求，否则塞不进第三个")
+
+
+func test_all_four_slots_are_always_on_screen() -> void:
+	# 空槽也要画出来。M5-6 那一版只显示派了几个就画几个 ——
+	# 判定改成看人数之后，「有几个槽、现在占了几个」成了**必须看得见**的信息，
+	# 否则「人数不符」是一条无处可读的规则。
 	var state := _state_of(9)
 	var card := _card()
-	card.reset(state, _cfg, _plan_of(6, 2))
-	assert_false(card.accepted(), "新的一波默认不接")
-
-	card.toggle()
-	assert_true(card.accepted(), "点一下应该接下")
-	card.toggle()
-	assert_false(card.accepted(), "再点一下应该取消")
-
-	card.toggle()
-	card.reset(state, _cfg, _plan_of(7, 2))
-	assert_false(card.accepted(), "换波之后要归零 —— 上一波接了不等于这一波也接")
-
-
-func test_the_toggle_emits_so_the_other_panels_can_follow() -> void:
-	var state := _state_of(9)
-	var card := _card()
-	card.reset(state, _cfg, _plan_of(6, 2))
-	watch_signals(card)
-	card.toggle()
-	assert_signal_emitted_with_parameters(card, "quest_toggled", [true])
+	card.reset(state, _plan_of(6, 2))
+	var tiles := card.find_children("", "PBUnitTile", true, false)
+	assert_eq(tiles.size(), PBEconomyRules.QUEST_SLOTS, "四个槽一次建满")
+	for tile: PBUnitTile in tiles:
+		assert_true(tile.visible, "空槽也得摆在那儿")
+		assert_null(tile.unit, "一个人都没派的时候四个都该是空的")

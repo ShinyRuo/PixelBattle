@@ -173,3 +173,173 @@ func test_clicking_an_enemy_while_aiming_names_it() -> void:
 
 	root._on_command(PBCommandCard.CMD_CLEAR_TARGET)
 	assert_eq(live.forced_target, -1, "「自动选敌」该把指挥权交回去")
+
+
+# ── 忍术改成玩家自己放（§02，M5-9）────────────────────────────
+
+
+func test_nothing_goes_off_by_itself_when_nobody_is_aiming() -> void:
+	# **玩家报的那一条**：「开战后会自动放一个范围伤害，那是什么机制」。
+	#
+	# 大招原来走 [PBAimRules] 的**自动档**（§02 给手机端留的）。冷却在开波
+	# 那一刻全员是好的，于是整队在第 1 tick 同时下达、0.5 秒后同时落地 ——
+	# 而这也正是「单波只有 0.55 秒」那条已知配平问题的根源。
+	_cfg.aim_policy = PBAimRules.Policy.NONE
+	var caster := _shooter()
+	caster.dps = 0.0
+	caster.attack_speed = 0.0
+	caster.ultimate = PBUltimate.new()
+	caster.ultimate.damage = 1.0e9
+	caster.ultimate.radius = 1.0
+	var squad: Array[PBAttacker] = [caster]
+	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
+	for _i: int in 60:
+		sim.step()
+	assert_eq(sim.result().kills, 0, "没人下令就一发都不该出去")
+
+
+func test_the_player_can_order_one_by_hand() -> void:
+	# 而手动那条路必须真的打得出来 —— 否则上面那条只是「把功能关掉了」。
+	_cfg.aim_policy = PBAimRules.Policy.NONE
+	var caster := _shooter()
+	caster.dps = 0.0
+	caster.attack_speed = 0.0
+	caster.ultimate = PBUltimate.new()
+	caster.ultimate.damage = 1.0e9
+	caster.ultimate.radius = 1.0
+	caster.ultimate.delay_ticks = 6
+	var squad: Array[PBAttacker] = [caster]
+	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
+	sim.step()
+	assert_true(sim.can_cast(caster), "开波冷却就是好的 —— 指令卡那一格该亮着")
+	assert_true(sim.cast_ultimate(caster, Vector2(0.5, 0.0)), "点了落点就该下达")
+	assert_false(sim.can_cast(caster), "下达之后进冷却，那一格立刻转灰")
+	for _i: int in 10:
+		sim.step()
+	assert_gt(sim.result().kills, 0, "延迟走完之后它该真的落地")
+
+
+func test_an_order_off_the_field_is_refused_instead_of_swallowing_the_cooldown() -> void:
+	# 落点非法（[method PBUltimate.is_spot] 不认）时**不能进冷却** ——
+	# 吞掉一次冷却的表现是「我明明还没放，怎么就要等 20 秒」。
+	_cfg.aim_policy = PBAimRules.Policy.NONE
+	var caster := _shooter()
+	caster.ultimate = PBUltimate.new()
+	var squad: Array[PBAttacker] = [caster]
+	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
+	sim.step()
+	assert_false(sim.cast_ultimate(caster, PBUltimate.NO_SPOT), "非法落点该被拒绝")
+	assert_true(sim.can_cast(caster), "而且冷却一点都没动")
+
+
+func test_the_two_click_to_aim_modes_are_mutually_exclusive() -> void:
+	# 「攻击」和「忍术」都是两步操作，而两个同时开着的话，
+	# 玩家那一下点击到底算哪个，代码里会由分支顺序偷偷决定。
+	var picker := PBFieldPicker.new()
+	picker.toggle(PBFieldPicker.Aim.TARGET)
+	assert_true(picker.aiming, "按一下进入指定状态")
+	picker.toggle(PBFieldPicker.Aim.ULTIMATE)
+	assert_false(picker.aiming, "按忍术就该退出指定状态")
+	assert_eq(picker.aim_mode, PBFieldPicker.Aim.ULTIMATE, "并且换成等落点")
+	picker.toggle(PBFieldPicker.Aim.ULTIMATE)
+	assert_eq(picker.aim_mode, PBFieldPicker.Aim.OFF, "再按一次退出 —— 那是能后悔的地方")
+
+
+# ── 那一下点击真的走得到 `_unhandled_input`（M5-10）────────────
+
+
+func test_a_real_click_on_the_field_actually_arrives() -> void:
+	# **上面那条从来没测到这一段。** 它直接调 `_on_field_click`，
+	# 于是「点击到底有没有走到那个函数」是一片空白 —— 而它没有。
+	#
+	# 引擎只要在鼠标下面找到**任何一个非 IGNORE 的 [Control]**，
+	# 那一下点击就算被 GUI 处理掉了，`_unhandled_input` 收不到。
+	# 而 [ColorRect] 默认就是 `MOUSE_FILTER_STOP`：`Background`（盖满全屏）、
+	# `Lane`（战场那条道）、以及 [PBAllyPool] 画忍者用的那些方块，
+	# 三层叠在一起把整块战场变成了一个吃点击的黑洞。
+	#
+	# 现象是「点谁都没反应」，看起来像点选功能没做 ——
+	# 而代码里那一整套命中判定写得好好的，单元测试也全绿。
+	# **场景要装进自己的 [SubViewport] 里**：GUT 自己的面板是一块盖满屏幕的
+	# [Control]，直接往主视口推事件的话，先吃掉它的是测试框架的界面。
+	var box := SubViewport.new()
+	box.size = Vector2i(640, 360)
+	add_child_autofree(box)
+	var root: Node2D = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	root.run_seed = FIXED_SEED
+	root.auto_play = true
+	box.add_child(root)
+	await wait_physics_frames(8)
+	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "这时候该已经在打了")
+
+	var live: PBAttacker = root._battle.attackers()[0]
+	var at := PBLayout.to_screen(live.pos, root._field())
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = at
+	box.push_input(press, true)
+	await wait_physics_frames(2)
+
+	assert_eq(root._selection.kind, PBSelection.Kind.UNIT, "真点一下就该选中他")
+	assert_eq(root._selection.unit_id, root._plan.deployed[live.slot].key(), "而且是点到的那个")
+
+
+func test_nothing_on_the_battlefield_swallows_a_click() -> void:
+	# 上一条是「结果对不对」，这一条是**根因本身**：战场那块地方
+	# 不许站着任何一个会吃掉点击的 [Control]。
+	#
+	# 分成两条是因为上一条抓得到、却说不出是谁干的 —— 而这一类 bug
+	# 每加一块装饰性的 [ColorRect] 就会重来一次
+	# （`ColorRect.new()` 默认 `MOUSE_FILTER_STOP`，很难想到）。
+	var root: Node2D = await _in_battle()
+	var field := PBLayout.B_FIELD
+	var guilty: Array[String] = []
+	for node: Node in root.find_children("", "Control", true, false):
+		var control := node as Control
+		if not control.is_visible_in_tree():
+			continue
+		# `PASS` 是可以的：它自己收得到（拖放靠它），也照样往下传。
+		if control.mouse_filter != Control.MOUSE_FILTER_STOP:
+			continue
+		if control.get_global_rect().intersects(field):
+			guilty.append("%s(%s)" % [control.name, control.get_class()])
+	assert_eq(guilty, [] as Array[String], "战场上不许有吃点击的控件：%s" % ", ".join(guilty))
+
+
+# ── 右键收回那两步（M5-11）────────────────────────────────────
+#
+# 「那根线指着谁」搬去了 `test_aim_lines.gd` —— 这个文件破了 gdlint 的
+# 20 个公开方法上限，而那一组恰好有一条说得清的边界。
+
+
+func test_right_click_takes_back_the_two_step_command() -> void:
+	# 两步操作的第一步按下去之后，玩家需要一条**不用把手挪回指令卡**的退路。
+	# `Esc` 是第二条路，但按键和鼠标不在一只手上。
+	var root: Node2D = await _in_battle()
+	root._select(PBSelection.Kind.UNIT, root._plan.deployed[0].key())
+	root._on_command(PBCommandCard.CMD_ULTIMATE)
+	assert_eq(root._picker.aim_mode, PBFieldPicker.Aim.ULTIMATE, "先进入选落点状态")
+
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_RIGHT
+	press.pressed = true
+	root._unhandled_input(press)
+	assert_eq(root._picker.aim_mode, PBFieldPicker.Aim.OFF, "右键该取消掉")
+
+
+func test_a_right_click_never_casts_or_names_anything() -> void:
+	# 右键**只取消**。顺手把它当成「确认」的话，玩家想反悔那一下
+	# 反而把忍术扔在了鼠标底下 —— 而那正是他要躲开的结果。
+	var root: Node2D = await _in_battle()
+	var live: PBAttacker = root._battle.attackers()[0]
+	root._select(PBSelection.Kind.UNIT, root._plan.deployed[live.slot].key())
+	root._on_command(PBCommandCard.CMD_ULTIMATE)
+	var ready: bool = root._battle.can_cast(live)
+
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_RIGHT
+	press.pressed = true
+	press.position = PBLayout.to_screen(live.pos, root._field())
+	root._unhandled_input(press)
+	assert_eq(root._battle.can_cast(live), ready, "冷却一点都不该动")

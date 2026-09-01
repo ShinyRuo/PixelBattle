@@ -436,6 +436,9 @@ static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 		return 0.0
 
 	var counts := PBBondRules.counts_of(units, cfg.bonds)
+	var owned: Dictionary = {}
+	for unit: PBUnit in state.roster.values():
+		owned[unit.character.id] = true
 	var row: Array = gacha_row(state.wave_index)
 	var gain: float = 0.0
 	for rarity: int in cfg.rarity_power.size():
@@ -445,7 +448,10 @@ static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 			continue
 		var per_card: float = chance / float(pool.size())
 		for character: PBCharacter in pool:
-			if state.roster.has(character.id):
+			# **已经有这个角色了就不算**：羁绊按角色数不按卡数
+			# （[method PBBondRules.active_count]），再抽一张同名的
+			# 一组都不会多。M5-9 之前这里比的是仓库的键，而那时键就是角色 id。
+			if owned.has(character.id):
 				continue
 			gain += per_card * PBBondRules.marginal_bonus(counts, cfg.bonds, character)
 	return gain / base
@@ -458,10 +464,15 @@ static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 ## 把每一抽都当新卡会系统性高估后期抽卡 —— 而后期正是「该继续抽还是该转装备」
 ## 的分界区，偏差刚好落在结论上。
 ##
-## 算法分两步：
+## ## M5-9 起没有「重复卡」这一档了
 ##
-## 1. 先按「全是新卡」把整个卡池的期望算出来
-## 2. 再遍历已有的卡，把它们那一格从「新卡」换成「重复卡」
+## 在那之前这里分两步：先按「全是新卡」算一遍，再遍历已有的卡把它们那一格
+## 换成「重复卡只加星级进度」的低值。**重复抽到的现在是另一个人**
+## （[method PBUnit.key]）—— 他立刻能上场、能升级、能带装备，
+## 作为战力和一张新卡一模一样，所以第二步整段没了。
+##
+## 重复卡仍然**比新卡差一点**，但差的那一份在羁绊那一侧
+## （[method expected_bond_gain]：同一个角色不会让任何一组多算一个人）。
 ##
 ## **概率口径按角色表算，不按「六个属性等概率」硬编码**（M2-a）。
 ## 合成表上两者恒等（每个稀有度下六系均分），但真角色表的属性分布是不均匀的 ——
@@ -482,23 +493,6 @@ static func expected_surplus(
 				cfg.rarity_power[rarity] * _multiplier(int(character.element), wave_element, cfg)
 			)
 			surplus += per_card * maxf(fresh - cutoff, 0.0)
-
-	for unit: PBUnit in state.roster.values():
-		var chance: float = float(row[int(unit.rarity) + 1]) / 100.0
-		var pool := cfg.characters.of_rarity(unit.rarity)
-		if chance <= 0.0 or pool.is_empty():
-			continue
-		# 抽到**这一个角色**的概率：稀有度概率 ÷ 该稀有度下的角色数。
-		var p_cell: float = chance / float(pool.size())
-		var mult: float = _multiplier(int(unit.element), wave_element, cfg)
-		# 撤掉上一段里把这张卡当新卡算的那份。
-		surplus -= p_cell * maxf(cfg.rarity_power[int(unit.rarity)] * mult - cutoff, 0.0)
-		# 换成重复卡该给的：只有凑够 3 张跨过星级边界的那一抽才涨战力。
-		var before: float = unit.effective_power(wave_element, cfg)
-		var step: float = 0.0
-		if unit.copies % 3 == 0:
-			step = cfg.rarity_power[int(unit.rarity)] * cfg.star_power_mult * mult
-		surplus += p_cell * (maxf(before + step - cutoff, 0.0) - maxf(before - cutoff, 0.0))
 	return surplus
 
 

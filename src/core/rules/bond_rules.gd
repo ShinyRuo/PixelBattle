@@ -33,11 +33,14 @@ static func power_bonus(units: Array[PBUnit], table: PBBondTable) -> float:
 
 ## 这份名单里有几个人算 [param bond] 的成员。
 static func active_count(bond: PBBond, units: Array[PBUnit]) -> int:
-	var count: int = 0
+	# **按角色数，不按卡数**（M5-9）。重复抽到的忍者现在是另一个人
+	# （[method PBUnit.key]），照卡数算的话带三个鸣人就能凑满一组羁绊 ——
+	# 而 §09 要的是「凑齐**不同**的成员」，那才是它的全部难度。
+	var seen: Dictionary = {}
 	for unit: PBUnit in units:
 		if bond.counts(unit):
-			count += 1
-	return count
+			seen[unit.character.id] = true
+	return seen.size()
 
 
 ## 每组羁绊现在是第几档。**给准备阶段的界面用。**

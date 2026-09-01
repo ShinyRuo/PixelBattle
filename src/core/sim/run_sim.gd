@@ -154,8 +154,20 @@ static func lock_plan(
 ) -> void:
 	plan.deployed = deployed
 	plan.quest_accepted = quest_accepted
+	# **走的是几个人，和任务成不成功是两件事**（M5-7）。
+	#
+	# 玩家往任务栏里拖了几个，这一波就走几个 —— 人数不符只是拿不到奖励
+	# （`quest_accepted` 为 false），那几个人照样离场。合成一个数的话，
+	# 「派了 1/2 人」会变成「一个人都没派」，玩家眼看着卡从战场上消失，
+	# 战斗里却还站着他，而两边都不报错。
+	#
+	# 名单空着时照旧按「接了就派 need 个」算 —— 那是脚本玩家走的路
+	# （末尾规则，见 [method PBRunState.dispatch_picks]），
+	# 全部既有配平数字因此一个不动。
 	state.dispatched = (
-		PBEconomyRules.quest_cost_units(plan.quest_grade) if plan.quest_accepted else 0
+		state.dispatch_manual.size()
+		if not state.dispatch_manual.is_empty()
+		else (PBEconomyRules.quest_cost_units(plan.quest_grade) if plan.quest_accepted else 0)
 	)
 	# 把「派出去的是哪几个」记下来给界面（§02）。**在算羁绊之前记** ——
 	# 它读的是同一条末尾规则，晚一步 `dispatched` 就可能已经被清了。
@@ -215,9 +227,24 @@ static func settle_wave(
 	state.base_hp -= outcome.base_damage
 	state.dispatched = 0
 	state.dispatched_ids.clear()
-	# 钦定名单也是一波一份。留着的话，下一波任务人数一变它就悄悄失效
-	# （长度对不上就退回末尾规则），玩家看到的是「我选的人怎么没去」。
-	state.dispatch_manual.clear()
+	# **任务栏里站着的人下一波还站在那儿**（M5-12）。
+	#
+	# 在这之前这份名单一波一清，于是每一波开始时那四个槽都是空的 ——
+	# 上一波派出去的人**回到了战场上**，而玩家并没有把他们拖回来。
+	# 派遣因此变成一个必须每波重做一遍的操作，而它的语义是「这个人去做任务」，
+	# 不是「这一波去做任务」。
+	#
+	# 当初清掉的理由（下一波任务人数一变，长度对不上就退回末尾规则）
+	# **M5-7 起已经不成立**：`dispatched` 现在就等于名单长度（见上面），
+	# 两者不可能对不上。人数够不够是任务成不成功的事，不是名单作不作数的事。
+	#
+	# 只剔掉已经不在卡池里的（卖了、换了）—— 留着的话
+	# [method PBRunState.field_slots] 会为一个不存在的人多留一个位置。
+	var staying: Array[StringName] = []
+	for key: StringName in state.dispatch_manual:
+		if state.roster.has(key):
+			staying.append(key)
+	state.dispatch_manual = staying
 	# 尾兽的冷却跨波接着走 —— 它是底牌，稀缺性全靠这一行（§11）。
 	var beast_attacker := PBBeastRules.attacker_in(plan.attackers)
 	if beast_attacker != null and beast_attacker.ultimate != null:

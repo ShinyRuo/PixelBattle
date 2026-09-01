@@ -18,32 +18,32 @@
 
 ## 概念对照表
 
-| UE5 | Godot 4 | 备注 |
-|---|---|---|
-| `AActor` | `Node` / `Node2D` | 没有 Actor/Component 二分，全是 Node |
-| `UActorComponent` | 子 Node | 组合靠父子关系，不是 `AddComponent` |
-| Level `.umap` | Scene `.tscn` | |
-| Blueprint 类 `BP_Enemy` | Scene `.tscn` + 脚本 | **同一种东西** |
-| `SpawnActor<T>()` | `preload(...).instantiate()` + `add_child()` | 两步，显式 |
-| `UPROPERTY(EditAnywhere)` | `@export` | |
-| `Tick(DeltaTime)` | `_process(delta)` | 每渲染帧 |
-| 物理 Tick | `_physics_process(delta)` | 固定 60Hz |
-| `BeginPlay()` | `_ready()` | 子节点全就绪后调用一次 |
-| 构造函数 | `_init()` | 此时还没进场景树 |
-| `EndPlay` / `Destroyed` | `_exit_tree()` | |
-| Event Dispatcher / Delegate | `signal` | 语法轻得多 |
-| `Cast<AEnemy>(Obj)` | `obj as Enemy` / `obj is Enemy` | |
-| `Destroy()` | `queue_free()` | **不是 `free()`**，见下方坑位 |
-| `UDataTable` | `Resource` (`.tres`) 或 JSON | |
-| `TSharedPtr<T>` 管的对象 | `RefCounted` | 引用计数，自动释放。见下节 |
-| 裸 `new` / `delete` | `Object` | 必须自己 `free()`，日常别用 |
-| `UGameInstance` 单例 | Autoload（自动加载的单例节点） | |
-| Overlap Volume | `Area2D` | |
-| `UGameplayStatics` | `get_tree()` / 全局单例 | |
-| `Content/` | `res://` | 只读，打包后进 pck |
-| `Saved/` | `user://` | 可写，存档放这 |
-| `.uasset`（二进制） | `.tscn` / `.tres`（**文本**） | 可 diff、可 merge、可手改 |
-| C++ 模块 + 编译 | GDScript（免编译）或 GDExtension（C++） | |
+| UE5                         | Godot 4                                          | 备注                                  |
+| --------------------------- | ------------------------------------------------ | ------------------------------------- |
+| `AActor`                  | `Node` / `Node2D`                            | 没有 Actor/Component 二分，全是 Node  |
+| `UActorComponent`         | 子 Node                                          | 组合靠父子关系，不是`AddComponent`  |
+| Level`.umap`              | Scene`.tscn`                                   |                                       |
+| Blueprint 类`BP_Enemy`    | Scene`.tscn` + 脚本                            | **同一种东西**                  |
+| `SpawnActor<T>()`         | `preload(...).instantiate()` + `add_child()` | 两步，显式                            |
+| `UPROPERTY(EditAnywhere)` | `@export`                                      |                                       |
+| `Tick(DeltaTime)`         | `_process(delta)`                              | 每渲染帧                              |
+| 物理 Tick                   | `_physics_process(delta)`                      | 固定 60Hz                             |
+| `BeginPlay()`             | `_ready()`                                     | 子节点全就绪后调用一次                |
+| 构造函数                    | `_init()`                                      | 此时还没进场景树                      |
+| `EndPlay` / `Destroyed` | `_exit_tree()`                                 |                                       |
+| Event Dispatcher / Delegate | `signal`                                       | 语法轻得多                            |
+| `Cast<AEnemy>(Obj)`       | `obj as Enemy` / `obj is Enemy`              |                                       |
+| `Destroy()`               | `queue_free()`                                 | **不是 `free()`**，见下方坑位 |
+| `UDataTable`              | `Resource` (`.tres`) 或 JSON                 |                                       |
+| `TSharedPtr<T>` 管的对象  | `RefCounted`                                   | 引用计数，自动释放。见下节            |
+| 裸`new` / `delete`      | `Object`                                       | 必须自己`free()`，日常别用          |
+| `UGameInstance` 单例      | Autoload（自动加载的单例节点）                   |                                       |
+| Overlap Volume              | `Area2D`                                       |                                       |
+| `UGameplayStatics`        | `get_tree()` / 全局单例                        |                                       |
+| `Content/`                | `res://`                                       | 只读，打包后进 pck                    |
+| `Saved/`                  | `user://`                                      | 可写，存档放这                        |
+| `.uasset`（二进制）       | `.tscn` / `.tres`（**文本**）          | 可 diff、可 merge、可手改             |
+| C++ 模块 + 编译             | GDScript（免编译）或 GDExtension（C++）          |                                       |
 
 ---
 
@@ -63,11 +63,11 @@ Object                    ← 手动管理，必须自己 free()
     └── Control → Button / Label / …
 ```
 
-| | 需要场景树 | 怎么释放 | 创建开销 |
-|---|---|---|---|
-| `Object` | 否 | **手动 `free()`** | 小 |
-| `RefCounted` | 否 | **自动**（引用计数） | 小 |
-| `Node` | 是 | `queue_free()` | 大（名字、分组、树簿记、信号） |
+|                | 需要场景树 | 怎么释放                   | 创建开销                       |
+| -------------- | ---------- | -------------------------- | ------------------------------ |
+| `Object`     | 否         | **手动 `free()`**  | 小                             |
+| `RefCounted` | 否         | **自动**（引用计数） | 小                             |
+| `Node`       | 是         | `queue_free()`           | 大（名字、分组、树簿记、信号） |
 
 ### `RefCounted` 用起来就是「不用管」
 
@@ -148,21 +148,21 @@ func _exit_tree() -> void:       # 离开场景树
 
 ## 2D 常用节点速查
 
-| 节点 | 用途 |
-|---|---|
-| `Node2D` | 2D 基类，有 position / rotation / scale |
-| `CharacterBody2D` | 玩家、敌人。配 `velocity` + `move_and_slide()` |
-| `RigidBody2D` | 交给物理引擎推的物体 |
-| `StaticBody2D` | 墙、地面 |
-| `Area2D` | 触发器。信号 `body_entered` / `area_entered` |
-| `CollisionShape2D` | 碰撞形状，必须是上面几种 Body 的子节点 |
-| `Sprite2D` / `AnimatedSprite2D` | 静态图 / 帧动画 |
-| `TileMapLayer` | 瓦片地图（4.3 起取代了旧的 `TileMap`） |
-| `Camera2D` | 相机，挂在玩家下面就自动跟随 |
-| `CanvasLayer` | UI 层，不受相机移动影响 |
-| `Control` | 所有 UI 控件的基类 |
-| `Timer` | 定时器，信号 `timeout` |
-| `AnimationPlayer` | 关键帧动画，能驱动**任意属性**（不止变换） |
+| 节点                                | 用途                                              |
+| ----------------------------------- | ------------------------------------------------- |
+| `Node2D`                          | 2D 基类，有 position / rotation / scale           |
+| `CharacterBody2D`                 | 玩家、敌人。配`velocity` + `move_and_slide()` |
+| `RigidBody2D`                     | 交给物理引擎推的物体                              |
+| `StaticBody2D`                    | 墙、地面                                          |
+| `Area2D`                          | 触发器。信号`body_entered` / `area_entered`   |
+| `CollisionShape2D`                | 碰撞形状，必须是上面几种 Body 的子节点            |
+| `Sprite2D` / `AnimatedSprite2D` | 静态图 / 帧动画                                   |
+| `TileMapLayer`                    | 瓦片地图（4.3 起取代了旧的`TileMap`）           |
+| `Camera2D`                        | 相机，挂在玩家下面就自动跟随                      |
+| `CanvasLayer`                     | UI 层，不受相机移动影响                           |
+| `Control`                         | 所有 UI 控件的基类                                |
+| `Timer`                           | 定时器，信号`timeout`                           |
+| `AnimationPlayer`                 | 关键帧动画，能驱动**任意属性**（不止变换）  |
 
 ---
 
@@ -216,16 +216,16 @@ func _on_hitbox_body_entered(body: Node2D) -> void:
 
 ### 和 C++ 的差异点
 
-| 事项 | GDScript |
-|---|---|
-| 分支 | `if / elif / else`，`match`（比 switch 强，能匹配模式） |
-| 循环 | `for i in range(10):`、`for node in children:`、`while` |
-| 数组 | `var a: Array[int] = [1, 2, 3]`（带类型的数组有性能收益） |
-| 字典 | `var d := {"hp": 10}`，`d["hp"]` 或 `d.hp` |
-| 空值 | `null`。没有指针，对象一律是引用 |
-| 三元 | `var x = a if cond else b`（顺序和 C 反着） |
-| 字符串插值 | `"血量 %d / %d" % [hp, MAX_HP]` |
-| 协程 | `await`，见下 |
+| 事项       | GDScript                                                      |
+| ---------- | ------------------------------------------------------------- |
+| 分支       | `if / elif / else`，`match`（比 switch 强，能匹配模式）   |
+| 循环       | `for i in range(10):`、`for node in children:`、`while` |
+| 数组       | `var a: Array[int] = [1, 2, 3]`（带类型的数组有性能收益）   |
+| 字典       | `var d := {"hp": 10}`，`d["hp"]` 或 `d.hp`              |
+| 空值       | `null`。没有指针，对象一律是引用                            |
+| 三元       | `var x = a if cond else b`（顺序和 C 反着）                 |
+| 字符串插值 | `"血量 %d / %d" % [hp, MAX_HP]`                             |
+| 协程       | `await`，见下                                               |
 
 ### `await`——比 UE 的 Latent Action 好用得多
 

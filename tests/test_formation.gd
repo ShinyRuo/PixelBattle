@@ -179,6 +179,46 @@ func test_dragging_moves_him_on_the_real_screen() -> void:
 	)
 
 
+func test_a_ninja_on_the_field_can_be_clicked_and_dragged_anywhere() -> void:
+	# **M5-7 修的两条**，都只在准备阶段发作：
+	#
+	# 1. 战场上的忍者**点不中**。`_on_field_click` 一上来就
+	#    `if _phase != Phase.PREPARE` 拦掉了，而在场的人已经不在仓库里
+	#    （一个人只在一处）—— 于是他根本没有任何选中入口
+	# 2. **拖不进仓库**。那块 [PBDropArea] 和滚动裁剪层是兄弟，而裁剪层盖在
+	#    它上面；引擎找放置目标只沿**父链**走，从裁剪层往上根本经过不了它。
+	#    结果是只有正好落在某张卡上才收得住，空位一律弹回去
+	var root: Node2D = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	root.run_seed = FIXED_SEED
+	root.auto_play = false
+	root.start_wave = 6
+	add_child_autofree(root)
+	await wait_physics_frames(3)
+
+	var units: Array[PBUnit] = root._fighting_now(root._dispatch_preview())
+	assert_gt(units.size(), 0, "第 6 波该有人上场")
+	var spots := PBFormationRules.spots_of(units, root._state.formation, root._cfg)
+	var at := PBLayout.to_screen(spots[0], root._field())
+
+	root._on_field_click(at)
+	assert_eq(root._selection.kind, PBSelection.Kind.UNIT, "点战场上的人就该选中他")
+	assert_eq(root._selection.unit_id, units[0].key(), "而且选中的是脚下那一个")
+	root._on_field_click(Vector2(620.0, 40.0))
+	assert_eq(root._selection.kind, PBSelection.Kind.NONE, "点空地取消选中")
+
+	# 仓库那一块**整块都要收得住**，不只是正好落在某张卡上。
+	assert_true(
+		root._bay._can_drop_data(Vector2.ZERO, {"zone": PBUnitTile.ZONE_FIELD, "unit": units[0].key()}),
+		"仓库面板本身必须回答得了「可以放」—— 裁剪层挡着那块收件区"
+	)
+	watch_signals(root._bay)
+	root._bay._drop_data(Vector2.ZERO, {"zone": PBUnitTile.ZONE_FIELD, "unit": units[0].key()})
+	assert_signal_emitted(root._bay, "card_dropped")
+	assert_false(
+		root._fighting_now(root._dispatch_preview()).has(units[0]), "松手之后他就该下场了"
+	)
+
+
 func test_dragging_a_card_out_of_the_warehouse_puts_him_where_it_lands() -> void:
 	# **上场和摆位是同一个动作**（M5-4）。分成两步的话玩家要先「派上场」、
 	# 再去战场上把他拖到想要的位置，而他刚才那一下就是在说位置。

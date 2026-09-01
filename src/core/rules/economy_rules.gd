@@ -30,6 +30,17 @@ const QUEST_TABLE := [
 ## 任务等级的显示名，只用于 CSV 输出。
 const QUEST_GRADES: Array[StringName] = [&"C", &"B", &"A", &"S", &"SSS"]
 
+## 任务栏一共几个槽（M5-7）。**等于 [constant QUEST_TABLE] 里最大的那个人数。**
+##
+## ## 它是「能塞几个」，不是「要几个」
+##
+## 界面上那四个槽是**固定的**：本波只要 2 个人时另外两个槽照样收得下人，
+## 而塞多了就是 [member PBWavePlan.quest_accepted] 判不通过。
+## 「要几个」永远走 [method quest_cost_units]，两个数不能混 ——
+## 拿 `quest_cost_units` 当上限的话玩家**塞不进第三个**，
+## 于是「人数不符」这条判定在界面上根本触发不了。
+const QUEST_SLOTS: int = 4
+
 ## §07 的五条收入流。顺序即报表列序。
 ##
 ## 分开记账不是为了好看：§07 的验收「纯战力开局在 20 波左右因缺钱停滞」

@@ -40,14 +40,13 @@ func test_gacha_is_worth_less_once_the_bench_is_full_of_good_cards() -> void:
 	assert_gt(early, late, "板凳全是 USR 之后，再抽一张的边际价值应显著低于开局")
 
 
-func test_duplicate_cards_are_valued_below_new_ones() -> void:
-	# 卡池只有 48 张（§08），后期四分之三的抽卡是重复卡，只能加星。
-	# 把每一抽都当新卡会系统性高估后期抽卡 —— 而后期正是
-	# 「该继续抽还是该转装备」的分界区，偏差刚好落在结论上。
+func test_a_duplicate_is_worth_the_same_body_but_no_bond() -> void:
+	# **M5-9 把「重复卡只加星级进度」整段拿掉了**：重复抽到的是另一个人，
+	# 他立刻能上场、能升级、能带装备，作为**战力**和新卡一模一样。
+	#
+	# 差的那一份在羁绊那一侧：羁绊按**角色**算档
+	# （[method PBBondRules.active_count]），同名的第二个人一组都不多。
 	var cfg := PBSimConfig.new()
-
-	# 直接量估值函数本身，门槛固定为 0，这样两边只差「卡池占掉了多少格」——
-	# 拿两个完整局面去比会把「队伍强弱」混进来，那条差异不是这里要测的东西。
 	var virgin := PBRunSim.new_state(cfg)
 	var owned := PBRunSim.new_state(cfg)
 	for rarity: int in cfg.rarity_power.size():
@@ -57,10 +56,18 @@ func test_duplicate_cards_are_valued_below_new_ones() -> void:
 					PBUnit.of(cfg, element as PBElement.Type, rarity as PBUnit.Rarity, variant)
 				)
 
+	# 门槛固定为 0，两边只差「卡池里有没有这些角色」—— 拿两个完整局面去比
+	# 会把「队伍强弱」混进来，那条差异不是这里要测的东西。
 	var fresh: float = PBValuation.expected_surplus(PBElement.Type.FIRE, 0.0, virgin, cfg)
 	var dupes: float = PBValuation.expected_surplus(PBElement.Type.FIRE, 0.0, owned, cfg)
 	assert_gt(fresh, 0.0, "空卡池时每一抽都是新卡，期望收益应为正")
-	assert_lt(dupes, fresh * 0.2, "卡池抽满之后每一抽都是重复卡，收益应低一个数量级")
+	assert_almost_eq(dupes, fresh, fresh * 1e-6, "作为战力，重复卡和新卡一样值钱")
+
+	assert_gt(
+		PBValuation.expected_bond_gain(virgin, cfg),
+		PBValuation.expected_bond_gain(owned, cfg),
+		"羁绊那一侧才是重复卡的差价 —— 抽满之后再抽一张，一组羁绊都不多"
+	)
 
 
 func test_bond_prediction_matches_the_real_formula() -> void:

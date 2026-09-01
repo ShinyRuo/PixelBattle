@@ -33,9 +33,10 @@ const PRESS_FRAME: int = 20
 ## `--press` 认得的键名。只列准备阶段真的会按的那几个。
 const KEY_NAMES := {
 	"b": KEY_B,  # 换带人方式（按战力 / 按羁绊）
-	"q": KEY_Q,  # 接/不接任务
 	"a": KEY_A,  # 自动推进
-	"escape": KEY_ESCAPE,  # 收弹层 / 取消选中（M3.5-e）
+	# `q`（接/不接任务）M5-7 没了 —— 接不接现在等于任务栏里站着几个人。
+	"escape": KEY_ESCAPE,  # 收说明卡 / 收弹层 / 取消选中
+	"space": KEY_SPACE,  # 暂停（战斗阶段）。截图前一刻按用 `--pause`
 }
 
 var _scene: Node
@@ -53,6 +54,16 @@ var _press: Array[int] = []
 ## 「这两块排得下吗、读得懂吗」只能靠手开游戏回答，
 ## 而那正是本工具存在的理由。
 var _hover: int = -1
+
+## 摆出「正在等你点」的那一档：`attack` / `ultimate`。空 = 不摆。
+var _aim: String = ""
+
+## 截图前一刻按下暂停（M5-12）。**A 线在暂停时画全场**，
+## 而那一屏正是要看的东西 —— 不暂停只画选中那一条。
+##
+## 和 `--press space` 不是一回事：那个按在第 20 帧，战斗还没打起来，
+## 于是接下来一百帧都是同一张静止画面。这个按在**截图前两帧**。
+var _pause: bool = false
 
 ## 强行摊开一层模态（`offer` / `beasts`）。空 = 不开。
 ## 仓库、忍具、装备栏都不在里面 —— M5-3 到 M5-5 之后它们是常驻面板。
@@ -102,13 +113,17 @@ func _process(_delta: float) -> bool:
 	# 绕过去直接设字段的话，键位接错了截图照样是对的。
 	if _frames == PRESS_FRAME and not _press.is_empty():
 		for keycode: int in _press:
-			var event := InputEventKey.new()
-			event.keycode = keycode
-			event.pressed = true
-			Input.parse_input_event(event)
+			_key(keycode)
+	# 暂停按在最后 —— 前面那些帧要让战斗真的打起来（见 [member _pause]）。
+	# **留六帧**，不是两帧：按下去到画面上写着「暂停」中间隔着一次输入派发
+	# 和一次 `_physics_process`，两帧的余量实测会漏（截出来还在跑）。
+	if _pause and _frames == maxi(_warmup - 6, PRESS_FRAME + 3):
+		_key(KEY_SPACE)
 	# 选中排在按键之后一帧，让面板先摆好。
 	if _frames == PRESS_FRAME + 1 and _hover >= 0:
 		_hover_tile()
+	if _frames == PRESS_FRAME + 2 and _aim != "":
+		_aim_at()
 	if _frames == PRESS_FRAME + 1 and _select != "":
 		_pick_slot()
 	if _frames == PRESS_FRAME + 2 and _modal != "":
@@ -128,6 +143,14 @@ func _process(_delta: float) -> bool:
 	return true
 
 
+## 送一个按键。走 `Input.parse_input_event`，理由见 [method _process]。
+func _key(keycode: int) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.pressed = true
+	Input.parse_input_event(event)
+
+
 ## 假装玩家点了仓库里的第 [member _hover] 个忍者。
 ##
 ## 直接发格子自己的信号，而不是去 `warp_mouse` —— 后者要等引擎下一帧
@@ -136,7 +159,10 @@ func _process(_delta: float) -> bool:
 func _hover_tile() -> void:
 	var bay := _scene.get_node_or_null("HUD/Stash") as PBRosterBay
 	if bay == null or not bay.visible:
-		printerr("仓库没显示（准备阶段才有）")
+		# 战斗阶段仓库是收起来的，而**战斗中的指令卡也要看得见**
+		# （M4-e 的攻击 / 自动选敌、M5-9 的忍术）—— 那时选中的入口
+		# 是战场上的忍者，不是仓库里的卡。
+		_pick_fighter()
 		return
 	var seen: int = 0
 	for tile: PBUnitTile in bay.find_children("", "PBUnitTile", true, false):
@@ -147,6 +173,33 @@ func _hover_tile() -> void:
 			return
 		seen += 1
 	printerr("场上没有第 %d 个忍者" % _hover)
+
+
+## 摆出「正在等你点」的那一档（M5-11），好让 B / C 两条虚线入镜。
+##
+## 鼠标要**真的挪过去**（`warp_mouse`）—— 那两条线的终点读的是
+## [method Viewport.get_mouse_position]，不挪的话终点是屏幕左上角。
+func _aim_at() -> void:
+	if _aim != "attack" and _aim != "ultimate":
+		printerr("--aim 只认 attack / ultimate，收到：%s" % _aim)
+		return
+	_scene._on_command(
+		PBCommandCard.CMD_ATTACK if _aim == "attack" else PBCommandCard.CMD_ULTIMATE
+	)
+	Input.warp_mouse(PBLayout.B_FIELD.position + PBLayout.B_FIELD.size * Vector2(0.62, 0.45))
+
+
+## 战斗中假装玩家点了场上第 [member _hover] 个忍者（M5-9）。
+##
+## 走 `_select` 而不是伪造一次战场点击：点击要先换算屏幕坐标再做命中测试，
+## 而那两样各自都已经有测试钉着（`test_battle_control.gd`）。
+## 这里要的只是「指令卡在有人选中时长什么样」。
+func _pick_fighter() -> void:
+	var deployed: Array[PBUnit] = _scene._plan.deployed
+	if _hover >= deployed.size():
+		printerr("场上没有第 %d 个忍者" % _hover)
+		return
+	_scene._select(PBSelection.Kind.UNIT, deployed[_hover].key())
 
 
 ## 假装玩家点了 C（尾兽）或 D（大本营）。走的是槽位自己发的信号，
@@ -186,6 +239,8 @@ func _parse_args() -> void:
 				_out = args[i]
 			"--auto":
 				_auto = true
+			"--pause":
+				_pause = true
 			"--seed":
 				i += 1
 				_seed = int(args[i])
@@ -196,6 +251,9 @@ func _parse_args() -> void:
 				# 截图前多跑几帧。手感那几样要打起来才看得到。
 				i += 1
 				_warmup = maxi(int(args[i]), PRESS_FRAME + 3)
+			"--aim":
+				i += 1
+				_aim = args[i].strip_edges().to_lower()
 			"--select":
 				i += 1
 				_select = args[i].strip_edges().to_lower()

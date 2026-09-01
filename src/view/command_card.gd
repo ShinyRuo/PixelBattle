@@ -44,6 +44,20 @@ const CMD_BEAST_PICK: StringName = &"beast_pick"
 const CMD_ATTACK: StringName = &"attack"
 const CMD_CLEAR_TARGET: StringName = &"clear_target"
 
+## 手动放忍术（§02，M5-9）。和「攻击」一样是两步：按下去进入选落点状态，
+## 再点战场上的一个点才真的下达。
+##
+## ## 为什么它必须是一格按钮，而不是自动放
+##
+## M5-9 之前大招走的是 [PBAimRules] 的**自动档**（那是 §02 给手机端留的）。
+## 冷却在开波那一刻全员是好的，于是**整队在第 1 tick 同时下达、
+## 第 11 tick 同时落地** —— 玩家看到的是「开打就自动炸一下」，
+## 而这也正是「单波只有 0.55 秒」那条已知配平问题的根源。
+##
+## §02 那对分层验收（手动比自动强 15–25%）本来就要求手动是玩家在放，
+## 而在它接上之前，自动档等于替玩家把这一整维决策做完了。
+const CMD_ULTIMATE: StringName = &"ultimate"
+
 ## 3×3。和原版一致 —— 九格装得下任何一种上下文，多了就该拆界面了。
 const COLUMNS: int = 3
 const ROWS: int = 3
@@ -96,11 +110,13 @@ var _deployed: Array[PBUnit] = []
 
 ## 这一波去做任务的人。
 ##
-## 单独收一份而不是从 `_deployed` 反推：**他们的位子还占着**
-## （只是这一波不打），所以「还塞不塞得下一个人」要数两份的和。
-## 只看 `_deployed` 的话，派出去一个就会空出一格可以补人，
-## 而 [method PBBattleView._set_on_field] 那一侧数的是没减过的名单 ——
-## 又是一次「按钮说行、点下去没反应」。
+## 单独收一份而不是从 `_deployed` 反推：这一格要显示「出任务中」，
+## 而那和「在仓库里」是两回事。
+##
+## **他们不占人口**（M5-9）：门槛因此是 [method PBRunState.field_slots]
+## 而不是 `open_slots`，两份加起来跟它比。这一侧和
+## [method PBCardMoves.set_on_field] 必须读同一个数 ——
+## 差一个的表现是「按钮说行、点下去没反应」，而它不报错。
 var _away: Array[PBUnit] = []
 
 ## 本波任务的等级。「派去任务」那一格要靠它算**要派几个人**。
@@ -110,11 +126,18 @@ var _grade: int = 0
 ## 升级、装备、派任务全是准备阶段的事，打起来之后一条都不该点得到。
 var _battle_mode: bool = false
 
-## 玩家按了「攻击」、正在等他点一个敌人。
-var _aiming: bool = false
+## 战场上正在等玩家点什么（[enum PBFieldPicker.Aim]）。
+var _aim: int = PBFieldPicker.Aim.OFF
 
 ## 选中那个忍者现在点名打谁（敌人下标）。-1 = 没点名。
 var _target: int = -1
+
+## 选中那个忍者这一刻放不放得出忍术（[method PBBattleSim.can_cast]）。
+##
+## **传进来而不是自己算**：指令卡手上没有 [PBBattleSim]，而冷却和蓝
+## 只有那儿知道。自己照着 [PBUltimate] 再算一遍就是第二把尺子 ——
+## 「按钮亮着点了没反应」正是这种分叉的标准表现。
+var _can_cast: bool = false
 
 
 func _ready() -> void:
@@ -197,16 +220,24 @@ func refresh(
 			_hint.text = "点谁，这里就换成谁能做的事。"
 
 
-## 切到战斗中那一套指令（M4-e）。[param aiming] 为真表示正在等玩家点敌人，
-## [param target] 是选中那个忍者现在点名打谁（-1 = 没点名）。
+## 切到战斗中那一套指令（M4-e）。[param aim] 是战场正在等玩家点什么
+## （[enum PBFieldPicker.Aim]），[param target] 是选中那个忍者现在点名打谁
+## （-1 = 没点名），[param can_cast] 是他这一刻放不放得出忍术。
 ##
-## 三个状态一起传，不让指令卡自己去问：**它手上没有 [PBBattleSim]**，
-## 而「谁被点名了」只有那儿知道。让它自己去拿就要给它一条通往战斗实例的路，
-## 而那条路一开，界面离「直接改 sim」只剩一步（§14：渲染层只读）。
-func set_battle(battle: bool, aiming: bool = false, target: int = -1) -> void:
+## 四个状态一起传，不让指令卡自己去问：**它手上没有 [PBBattleSim]**，
+## 而「谁被点名了」「冷却好没好」只有那儿知道。让它自己去拿就要给它一条
+## 通往战斗实例的路，而那条路一开，界面离「直接改 sim」只剩一步
+## （§14：渲染层只读）。
+func set_battle(
+	battle: bool,
+	aim: int = PBFieldPicker.Aim.OFF,
+	target: int = -1,
+	can_cast: bool = false
+) -> void:
 	_battle_mode = battle
-	_aiming = aiming
+	_aim = aim
 	_target = target
+	_can_cast = can_cast
 
 
 ## 这一格现在绑着哪个指令。测试拿它确认「选中什么就该出现什么」。
@@ -236,20 +267,35 @@ func _fill_battle(selection: PBSelection) -> void:
 		_hint.text = "点战场上的忍者选中他。空格暂停时照样点得到。"
 		return
 	_title.text = "忍者　%s" % PBLocale.of_character(unit.character)
+	var picking: bool = _aim == PBFieldPicker.Aim.TARGET
+	var casting: bool = _aim == PBFieldPicker.Aim.ULTIMATE
 	_bind(
 		0,
 		CMD_ATTACK,
-		"取消指定" if _aiming else "攻击",
+		"取消指定" if picking else "攻击",
 		true,
-		PBSkin.Tone.PRIMARY if _aiming else PBSkin.Tone.PLAIN
+		PBSkin.Tone.PRIMARY if picking else PBSkin.Tone.PLAIN
 	)
 	_bind(1, CMD_CLEAR_TARGET, "自动选敌", _target >= 0)
-	if _aiming:
-		_hint.text = "点一个敌人改打他。再按「攻击」取消。"
+	# 忍术（M5-9）。**冷却没好就是灰的**，而不是按下去没反应 ——
+	# 后者玩家分不清是「还没好」还是「我点歪了」。
+	_bind(
+		2,
+		CMD_ULTIMATE,
+		"取消忍术" if casting else "忍术",
+		casting or _can_cast,
+		PBSkin.Tone.PRIMARY if casting else PBSkin.Tone.PLAIN
+	)
+	if casting:
+		_hint.text = "点战场上一个点放忍术。右键取消。"
+	elif picking:
+		_hint.text = "点一个敌人改打他。右键取消。"
 	elif _target >= 0:
 		# 「不会站着发呆」那半句删了 —— 它讲的是**没发生的事**，
 		# 而一行只有 22 个字（见 [constant HINT_BUDGET]）。
 		_hint.text = "点名中。够不着或目标死了就自动接管。"
+	elif _can_cast:
+		_hint.text = "忍术转好了 —— 按下去再点落点。"
 	else:
 		_hint.text = "按「攻击」再点敌人，可以指定他打谁。"
 
@@ -303,12 +349,17 @@ func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	# [method PBBattleView._set_on_field] 看的是真名单、发现他已经在里面，
 	# 直接返回 —— 按钮点了没反应，且不报错。两处必须读同一份名单。
 	if _away.has(unit):
-		# 去做任务的人这一波动不了。位子还占着，所以也不显示「派上场」。
+		# 去做任务的人这一波不上场，所以也不显示「派上场」。
 		_bind(1, CMD_BENCH, "出任务中", false)
 	elif _deployed.has(unit):
 		_bind(1, CMD_BENCH, "收回仓库", true)
 	else:
-		_bind(1, CMD_DEPLOY, "派上场", _deployed.size() + _away.size() < state.open_slots(cfg))
+		_bind(
+			1,
+			CMD_DEPLOY,
+			"派上场",
+			_deployed.size() + _away.size() < state.field_slots(cfg)
+		)
 	# **「装备」那一格 M5-5 删了**：装备栏（[PBEquipBay]）现在跟着选中常驻显示，
 	# 一个「打开一直开着的东西」的按钮只会让人以为自己漏了一步。
 	_fill_dispatch(unit, state, cfg)

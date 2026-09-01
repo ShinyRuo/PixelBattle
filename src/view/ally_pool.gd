@@ -175,10 +175,20 @@ func _place(index: int, at: Vector2, attacker: PBAttacker, unit: PBUnit) -> void
 	_fills[index].color = HP_LOW if ratio < 0.35 else HP_GOOD
 
 
+## 造一个方块。**一律 `MOUSE_FILTER_IGNORE`**（M5-10）。
+##
+## [ColorRect] 默认是 `MOUSE_FILTER_STOP`，而**引擎只要在鼠标下面找到
+## 任何一个非 IGNORE 的 [Control]，那一下点击就算被 GUI 处理掉了** ——
+## `_unhandled_input` 收不到，于是「点战场上的忍者」整条路是死的。
+##
+## 最坑的是它长什么样：**点在忍者身上没反应，点在他旁边也没反应**
+## （底下还压着 `Lane` 和 `Background` 两块同样默认 STOP 的 [ColorRect]）。
+## 看起来像「点选功能没做」，而代码里那一整套判定写得好好的。
 func _add_rect(of_size: Vector2, color: Color) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.size = of_size
 	rect.color = color
 	rect.visible = false
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(rect)
 	return rect

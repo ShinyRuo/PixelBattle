@@ -6,24 +6,22 @@ extends Node2D
 ##
 ## §14 的铁律：**定帧 20 tick/s，倍速只改每帧步进多少个 tick。**
 ##
-## `_physics_process` 本身就是固定频率的（默认 60Hz），所以 60 / 20 = 3，
+## `_physics_process` 本身就是固定频率的（默认 60Hz），60 / 20 = 3，
 ## 每 3 个物理帧推进一个逻辑 tick —— 全整数，零浮点。
+## `_accumulator += delta` 会每帧累加浮点误差，3 倍速和 1 倍速跑出来的
+## tick 序列慢慢就错开了，而 §12 的存档回滚、§13 的每日种子与战报回放
+## 全都要求「逐 tick 完全一致」。`Engine.time_scale` 同理，绝对不用。
 ##
-## 不用 `_accumulator += delta` 是有理由的：那样每帧都在累加浮点误差，
-## 3 倍速和 1 倍速跑出来的 tick 序列会慢慢错开，而 §12 的存档回滚、
-## §13 的每日种子和战报回放全都要求「逐 tick 完全一致」。
-## `Engine.time_scale` 同理，绝对不用。
+## ## 这一层只读 sim，改的只有玩家的指令
 ##
-## ## 这一层只读 sim，不改 sim
-##
-## 渲染层拿 [PBBattleSim] 的敌人数组画图，拿 [PBRunState] 画 HUD，
-## 一个字段都不回写。要改状态只能通过 [PBRunSim] 的 `plan_wave` /
-## `settle_wave` —— 那是批量模拟走的同一条路，两边不会分叉。
+## 画图与 HUD 一个字段都不回写；改状态只能走 [PBRunSim] 的 `plan_wave` /
+## `settle_wave`（批量模拟走的同一条路）。**只有两个例外，都是玩家的指令**：
+## 点名（[member PBAttacker.forced_target]）和手动放忍术
+## （[method PBBattleSim.cast_ultimate]）—— 指令本来就该是玩家能改的状态，
+## 而它们各自只有一个入口。
 
-## 一波的三个阶段（§01）。
-##
-## M0 只有战斗 —— 准备阶段被 [method PBRunSim.plan_wave] 在一帧里做完了，
-## 因为那时候玩家是脚本。M1 把它显式拆出来：**准备阶段不限时，等玩家**。
+## 一波的三个阶段（§01）。**准备阶段不限时，等玩家**（M1 把它显式拆出来，
+## 在那之前它被 [method PBRunSim.plan_wave] 在一帧里做完了）。
 enum Phase {
 	PREPARE,  ## 花钱、排阵、决定接不接任务。§01：不限时，可存档退出
 	BATTLE,  ## 逐 tick 推进
@@ -33,47 +31,32 @@ enum Phase {
 ## 结算停多少个物理帧。§01 说 2–4 秒，这里取 1 秒够看清结果。
 const WAVE_GAP_FRAMES: int = 60
 
-## 点战场上的单位时，鼠标离多近算点中（像素，M4-e）。
-##
-## 比单位本身大一圈：敌人半径 5、己方 11×11，而 `640×360` 下一个像素
-## 就是一大步。按外观尺寸判的话「点边上一点就选不中」，
-## 而玩家不会认为自己点偏了 —— 他会认为点选坏了。
+## 点战场上的单位时，鼠标离多近算点中（像素，M4-e）。**比单位本身大一圈** ——
+## 按外观尺寸判的话「点边上一点就选不中」，而玩家会认为点选坏了。
 const PICK_RADIUS_PX: float = 12.0
 
-## 本局的随机种子。0 表示用系统时间。
-##
-## 留成可指定的是为了两件事：**测试要可复现**，以及 §13 的每日种子挑战
-## 将来只要把 `hash(date_utc)` 填进来就行，其余系统零改动。
+## 本局的随机种子。0 表示用系统时间。留成可指定是为了**测试可复现**，
+## 以及 §13 的每日种子挑战将来只要把 `hash(date_utc)` 填进来就行。
 @export var run_seed: int = 0
 
 ## 调试用：直接从第几波开始。1 表示正常从头打。
 ##
-## 前面的波次用解析式模型瞬间跑完（不渲染），只有目标波才逐 tick 画出来。
-## 这是为了能立刻检查后期波次的观感 —— `COUNT_CAP` 定夺要看的是
-## 40 波之后几十个敌人同屏糊不糊，正常打过去要等十几分钟。
-##
-## **快进用的是和批量模拟同一条路**（`plan_wave` / `settle_wave`），
-## 所以快进到第 N 波的状态和正常打到第 N 波是一致的，不是伪造的。
+## 前面的波次瞬间跑完（不渲染），只有目标波才逐 tick 画出来。
+## **走的是批量模拟同一条路**（`plan_wave` / `settle_wave`），
+## 所以快进到第 N 波的状态是真的，不是伪造的。
 @export var start_wave: int = 1
 
 ## 调试用：强制第一波的敌人数量。0 表示按 §04 的公式正常算。
 ##
-## **只为回答视觉问题**：「`COUNT_CAP` 取 48 时同屏糊不糊」是 §04 的待决策，
-## §02 的验收项是「去色后仍能仅凭剪影区分五系」。这两条都只跟**画面**有关，
-## 不该依赖「玩家能不能活到第 40 波」才看得到。
-##
-## 它只改这一波的敌人数量，不改任何平衡参数 —— 别拿它跑数值结论。
+## **只为回答视觉问题**（「`COUNT_CAP` 取 48 时同屏糊不糊」）。
+## 它不改任何平衡参数 —— 别拿它跑数值结论。
 @export var debug_enemy_count: int = 0
 
-## 自动推进：准备阶段由脚本玩家代劳，不等输入。
+## 自动推进：准备阶段由脚本玩家代劳，不等输入。§01 点名要这个模式。
 ##
-## §01 点名要这个模式（「PC：开自动推进，一次坐 30~60 分钟」）。
-## 它同时是 M1 的**回归工具** —— 开着的时候整局的决策序列与批量模拟完全一致，
-## 所以「UI 改动有没有把数值弄歪」可以直接和批量结果对拍。
+## 它同时是 M1 的**回归工具** —— 开着的时候整局的决策序列与批量模拟完全一致。
 ##
-## **默认关**：开局第一眼看到的应该是准备阶段那四块面板加编队页，
-## 而不是一场自己打起来的第一波。M0–M3-d 期间默认是开的，
-## 因为那时准备阶段还没有可玩的东西 —— 现在有了。
+## **默认关**：开局第一眼看到的应该是准备阶段，不是一场自己打起来的第一波。
 ## 想回到挂机观战按 `A`，批量回归对拍走 `capture_battle.gd`。
 @export var auto_play: bool = false
 
@@ -111,18 +94,19 @@ var _feel := PBHitFeedback.new()
 ## 战场上「点到了谁」和「让谁打谁」（§02 的战斗中操作，M4-e）。见 [PBFieldPicker]。
 var _picker := PBFieldPicker.new()
 
+## 选中那个忍者上一帧放不放得出忍术（M5-9）。
+## 只记「上一次是什么」，好在真的翻面那一帧才去重排指令卡。
+var _cast_ready: bool = false
+
 
 ## 击杀顿帧还剩几个物理帧。
 ##
 ## ## 它不碰 tick 序列
 ##
 ## 顿帧期间**只是不调 `_advance_logic`**，`_frame_counter` 也不动 ——
-## 效果等同于按了几帧暂停。走完之后 tick 一个不多一个不少，
-## 所以 §12 的存档回滚、§13 的战报回放与每日种子全都不受影响。
-##
-## **绝不能用「跳过一个 tick」或者 `Engine.time_scale` 来做顿帧**：
-## 前者直接改模拟结果，后者违反铁律 2，而两者的表现都只是
-## 「同一个种子跑出来的局慢慢对不上」。
+## 效果等同于按了几帧暂停，走完之后 tick 一个不多一个不少。
+## **绝不能用「跳过一个 tick」或者 `Engine.time_scale`**：前者直接改模拟结果，
+## 后者违反铁律 2，而两者的表现都只是「同一个种子跑出来的局慢慢对不上」。
 var _hitstop_frames: int = 0
 
 # @onready 必须排在普通成员之后 —— .gdlintrc 的 class-definitions-order
@@ -133,6 +117,7 @@ var _hitstop_frames: int = 0
 @onready var _allies: PBAllyPool = $Deployed
 @onready var _telegraph: PBTelegraphPool = $Telegraph
 @onready var _floats: PBFloatTextPool = $Floats
+@onready var _aim: PBAimLines = $Aim
 @onready var _lane: ColorRect = $Lane
 @onready var _base_rect: ColorRect = $Base
 @onready var _limit: ColorRect = $Limit
@@ -157,6 +142,11 @@ func _ready() -> void:
 	_cfg = PBGameData.config()
 	# 画面必须逐 tick —— 排队模型算完就没了，没有中间状态可画。
 	_cfg.use_tick_battle = true
+	# **忍术改成玩家自己放**（M5-9）。默认那一档（[constant PBAimRules.Policy.AUTO]）
+	# 是 §02 给手机端留的，它在开波那一刻会让**整队同时下达、0.5 秒后同时落地** ——
+	# 玩家看到的是「开打自动炸一下」，而那也正是「单波 0.55 秒」的根源。
+	# 扫描那一路仍然走 AUTO（那是它要量的东西），所以只在这里改。
+	_cfg.aim_policy = PBAimRules.Policy.NONE
 	_frames_per_tick = maxi(Engine.physics_ticks_per_second / _cfg.tick_rate, 1)
 
 	PBLayout.apply_to(_lane, _base_rect, _limit, _info, _preview, _field(), _cfg.deploy_limit_x)
@@ -187,12 +177,7 @@ func _ready() -> void:
 	_gear.tip_requested.connect(_tip.show_card)
 	_bay.unit_picked.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
 	_beasts.beast_chosen.connect(_on_beast_chosen)
-	# 任务卡自己记着接没接（[method PBQuestCard.accepted]），切换后只需重画。
-	# **不在这里改 `state.dispatched`** —— 那个字段归 `lock_plan` 管，
-	# 渲染层一个字段都不回写（见类顶部）。说明卡本来就把两个分支并排显示，
-	# 玩家不需要靠「先提交再看效果」来了解代价。
-	_quest.quest_toggled.connect(func(_accepted: bool) -> void: _refresh_panels())
-	# 任务卡上那三句长话由这里组一遍再交给 tooltip —— 组它要 state / cfg / plan
+	# 任务卡那三句长话由这里组一遍再交给 tooltip —— 组它要 state / cfg / plan
 	# 三样，而任务卡一样都不持有（见 [signal PBQuestCard.detail_requested]）。
 	_quest.detail_requested.connect(
 		func(anchor: Rect2) -> void:
@@ -204,11 +189,9 @@ func _ready() -> void:
 	_enter_prepare()
 
 
-## 玩家在准备阶段买了一笔。
-##
-## **钱走 [PBStrategy] 的原语，不由界面自己扣** —— 那是批量模拟走的同一批函数。
-## 界面自己扣钱的话，迟早会和 `pull_once` 里维护的保底计数之类的东西不同步，
-## 而这种不同步不报错，只表现为「玩到的和扫描结论对不上」。
+## 玩家在准备阶段买了一笔。**钱走 [PBStrategy] 的原语，不由界面自己扣** ——
+## 那是批量模拟走的同一批函数。界面自己扣钱的话迟早会和保底计数之类的东西
+## 不同步，而这种不同步不报错，只表现为「玩到的和扫描结论对不上」。
 func _on_command(command_id: StringName) -> void:
 	# 战斗中只有「打谁」那两条（§02，M4-e）。花钱、排阵、派任务
 	# 全是准备阶段的决策 —— 留着它们等于让玩家在战斗中花本该更早花的钱。
@@ -243,11 +226,10 @@ func _on_command(command_id: StringName) -> void:
 			_on_card_moved(PBUnitTile.ZONE_STASH, _selection.unit_id, PBUnitTile.ZONE_FIELD)
 			return
 		PBCommandCard.CMD_DISPATCH:
-			PBShopRules.toggle_dispatch(
-				_state,
-				_selection.unit_of(_state),
-				PBEconomyRules.quest_cost_units(_plan.quest_grade),
-				_cfg
+			# **走 [PBCardMoves] 那一份**（M5-13）：派任务要同时改两处状态，
+			# 而这一格在那之前直接调 `toggle_dispatch`，只改了一处。
+			PBCardMoves.toggle_quest(
+				_state, _strategy, _plan, _selection.unit_of(_state), _cfg
 			)
 		PBCommandCard.CMD_BEAST_PICK:
 			_open_modal(_beasts)
@@ -262,29 +244,26 @@ func _on_command(command_id: StringName) -> void:
 	_refresh_panels()
 
 
-## 战斗中的两条指令（§02，M4-e）。
-##
-## 「攻击」是个**开关**，不是一次动作：按下去进入指定状态，再按一次退出。
-## 一步到位（按一下就打最近的）的话这一格没有意义 —— 那本来就是自动规则。
+## 战斗中的三条指令（§02，M4-e / M5-9）。开关语义见
+## [method PBFieldPicker.toggle]。
 func _on_battle_command(command_id: StringName) -> void:
 	match command_id:
 		PBCommandCard.CMD_ATTACK:
-			_picker.aiming = not _picker.aiming
+			_picker.toggle(PBFieldPicker.Aim.TARGET)
+		PBCommandCard.CMD_ULTIMATE:
+			_picker.toggle(PBFieldPicker.Aim.ULTIMATE)
 		PBCommandCard.CMD_CLEAR_TARGET:
-			_picker.release(_selected_attacker())
+			_picker.release(_battle, _selected_attacker())
 	_refresh_battle_panels()
 
 
 ## 玩家点了一个槽位。**再点一次同一个 = 取消选中** ——
 ## 没有「空白处点一下取消」这条路的话，选中框会一直挂在最后点过的那个人身上。
 func _on_slot_picked(kind: PBSelection.Kind, unit_id: StringName) -> void:
-	# **选中不再顺手弹装备栏**（M4-f）。
-	#
-	# §02 原话是「忍者信息栏和装备栏一起弹出和关闭」，M3.5-e 照做了 ——
-	# 那时准备阶段的战场是**空的**，四块抽屉敢共用战场那条道靠的就是这一条。
-	# 现在战场上站着上场名单、还能拖动摆位：每选一个人就弹一块盖住半个战场的
-	# 抽屉，等于把最高频的那个操作挡在自己的反馈前面。
-	# 装备栏还在，改成指令卡上点「装备」才开 —— 那是一个明确的意图。
+	# **选中不再顺手弹装备栏**（M4-f）。§02 原话是「信息栏和装备栏一起弹出」，
+	# 而那是在准备阶段的战场还空着的时候写的。现在战场上站着人、还能拖动摆位：
+	# 每选一个人就弹一块盖住半个战场的面板，等于把最高频的那个操作
+	# 挡在自己的反馈前面。
 	_select(kind, unit_id)
 
 
@@ -352,18 +331,14 @@ func _close_modal() -> bool:
 	return true
 
 
-## 这一波谁去做任务。**三种口径，选哪一种取决于阶段** ——
-## 所以由这里决定，不由槽位那一层自己问（见 [method PBFieldSlots.refresh]）。
+## 这一波谁去做任务：锁过了照 `dispatched_ids` 念，准备阶段就是任务栏里站着的那几个。
 ##
-## 1. 已经锁过了（战斗/结算）：照 `dispatched_ids` 念，那是当时真的派出去的人
-## 2. 准备阶段接了任务：按「现在开打会派谁」预览一份，钦定的人排在前面
-## 3. 准备阶段还没接：只显示玩家已经钦定的那几个 —— 他挑一个就该看见一个，
-##    等到「接下任务」才给反馈的话，挑人这件事没有中间态
+## **M5-7 少了一种口径**：「接了任务但一个人都没挑」跟着那个按钮一起没了 ——
+## 接不接现在**就是**任务栏里站着几个人（见 [PBQuestCard] 顶部）。
+## 脚本玩家仍走末尾规则，但那条路在 `lock_plan` 里，不经过这里。
 func _dispatch_preview() -> Array[PBUnit]:
 	if not _state.dispatched_ids.is_empty():
 		return _units_of(_state.dispatched_ids)
-	if _phase == Phase.PREPARE and _quest.accepted():
-		return _state.dispatch_picks(_cfg, PBEconomyRules.quest_cost_units(_plan.quest_grade))
 	return _units_of(_state.dispatch_manual)
 
 
@@ -371,12 +346,8 @@ func _dispatch_preview() -> Array[PBUnit]:
 ##
 ## 战斗与结算阶段照 [member PBWavePlan.deployed] 念 ——
 ## [method PBRunSim.lock_plan] 已经把派出去的滤掉了。
-## 准备阶段按「现在开打会是谁」预览一份，**同样要减掉派遣**。
-##
-## 不减的话，被派出去的人会**同时出现在出战席和出任务两排**，
-## 而他只可能在一处。过滤本来只发生在 `lock_plan`，
-## 也就是「点了开打他才从出战席上消失」—— 玩家在准备阶段
-## 看到的是一支比实际多一个人的队伍，指令卡和装备栏也跟着多算他一份。
+## 准备阶段按「现在开打会是谁」预览一份，**同样要减掉派遣**：
+## 不减的话被派出去的人会**同时出现在战场和任务栏**，而他只可能在一处。
 func _fighting_now(away: Array[PBUnit]) -> Array[PBUnit]:
 	if _phase != Phase.PREPARE:
 		return _plan.deployed
@@ -443,8 +414,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	# 准备阶段的战场归拖放协议管（M5-4，见 [PBDropArea]）。
 	if event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
-		if click.button_index == MOUSE_BUTTON_LEFT and click.pressed and _phase != Phase.PREPARE:
+		if click.button_index == MOUSE_BUTTON_LEFT and click.pressed:
 			_on_field_click(click.position)
+		# **右键取消**（M5-11）：两步操作的第一步按下去之后，
+		# 玩家需要一条不用把手挪回指令卡的退路。`Esc` 是第二条路。
+		elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed:
+			if _picker.aim_mode != PBFieldPicker.Aim.OFF:
+				_picker.aim_mode = PBFieldPicker.Aim.OFF
+				_refresh_battle_panels()
 		return
 	if not (event is InputEventKey) or not event.is_pressed() or event.is_echo():
 		return
@@ -464,34 +441,29 @@ func _unhandled_input(event: InputEvent) -> void:
 			# 面板只在「手动 + 准备阶段」出现。切换时立刻反映，
 			# 否则玩家关了自动却要等下一波才看得到商店。
 			_set_panels_visible(_phase == Phase.PREPARE and not auto_play and not _run_over)
-		KEY_Q:
-			# 接/不接本波任务（§06）。手柄和触屏都点得到按钮，
-			# 键盘上给一个快捷键 —— 这是准备阶段唯一需要反复试的开关。
-			if _phase == Phase.PREPARE and not auto_play:
-				_quest.toggle()
+			# **`Q` 没了**（M5-7）：接不接现在等于「任务栏里站着几个人」，
+			# 而那件事只能靠拖。一个快捷键切不了它，留着只会让人按了没反应。
 		KEY_B:
 			# 带人方式：按战力，还是按羁绊（§09）。M2-d。
 			#
-			# **加这个键是因为不加的话羁绊面板是不可操作的信息。**
-			# 面板第二行会说「还差 1 人就能进满档，+18%」，而玩家
-			# 一个按钮都没有 —— 看得见动不了的 UI 比没有还糟，
-			# 它只会让人以为自己漏掉了什么操作。
-			#
-			# 完整的「手动点选谁上场」要等阵容面板做成可交互。
-			# 在那之前这个开关是同一个决策的**最小可玩形式**：
-			# 一次按键就能看见「凑羁绊」和「堆战力」差多少。
+			# **加这个键是因为不加的话羁绊那几行是不可操作的信息** ——
+			# 面板会说「还差 1 人就能进满档，+18%」而玩家一个按钮都没有，
+			# 看得见动不了的 UI 只会让人以为自己漏掉了什么操作。
 			if _phase == Phase.PREPARE and not auto_play:
 				_toggle_field_policy()
 		KEY_ESCAPE:
-			# **先收弹层，再取消选中。** 一下按键做两件事会让人分不清
-			# 刚才关掉的是哪一个；分两下按则每一下的后果都看得见。
-			# 战场上没有「空白处」可点（面板铺满了下半屏），所以这个键是必需的。
+			# **一下只收一层：说明卡 → 弹层 → 瞄准 → 选中。** 一下做几件事会让人
+			# 分不清刚才关掉的是哪一个。说明卡排最前面（M5-7）—— 它盖在最上面，
+			# 手上有东西挡着的时候，那一下的意思一定是「先把它收掉」。
+			if _tip.is_open():
+				_tip.hide_card()
+				return
 			if _close_modal():
 				return
-			# 战斗中还多一层：先退出「正在指定目标」（M4-e）。
+			# 战斗中还多一层：先退出「正在等你点战场」（M4-e / M5-9 的忍术）。
 			# 一下按键同时取消瞄准和选中的话，玩家分不清刚才取消的是哪一个。
-			if _picker.aiming:
-				_picker.aiming = false
+			if _picker.aim_mode != PBFieldPicker.Aim.OFF:
+				_picker.aim_mode = PBFieldPicker.Aim.OFF
 				_refresh_panels()
 				return
 			_selection.set_to(PBSelection.Kind.NONE)
@@ -537,7 +509,7 @@ func _enter_prepare() -> void:
 		_plan.wave.count = mini(debug_enemy_count, _cfg.count_cap)
 	# 名单还没锁，先按「如果现在就开打」预览一份，让准备阶段有东西可看。
 	_sync_deployed()
-	_quest.reset(_state, _cfg, _plan)
+	_quest.reset(_state, _plan)
 	_set_panels_visible(not auto_play)
 	_sync_visuals()
 
@@ -565,10 +537,13 @@ func _finish_prepare() -> void:
 	# 手动模式下派遣是玩家的决定（M1-d）；自动模式仍由脚本玩家的
 	# [enum PBStrategy.Dispatch] 策略决定，这样开着自动跑出来的整局
 	# 与批量模拟逐波一致，UI 改动有没有把数值弄歪可以直接对拍。
+	# **手动模式下「接没接」不是开关，是任务栏里站着几个人**（M5-7）：人数不符
+	# 就是失败，那几个人照样离场，只是拿不到奖励。判据走那一份 static，
+	# 界面写的和结算算的因此不可能分叉。
 	var accepted: bool = (
 		_strategy.accept_quest(_state, _plan.wave, _plan.quest_grade, _cfg)
 		if auto_play
-		else _quest.accepted()
+		else PBQuestCard.is_done(_state, _plan)
 	)
 	PBRunSim.lock_plan(_state, _plan, _strategy.deploy(_state, _plan.wave, _cfg), accepted, _cfg)
 	_battle = PBBattleSim.new(
@@ -576,7 +551,7 @@ func _finish_prepare() -> void:
 	)
 	_frame_counter = 0
 	_phase = Phase.BATTLE
-	_picker.aiming = false
+	_picker.aim_mode = PBFieldPicker.Aim.OFF
 	# **再摆一次面板。** 上面那次是在 `_phase` 还是 PREPARE 时调的，
 	# 而指令卡与信息栏的可见性现在要看阶段（§02 的战斗中操作，M4-e）——
 	# 少这一行的话那两块会一直藏到下一波准备阶段。
@@ -606,12 +581,9 @@ func _end_wave() -> void:
 ## 准备阶段那几块面板一起显隐、一起刷新 —— 分开控制迟早漏掉一个，
 ## 表现为「战斗中还挂着半张商店」。
 ##
-## ## M4-e 起指令卡与信息栏在战斗中也留着
-##
-## §02 要求「打起来之后照样点得到忍者、照样能指定他打谁」。
-## 那两块因此分成了另一档：**战斗中可见，但内容整个换掉**
-## （见 [method PBCommandCard.set_battle]）—— 升级、装备、派任务
-## 都是准备阶段的决策，留着它们等于让玩家在战斗中花本该更早花的钱。
+## **M4-e 起指令卡与信息栏在战斗中也留着**（§02 要「打起来之后照样点得到
+## 忍者、照样能指定他打谁」），但内容整个换掉（[method PBCommandCard.set_battle]）
+## —— 升级、装备、派任务都是准备阶段的决策。
 func _set_panels_visible(shown: bool) -> void:
 	_command.visible = shown or _phase == Phase.BATTLE
 	_unit_info.visible = _command.visible
@@ -668,7 +640,7 @@ func _refresh_panels() -> void:
 	var aware: bool = _strategy.field_policy == PBStrategy.Field.BOND_AWARE
 	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, deployed, aware)
 	_slots.refresh(_selection, _state)
-	_quest.refresh(_selection, _state, _cfg, _plan, away)
+	_quest.refresh(_selection, _state, _plan, away)
 	# 弹层只在摊着的时候重画 —— 关着的那一层每次都算一遍纯属浪费。
 	if _offer.visible:
 		_offer.refresh(_state, _cfg, _plan.wave)
@@ -686,7 +658,12 @@ func _refresh_panels() -> void:
 ## 在一波之内根本不变。会变的血蓝条走 [method PBUnitInfo.show_live]。
 func _refresh_battle_panels() -> void:
 	var live := _selected_attacker()
-	_command.set_battle(true, _picker.aiming, live.forced_target if live != null else -1)
+	_command.set_battle(
+		true,
+		_picker.aim_mode,
+		live.forced_target if live != null else -1,
+		_battle != null and _battle.can_cast(live)
+	)
 	_command.refresh(_selection, _state, _cfg, _plan, _plan.deployed)
 	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, _plan.deployed)
 
@@ -698,20 +675,41 @@ func _selected_attacker() -> PBAttacker:
 	return _picker.attacker_of(_battle, _plan.deployed, _selection.unit_id)
 
 
-## 玩家在战场上点了一下（§02 的战斗中操作，M4-e）。
+## 玩家在战场上点了一下（§02 的战斗中操作，M4-e；准备阶段那一支是 M5-7）。
 ##
 ## **暂停时照样有效** —— `_unhandled_input` 不受 [member _paused] 影响，
 ## 而 §02 原话就是「暂停的时候也能点击」。
+##
+## **准备阶段也要点得中**（M5-7）。在那之前这个函数一上来就
+## `if _phase != Phase.PREPARE` 拦掉了，而在场的人已经不在仓库里
+## （一个人只在一处）—— 于是**他们根本没有选中入口**，指令卡和信息栏全失效。
 func _on_field_click(at: Vector2) -> void:
+	if _phase == Phase.PREPARE:
+		# 准备阶段没有 [PBBattleSim]，站位来自 [PBFormationRules]。
+		# 点空地取消选中 —— 和战斗中那一支同一条规矩。
+		var who := _unit_on_field_at(at)
+		if who == &"":
+			_selection.set_to(PBSelection.Kind.NONE)
+			_refresh_panels()
+		else:
+			_select(PBSelection.Kind.UNIT, who)
+		return
 	if _battle == null:
 		return
 	var field := _field()
 	var spot := PBLayout.to_field(at, field)
 	var pick: float = PICK_RADIUS_PX / PBLayout.px_per_unit(field)
 	# 正在指定目标：只认敌人。点空地就当取消 —— 让「按错了」有一条退路。
-	if _picker.aiming:
-		_picker.aim(_selected_attacker(), _picker.enemy_at(_battle, spot, pick))
-		_picker.aiming = false
+	if _picker.aim_mode == PBFieldPicker.Aim.TARGET:
+		_picker.aim(_battle, _selected_attacker(), _picker.enemy_at(_battle, spot, pick))
+		_picker.aim_mode = PBFieldPicker.Aim.OFF
+		_refresh_battle_panels()
+		return
+	# 正在选忍术落点（M5-9）：战场上**哪个点都算**，不用点中谁 ——
+	# 大招打的是一个圆，「落在哪」本来就是玩家要挑的那件事。
+	if _picker.aim_mode == PBFieldPicker.Aim.ULTIMATE:
+		_battle.cast_ultimate(_selected_attacker(), spot)
+		_picker.aim_mode = PBFieldPicker.Aim.OFF
 		_refresh_battle_panels()
 		return
 	var ally := _picker.ally_at(_battle, spot, pick)
@@ -774,8 +772,8 @@ func _feedback() -> void:
 		_hitstop_frames = freeze
 
 
-## 手感那几样的状态一起清掉。**必须是一起** ——
-## 只清一半的话，新的一波会带着上一波的血量快照或者半屏没飘完的旧数字。
+## 手感那几样的状态一起清掉。**必须是一起** —— 只清一半的话，
+## 新的一波会带着上一波的血量快照或者半屏没飘完的旧数字。
 func _clear_feedback() -> void:
 	_feel.reset()
 	_floats.clear()
@@ -787,12 +785,9 @@ func _clear_feedback() -> void:
 ## 把前面的波次用解析式模型瞬间跑完，不渲染。调试用，见 [member start_wave]。
 ##
 ## 走的是 `plan_wave` / `settle_wave` 这条正路，所以快进出来的状态
-## 和正常打过去是一致的 —— 金币、卡池、科技、基地血全都对得上。
-## 快进途中就死了的话，如实标成「本局结束」。
-##
-## 早先这里 break 完就接着渲染，画面会显示一个基地血为负的第 N 波 ——
-## 看起来像「快进到了第 N 波」，实际是「第 N 波打不过去」。
-## 这种「失败被画成正常状态」的错误极难从现象反推，必须显式处理。
+## 和正常打过去是一致的。**快进途中就死了要如实标成「本局结束」** ——
+## 早先这里 break 完接着渲染，画面上是一个基地血为负的第 N 波，
+## 看起来像「快进到了」，实际是「打不过去」。
 func _fast_forward_to(target_wave: int) -> void:
 	# M3-a 起**不能**在这里换成解析式模型抄近路。射程与多目标分配只有
 	# 逐 tick 模型有，换过去等于用另一套战斗规则快进 ——
@@ -869,7 +864,7 @@ func _sync_preview() -> void:
 
 	var keys: String = "空格暂停　1/2/3 倍速　R 重开　A 自动:%s" % ("开" if auto_play else "关")
 	if _phase == Phase.PREPARE and not auto_play:
-		keys = "拖动摆位　回车开打　Q 接任务　B 换带人法　Esc 取消　A 自动:关"
+		keys = "点选/拖动摆位　拖进任务栏派任务　回车开打　B 换带人法　Esc 取消"
 	_preview.text = (
 		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
 		% [
@@ -913,6 +908,11 @@ func _sync_placed(field: Vector2) -> void:
 ## 血蓝每 tick 都在变。而指令卡那一整块文字不用（[method _refresh_battle_panels]）。
 func _sync_selected(field: Vector2) -> void:
 	var live := _selected_attacker()
+	# 「他要打谁」「正在等你点哪儿」那三条虚线（M5-11）。见 [PBAimLines]。
+	# **暂停时绿线画全场**（M5-12）：那正是用来读局面的一刻。
+	_aim.sync(
+		_battle, field, live, _picker.aim_mode, get_viewport().get_mouse_position(), _paused
+	)
 	if live == null:
 		_allies.show_range(Vector2.ZERO, 0.0)
 		return
@@ -920,6 +920,13 @@ func _sync_selected(field: Vector2) -> void:
 		PBLayout.to_screen(live.pos, field), live.reach * PBLayout.px_per_unit(field)
 	)
 	_unit_info.show_live(live)
+	# 忍术那一格的亮/灰会在战斗中途自己变（冷却转好、蓝攒够，M5-9），
+	# 而指令卡整块只在选中变了之后才重排。**只在真的翻面那一帧重排** ——
+	# 每帧重排要跑一次装备分配，一秒六十次太贵（见 [method _refresh_battle_panels]）。
+	var ready: bool = _battle != null and _battle.can_cast(live)
+	if ready != _cast_ready:
+		_cast_ready = ready
+		_refresh_battle_panels()
 
 
 ## 战场的尺寸，`Vector2(长, 高)`。渲染层全部坐标换算都收这一个参数。
@@ -931,8 +938,7 @@ func _field() -> Vector2:
 
 
 ## 基地血量画成一个高度随血量变化的条，长在战场那条道的左端。
-##
-## 下沿是**算出来的**（[method PBLayout.lane_bottom]），不是手写的常量 ——
+## 下沿是**算出来的**（[method PBLayout.lane_bottom]）不是手写的常量 ——
 ## 手写那一版穿帮过一次，见 [method PBLayout.apply_to]。
 func _sync_base() -> void:
 	var ratio: float = clampf(_state.base_hp / _cfg.base_hp, 0.0, 1.0)
@@ -944,17 +950,14 @@ func _sync_base() -> void:
 
 ## 名单变了之后要跟着动的那两块：C/D 两个形象，和任务栏那 4 个槽。
 ##
-## **上场名单本身不在这里** —— 准备阶段它直接画在战场上
-## （[method _sync_placed]），M0 到 M3 那一列不可点的 `Polygon2D` 色块
-## 和 M3.5-e 到 M5-5 那一排头像都已经没了。
-##
-## 战斗阶段显示锁定的名单，准备阶段显示「现在开打的话会是谁」的预览。
+## **上场名单本身不在这里** —— 准备阶段它直接画在战场上（[method _sync_placed]）。
+## 战斗阶段显示锁定的名单，准备阶段显示「现在开打的话会是谁」的预览：
 ## [method PBStrategy.deploy] 只读不改状态，拿来预览是安全的。
 func _sync_deployed() -> void:
 	if not _quest.visible:
 		return
 	_slots.refresh(_selection, _state)
-	_quest.refresh(_selection, _state, _cfg, _plan, _dispatch_preview())
+	_quest.refresh(_selection, _state, _plan, _dispatch_preview())
 
 
 func _sync_info() -> void:

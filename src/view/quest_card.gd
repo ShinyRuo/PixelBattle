@@ -5,6 +5,19 @@ extends Control
 ## §06 的验收原话是「**派了羁绊掉几档，准备阶段能一眼看出**」。
 ## 这一层就是那句话的兑现。
 ##
+## ## M5-7：没有「接下任务」这个按钮了
+##
+## 接不接**由任务栏里站着几个人直接说出来** —— 拖满就是接，空着就是不接，
+## 人数不符就是失败（拿不到奖励，而那几个人照样离场）。
+##
+## 在那之前有一个开关按钮，于是同一件事有**两把尺子**：按钮说「已接」、
+## 栏里却只站着 1 个人。两者对不上时以哪个为准没有答案，
+## 而这个项目为这种形状的 bug 付过三次代价（M3.5-i 那三条）。
+##
+## 四个槽是**固定的**（[constant PBEconomyRules.QUEST_SLOTS]），
+## 不随本波要几个人变 —— 槽位跟着需求变的话玩家**塞不进多余的人**，
+## 「人数不符」这条判定就只剩「塞不满」一种，塞多了不可能发生。
+##
 ## ## 为什么它是 M1 里唯一真正的决策
 ##
 ## 阵容不是（M1 那会儿按有效战力取前 N 严格最优，不构成决策）。
@@ -55,9 +68,6 @@ extends Control
 ## 悬崖那个量本身没有作废，`src/tools/pressure_curve.gd` 还在用它
 ## 离线量压力曲线 —— 那里跑一次几百毫秒无所谓，这里不行。
 
-## 玩家切换了接/不接。
-signal quest_toggled(accepted: bool)
-
 ## 玩家点了出任务那一排里的某个人。
 signal slot_picked(kind: PBSelection.Kind, unit_id: StringName)
 
@@ -76,21 +86,18 @@ const PANEL_RECT := PBLayout.E_QUEST
 const PAD: float = 4.0
 const FONT_SIZE: int = 8
 
-## 派遣人数的上限是 SSS 任务的 4 人（§06 的任务表）。
-const SLOT_COUNT: int = 4
+## 任务栏一共几个槽。**固定 4 个**，见类顶部与 [constant PBEconomyRules.QUEST_SLOTS]。
+const SLOT_COUNT: int = PBEconomyRules.QUEST_SLOTS
 
 ## 4 个槽排成 2×2。见类顶部那段。
 const SLOT_COLUMNS: int = 2
-const SLOT_ORIGIN := Vector2(14.0, 69.0)
+const SLOT_ORIGIN := Vector2(14.0, 63.0)
 const SLOT_PITCH := Vector2(32.0, 36.0)
-
-var _accepted: bool = false
 
 var _head: Label
 var _terms: Label
 var _need: Label
 var _away: Label
-var _toggle: Button
 var _detail: Button
 var _tiles: Array[PBUnitTile] = []
 var _mark: ColorRect
@@ -106,20 +113,19 @@ func _ready() -> void:
 
 	_head = PBSkin.label(self, at + Vector2(PAD, 2.0), 62.0, PBSkin.FONT_TITLE, PBSkin.TITLE)
 	_terms = _add_label(at + Vector2(PAD, 15.0), width)
-	_need = _add_label(at + Vector2(PAD, 25.0), width)
-	_away = PBSkin.label(self, at + Vector2(PAD, 57.0), width, FONT_SIZE, PBSkin.DIM)
+	_need = _add_label(at + Vector2(PAD, 26.0), width)
+	# 判定行：**这一行就是原来那个按钮**。绿 = 拖满了、红 = 人数不符。
+	_away = PBSkin.label(self, at + Vector2(PAD, 40.0), width, PBSkin.FONT_TITLE, PBSkin.DIM)
 
 	_detail = _add_button(at + Vector2(width - 20.0, 2.0), Vector2(24.0, 12.0), "详情")
 	_detail.pressed.connect(_on_detail)
-	_toggle = _add_button(at + Vector2(PAD, 38.0), Vector2(width, 16.0), "接下任务")
-	_toggle.pressed.connect(toggle)
 
 	# **整块槽位区都能接**，不只是那些格子：一个人都没派的时候
-	# 一个可见格子都没有，而「把人拖过去派任务」正是这时候要成立的那一下。
+	# 格子全是空的，而「把人拖过去派任务」正是这时候要成立的那一下。
 	# 加在格子之前，好让格子画在它上面。
 	var drop := PBDropArea.new()
 	drop.cover(
-		Rect2(at + Vector2(PAD, 55.0), Vector2(width, PANEL_RECT.size.y - 58.0)),
+		Rect2(at + Vector2(PAD, 52.0), Vector2(width, PANEL_RECT.size.y - 55.0)),
 		PBUnitTile.ZONE_QUEST
 	)
 	drop.card_dropped.connect(
@@ -149,19 +155,25 @@ func _ready() -> void:
 		)
 
 
-## 玩家这一波接没接。[PBBattleView] 在 `lock_plan` 时取这个值。
-func accepted() -> bool:
-	return _accepted
-
-
-## 新的一波：默认不接，重新算一遍卡面。
+## 这一波的任务算不算完成了。**判据只有一条：任务栏里正好站着要求的人数。**
 ##
-## 默认不接而不是默认接，是因为**没决定就是没决定** —— 默认接的话，
-## 一个没注意到这张卡的玩家会莫名其妙在 BOSS 波掉羁绊，
-## 而他连自己付了代价都不知道。
-func reset(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
-	_accepted = false
-	refresh(PBSelection.new(), state, cfg, plan)
+## [PBBattleView] 在 `lock_plan` 时取这个值，[method PBRunSim.settle_wave]
+## 拿它决定发不发奖励。栏里那几个人**无论如何都会走**
+## （[method PBRunSim.lock_plan]）—— 人数不符的代价就是白白少几个打手。
+##
+## static 是有意的：判定不该依赖界面有没有刷新过。
+## 挂在实例上的话，「面板上写着失败、结算却给了钱」这种分叉迟早出现。
+static func is_done(state: PBRunState, plan: PBWavePlan) -> bool:
+	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
+	return need > 0 and state.dispatch_manual.size() == need
+
+
+## 新的一波：重新算一遍卡面。
+##
+## **不再需要「重置成不接」** —— 接没接现在完全由任务栏里站着谁决定，
+## 而那份名单每波结算时由 [method PBRunSim.settle_wave] 清空。
+func reset(state: PBRunState, plan: PBWavePlan) -> void:
+	refresh(PBSelection.new(), state, plan)
 
 
 ## 按当前状态刷新。**只在状态变了之后调** —— 里面要跑两遍
@@ -172,40 +184,43 @@ func reset(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 ## 悬崖那一行就是这么把点击拖到半秒的，见类顶部。
 ##
 ## [param away] 是「这一波谁去做任务」，由调用方算好传进来 ——
-## 它有三种口径，而选哪一种取决于阶段（见 [method PBBattleView._dispatch_preview]）。
+## 战斗中它是**锁定的那一份**（`dispatched_ids`），准备阶段是任务栏里站着的那几个
+## （见 [method PBBattleView._dispatch_preview]）。
+##
+## **不收 `cfg`**（M5-7）：判定只看「拖进来几个 vs 本波要几个」，
+## 两个数一个在状态里一个在任务表里，配置一样都用不上。
+## 留一个用不到的参数会让人以为这里还在查什么表。
 func refresh(
 	selection: PBSelection,
 	state: PBRunState,
-	cfg: PBSimConfig,
 	plan: PBWavePlan,
 	away: Array[PBUnit] = []
 ) -> void:
 	var grade: int = plan.quest_grade
 	var need: int = PBEconomyRules.quest_cost_units(grade)
-	var spare: int = state.dispatch_available(cfg)
+	var picked: int = state.dispatch_manual.size()
 
 	_head.text = "任务 %s 级" % _grade_name(grade)
 	_terms.text = "奖 %d 金" % PBEconomyRules.quest_reward(grade, plan.wave.index)
-	_need.text = "需派 %d 人" % need
+	_need.text = "需派 %d 人　已 %d" % [need, picked]
 	_show_slots(selection, plan.wave, away)
 
-	# 人不够就派不出去。这时候面板要说清是「人不够」而不是「不划算」，
-	# 否则玩家会去调阵容找一个根本不存在的原因。
-	#
-	# **门槛口径 M3.5-i 换过一次。** 旧的是 `standby_available`（溢出到板凳上
-	# 的那几个），而指令卡的「派去任务」放行的是**在场**的人 —— 两把尺子，
-	# 于是会出现「已经挑了 2 个人，卡面还说待命台 0 人派不出去」。
-	if need > spare:
-		_accepted = false
-		_away.text = "场上只有 %d 人" % spare
-		_toggle.text = "人不够"
-		_toggle.disabled = true
-		return
-
-	_toggle.disabled = false
-	_toggle.text = "接下任务" if not _accepted else "已接 · 取消"
-	if away.is_empty():
-		_away.text = "已挑 %d/%d 人" % [state.dispatch_manual.size(), need]
+	# **判定行，也就是原来那个按钮。** 三种状态各有各的颜色，
+	# 而三种都要在开打**之前**看得见 —— 「人数不符」是一次有代价的失误
+	# （那几个人照样走），把它留到结算才说等于让玩家事后才知道自己错了。
+	if picked == 0:
+		_away.text = "未派 · 无奖励"
+		_away.add_theme_color_override(&"font_color", PBSkin.DIM)
+	elif picked == need:
+		_away.text = "已派满 · 可完成"
+		_away.add_theme_color_override(&"font_color", PBSkin.GOOD)
+	else:
+		# 人不够也走这一支。**不再单独区分「场上没人可派」** ——
+		# 那条旧分支的门槛（`dispatch_available`）和指令卡放行的口径
+		# 是两把尺子，M3.5-i 已经为同一形状的 bug 付过一次代价。
+		# 现在玩家只需要读一个数：拖进来几个，要几个。
+		_away.text = "人数不符 · 失败"
+		_away.add_theme_color_override(&"font_color", PBSkin.BAD)
 
 
 ## 说明卡的正文。**面板上写不下的整句全在这里**，见类顶部。
@@ -215,10 +230,6 @@ func refresh(
 ## 而面板上那几个短句只是它的索引。
 func tip_body(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> String:
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
-	if need > state.dispatch_available(cfg):
-		return "场上只有 %d 人，派不出 %d 人 —— 先去仓库多抽几张卡。" % [
-			state.dispatch_available(cfg), need
-		]
 	return "\n".join(
 		PackedStringArray(
 			[
@@ -230,23 +241,17 @@ func tip_body(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> String:
 	)
 
 
-## 切换接/不接。按钮和 Q 键走同一条路 —— 两条路各写一份迟早分叉。
-## 派不出去（场上人不够）时什么都不做。
-func toggle() -> void:
-	if _toggle.disabled:
-		return
-	_accepted = not _accepted
-	quest_toggled.emit(_accepted)
-
-
-## 出任务那 4 个槽。**没派人的时候一个都不显示** ——
-## 四个空框会让人以为「这里应该放满」，而 §06 的常态是一个都不派。
+## 出任务那 4 个槽。**四个一直都在，空的画成空框**（M5-7）。
+##
+## M5-6 那一版只显示派了几个就画几个，理由是「四个空框会让人以为这里
+## 应该放满」。判定改成看人数之后那条理由反过来了：**玩家必须先看得见
+## 有几个槽、现在占了几个**，否则「人数不符」是一条无处可读的规则。
 func _show_slots(selection: PBSelection, wave: PBWave, away: Array[PBUnit]) -> void:
 	_mark.visible = false
 	for i: int in _tiles.size():
 		var tile: PBUnitTile = _tiles[i]
-		tile.visible = i < away.size()
-		if not tile.visible:
+		if i >= away.size():
+			tile.clear()
 			continue
 		tile.set_unit(away[i], wave.element)
 		if selection.kind == PBSelection.Kind.DISPATCHED and selection.unit_id == away[i].key():
@@ -254,23 +259,23 @@ func _show_slots(selection: PBSelection, wave: PBWave, away: Array[PBUnit]) -> v
 			_mark.size = PBUnitTile.TILE_SIZE + Vector2(4.0, 4.0)
 			_mark.visible = true
 			move_child(_mark, 0)
-	if not away.is_empty():
-		_away.text = "出任务 %d 人" % away.size()
 
 
 ## 玩家自己挑了几个人去（§06，M3.5-g）。
 ##
-## **没挑够要说清楚会发生什么**：名单只在人数刚好对上时才算数
-## （[member PBRunState.dispatch_manual]），否则整份作废、退回末尾规则。
-## 不写的话，挑了一半的玩家会以为自己挑的那个一定会去，
-## 而实际上系统按板凳末尾另派了一批 —— 那个落差在结算之后才看得见。
+## **人数不符要说清楚会发生什么**：那几个人照样离场
+## （[method PBRunSim.lock_plan]），只是拿不到奖励。不写的话，
+## 拖了一半的玩家会以为「反正没接成，他们还在场上」——
+## 而那个落差要到战斗开始才看得见。
 func _picked_text(state: PBRunState, need: int) -> String:
 	var chosen: int = state.dispatch_manual.size()
 	if chosen == 0:
-		return "自动派名单末尾 %d 人（点忍者可以自己挑）" % need
-	if chosen < need:
-		return "已挑 %d/%d —— 挑不够就整份作废，仍按名单末尾派" % [chosen, need]
-	return "已挑 %d/%d 人（自己挑的）" % [chosen, need]
+		return "任务栏空着 —— 这一波不接，没有奖励也没有代价。"
+	if chosen == need:
+		return "已派 %d/%d 人，打完这一波就能领奖励。" % [chosen, need]
+	return "已派 %d 人，本波要 %d —— 人数不符，任务失败：他们照样离场，但一分钱拿不到。" % [
+		chosen, need
+	]
 
 
 ## §06 那句「派了羁绊掉几档」。
@@ -357,10 +362,11 @@ func _add_button(at: Vector2, of_size: Vector2, text: String) -> Button:
 	return button
 
 
+## 一个任务槽。**一直可见**（空的画成空框）—— 玩家要先看得见有几个槽，
+## 「人数不符」才是一条读得到的规则。空格子照样收拖放，见 [method PBUnitTile.clear]。
 func _add_tile(at: Vector2) -> PBUnitTile:
 	var tile := PBUnitTile.new()
 	tile.position = at
-	tile.visible = false
 	tile.zone = PBUnitTile.ZONE_QUEST
 	tile.dropped.connect(card_dropped.emit)
 	tile.picked.connect(

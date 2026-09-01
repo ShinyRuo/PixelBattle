@@ -194,6 +194,53 @@ func advance(speed_scale: float = 1.0) -> bool:
 	return false
 
 
+## 朝 [param at] 走一个 tick（M5-7）。**两轴一起走，而且永远走不到基地** ——
+## 这一支是「扑向一个还活着的忍者」，不是「推进」。
+##
+## ## 为什么和 [method advance] 分成两个函数
+##
+## 那一个的返回值语义是「这一 tick 漏进基地了吗」，而这一支**结构上
+## 不可能漏怪**：目标是一个站在场上的忍者，走到他跟前就会进射程、就会咬住。
+## 合成一个函数的话，调用方每次都要先判断「这次算不算漏」，
+## 而判错一次的表现是**基地凭空掉血**，从现象反推极难。
+##
+## 纵轴在这之前只有出生时写过一次（见 [member lane]）——
+## 敌人第一次会换泳道，正是为了绕到没人的那一侧去够人。
+func march_to(at: Vector2, speed_scale: float = 1.0) -> void:
+	var step: float = speed * maxf(speed_scale, 0.0)
+	if step <= 0.0:
+		return
+	var here := pos().move_toward(at, step)
+	distance = maxf(here.x, 0.0)
+	lane = here.y
+
+
+## 朝围攻环上自己那一格挪（M5-10）。**绝不后退，一步都不往出怪点那侧退。**
+##
+## ## 为什么咬住之后还准他动
+##
+## 「咬住了就不走」（[member engaged]）说的是**不许越过那堵墙**，
+## 不是「就地钉死」。钉死的话先到的那几个把近侧堵满，后面的人
+## 永远轮不到位置 —— 那正是「围不起来，排成一队」的另一半根因
+## （另一半见 [method PBCrowdRules.siege_spot]）。
+##
+## ## 墙不是靠这里守的，那条钳位曾经反了
+##
+## 第一版钳的是「`distance` 只增不减」（不许朝基地挪），而那**造出了
+## 一个只往右的棘轮**：防挤永远把人往出怪点那侧推
+## （[method PBCrowdRules.separate_enemies]），而这条钳位又不让他回来 ——
+## 于是敌人一路飘到屏幕外面去。
+##
+## 墙其实由**围攻点本身**守着：那个点的 x 恒 ≥ 忍者的 x
+## （[method PBCrowdRules.siege_spot] 里的 `absf(cos)`），从右边走过去
+## 到不了忍者身后。所以这里该钳的是反过来的那一条 ——
+## **不许后退** —— 它同时把防挤推出去的那一截拉了回来。
+func siege_to(at: Vector2, speed_scale: float = 1.0) -> void:
+	var hold: float = distance
+	march_to(at, speed_scale)
+	distance = minf(distance, hold)
+
+
 ## 渲染用的进度：0 = 刚出生，1 = 抵达基地。
 func progress(field_length: float) -> float:
 	if field_length <= 0.0:

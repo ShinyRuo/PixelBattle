@@ -13,8 +13,10 @@ var gold: int = 0
 ## 基地剩余血量。归零即本局结束，卡在的那一波就是玩家的成绩。
 var base_hp: float = 0.0
 
-## 已持有的卡。键是 [method PBUnit.key]（即角色 id），值是那张卡；
-## 重复抽到只加 `copies`（§08：同卡 3 张升 1 星）。
+## 已持有的卡。键是 [method PBUnit.key]，值是那张卡。
+##
+## **重复抽到的是另一个人**（M5-9），不再并成星级 —— 两张同名卡各占一格，
+## 键分别是 `id` 和 `id#1`。认角色要走 `unit.character.id`，不是这个键。
 var roster: Dictionary = {}
 
 ## 四条科技分支的等级（§07）。
@@ -196,13 +198,21 @@ var elapsed_seconds: float = 0.0
 var gold_by_source: Dictionary = {}
 
 
-## 收一张卡进仓库。已有的话累加张数（§08：同卡 3 张升 1 星）。
+## 收一张卡进仓库。**重复抽到的是另一个人**（M5-9）。
+##
+## ## 为什么不再并成星级
+##
+## §08 原来的规则是「同卡 3 张升 1 星」，于是**抽到重复的等于白抽** ——
+## 一张卡什么都不变（要三张才跳一次），而界面上没有任何地方显示张数，
+## 玩家看到的就是「这一抽没了」。现在他多一个能上场的人，立刻用得上。
+##
+## 找的是**第一个空着的序号**，不是「已有几张」：卖卡、换阵容之后
+## 中间那格可能空出来，按张数算会撞上还在仓库里的那一张，
+## 而撞上的后果是**新抽到的卡直接覆盖掉旧的**（字典同键）。
 func add_unit(unit: PBUnit) -> void:
-	var k: StringName = unit.key()
-	if roster.has(k):
-		(roster[k] as PBUnit).copies += 1
-	else:
-		roster[k] = unit
+	while roster.has(unit.key()):
+		unit.serial += 1
+	roster[unit.key()] = unit
 
 
 func all_units() -> Array[PBUnit]:
@@ -227,6 +237,25 @@ func deploy_capacity(cfg: PBSimConfig) -> int:
 ## 出战席里还剩几个位置能放输出 —— 经济位占着位却不产出任何伤害（§07）。
 func open_slots(cfg: PBSimConfig) -> int:
 	return maxi(deploy_capacity(cfg) - economy_slot_count, 0)
+
+
+## 战场那块地方最多摆几个人 = 人口 + 这一波出任务的那几个。
+##
+## **出任务的人不占人口**（M5-9）：人口是「这一波能打的人有几个」，
+## 而出任务的那几个这一波压根不在场上。占位的话，派两个人出去就等于
+## **这一波少两个打手且补不上**，而玩家仓库里明明还站着人 ——
+## 他看到的是「人口 4，场上只有 2 个，还加不进去」。
+##
+## 和 [method open_slots] 分成两个函数：那一个回答「几个人在打」
+## （羁绊、估值、脚本流派挑名单全读它），这一个回答「还能不能再拖一个上去」。
+## 合成一个的话，「出任务的算不算人口」这个问题会在两种语境下各要一个答案，
+## 而答错的表现是**拖不上去也不报错**。
+##
+## 只数玩家钦定的那份名单（[member dispatch_manual]）：脚本流派恒定走
+## [member dispatched] 的末尾规则，那一路一个字节都不动，
+## 全部既有配平数字不变。
+func field_slots(cfg: PBSimConfig) -> int:
+	return open_slots(cfg) + dispatch_manual.size()
 
 
 ## 攻击科技的全局倍率。§07：+6%/级。
@@ -255,7 +284,9 @@ func set_field(units: Array[PBUnit]) -> void:
 
 ## 在场名单对应的卡。没挑过就按仓库顺序取前 N（见 [member field]）。
 func field_units(cfg: PBSimConfig) -> Array[PBUnit]:
-	var capacity: int = open_slots(cfg)
+	# **出任务的那几个不占人口**（M5-9），见 [method field_slots]。
+	# `dispatch_manual` 空着时它就等于 `open_slots`，脚本流派那一路不受影响。
+	var capacity: int = field_slots(cfg)
 	var out: Array[PBUnit] = []
 	if field.is_empty():
 		var pool := all_units()

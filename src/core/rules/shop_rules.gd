@@ -69,16 +69,34 @@ static func take_offer(state: PBRunState, index: int) -> bool:
 ## 的成员则要掉一整档。自动按末尾派的话这个取舍是系统替玩家做的，
 ## 他只能接受或不接受一个已经算好的价格，而那不是决策。
 ##
-## ## 只有**在场**的人派得出去
+## ## 手上的任何一张卡都派得出去（M5-13 起）
 ##
-## 仓库里的人本来就不给羁绊，派他们一分代价都没有 —— 那样任务就是纯白送，
-## §06 整节的张力归零。出战席上的人可以派（他这一波就不打了，
-## 见 [method PBRunSim.lock_plan]），那正是「要钱还是要战力」的强化版。
+## 在那之前这里只放行**在场**的人，理由是「仓库里的人本来就不给羁绊，
+## 派他们一分代价都没有」。**那条门槛 M5-9 之后已经名存实亡** ——
+## 出任务的人不占人口（[method PBRunState.field_slots]），所以人口没满时
+## 玩家把仓库里的人拖上场、再拖进任务栏，两下就绕过去了，
+## 拿到的是同一份「零代价」的任务奖励。它真正拦住的只有**人口满**那一种情形，
+## 而那一下是**静默失败**：卡弹回来，没有任何解释。
 ##
-## [param need] 是本波任务要几个人。**满了就加不进去**，
-## 因为名单只在长度刚好对上时才算数（见 [member PBRunState.dispatch_manual]）。
+## 一条只在一半情形下生效、失效时还不吭声的规则，不如没有。
+## 派遣的代价缩水归数值回归（CLAUDE.md 已经记着 M5-9 那一次）。
+##
+## **「派出去的人必须也在 `field` 名单里」这条不变量归 [PBCardMoves] 守**：
+## [method PBRunState.dispatch_picks] 要在 [method PBRunState.field_units]
+## 里找得到他，找不到就整份作废退回末尾规则。所以这个函数不是给界面直接调的，
+## 走 [method PBCardMoves.toggle_quest]。
+##
+## [param capacity] 是**任务栏一共几个槽**（[constant PBEconomyRules.QUEST_SLOTS]），
+## 不是本波要几个人。满了就加不进去。
+##
+## ## M5-7 起这两个数分开了
+##
+## 在那之前这里收的是 `quest_cost_units`，也就是「要几个」——
+## 于是玩家**塞不进多余的人**，而「人数不符 = 任务失败」这条判定
+## 在界面上根本触发不了：塞不满是唯一可能的错，塞多了不可能发生。
+## 判定要成立，栏位就得能装下比要求更多的人。
 static func toggle_dispatch(
-	state: PBRunState, unit: PBUnit, need: int, cfg: PBSimConfig
+	state: PBRunState, unit: PBUnit, capacity: int, _cfg: PBSimConfig
 ) -> bool:
 	if unit == null:
 		return false
@@ -86,7 +104,7 @@ static func toggle_dispatch(
 	if state.dispatch_manual.has(key):
 		state.dispatch_manual.erase(key)
 		return true
-	if state.dispatch_manual.size() >= need or not state.field_units(cfg).has(unit):
+	if state.dispatch_manual.size() >= capacity or not state.roster.has(key):
 		return false
 	state.dispatch_manual.append(key)
 	return true
