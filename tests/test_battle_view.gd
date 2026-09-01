@@ -52,7 +52,7 @@ func test_scene_has_the_nodes_the_script_expects() -> void:
 	# @onready 取不到节点会在 _ready 里炸，而 .tscn 是手写的、
 	# 节点名很容易和脚本对不上。这条把两边钉在一起。
 	var root := _spawn_battle()
-	for path: String in ["Enemies", "Deployed", "Base", "HUD/Info"]:
+	for path: String in ["Actors/Enemies", "Actors/Deployed", "Base", "HUD/Info"]:
 		assert_not_null(root.get_node_or_null(path), "场景里应该有 %s 节点" % path)
 
 
@@ -61,8 +61,8 @@ func test_logic_advances_over_physics_frames() -> void:
 	var root := _spawn_battle()
 	await wait_physics_frames(30)
 	var enemies_seen: int = 0
-	for child: Node in root.get_node("Enemies").get_children():
-		if (child as Polygon2D).visible:
+	for child: Node in root.get_node("Actors/Enemies").get_children():
+		if (child as AnimatedSprite2D).visible:
 			enemies_seen += 1
 	assert_gt(enemies_seen, 0, "跑了 30 个物理帧之后场上应该有敌人出场了")
 
@@ -70,13 +70,14 @@ func test_logic_advances_over_physics_frames() -> void:
 func test_enemy_pool_is_preallocated_and_never_grows() -> void:
 	# §14 要求战斗中零新建节点。池子在 _ready 一次建满，之后只改 visible。
 	#
-	# 每个槽位是两层：本体 + 克制亮边（§02 的第三层视觉编码），
-	# 所以节点数是 COUNT_CAP 的两倍。**「永不增长」才是这条测试的真意** ——
+	# 一个槽位一个节点。M6-b 之前是两层（本体 + 克制亮边那个大一圈的多边形），
+	# 现在亮边改成了脚下一圈地面白线，由池子自绘（[method PBEnemyPool._draw]），
+	# 不再占节点。**「永不增长」才是这条测试的真意** ——
 	# 战斗中冒出新节点就说明有人在热路径上 .new() 了。
 	var root := _spawn_battle()
-	var pool := root.get_node("Enemies")
+	var pool := root.get_node("Actors/Enemies")
 	var count_at_start: int = pool.get_child_count()
-	assert_eq(count_at_start, PBSimConfig.new().count_cap * 2, "池子应按 COUNT_CAP 建满两层")
+	assert_eq(count_at_start, PBSimConfig.new().count_cap, "池子应按 COUNT_CAP 建满")
 	await wait_physics_frames(60)
 	assert_eq(pool.get_child_count(), count_at_start, "战斗中不该新建任何敌人节点")
 

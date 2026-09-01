@@ -133,17 +133,13 @@ func _draw() -> void:
 		if _merged_into_earlier(i):
 			continue
 		var near: float = _closeness[i]
-		draw_circle(
-			_centers[i], _radii[i], Color(FILL.r, FILL.g, FILL.b, FILL.a + near * FILL_RAMP)
-		)
-		draw_arc(
-			_centers[i],
-			_radii[i],
-			0.0,
-			TAU,
-			SEGMENTS,
-			Color(EDGE.r, EDGE.g, EDGE.b, 0.35 + near * EDGE_RAMP),
-			EDGE_WIDTH
+		# 战场上的圆在屏幕上是椭圆（M6-a），见 [method PBLayout.ground_disc]。
+		# 这一处尤其不能自己画正圆：**它就是「这儿要挨打」那句话本身**，
+		# 画错形状等于让玩家往一个安全的地方躲。
+		var ring := PBLayout.ground_disc(_centers[i], _radii[i], SEGMENTS)
+		draw_colored_polygon(ring, Color(FILL.r, FILL.g, FILL.b, FILL.a + near * FILL_RAMP))
+		draw_polyline(
+			ring, Color(EDGE.r, EDGE.g, EDGE.b, 0.35 + near * EDGE_RAMP), EDGE_WIDTH
 		)
 
 

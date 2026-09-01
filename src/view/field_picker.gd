@@ -18,9 +18,12 @@ extends RefCounted
 ##
 ## ## 命中判定为什么在这里做，不给每个单位挂一个输入区
 ##
-## 敌人是 `Polygon2D`、己方是 `ColorRect`，两种节点的输入行为完全不同，
-## 而且同屏有 48 + 10 个。给每一个都挂上输入区等于让引擎每帧做五十几次
+## 同屏有 48 + 10 个单位。给每一个都挂上输入区等于让引擎每帧做五十几次
 ## 命中测试，而这里一次点击只做一遍。
+##
+## M6-b 之后两边都是 [AnimatedSprite2D]（[Node2D]，压根不参与 GUI 命中），
+## 所以「给单位挂输入区」这条路要先给每个人盖一层 [Control] ——
+## 而那正是 M5-10 花了三个里程碑才挖出来的那个坑。
 
 ## 正在等玩家点战场上的一个点，以及等他点来干什么。
 ##
@@ -55,12 +58,20 @@ var aiming: bool:
 ##
 ## 位置走 [method PBFormationRules.spots_of] —— 和画在屏幕上的那一份
 ## 是同一次计算，各算各的话「点得到哪」和「看见哪」会差开。
+## [param pick] 是**屏幕像素**，量距离也在屏幕上量（M6-a）——
+## 战场坐标里量的话，y 被压过（[constant PBLayout.Y_SCALE]）的那三成
+## 会变成「纵向要点得更准」，见 [method PBLayout.screen_gap]。
 static func unit_at(
-	units: Array[PBUnit], formation: Dictionary, cfg: PBSimConfig, spot: Vector2, pick: float
+	units: Array[PBUnit],
+	formation: Dictionary,
+	cfg: PBSimConfig,
+	spot: Vector2,
+	field: Vector2,
+	pick: float
 ) -> int:
 	var spots := PBFormationRules.spots_of(units, formation, cfg)
 	for i: int in units.size():
-		if spots[i].distance_to(spot) <= pick:
+		if PBLayout.screen_gap(spots[i], spot, field) <= pick:
 			return i
 	return -1
 
@@ -95,13 +106,13 @@ func attacker_of(
 ##
 ## 尾兽那一个排除在外（`slot < 0`）：它没有本体、位置恒为 0，
 ## 点得中的话玩家会以为基地上站着一个忍者。
-func ally_at(battle: PBBattleSim, spot: Vector2, pick: float) -> PBAttacker:
+func ally_at(battle: PBBattleSim, spot: Vector2, field: Vector2, pick: float) -> PBAttacker:
 	var best: PBAttacker = null
 	var best_gap: float = pick
 	for attacker: PBAttacker in battle.attackers():
 		if attacker.slot < 0 or attacker.max_hp <= 0.0:
 			continue
-		var gap: float = attacker.pos.distance_to(spot)
+		var gap: float = PBLayout.screen_gap(attacker.pos, spot, field)
 		if gap <= best_gap:
 			best = attacker
 			best_gap = gap
@@ -109,13 +120,13 @@ func ally_at(battle: PBBattleSim, spot: Vector2, pick: float) -> PBAttacker:
 
 
 ## [param spot] 附近最近的**已出场且活着**的敌人。没有就返回 null。
-func enemy_at(battle: PBBattleSim, spot: Vector2, pick: float) -> PBEnemy:
+func enemy_at(battle: PBBattleSim, spot: Vector2, field: Vector2, pick: float) -> PBEnemy:
 	var best: PBEnemy = null
 	var best_gap: float = pick
 	for enemy: PBEnemy in battle.enemies():
 		if not enemy.is_active(battle.current_tick()):
 			continue
-		var gap: float = enemy.pos().distance_to(spot)
+		var gap: float = PBLayout.screen_gap(enemy.pos(), spot, field)
 		if gap <= best_gap:
 			best = enemy
 			best_gap = gap

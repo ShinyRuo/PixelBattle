@@ -170,5 +170,7 @@ func _draw() -> void:
 	elif _mode == PBFieldPicker.Aim.ULTIMATE:
 		draw_dashed_line(_from, _cursor, LINE_CAST, WIDTH, DASH)
 		if _cast_px > 0.0:
-			draw_circle(_cursor, _cast_px, CAST_FILL)
-			draw_arc(_cursor, _cast_px, 0.0, TAU, SEGMENTS, CAST_EDGE, WIDTH)
+			# 战场上的圆在屏幕上是椭圆（M6-a），见 [method PBLayout.ground_disc]。
+			var ring := PBLayout.ground_disc(_cursor, _cast_px, SEGMENTS)
+			draw_colored_polygon(ring, CAST_FILL)
+			draw_polyline(ring, CAST_EDGE, WIDTH)

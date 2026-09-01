@@ -96,13 +96,59 @@ const FIELD_RIGHT: float = 628.0
 ## 战场纵向的**画布**下沿 —— 也就是 B 这个框到哪儿为止。
 ##
 ## **真正的判定下沿是算出来的**（[method lane_bottom]，由
-## [member PBSimConfig.field_height] 决定）。这个常量只是同一个数的
-## 「写下来的样子」，两处必须对上：`34 + 0.44 × 500 = 254`。
-## 对不上的表现是「打得到的敌人画在道外面」。
+## [member PBSimConfig.field_height] 与 [constant Y_SCALE] 决定）。
+## M6-a 之前两者恰好相等（`34 + 0.44 × 500 = 254`）；压缩 y 轴之后
+## 地面带只占这个框的上面一截，剩下的是余量，关系从等式变成不等式 ——
+## `test_layout.gd` 因此把它钉成一条断言，见 [constant GROUND_TOP]。
 ##
 ## 底栏从 260 起，加上 [constant B_LANE_INSET] 那 4 像素底板，
-## 中间还剩 2 像素 —— **纵深已经顶到头了**，再往下要先动底栏。
+## 中间还剩 2 像素 —— **这个框已经顶到头了**，要更高得先动底栏。
 const FIELD_BOTTOM: float = 254.0
+
+## 地面的纵向压缩比（M6-a）。**这是「45 度俯视」那句话的唯一实现。**
+##
+## ## 它是一个几何量，不是一个手感参数
+##
+## 一个水平地面在俯角 θ 下看过去，纵深方向在画面上缩成 `sin θ`。
+## 玩家要的是「正侧面 + 45 度俯视」（DNF / Idle Champions 那种横版清关视角），
+## 所以这个数就是 `sin 45° = 0.7071`。想改视角就改角度，不要直接拍这个数。
+##
+## ## 它顺带腾出了小人的身高
+##
+## 这不只是好看：**一个像素小人占地面上一个点，身体却往上长二十几像素。**
+## 地面带从 220 压到 156，省下来的 64 正是头顶那一截 ——
+## 那才是这个视角在 640×360 里放得下的原因。见 [constant SPRITE_HEADROOM]。
+##
+## ## 代价：战场上的圆在屏幕上是椭圆
+##
+## sim 里射程与大招半径仍然是**真圆**（M4-a 立的那条，一个字没动），
+## 但屏幕做了一次各向异性变换，圆在这个变换下的像就是椭圆。
+## 画成正圆反而成了新的谎话 —— 玩家会去躲一个不存在的纵向判定，
+## 那正是 M3.5-h 记着的那个错。所以有 [method ground_disc]，
+## 而且**全项目画地面上的圆只准走它**。
+const Y_SCALE: float = 0.70710678
+
+## 精灵头顶留多少像素。地面带因此从 [constant FIELD_TOP] 往下让这么多。
+##
+## **脚在地面点上，身体往上长** —— 所以最上面那条泳道的人，头会伸到
+## 地面带上沿之外。不留这一截的话他的头会戳进 A 顶栏那两行字里，
+## 而那种越界**测试抓不到，只能截图**（[PBLayout] 顶部那条老教训）。
+##
+## 38 = 画布 36 高（[constant PBWhiteModel.ALLY_CANVAS]）再多留 2 像素。
+##
+## 这个数走过一趟 34 → 26 → 38：M6-b 先按泳道间距压到 26（24 的画布），
+## M6-c 又按玩家定的「正式资源是白模的 1.5 倍」抬回 38（36 的画布）。
+## **两次的依据不同**，见 [constant PBWhiteModel.ALLY_HEIGHT] ——
+## 26 那次问的是「挤不挤」，38 这次答的是「认不认得出脸」。
+## 换素材要跟着改，`test_layout.gd` 会拦住改小的那一半。
+const SPRITE_HEADROOM: float = 38.0
+
+## 地面带的上沿 —— **战场坐标 y=0 落在屏幕的哪一行**。
+##
+## [constant FIELD_TOP] 现在是 B 这个**框**的上沿，两者相差一个头顶
+## （[constant SPRITE_HEADROOM]）。M6-a 之前它们是同一个数，
+## 所有 `FIELD_TOP` 的用法要逐个分辨问的是「框」还是「地面」。
+const GROUND_TOP: float = FIELD_TOP + SPRITE_HEADROOM
 
 const B_FIELD := Rect2(
 	FIELD_LEFT, FIELD_TOP, FIELD_RIGHT - FIELD_LEFT, FIELD_BOTTOM - FIELD_TOP
@@ -216,11 +262,20 @@ static func px_per_unit(field: Vector2) -> float:
 	return (FIELD_RIGHT - FIELD_LEFT) / maxf(field.x, 0.001)
 
 
+## 纵深方向的「像素 / 单位」。就是 [method px_per_unit] 压过
+## [constant Y_SCALE] 之后的那一个（M6-a）。
+##
+## 单独给一个函数而不是让调用方各自乘一遍：乘漏一处的表现是
+## 「那一样东西画在别人上面几十像素的地方」，而两个数字看起来都对。
+static func px_per_lane(field: Vector2) -> float:
+	return px_per_unit(field) * Y_SCALE
+
+
 ## 战场那条道的下沿。**从战场高度算出来，不是常量** ——
 ## 写死一个数的话，改 [member PBSimConfig.field_height] 就会让画面
 ## 和判定悄悄错开，而那种错开只表现为「打得到的敌人画在道外面」。
 static func lane_bottom(field: Vector2) -> float:
-	return FIELD_TOP + field.y * px_per_unit(field)
+	return GROUND_TOP + field.y * px_per_lane(field)
 
 
 ## 战场坐标 → 屏幕坐标。**全项目唯一一份。**
@@ -230,8 +285,9 @@ static func lane_bottom(field: Vector2) -> float:
 ##
 ## [param field] 是 `Vector2(field_length, field_height)`。
 static func to_screen(at: Vector2, field: Vector2) -> Vector2:
-	var scale: float = px_per_unit(field)
-	return Vector2(FIELD_LEFT + at.x * scale, FIELD_TOP + at.y * scale)
+	return Vector2(
+		FIELD_LEFT + at.x * px_per_unit(field), GROUND_TOP + at.y * px_per_lane(field)
+	)
 
 
 ## 屏幕坐标 → 战场坐标。[method to_screen] 的逆，用来把鼠标点到的地方
@@ -240,8 +296,41 @@ static func to_screen(at: Vector2, field: Vector2) -> Vector2:
 ## 和正向那一份**必须成对改**：各写各的话，玩家点到的和实际选中的
 ## 会差几个像素，而那种偏差表现为「点边上一点就选不中」。
 static func to_field(at: Vector2, field: Vector2) -> Vector2:
-	var scale: float = px_per_unit(field)
-	return Vector2((at.x - FIELD_LEFT) / scale, (at.y - FIELD_TOP) / scale)
+	return Vector2(
+		(at.x - FIELD_LEFT) / px_per_unit(field), (at.y - GROUND_TOP) / px_per_lane(field)
+	)
+
+
+## 战场上的两个点，在**屏幕上**隔多少像素（M6-a）。点选判定走它。
+##
+## ## 为什么不能在战场坐标里量距离
+##
+## y 被压过（[constant Y_SCALE]），所以战场坐标里的「一样远」在屏幕上
+## 纵向只有横向的七成。拿一个标量半径去战场坐标里判定，等于**要求玩家
+## 纵向点得比横向准三成** —— 他点在小人身上，判定说差了一点，
+## 而两边的数字看起来都完全正确。
+static func screen_gap(a: Vector2, b: Vector2, field: Vector2) -> float:
+	return to_screen(a, field).distance_to(to_screen(b, field))
+
+
+## 地面上一个半径 [param radius_px] 的圆，投到屏幕上的那一圈点（首尾闭合）。
+##
+## **全项目画地面上的圆只准走这里。** 射程圈、忍术落点圈、大招落点预示
+## 三处各写一遍 `draw_circle` 的话，它们会在「圆还是椭圆」这件事上分叉，
+## 而分叉的表现是「有的圈躲得开、有的躲不开」，玩家无从分辨哪个是真的。
+##
+## [param radius_px] 是**横向**半径（[method px_per_unit] 换算出来的那个），
+## 纵向由 [constant Y_SCALE] 压出来 —— 传两个半径进来就又有两把尺子了。
+static func ground_disc(at: Vector2, radius_px: float, segments: int = 32) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	if radius_px <= 0.0:
+		return out
+	var steps: int = maxi(segments, 8)
+	out.resize(steps + 1)
+	for i: int in steps + 1:
+		var angle: float = TAU * float(i) / float(steps)
+		out[i] = at + Vector2(cos(angle) * radius_px, sin(angle) * radius_px * Y_SCALE)
+	return out
 
 
 ## 把上面这些矩形贴到场景节点上。
@@ -260,15 +349,22 @@ static func apply_to(
 	limit_x: float
 ) -> void:
 	var bottom: float = lane_bottom(field)
+	# **底板铺满整个 B 框**（M6-b 从「只铺地面带」改回来的）。
+	#
+	# 走得到的只有 [constant GROUND_TOP] 到 `lane_bottom` 这一段，
+	# 但**画面上那是同一块地** —— 只铺那一段的话，站在最里面那条道上的人
+	# 有半个身子露在背景色上，看起来像站到了场外，而他其实站得好好的。
+	# 上面那 [constant SPRITE_HEADROOM] 是给头顶的远景地面，
+	# 下面那一截是前景地面，两截都不是路，但都得是地。
 	lane.position = B_FIELD.position - B_LANE_INSET
-	lane.size = Vector2(B_FIELD.size.x, bottom - FIELD_TOP) + B_LANE_INSET * 2.0
+	lane.size = B_FIELD.size + B_LANE_INSET * 2.0
 	base.position.x = FIELD_LEFT - B_BASE_WIDTH
 	base.size.x = B_BASE_WIDTH
 	# 界限是屏幕上那条竖线（M4-f）。**它的 x 是算出来的**，
 	# 因为夹取用的是 `deploy_limit_x`，两处对不上的表现是
 	# 「拖到线上松手，人却弹回去一点」。
-	limit.position = Vector2(to_screen(Vector2(limit_x, 0.0), field).x - 1.0, FIELD_TOP)
-	limit.size = Vector2(2.0, bottom - FIELD_TOP)
+	limit.position = Vector2(to_screen(Vector2(limit_x, 0.0), field).x - 1.0, GROUND_TOP)
+	limit.size = Vector2(2.0, bottom - GROUND_TOP)
 	for pair: Array in [[info, A_INFO], [preview, A_PREVIEW]]:
 		var label := pair[0] as Label
 		var rect := pair[1] as Rect2

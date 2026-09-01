@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://src/view/shot_pool.gd" id="15_shots"]
 [ext_resource type="Script" path="res://src/view/drop_area.gd" id="16_ground"]
 [ext_resource type="Script" path="res://src/view/aim_lines.gd" id="19_aim"]
+[ext_resource type="Script" path="res://src/view/system_menu.gd" id="20_menu"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_view")
@@ -30,7 +31,7 @@ color = Color(0.08, 0.09, 0.12, 1)
 
 [node name="Lane" type="ColorRect" parent="."]
 mouse_filter = 2
-color = Color(0.11, 0.12, 0.16, 1)
+color = Color(0.17, 0.18, 0.22, 1)
 
 [node name="Base" type="ColorRect" parent="."]
 mouse_filter = 2
@@ -43,10 +44,15 @@ color = Color(0.52, 0.66, 0.88, 0.9)
 [node name="Telegraph" type="Node2D" parent="."]
 script = ExtResource("13_telegraph")
 
-[node name="Deployed" type="Node2D" parent="."]
+[node name="Actors" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Deployed" type="Node2D" parent="Actors"]
+y_sort_enabled = true
 script = ExtResource("12_allies")
 
-[node name="Enemies" type="Node2D" parent="."]
+[node name="Enemies" type="Node2D" parent="Actors"]
+y_sort_enabled = true
 script = ExtResource("2_pool")
 
 [node name="Shots" type="Node2D" parent="."]
@@ -120,3 +126,8 @@ script = ExtResource("8_offer")
 offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("18_tip")
+
+[node name="Menu" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("20_menu")

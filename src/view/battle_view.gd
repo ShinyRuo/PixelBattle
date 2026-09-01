@@ -5,7 +5,6 @@ extends Node2D
 ## ## 定帧：数物理帧，不累加 delta
 ##
 ## §14 的铁律：**定帧 20 tick/s，倍速只改每帧步进多少个 tick。**
-##
 ## `_physics_process` 本身就是固定频率的（默认 60Hz），60 / 20 = 3，
 ## 每 3 个物理帧推进一个逻辑 tick —— 全整数，零浮点。
 ## `_accumulator += delta` 会每帧累加浮点误差，3 倍速和 1 倍速跑出来的
@@ -15,10 +14,9 @@ extends Node2D
 ## ## 这一层只读 sim，改的只有玩家的指令
 ##
 ## 画图与 HUD 一个字段都不回写；改状态只能走 [PBRunSim] 的 `plan_wave` /
-## `settle_wave`（批量模拟走的同一条路）。**只有两个例外，都是玩家的指令**：
-## 点名（[member PBAttacker.forced_target]）和手动放忍术
-## （[method PBBattleSim.cast_ultimate]）—— 指令本来就该是玩家能改的状态，
-## 而它们各自只有一个入口。
+## `settle_wave`（批量模拟走的同一条路）。**只有两个例外，都是玩家的指令，
+## 而且各自只有一个入口**：点名（[member PBAttacker.forced_target]）
+## 和手动放忍术（[method PBBattleSim.cast_ultimate]）。
 
 ## 一波的三个阶段（§01）。**准备阶段不限时，等玩家**（M1 把它显式拆出来，
 ## 在那之前它被 [method PBRunSim.plan_wave] 在一帧里做完了）。
@@ -39,21 +37,17 @@ const PICK_RADIUS_PX: float = 12.0
 ## 以及 §13 的每日种子挑战将来只要把 `hash(date_utc)` 填进来就行。
 @export var run_seed: int = 0
 
-## 调试用：直接从第几波开始。1 表示正常从头打。
-##
-## 前面的波次瞬间跑完（不渲染），只有目标波才逐 tick 画出来。
+## 调试用：直接从第几波开始。1 表示正常从头打。前面的波次瞬间跑完（不渲染），
 ## **走的是批量模拟同一条路**（`plan_wave` / `settle_wave`），
 ## 所以快进到第 N 波的状态是真的，不是伪造的。
 @export var start_wave: int = 1
 
 ## 调试用：强制第一波的敌人数量。0 表示按 §04 的公式正常算。
-##
 ## **只为回答视觉问题**（「`COUNT_CAP` 取 48 时同屏糊不糊」）。
 ## 它不改任何平衡参数 —— 别拿它跑数值结论。
 @export var debug_enemy_count: int = 0
 
 ## 自动推进：准备阶段由脚本玩家代劳，不等输入。§01 点名要这个模式。
-##
 ## 它同时是 M1 的**回归工具** —— 开着的时候整局的决策序列与批量模拟完全一致。
 ##
 ## **默认关**：开局第一眼看到的应该是准备阶段，不是一场自己打起来的第一波。
@@ -84,8 +78,10 @@ var _phase: Phase = Phase.PREPARE
 ## 结算阶段的剩余帧数。
 var _gap_frames: int = 0
 
-## 战场上现在选中了什么（§02 的战场直接操作，M3.5-e）。
-## 指令卡、信息栏、槽位高亮三处都读它 —— 见 [PBSelection]。
+## 呼出功能菜单之前是不是已经暂停着。见 [method _open_menu]。
+var _paused_before_menu: bool = false
+
+## 战场上现在选中了什么（§02，M3.5-e）。指令卡、信息栏、槽位高亮三处都读它。
 var _selection := PBSelection.new()
 
 ## 命中白闪 / 伤害飘字 / 击杀顿帧的接线（M3.5-h）。见 [PBHitFeedback]。
@@ -99,22 +95,17 @@ var _picker := PBFieldPicker.new()
 var _cast_ready: bool = false
 
 
-## 击杀顿帧还剩几个物理帧。
-##
-## ## 它不碰 tick 序列
-##
-## 顿帧期间**只是不调 `_advance_logic`**，`_frame_counter` 也不动 ——
-## 效果等同于按了几帧暂停，走完之后 tick 一个不多一个不少。
+## 击杀顿帧还剩几个物理帧。**它不碰 tick 序列**：期间只是不调
+## `_advance_logic`，`_frame_counter` 也不动，走完之后 tick 一个不多一个不少。
 ## **绝不能用「跳过一个 tick」或者 `Engine.time_scale`**：前者直接改模拟结果，
 ## 后者违反铁律 2，而两者的表现都只是「同一个种子跑出来的局慢慢对不上」。
 var _hitstop_frames: int = 0
 
 # @onready 必须排在普通成员之后 —— .gdlintrc 的 class-definitions-order
-# 定死了「prvvars 在 onreadyprvvars 之前」。这一组的赋值时机也在 _ready() 之前，
-# 所以 _init() 里访问不到它们。
-@onready var _pool: PBEnemyPool = $Enemies
+# 定死了「prvvars 在 onreadyprvvars 之前」。赋值时机也在 _ready() 之前（_init() 取不到）。
+@onready var _pool: PBEnemyPool = $Actors/Enemies
 @onready var _shots: PBShotPool = $Shots
-@onready var _allies: PBAllyPool = $Deployed
+@onready var _allies: PBAllyPool = $Actors/Deployed
 @onready var _telegraph: PBTelegraphPool = $Telegraph
 @onready var _floats: PBFloatTextPool = $Floats
 @onready var _aim: PBAimLines = $Aim
@@ -131,6 +122,7 @@ var _hitstop_frames: int = 0
 @onready var _parts: PBPartsBay = $HUD/Equip
 @onready var _gear: PBEquipBay = $HUD/Gear
 @onready var _tip: PBTooltip = $HUD/Tip
+@onready var _menu: PBSystemMenu = $HUD/Menu
 @onready var _bay: PBRosterBay = $HUD/Stash
 @onready var _ground: PBDropArea = $HUD/Ground
 @onready var _beasts: PBBeastModal = $HUD/Beasts
@@ -177,12 +169,18 @@ func _ready() -> void:
 	_gear.tip_requested.connect(_tip.show_card)
 	_bay.unit_picked.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
 	_beasts.beast_chosen.connect(_on_beast_chosen)
+	_menu.resumed.connect(_close_menu)
+	# **退出走 `quit()` 而不是 `get_tree().quit()` 的别名** —— 前者会走完
+	# `NOTIFICATION_WM_CLOSE_REQUEST` 那一套，将来加自动存档时挂在那儿就行。
+	_menu.quit_requested.connect(get_tree().quit)
 	# 任务卡那三句长话由这里组一遍再交给 tooltip —— 组它要 state / cfg / plan
 	# 三样，而任务卡一样都不持有（见 [signal PBQuestCard.detail_requested]）。
 	_quest.detail_requested.connect(
 		func(anchor: Rect2) -> void:
 			_tip.show_card(
-				anchor, "本波任务 · %s 级" % _quest_name(), _quest.tip_body(_state, _cfg, _plan)
+				anchor,
+				"本波任务 · %s 级" % PBEconomyRules.QUEST_GRADES[_plan.quest_grade],
+				_quest.tip_body(_state, _cfg, _plan)
 			)
 	)
 	_fast_forward_to(start_wave)
@@ -403,11 +401,10 @@ func _physics_process(_delta: float) -> void:
 	_sync_visuals()
 
 
-## 键盘：空格暂停，1/2/3 倍速，R 重开。
+## 键盘：空格暂停，1/2/3 倍速，R 重开，F10 换窗口大小，F11 全屏（[PBDisplay]）。
 ##
 ## 直接读 keycode 而不是走 Input Map —— 那段序列化格式跨版本很脆，
-## 项目规范要求用编辑器加而不是手写进 project.godot。M0 阶段的调试键
-## 还没定型，等操作方案定了再进 Input Map。
+## 项目规范要求用编辑器加而不是手写进 project.godot；操作方案定了再进 Input Map。
 func _unhandled_input(event: InputEvent) -> void:
 	# 战场上的点击（§02 的战斗中操作，M4-e）与拖动摆位（M4-f）。
 	# **不看 [member _paused]** —— §02 原话是「暂停的时候也能点击」。
@@ -415,7 +412,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
 		if click.button_index == MOUSE_BUTTON_LEFT and click.pressed:
-			_on_field_click(click.position)
+			# **`make_input_local` 不是多此一举**（M6-d）。`click.position` 是
+			# **窗口像素**，而战场那套判定全在 640×360 这个画布坐标系里 ——
+			# `stretch/mode` 从 `viewport` 换成 `canvas_items` 之后两者差一个
+			# 缩放倍数，1080p 下点哪儿都偏三倍，而所有数字看起来都很正常。
+			# 走本地坐标则**两种模式下都对**，因为它问的是引擎当前的变换。
+			_on_field_click((make_input_local(click) as InputEventMouseButton).position)
 		# **右键取消**（M5-11）：两步操作的第一步按下去之后，
 		# 玩家需要一条不用把手挪回指令卡的退路。`Esc` 是第二条路。
 		elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed:
@@ -436,13 +438,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			_speed = 3
 		KEY_R:
 			_restart()
+		KEY_F10:
+			PBDisplay.cycle_window()
+		KEY_F11:
+			PBDisplay.toggle_fullscreen()
 		KEY_A:
 			auto_play = not auto_play
 			# 面板只在「手动 + 准备阶段」出现。切换时立刻反映，
 			# 否则玩家关了自动却要等下一波才看得到商店。
 			_set_panels_visible(_phase == Phase.PREPARE and not auto_play and not _run_over)
-			# **`Q` 没了**（M5-7）：接不接现在等于「任务栏里站着几个人」，
-			# 而那件事只能靠拖。一个快捷键切不了它，留着只会让人按了没反应。
+			# **`Q` 没了**（M5-7）：接不接现在等于「任务栏里站着几个人」，只能靠拖。
 		KEY_B:
 			# 带人方式：按战力，还是按羁绊（§09）。M2-d。
 			#
@@ -452,25 +457,56 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _phase == Phase.PREPARE and not auto_play:
 				_toggle_field_policy()
 		KEY_ESCAPE:
-			# **一下只收一层：说明卡 → 弹层 → 瞄准 → 选中。** 一下做几件事会让人
-			# 分不清刚才关掉的是哪一个。说明卡排最前面（M5-7）—— 它盖在最上面，
-			# 手上有东西挡着的时候，那一下的意思一定是「先把它收掉」。
-			if _tip.is_open():
-				_tip.hide_card()
-				return
-			if _close_modal():
-				return
-			# 战斗中还多一层：先退出「正在等你点战场」（M4-e / M5-9 的忍术）。
-			# 一下按键同时取消瞄准和选中的话，玩家分不清刚才取消的是哪一个。
-			if _picker.aim_mode != PBFieldPicker.Aim.OFF:
-				_picker.aim_mode = PBFieldPicker.Aim.OFF
-				_refresh_panels()
-				return
-			_selection.set_to(PBSelection.Kind.NONE)
-			_refresh_panels()
+			_on_escape()
 		KEY_ENTER:
 			if _phase == Phase.PREPARE:
 				_finish_prepare()
+
+
+## **`Esc` 一下只收一层：菜单 → 说明卡 → 弹层 → 瞄准 → 选中 → 呼出菜单。**
+## 一下做几件事会让人分不清刚才关掉的是哪一个。
+##
+## 说明卡排在弹层前面（M5-7）—— 它盖在最上面，手上有东西挡着的时候，
+## 那一下的意思一定是「先把它收掉」。菜单则排在**两头**：摊开时第一个收，
+## 没有东西可收时才呼出（M6-d）。顺序只在这一处裁决，
+## [PBSystemMenu] 自己不听 `Esc` —— 它在 `HUD` 里会比这里先收到事件，
+## 那样「按 Esc 关掉了什么」就由节点顺序偷偷决定了。
+func _on_escape() -> void:
+	if _menu.visible:
+		if not _menu.back():
+			_close_menu()
+		return
+	if _tip.is_open():
+		_tip.hide_card()
+		return
+	if _close_modal():
+		return
+	# 战斗中还多一层：先退出「正在等你点战场」（M4-e / M5-9 的忍术）。
+	if _picker.aim_mode != PBFieldPicker.Aim.OFF:
+		_picker.aim_mode = PBFieldPicker.Aim.OFF
+		_refresh_panels()
+		return
+	if _selection.kind != PBSelection.Kind.NONE:
+		_selection.set_to(PBSelection.Kind.NONE)
+		_refresh_panels()
+		return
+	_open_menu()
+
+
+## 摊开功能菜单。**顺手暂停** —— 菜单上第一项写着「继续」，
+## 而底下的战斗照跑的话那两个字就是假的；玩家翻设置的这几秒也会挨打。
+##
+## 记住原来暂停没暂停：他可能是自己按空格停下来看局面，
+## 顺手开了菜单 —— 关掉菜单就替他取消暂停的话，那一波会突然动起来。
+func _open_menu() -> void:
+	_paused_before_menu = _paused
+	_paused = true
+	_menu.open()
+
+
+func _close_menu() -> void:
+	_menu.close()
+	_paused = _paused_before_menu
 
 
 ## 推进逻辑。倍速在这里体现为「一次多走几个 tick」，tick 本身的时长不变。
@@ -698,10 +734,13 @@ func _on_field_click(at: Vector2) -> void:
 		return
 	var field := _field()
 	var spot := PBLayout.to_field(at, field)
-	var pick: float = PICK_RADIUS_PX / PBLayout.px_per_unit(field)
+	# 判定半径是**屏幕像素**（M6-a），见 [method PBLayout.screen_gap]。
+	var pick: float = PICK_RADIUS_PX
 	# 正在指定目标：只认敌人。点空地就当取消 —— 让「按错了」有一条退路。
 	if _picker.aim_mode == PBFieldPicker.Aim.TARGET:
-		_picker.aim(_battle, _selected_attacker(), _picker.enemy_at(_battle, spot, pick))
+		_picker.aim(
+			_battle, _selected_attacker(), _picker.enemy_at(_battle, spot, field, pick)
+		)
 		_picker.aim_mode = PBFieldPicker.Aim.OFF
 		_refresh_battle_panels()
 		return
@@ -712,7 +751,7 @@ func _on_field_click(at: Vector2) -> void:
 		_picker.aim_mode = PBFieldPicker.Aim.OFF
 		_refresh_battle_panels()
 		return
-	var ally := _picker.ally_at(_battle, spot, pick)
+	var ally := _picker.ally_at(_battle, spot, field, pick)
 	if ally != null and ally.slot < _plan.deployed.size():
 		_select(PBSelection.Kind.UNIT, _plan.deployed[ally.slot].key())
 		return
@@ -740,11 +779,7 @@ func _unit_on_field_at(at: Vector2) -> StringName:
 	var units := _fighting_now(_dispatch_preview())
 	var field := _field()
 	var hit: int = PBFieldPicker.unit_at(
-		units,
-		_state.formation,
-		_cfg,
-		PBLayout.to_field(at, field),
-		PICK_RADIUS_PX / PBLayout.px_per_unit(field)
+		units, _state.formation, _cfg, PBLayout.to_field(at, field), field, PICK_RADIUS_PX
 	)
 	return units[hit].key() if hit >= 0 else &""
 
@@ -816,6 +851,12 @@ func _sync_visuals() -> void:
 	# 准备阶段还没有敌人（要等 _finish_prepare() 才生成），
 	# 但**己方要画出来** —— 摆位要成为一个操作，第一步是看得见现在摆成什么样。
 	_limit.visible = _phase == Phase.PREPARE and not _run_over
+	# 动画跟着倍速走，暂停和顿帧一起冻住（M6-b）。**不跟的话暂停时一群人
+	# 还在原地跑步** —— §02 特意把暂停当成一个正经的操作时机，那一刻画面
+	# 必须是静止的局面；顿帧同理，底下的人接着跑就没有「这一下打死了」。
+	var beat: float = 0.0 if _paused or _hitstop_frames > 0 else float(_speed)
+	_allies.set_anim_speed(beat)
+	_pool.set_anim_speed(beat)
 	if _battle == null:
 		_pool.sync_enemies([], 0, field, false)
 		_telegraph.clear()
@@ -829,7 +870,8 @@ func _sync_visuals() -> void:
 		_shots.sync_shots(_battle.shots(), field)
 		# §02 第 8 点：己方忍者也要画在场上。射程、站位、防挤、敌人还手
 		# 四件事全都只有在这里才看得见 —— 那是 M3-a 到 M3.5-c 做的全部内容。
-		_allies.sync_allies(_battle.attackers(), _plan.deployed, field)
+		# 敌人那一份只用来查「他要打的那个在哪」（朝向，M6-b）。
+		_allies.sync_allies(_battle.attackers(), _plan.deployed, field, _battle.enemies())
 		# §02 的第三层视觉编码：克得住的敌人加一圈亮边。
 		# 这是玩家在战斗中最需要的即时信息 —— 原版要点开技能说明才看得到。
 		var counterable: bool = _state.can_counter(_plan.wave.element)
@@ -840,40 +882,16 @@ func _sync_visuals() -> void:
 	_sync_preview()
 
 
-## 下一波预告 + 克制覆盖度。§03 称这是本案投入产出比最高的一处改进 ——
-## 原版的克制关系要点开技能说明才看得到，玩家全靠背。
+## 下一波预告 + 克制覆盖度 + 现在能按哪些键。文案在 [PBPreviewLabel]。
 ##
-## 预告零副作用，因为波次生成是 `(种子, 波次)` 的纯函数，
-## 见 [method PBRngStreams.wave_rng]。
+## **M5-6 起不用再藏这一行了**：抽屉那一版只盖住中间那一截，行首几个字
+## 会从左边的缝里漏出来；模态的遮罩盖满全屏（[PBModal]）。
 func _sync_preview() -> void:
 	if _run_over:
 		_preview.text = ""
 		return
-	# **M5-6 起不用再藏这一行了。** 抽屉那一版只盖住中间那一截，
-	# 行首几个字会从左边的缝里漏出来；模态的遮罩盖满全屏（[PBModal]）。
-	var next := PBRunSim.preview_wave(_state.wave_index + 1, _cfg, _rng)
-	var missing := _state.missing_counters()
-	var covered: int = PBWaveRules.WAVE_ELEMENTS.size() - missing.size()
-
-	var gap_text: String = "已齐"
-	if not missing.is_empty():
-		var names := PackedStringArray()
-		for element: int in missing:
-			names.append(str(PBUnitTile.ELEMENT_NAMES.get(element, "?")))
-		gap_text = "缺 %s" % "".join(names)
-
-	var keys: String = "空格暂停　1/2/3 倍速　R 重开　A 自动:%s" % ("开" if auto_play else "关")
-	if _phase == Phase.PREPARE and not auto_play:
-		keys = "点选/拖动摆位　拖进任务栏派任务　回车开打　B 换带人法　Esc 取消"
-	_preview.text = (
-		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
-		% [
-			PBUnitTile.ELEMENT_NAMES.get(next.element, "?"),
-			PBUnitTile.SHAPE_NAMES.get(next.shape, "?"),
-			covered,
-			gap_text,
-			keys,
-		]
+	_preview.text = PBTopBarText.preview(
+		_state, _cfg, _rng, _phase == Phase.PREPARE, auto_play
 	)
 
 
@@ -911,7 +929,8 @@ func _sync_selected(field: Vector2) -> void:
 	# 「他要打谁」「正在等你点哪儿」那三条虚线（M5-11）。见 [PBAimLines]。
 	# **暂停时绿线画全场**（M5-12）：那正是用来读局面的一刻。
 	_aim.sync(
-		_battle, field, live, _picker.aim_mode, get_viewport().get_mouse_position(), _paused
+		# 鼠标同样走画布坐标，不走窗口像素 —— 见 [method _unhandled_input]。
+		_battle, field, live, _picker.aim_mode, get_global_mouse_position(), _paused
 	)
 	if live == null:
 		_allies.show_range(Vector2.ZERO, 0.0)
@@ -943,7 +962,8 @@ func _field() -> Vector2:
 func _sync_base() -> void:
 	var ratio: float = clampf(_state.base_hp / _cfg.base_hp, 0.0, 1.0)
 	var bottom: float = PBLayout.lane_bottom(_field())
-	_base_rect.size.y = lerpf(4.0, bottom - PBLayout.FIELD_TOP, ratio)
+	# 满血时和地面带一样高（M6-a 起那是 GROUND_TOP，不是框的上沿）。
+	_base_rect.size.y = lerpf(4.0, bottom - PBLayout.GROUND_TOP, ratio)
 	_base_rect.position.y = bottom - _base_rect.size.y
 	_base_rect.color = PBSkin.GOOD.lerp(PBSkin.BAD, 1.0 - ratio)
 
@@ -964,37 +984,7 @@ func _sync_info() -> void:
 	if _run_over:
 		_info.text = "本局结束　卡在第 %d 波　按 R 重开" % _state.wave_index
 		return
-	var wave: PBWave = _plan.wave
-	var head := (
-		"第 %d 波　%s　%s　　基地 %d　金 %d　卡池 %d"
-		% [
-			wave.index,
-			PBUnitTile.ELEMENT_NAMES.get(wave.element, "?"),
-			PBUnitTile.SHAPE_NAMES.get(wave.shape, "?"),
-			int(_state.base_hp),
-			_state.gold,
-			_state.roster.size(),
-		]
-	)
-	if _phase == Phase.PREPARE:
-		# §01：准备阶段不限时。所以这里不显示秒数，只说在等什么。
-		_info.text = "%s　　【准备阶段】敌 %d　任务 %s" % [head, wave.count, _quest_name()]
-		return
-	var out: PBCombatOutcome = _battle.result()
-	_info.text = (
-		"%s　　敌 %d/%d　漏 %d　　%.1fs　%s"
-		% [
-			head,
-			out.kills,
-			wave.count,
-			out.leaked,
-			out.battle_seconds,
-			"暂停" if _paused else "%d 倍速" % _speed,
-		]
-	)
-
-
-## 属性名与波型名走 [PBUnitTile] 那两张表 —— M4-f 之前这里另有一份（全项目第三份）。
-## 多一份不报错，只是有一天「物」和「物理」在两块面板上同时出现。
-func _quest_name() -> String:
-	return String(PBEconomyRules.QUEST_GRADES[_plan.quest_grade])
+	# **准备阶段传 `null` 而不是一份空战报**：那一行该说「在等什么」，
+	# 而不是报一份 0 杀 0 漏的战果（§01 说准备阶段不限时）。见 [PBTopBarText]。
+	var out: PBCombatOutcome = null if _phase == Phase.PREPARE else _battle.result()
+	_info.text = PBTopBarText.status(_state, _plan, out, _paused, _speed)

@@ -56,8 +56,21 @@ enum Primary { STRENGTH, AGILITY, INTELLECT }
 ## 查语言表用的键。显示名只在这一层出现，`src/` 其余地方一个字都不该有。
 @export var name_key: String = ""
 
-## 查图集用的键。M2 是白模阶段，先留着不用（真美术在 M5）。
+## 查**头像**图集用的键（卡面、信息栏那一套 UI）。白模阶段先留着不用。
 @export var icon_key: String = ""
+
+## 查**战场形象**用的键，对上 [member PBActorSkin.key]（M6-b）。
+##
+## ## 为什么不和 [member icon_key] 合并
+##
+## 头像是一张静态图、正面、要在 20 像素见方的格子里认得出来；
+## 战场形象是一整套侧面动画、脚底要对齐、有 idle/run/attack 三段。
+## 两者的素材尺寸、张数、朝向、命名规则没有一条相同 ——
+## 合成一个键的话，「这个角色只画了战场形象、头像还没排期」
+## 就没有地方表达，而那正是眼下的实际状态。
+##
+## **空着 = 用白模**（[PBWhiteModel]），见 [PBActorLibrary]。
+@export var actor_key: StringName = &""
 
 ## **攻元素**：这个角色打出去的伤害算哪一系（§03 / §03A）。
 ##

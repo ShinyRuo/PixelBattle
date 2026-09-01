@@ -1,6 +1,6 @@
 class_name PBAllyPool
 extends Node2D
-## 战场上的己方忍者。§02 第 8 点，M3.5-g。
+## 战场上的己方忍者。§02 第 8 点，M3.5-g；M6-b 起是一组 [AnimatedSprite2D]。
 ##
 ## ## 在它之前，战场上只有敌人
 ##
@@ -14,10 +14,10 @@ extends Node2D
 ##
 ## ## 己方和敌人必须一眼分得开
 ##
-## 敌人是**多边形**（每系一个剪影，§02 的第二层视觉编码）。
-## 己方因此一律画成**方块 + 头顶一条血条**：形状类别不同，
-## 去色之后照样分得开，而属性色两边共用同一套（[constant
-## PBEnemyPool.ELEMENT_COLORS]）—— 玩家在编队页认的那个颜色就是这个。
+## 敌人的白模是**会动的多边形**（每系一个剪影，§02 的第二层视觉编码，
+## 见 [method PBWhiteModel.enemy]）。己方是**方头方脑的人形 + 头顶一条血条**：
+## 形状类别不同，去色之后照样分得开，而属性色两边共用同一套
+## （[constant PBEnemyPool.ELEMENT_COLORS]）—— 玩家在卡面上认的那个颜色就是这个。
 ##
 ## 血条**只有己方有**。敌人的血量已经编码进颜色明暗（越暗越残），
 ## 而己方只有十来个、一个死了就少一份输出，那件事值得一个精确的读数。
@@ -28,15 +28,31 @@ extends Node2D
 ## 它没有本体、不挨打、位置恒为 0。画出来会是一个贴在基地上永远满血的方块，
 ## 而玩家会以为那是个忍者。
 
-## 己方方块的边长（像素）。比敌人的多边形（半径 5）略大一点 ——
-## 十来个己方 vs 最多 48 个敌人，大一点才不会在潮水波里被淹掉。
-const BODY: Vector2 = Vector2(11.0, 11.0)
-
-## 血条尺寸与它离方块顶多远。
+## 血条尺寸与它离**头顶**多远。头顶多高由那张皮说了算
+## （[method PBActorSkin.head_px]）—— 写死一个数的话，换一套画得高一点的
+## 素材，血条就埋进胸口里了。
 const BAR: Vector2 = Vector2(13.0, 2.0)
-const BAR_LIFT: float = 9.0
+const BAR_LIFT: float = 4.0
 
-## 阵亡之后画成什么样。**不藏起来** —— 藏了的话「他死了」和「他从来没上场」
+## 脚下那圈影子的横向半径与段数（M6-a）。
+##
+## ## 影子不是装饰，它是这个视角里唯一的高度读数
+##
+## 压过 y 轴之后（[constant PBLayout.Y_SCALE]）「站得远」和「站得高」
+## 在屏幕上是同一个方向的位移 —— 只看小人本身分不出他是往后站了，
+## 还是跳起来了。影子钉在地面点上，那个歧义就没了。
+##
+## 这也是它必须画在**脚底那个点**上的理由：影子的位置就是
+## [member PBAttacker.pos]，而小人的身体是从那儿往上长的。
+## **地面得比背景亮，影子才有地方落。** 底板原来是 `(0.11,0.12,0.16)`，
+## 背景是 `(0.08,0.09,0.12)` —— 黑影子叠上去算出来和背景同一个色号，
+## 画了等于没画（实测：影子在算，屏幕上一个都看不见）。M6-a 把底板提到
+## `(0.17,0.18,0.22)`，那也正是「地面是一个平面」这句话的视觉前提。
+const SHADOW_RX: float = 6.0
+const SHADOW_SEGMENTS: int = 12
+const SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.45)
+
+## 阵亡之后染成什么样。**不藏起来** —— 藏了的话「他死了」和「他从来没上场」
 ## 在画面上是同一件事，而这一波剩下的时间里玩家正需要知道前排缺了一个。
 const DEAD_COLOR := Color(0.22, 0.22, 0.26, 0.75)
 
@@ -49,58 +65,125 @@ const BAR_BACK := Color(0.10, 0.11, 0.14, 0.85)
 ## ## 为什么画在这里，而不是再开一个池子
 ##
 ## 它是**某一个己方单位**的属性，和血条一样跟着那个人走。
-## 单开一个节点的话，「圈的位置」和「方块的位置」会各算一遍，
+## 单开一个节点的话，「圈的位置」和「小人的位置」会各算一遍，
 ## 而差几个像素的表现是「射程圈好像没对准他」。
 ##
 ## 圈画在自己的 `_draw` 里 —— [CanvasItem] 先画自己再画子节点，
-## 所以它自然落在方块和血条**底下**，不会盖住谁。
+## 所以它自然落在小人和血条**底下**，不会盖住谁。
 const RANGE_FILL := Color(0.55, 0.78, 0.95, 0.06)
 const RANGE_EDGE := Color(0.62, 0.84, 0.98, 0.55)
 const RANGE_SEGMENTS: int = 32
 
-var _bodies: Array[ColorRect] = []
+## 攻击段最多快/慢到什么程度（[method _fit]）。不夹的话，一个攻速 0.85 的
+## 角色会得到一段慢到看不出在动的挥击，而攻速 4 的那个会糊成一片。
+const FIT_MIN: float = 0.2
+const FIT_MAX: float = 3.0
+
+## 每人一个锚节点，**位置就是他的落脚点**。精灵和血条挂在它下面。
+##
+## ## 为什么要多这一层
+##
+## y 排序按**节点自己的 y** 排，而精灵的原点由素材的画布决定 ——
+## 直接拿精灵当节点的话，排序用的是「画布左上角在哪」而不是「脚踩在哪」，
+## 而画布留白多一点的那套素材会整体排错一档，**坐标却完全正确**。
+##
+## 锚在脚下之后，敌我共用同一把尺子，素材高矮不一也不会打乱前后。
+var _anchors: Array[Node2D] = []
+
+var _sprites: Array[AnimatedSprite2D] = []
 var _backs: Array[ColorRect] = []
 var _fills: Array[ColorRect] = []
+
+## 每人一份动画状态（M6-b）。它记的是**上一帧**的位置与出手时刻，
+## sim 里没有这两样的差分，见 [PBActorPose]。
+var _poses: Array[PBActorPose] = []
+
+## 这一格现在挂着哪张皮。换人才重装 [SpriteFrames] —— 每帧重装的话
+## 动画会永远停在第一帧，而那看起来就像「这个人不会动」。
+var _skins: Array[PBActorSkin] = []
 
 ## 射程圈的屏幕圆心与半径。半径 0 = 不画。
 var _range_at: Vector2 = Vector2.ZERO
 var _range_px: float = 0.0
 
+## 这一帧每个人的落脚点（屏幕坐标），影子画在这些点上。
+var _shadows: PackedVector2Array = PackedVector2Array()
+
+## 播放速度（倍速；暂停与顿帧时是 0）。见 [method set_anim_speed]。
+var _anim_speed: float = 1.0
+
+var _tick_rate: int = 20
+var _frames_per_tick: float = 3.0
+
 
 func _ready() -> void:
 	# 按出战席上限一次建满，之后只改属性和 visible —— 和敌人池同一条规矩（§14）。
+	#
+	# **一个人的三块（精灵 + 血条底 + 血条）挂在同一个锚下**，一起前后移动。
+	# 分三个池子平铺的话，y 排序会把血条和它的主人拆开排。
 	var cfg := PBSimConfig.new()
+	_tick_rate = maxi(cfg.tick_rate, 1)
+	_frames_per_tick = maxf(float(Engine.physics_ticks_per_second) / float(_tick_rate), 1.0)
 	for _i: int in cfg.deploy_slots_max:
-		_bodies.append(_add_rect(BODY, Color.WHITE))
-	for _i: int in cfg.deploy_slots_max:
-		_backs.append(_add_rect(BAR, BAR_BACK))
-		_fills.append(_add_rect(BAR, HP_GOOD))
+		var anchor := Node2D.new()
+		add_child(anchor)
+		_anchors.append(anchor)
+		var sprite := AnimatedSprite2D.new()
+		# **不居中**：原点要落在脚底，偏移由那张皮给（[method PBActorSkin.draw_offset]）。
+		sprite.centered = false
+		sprite.visible = false
+		anchor.add_child(sprite)
+		_sprites.append(sprite)
+		_backs.append(_add_rect(anchor, BAR, BAR_BACK))
+		_fills.append(_add_rect(anchor, BAR, HP_GOOD))
+		_poses.append(PBActorPose.new())
+		_skins.append(null)
+
+
+## 倍速（暂停和顿帧给 0）。M6-b。
+##
+## **必须跟着走**：动画自己按墙上时间播，倍速时人物会比战斗慢一半，
+## 而暂停时一群人还在原地跑步 —— §02 特意允许暂停下操作，
+## 那一刻画面必须是静止的局面，不是一段循环播放的舞蹈。
+func set_anim_speed(scale: float) -> void:
+	_anim_speed = maxf(scale, 0.0)
 
 
 ## 把池子同步到这一波的攻击者上。每渲染帧调一次。
 ##
 ## [param units] 是与攻击者同序的上场名单（[member PBWavePlan.deployed]），
-## 只用来取属性色 —— [PBAttacker] 身上没有「攻元素」，那一份克制倍率
+## 用来取属性色和那张皮 —— [PBAttacker] 身上没有「攻元素」，那一份克制倍率
 ## 在建攻击者时就乘进 `dps` 了（§14 铁律 4：element 挂在伤害事件上）。
+## [param enemies] 只用来查**他要打的那个在哪**（朝向），见
+## [member PBAttacker.aim_at]。
 ##
 ## **位置直接读 [member PBAttacker.pos]**（M4-a）。在那之前 y 是这里
 ## 按显示序号现编的 —— sim 是一维的，纵向没有答案可读。
-func sync_allies(attackers: Array[PBAttacker], units: Array[PBUnit], field: Vector2) -> void:
+func sync_allies(
+	attackers: Array[PBAttacker],
+	units: Array[PBUnit],
+	field: Vector2,
+	enemies: Array[PBEnemy]
+) -> void:
 	var shown: int = 0
+	var feet := PackedVector2Array()
 	for attacker: PBAttacker in attackers:
-		if shown >= _bodies.size():
+		if shown >= _sprites.size():
 			break
 		# 尾兽那一个不画，见类顶部。
 		if attacker.slot < 0 or attacker.max_hp <= 0.0:
 			continue
 		var at := PBLayout.to_screen(attacker.pos, field)
 		var unit: PBUnit = units[attacker.slot] if attacker.slot < units.size() else null
-		_place(shown, at, attacker, unit)
+		_place(shown, at, attacker, unit, _look_x(attacker, enemies))
+		# 死人不留影子 —— 人已经躺下了，一个还站在地上的影子会让人
+		# 以为他还在那儿挡着。
+		if attacker.alive:
+			feet.append(at)
 		shown += 1
-	for i: int in range(shown, _bodies.size()):
-		_bodies[i].visible = false
-		_backs[i].visible = false
-		_fills[i].visible = false
+	for i: int in range(shown, _sprites.size()):
+		_hide(i)
+	_set_shadows(feet)
 
 
 ## 准备阶段把上场名单画在他们的开战位置上（§02，M4-f）。
@@ -113,23 +196,35 @@ func sync_allies(attackers: Array[PBAttacker], units: Array[PBUnit], field: Vect
 ##
 ## 不画血条：还没开打，那条永远是满的，而一条恒满的血条只是噪声。
 func sync_placed(units: Array[PBUnit], spots: Array[Vector2], field: Vector2) -> void:
-	for i: int in _bodies.size():
+	var feet := PackedVector2Array()
+	for i: int in _sprites.size():
 		var shown: bool = i < units.size() and i < spots.size()
-		_bodies[i].visible = shown
+		if not shown:
+			_hide(i)
+			continue
+		var at := PBLayout.to_screen(spots[i], field)
+		_anchors[i].position = at
+		var skin := _dress(i, units[i])
+		var sprite: AnimatedSprite2D = _sprites[i]
+		sprite.visible = true
+		sprite.modulate = _tint(skin, units[i].element)
+		# 站着等开打：一律待机、一律朝着敌人来的那一侧。
+		_poses[i].reset(spots[i], PBActorPose.FACE_RIGHT)
+		_animate(i, skin, PBActorPose.State.IDLE, 1.0)
 		_backs[i].visible = false
 		_fills[i].visible = false
-		if not shown:
-			continue
-		_bodies[i].position = PBLayout.to_screen(spots[i], field) - BODY * 0.5
-		_bodies[i].color = PBEnemyPool.ELEMENT_COLORS.get(units[i].element, Color.WHITE)
+		feet.append(at)
+	_set_shadows(feet)
 
 
 ## 一个都不画（本局结束之后没有战场）。
 func clear() -> void:
-	for i: int in _bodies.size():
-		_bodies[i].visible = false
-		_backs[i].visible = false
-		_fills[i].visible = false
+	for i: int in _sprites.size():
+		_hide(i)
+		# 上一波的位置与出手时刻一起丢掉：留着的话下一波第一帧会
+		# 从一个隔了半个战场的「上一帧」算出一次跑动。
+		_poses[i].reset(Vector2.INF, PBActorPose.FACE_RIGHT)
+	_set_shadows(PackedVector2Array())
 	show_range(Vector2.ZERO, 0.0)
 
 
@@ -143,39 +238,154 @@ func show_range(at: Vector2, radius_px: float) -> void:
 	queue_redraw()
 
 
+## 射程圈 + 每个人脚下的影子。
+##
+## **两样都画在这里而不是各自的精灵上**：本节点的位置恒为 (0,0)，
+## 而它装在一个 y 排序的层里（[PBLayout] 的 `Actors`）——
+## 于是它自己画的东西一律排在**全部单位后面**，敌我都盖不掉。
+## 影子和射程圈都是贴在地面上的东西，那正是它们该在的位置。
 func _draw() -> void:
+	for at: Vector2 in _shadows:
+		draw_colored_polygon(PBLayout.ground_disc(at, SHADOW_RX, SHADOW_SEGMENTS), SHADOW_COLOR)
 	if _range_px <= 0.0:
 		return
-	draw_circle(_range_at, _range_px, RANGE_FILL)
-	draw_arc(_range_at, _range_px, 0.0, TAU, RANGE_SEGMENTS, RANGE_EDGE, 1.0)
+	# 战场上的圆在屏幕上是椭圆（M6-a）—— y 被压过，见 [constant PBLayout.Y_SCALE]。
+	var ring := PBLayout.ground_disc(_range_at, _range_px, RANGE_SEGMENTS)
+	draw_colored_polygon(ring, RANGE_FILL)
+	draw_polyline(ring, RANGE_EDGE, 1.0)
 
 
-func _place(index: int, at: Vector2, attacker: PBAttacker, unit: PBUnit) -> void:
-	var body: ColorRect = _bodies[index]
-	body.visible = true
-	body.position = at - BODY * 0.5
-	var ratio: float = clampf(attacker.hp / attacker.max_hp, 0.0, 1.0)
+## 影子换了才重画。位置每帧都在动，所以这道门平时拦不住多少 ——
+## 它真正管用的是**暂停**和准备阶段：那时一帧都不用重绘。
+func _set_shadows(feet: PackedVector2Array) -> void:
+	if _shadows == feet:
+		return
+	_shadows = feet
+	queue_redraw()
+
+
+## [param at] 是**落脚点**，不是中心（M6-a）。精灵的脚底贴在那个点上。
+##
+## ## 为什么锚点必须是脚
+##
+## y 排序按节点的 y 排（`Actors` 层），而「谁在前面」问的是**谁的脚更靠下**。
+## 按中心锚的话，一个高个子和一个矮个子站在同一条线上会排出先后，
+## 而他们其实并排站着。真精灵进来之后这条更硬：素材高度各不相同，
+## 中心锚会让同一排人前后乱跳。
+func _place(index: int, at: Vector2, attacker: PBAttacker, unit: PBUnit, look_x: float) -> void:
+	_anchors[index].position = at
+	var skin := _dress(index, unit)
+	var sprite: AnimatedSprite2D = _sprites[index]
+	sprite.visible = true
+
+	var casting: bool = attacker.ultimate != null and attacker.ultimate.is_pending()
+	var hold: int = _hold_frames(attacker.attack_interval())
+	var pose: PBActorPose = _poses[index]
+	pose.update(attacker.pos, attacker.alive, attacker.next_shot_at, casting, look_x, hold)
+
+	var fit: float = 1.0
+	if pose.state == PBActorPose.State.ATTACK:
+		fit = _fit(skin, skin.anim_for(pose.state), attacker.attack_interval())
+	_animate(index, skin, pose.state, fit)
+
 	if not attacker.alive:
-		body.color = DEAD_COLOR
+		sprite.modulate = DEAD_COLOR
 	elif unit == null:
-		body.color = Color.WHITE
+		sprite.modulate = Color.WHITE
 	else:
-		body.color = PBEnemyPool.ELEMENT_COLORS.get(unit.element, Color.WHITE)
+		sprite.modulate = _tint(skin, unit.element)
 
 	# 死了不画血条 —— 一条空血条和一条读不出来的血条长得一样，
-	# 而方块已经变灰了，那一格信息不需要说两遍。
+	# 而人已经躺下并压暗了，那一格信息不需要说两遍。
 	_backs[index].visible = attacker.alive
 	_fills[index].visible = attacker.alive
 	if not attacker.alive:
 		return
-	var bar_at := at - Vector2(BAR.x * 0.5, BAR_LIFT)
+	var lift: float = skin.head_px() + BAR_LIFT
+	var bar_at := -Vector2(BAR.x * 0.5, lift)
 	_backs[index].position = bar_at
 	_fills[index].position = bar_at
+	var ratio: float = clampf(attacker.hp / attacker.max_hp, 0.0, 1.0)
 	_fills[index].size = Vector2(BAR.x * ratio, BAR.y)
 	_fills[index].color = HP_LOW if ratio < 0.35 else HP_GOOD
 
 
-## 造一个方块。**一律 `MOUSE_FILTER_IGNORE`**（M5-10）。
+## 他要看着谁。有点名/有目标就看那个敌人（[member PBAttacker.aim_at]），
+## 否则交给 [PBActorPose] 按移动方向决定。
+##
+## **终点直接读 sim 算好的那一个，不在这里重算** —— 和 [PBAimLines]
+## 那条绿线同一个理由：点名、射程、出场时刻、死活四个条件漏抄一个，
+## 人就背对着他正在打的敌人，而且不报错。
+func _look_x(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
+	if attacker.aim_at < 0 or attacker.aim_at >= enemies.size():
+		return NAN
+	return enemies[attacker.aim_at].distance
+
+
+## 这一格该挂哪张皮。**没配就用白模** —— `assets/` 现在一个素材都没有，
+## 所以今天走的全是这一条，见 [PBWhiteModel]。
+func _dress(index: int, unit: PBUnit) -> PBActorSkin:
+	var skin: PBActorSkin = null
+	if unit != null:
+		skin = PBActorLibrary.skin_for(unit.character.actor_key)
+	if skin == null:
+		skin = PBWhiteModel.ally()
+	if _skins[index] != skin:
+		_skins[index] = skin
+		var sprite: AnimatedSprite2D = _sprites[index]
+		sprite.sprite_frames = skin.frames
+		sprite.offset = skin.draw_offset()
+		sprite.scale = Vector2.ONE * skin.pixel_scale
+	return skin
+
+
+## 播这一段。**同一段不重播** —— 每帧重播会把动画钉死在第一帧，
+## 而那看起来就是「这个人不会动」。
+func _animate(index: int, skin: PBActorSkin, state: int, fit: float) -> void:
+	var sprite: AnimatedSprite2D = _sprites[index]
+	var anim: StringName = skin.anim_for(state)
+	if sprite.animation != anim or not sprite.is_playing():
+		sprite.play(anim)
+	sprite.speed_scale = _anim_speed * fit
+	sprite.flip_h = _poses[index].facing == PBActorPose.FACE_LEFT
+	if skin.source_faces == PBActorSkin.Facing.LEFT:
+		sprite.flip_h = not sprite.flip_h
+
+
+## 白模按属性染色，真素材不染（[member PBActorSkin.tint_by_element]）。
+func _tint(skin: PBActorSkin, element: PBElement.Type) -> Color:
+	if not skin.tint_by_element:
+		return Color.WHITE
+	return PBEnemyPool.ELEMENT_COLORS.get(element, Color.WHITE)
+
+
+## 攻击段该占几帧。**由攻击间隔换算**，不是一个写死的数：
+## 攻速 0.85 和攻速 4 差五倍，写死的话一边拖到下一发还没播完，
+## 另一边播完之后干站着大半个间隔。
+func _hold_frames(interval_ticks: int) -> int:
+	return maxi(roundi(float(maxi(interval_ticks, 1)) * _frames_per_tick), 2)
+
+
+## 攻击段要放慢/加快几倍才正好占满一个攻击间隔。
+##
+## 素材的帧率是美术定的（一段挥击 0.25 秒），而这个角色的出手间隔是数值定的 ——
+## 两者没有理由相等，所以这里现算一个缩放。夹在
+## [constant FIT_MIN] 到 [constant FIT_MAX] 之间，见那两个常量。
+func _fit(skin: PBActorSkin, anim: StringName, interval_ticks: int) -> float:
+	var want: float = float(maxi(interval_ticks, 1)) / float(_tick_rate)
+	var have: float = skin.anim_seconds(anim)
+	if have <= 0.0 or want <= 0.0:
+		return 1.0
+	return clampf(have / want, FIT_MIN, FIT_MAX)
+
+
+func _hide(index: int) -> void:
+	_sprites[index].visible = false
+	_backs[index].visible = false
+	_fills[index].visible = false
+
+
+## 造一条血条。**一律 `MOUSE_FILTER_IGNORE`**（M5-10）。
 ##
 ## [ColorRect] 默认是 `MOUSE_FILTER_STOP`，而**引擎只要在鼠标下面找到
 ## 任何一个非 IGNORE 的 [Control]，那一下点击就算被 GUI 处理掉了** ——
@@ -184,11 +394,15 @@ func _place(index: int, at: Vector2, attacker: PBAttacker, unit: PBUnit) -> void
 ## 最坑的是它长什么样：**点在忍者身上没反应，点在他旁边也没反应**
 ## （底下还压着 `Lane` 和 `Background` 两块同样默认 STOP 的 [ColorRect]）。
 ## 看起来像「点选功能没做」，而代码里那一整套判定写得好好的。
-func _add_rect(of_size: Vector2, color: Color) -> ColorRect:
+##
+## M6-b 之后本体是 [AnimatedSprite2D]（[Node2D]，压根不参与 GUI 命中），
+## 这条只剩血条这两块还需要，但**规矩不变** —— 下一个往锚上挂
+## [Control] 的人会踩同一个坑。
+func _add_rect(anchor: Node2D, of_size: Vector2, color: Color) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.size = of_size
 	rect.color = color
 	rect.visible = false
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(rect)
+	anchor.add_child(rect)
 	return rect

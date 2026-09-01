@@ -178,6 +178,65 @@ func test_picking_a_beast_takes_two_steps() -> void:
 	assert_false(root._beasts.visible, "定完这一层就没有内容了，该收起来")
 
 
+func test_escape_opens_the_menu_only_after_everything_else_is_closed() -> void:
+	# `Esc` 已经有一条链（说明卡 → 弹层 → 瞄准 → 选中），菜单排在**最后**。
+	# 排到前面的话，手上挡着一张说明卡时按 `Esc` 会弹出设置，
+	# 而玩家要按四下才能取消一次选中。
+	var root := _prepared()
+	root._open_modal(root._beasts)
+	root._on_escape()
+	assert_false(root._beasts.visible, "第一下该收掉弹层")
+	assert_false(root._menu.visible, "第一下收的是弹层，不是开菜单")
+	root._on_escape()
+	assert_true(root._menu.visible, "没东西可收了才轮到菜单")
+
+
+func test_the_graphics_page_steps_back_before_the_menu_closes() -> void:
+	# 两页共用一层（[PBModal] 一次只摊一层）。所以 `Esc` 在这一层里有两种含义，
+	# 而**判断和执行必须在同一处**（[method PBSystemMenu.back]）——
+	# 调用方自己看当前是哪一页再决定的话，加第三页那天两边就分叉了。
+	var root := _prepared()
+	root._on_escape()
+	root._menu._show_page(PBSystemMenu.Page.GRAPHICS)
+	root._on_escape()
+	assert_true(root._menu.visible, "图形页按 Esc 是退回主页，不是整个关掉")
+	assert_eq(root._menu._page, PBSystemMenu.Page.MAIN, "该退回主页")
+	root._on_escape()
+	assert_false(root._menu.visible, "主页按 Esc 才关掉")
+
+
+func test_the_menu_pauses_and_hands_the_pause_back() -> void:
+	# 菜单第一项写着「继续」，底下的战斗照跑的话那两个字就是假的。
+	# 但**他自己按的暂停不能被替他取消** —— 他可能是停下来看局面，
+	# 顺手开了菜单，关掉之后那一波不该突然动起来。
+	var root := _prepared()
+	assert_false(root._paused, "开局不该是暂停的")
+	root._on_escape()
+	assert_true(root._paused, "摊开菜单就该停下来")
+	root._on_escape()
+	assert_false(root._paused, "关掉菜单该恢复原样")
+
+	root._paused = true
+	root._on_escape()
+	root._on_escape()
+	assert_true(root._paused, "他自己按的暂停，菜单不该替他取消")
+
+
+func test_the_resolution_box_never_lies_about_the_current_window() -> void:
+	# 玩家可能刚按过 `F10`/`F11`，也可能自己拖过窗口边。**不在档位表里就一项都不选** ——
+	# 硬指一个的话，那一行会告诉他「你已经是这个分辨率了」，而他并不是。
+	var root := _prepared()
+	root._menu.open()
+	assert_eq(root._menu._sizes.item_count, PBDisplay.SIZES.size(), "档位表要全列出来")
+	var picked: int = root._menu._sizes.selected
+	if picked >= 0:
+		assert_eq(
+			PBDisplay.SIZES[picked],
+			DisplayServer.window_get_size(),
+			"选中的那一项必须真的等于当前窗口"
+		)
+
+
 func test_the_battlefield_actually_shows_your_own_ninjas() -> void:
 	# **开打之后场上只有敌人**是 M0 到 M3.5-f 一直存在的缺口：整队标量 DPS
 	# 时代「谁站在哪」没有答案，所以画不出来是诚实的；M3-a 拆成一组
@@ -194,8 +253,10 @@ func test_the_battlefield_actually_shows_your_own_ninjas() -> void:
 	assert_gt(root._plan.deployed.size(), 0, "自动模式下该有人上场")
 
 	var shown: int = 0
-	for rect: ColorRect in (root.get_node("Deployed") as PBAllyPool).get_children():
-		if rect.visible:
+	# M6-a 起每人多了一层锚节点（脚下那个点），精灵挂在它下面 ——
+	# 所以这里要往下找一层，不能只看直接子节点。
+	for sprite: Node in _ally_sprites(root):
+		if (sprite as AnimatedSprite2D).visible:
 			shown += 1
 	assert_gt(shown, 0, "战斗中场上应该画得出己方忍者")
 
@@ -204,5 +265,13 @@ func test_your_ninjas_are_gone_again_once_the_wave_has_not_started() -> void:
 	# 准备阶段没有战场（敌人要等 `_finish_prepare` 才生成），
 	# 这时候还画着上一波的方块就成了「战场上有人但打不起来」。
 	var root := _prepared()
-	for rect: ColorRect in (root.get_node("Deployed") as PBAllyPool).get_children():
-		assert_false(rect.visible, "准备阶段不该有己方单位画在战场上")
+	for sprite: Node in _ally_sprites(root):
+		assert_false((sprite as AnimatedSprite2D).visible, "准备阶段不该有己方单位画在战场上")
+
+
+## 己方池子里那些精灵。见 [method PBAllyPool._ready] —— 每人一个锚，
+## 精灵和两条血条挂在锚下面。
+func _ally_sprites(root: Node2D) -> Array[Node]:
+	return (root.get_node("Actors/Deployed") as PBAllyPool).find_children(
+		"", "AnimatedSprite2D", true, false
+	)
