@@ -289,9 +289,18 @@ func _open_modal(which: PBModal) -> void:
 
 
 ## 玩家从三选一里挑了一张。挑完这一层就没有内容了，直接收起来。
+##
+## **场上有空位新卡就上场，没空位就留在仓库**（M6-i）。走
+## [method PBCardMoves.set_on_field]，那里已经有「满了就什么都不做」那道门槛。
+## 只在玩家亲手排过之后才要这一步 —— 没排过时下面那次刷新会替他填。
 func _on_offer_picked(index: int) -> void:
+	var picked: PBUnit = null
+	if index >= 0 and index < _state.pending_offer.size():
+		picked = _state.pending_offer[index]
 	if PBShopRules.take_offer(_state, index):
 		_offer.close()
+		if _state.lineup_by_hand and picked != null:
+			PBCardMoves.set_on_field(_state, _strategy, _plan, picked, true, _cfg)
 	_sync_deployed()
 	_refresh_panels()
 
@@ -448,14 +457,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			# 否则玩家关了自动却要等下一波才看得到商店。
 			_set_panels_visible(_phase == Phase.PREPARE and not auto_play and not _run_over)
 			# **`Q` 没了**（M5-7）：接不接现在等于「任务栏里站着几个人」，只能靠拖。
-		KEY_B:
-			# 带人方式：按战力，还是按羁绊（§09）。M2-d。
-			#
-			# **加这个键是因为不加的话羁绊那几行是不可操作的信息** ——
-			# 面板会说「还差 1 人就能进满档，+18%」而玩家一个按钮都没有，
-			# 看得见动不了的 UI 只会让人以为自己漏掉了什么操作。
-			if _phase == Phase.PREPARE and not auto_play:
-				_toggle_field_policy()
+			# **`B` 也没了**（M6-h）：那个开关会当场换掉半支队伍，
+			# 而它是给批量扫描当仪器用的，见 [member PBStrategy.field_policy]。
 		KEY_ESCAPE:
 			_on_escape()
 		KEY_ENTER:
@@ -643,18 +646,6 @@ func _set_panels_visible(shown: bool) -> void:
 		_refresh_panels()
 
 
-## 换一种带人方式，并立刻重画 —— 玩家按下去要马上看到倍率变了多少，
-## 等下一波才生效的话这个开关就没法用来比较。
-func _toggle_field_policy() -> void:
-	_strategy.field_policy = (
-		PBStrategy.Field.RAW_POWER
-		if _strategy.field_policy == PBStrategy.Field.BOND_AWARE
-		else PBStrategy.Field.BOND_AWARE
-	)
-	_refresh_panels()
-	_sync_deployed()
-
-
 func _refresh_panels() -> void:
 	if _phase == Phase.BATTLE:
 		_refresh_battle_panels()
@@ -662,10 +653,29 @@ func _refresh_panels() -> void:
 	if not _command.visible:
 		return
 	_command.set_battle(false)
-	# 先把在场名单按当前策略重挑一遍，各块面板才看的是同一支队伍。
+	# 先把在场名单算一遍，各块面板才看的是同一支队伍。
 	# 漏了这一步，玩家抽到的新卡要等到点「开打」时才进队，
 	# 而面板上的羁绊倍率会停在上一波 —— 不报错，只是数字不动。
-	_strategy.bring_to_field(_state, _cfg)
+	var chosen: Array[PBUnit] = _strategy.bring_to_field(_state, _cfg)
+	# **把这支队伍钉下来**（M6-h），除非玩家已经自己动过手。
+	#
+	# 不钉的话，`bring_to_field` 每次刷新都会按战力**重排一遍** ——
+	# 于是玩家抽到一张更强的卡，场上最弱的那个当场被换回仓库，
+	# 而他一根手指都没动过（**玩家实际报上来的 bug**）。
+	#
+	# **每次刷新都重钉，不是只钉一次。** 这一局的仓库从 0 人开始，
+	# 队伍靠抽卡一个个攒 —— 只钉一次的话后面抽到的人永远进不了队。
+	# 重钉是安全的，因为 `bring_to_field` 是「名单里的人优先占位、
+	# 剩下的空位才补」：新卡只填空位，顶不掉已经站着的人。
+	#
+	# `by_hand` 传 false —— 这是系统在替玩家维护，不是玩家的操作。
+	# 他一旦自己拖过，[member PBRunState.lineup_by_hand] 变 true，
+	# 这一步就停手，他留的空位从此不会被人补上。
+	#
+	# 这条路 `auto_play` 走不到 —— 那时面板是收起来的，上面那个
+	# `_command.visible` 已经返回了。**脚本流派与批量扫描一字不动。**
+	if not _state.lineup_by_hand and not chosen.is_empty():
+		_strategy.set_lineup(_state, chosen, true, false)
 	# 选中的人如果已经不在仓库里了（卖了/换局了），选中先散掉再画 ——
 	# 不散的话指令卡会对着一张不存在的卡摆出「升级」。
 	if _selection.unit_id != &"" and not _state.roster.has(_selection.unit_id):

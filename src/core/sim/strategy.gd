@@ -65,6 +65,17 @@ var beast_id: StringName = &""
 var beast_level_target: int = 0
 
 ## 默认不会凑羁绊 —— 大多数流派是「某种打法」的对照组，不是「会玩的玩家」。
+##
+## ## 界面上没有入口，这是有意的（M6-h）
+##
+## 它原来挂在 `B` 键上（M2-d 加的），理由是「不加的话羁绊那几行是不可操作的
+## 信息」。**删掉是因为它按一下就换掉半支队伍** —— 玩家看到的是
+## 「我什么都没干，场上的人自己变了」，而屏幕上没有任何地方说明发生了什么。
+## 凑羁绊现在有一条更直白的路：**看着信息栏里的羁绊账，自己把人拖上去。**
+##
+## **字段本身留着，它是批量扫描的仪器**：`bond_blind` 和 `rational`
+## 只差这一个字段（会不会凑羁绊），两者的比值就是羁绊贡献的技能阶梯
+## （§09 的验收项，M2 量到 1.27×）。删了这个字段等于把那条验收删了。
 var field_policy: Field = Field.RAW_POWER
 
 
@@ -147,8 +158,14 @@ func lineup_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
 ## 走这里而不是让界面直接写 [member PBRunState.lineup]，理由和花钱一样
 ## （见 [PBBattleView] 的 `_on_purchase`）：状态只由这一层的原语改，
 ## 界面自己动字段迟早会漏掉配套的清理，而那种不同步不报错。
-func set_lineup(state: PBRunState, units: Array[PBUnit], manual: bool = true) -> void:
+## [param by_hand] 默认 true —— **调用方是玩家的操作**（拖放、指令卡）。
+## 界面那条「替玩家维护名单」的路要传 false，见 [member PBRunState.lineup_by_hand]。
+func set_lineup(
+	state: PBRunState, units: Array[PBUnit], manual: bool = true, by_hand: bool = true
+) -> void:
 	state.lineup_manual = manual
+	if by_hand:
+		state.lineup_by_hand = true
 	state.lineup.clear()
 	if not manual:
 		return
@@ -206,6 +223,20 @@ func bring_to_field(
 	# `dispatch_manual` 空着时它等于 `open_slots`，脚本流派那一路一个字节不动。
 	var capacity: int = state.field_slots(cfg)
 	var chosen: Array[PBUnit] = lineup_units(state, cfg)
+	# **玩家亲手排过之后就不再往空位里补人**（M6-i）。
+	#
+	# 补进来的那几个只进 `field`，进不了 [method deploy] 返回的名单
+	# （手排那一支只认 [member PBRunState.lineup]）—— 于是**羁绊会算上一个
+	# 根本不上场的人**，而屏幕上没有任何地方显示他。不报错，只是倍率虚高。
+	#
+	# 「空位要不要补」这个问题两种模式各有一个答案，正是
+	# [member PBRunState.lineup_by_hand] 存在的意义：系统还在替他维护时补，
+	# 他自己动过手之后那个空位就是他留的。**新抽到的卡另有一条路**
+	# （[method PBCardMoves.set_on_field]，走「派上场」那一支）——
+	# 它只填空位，和这里按战力补人不是一回事。
+	if state.lineup_by_hand:
+		state.set_field(chosen)
+		return chosen
 	var taken: Dictionary = {}
 	for unit: PBUnit in chosen:
 		taken[unit.key()] = true

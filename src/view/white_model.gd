@@ -25,7 +25,7 @@ extends RefCounted
 ## [member CanvasItem.modulate]（[member PBActorSkin.tint_by_element]）——
 ## 把属性色烤进图里的话，五系就要各存一份一模一样的图。
 
-## 己方白模的画布与身高。画布 36 见方正是素材规格里的默认档，
+## 己方白模的画布与身高。画布 54 见方正是素材规格里的默认档，
 ## 头顶留白由 [constant PBLayout.SPRITE_HEADROOM] 兜着（= 画布 + 2）。
 ##
 ## ## 这个数和泳道间距是抢同一块地方
@@ -40,16 +40,26 @@ extends RefCounted
 ## 而 y 排序保证挡的关系永远是对的（近的挡远的）。
 ## 真要不挡，只有两条路，两条都改配平：把 [member PBSimConfig.field_height]
 ## 抬上去，或者让 `ally_lane` 按列分摊而不是全队平铺。**归数值回归。**
-const ALLY_CANVAS: int = 36
-const ALLY_HEIGHT: int = 27
+##
+## **M6-g 又抬了一次 1.5 倍**（27 → 41，画布 36 → 54，玩家试玩后定的）。
+## 这一次买的是「战场上看得清」——40 像素的人物在 640×360 里才和界面
+## 那些面板一个量级。代价照旧全在遮挡上：泳道间距没动，
+## 站 7 个人时每两条道仍然只隔 22 像素，而人比那高了快一倍。
+## **归数值回归的那两条路一条没变。**
+const ALLY_CANVAS: int = 54
+const ALLY_HEIGHT: int = 41
+
+## 画白模用的那一套坐标是按 **36 见方**写死的（上面那一版画布）。
+## 改大小时不去逐个改那些字面量，而是整体按比例缩 —— 见 [method _s]。
+const ALLY_BASE_CANVAS: float = 36.0
 
 ## 敌人白模的画布与多边形半径。比己方小一圈 ——
 ## 十来个忍者 vs 最多 48 个敌人，一样大的话潮水波会糊成一片。
-const ENEMY_CANVAS: int = 24
-const ENEMY_RADIUS: float = 7.5
+const ENEMY_CANVAS: int = 36
+const ENEMY_RADIUS: float = 11.25
 
 ## 底部这几行压暗，给一点「站在地上」的体积感。纯平的一块白在
-## 压过 y 轴的地面上会像一张贴纸。
+## 压过 y 轴的地面上会像一张贴纸。**跟着画布一起缩**（[method _s]）。
 const SHADE_ROWS: int = 4
 const SHADE: float = 0.72
 
@@ -58,7 +68,7 @@ const SHADE: float = 0.72
 ## ## 为什么必须有它
 ##
 ## [member PBSimConfig.ally_lane] 把全部上场的人平铺在 155 像素的纵深里，
-## 站 7 个人时每两条道只隔 22 像素 —— 而一个 27 高的小人比那还高。
+## 站 7 个人时每两条道只隔 22 像素 —— 而一个 41 高的小人比那高出快一倍。
 ## 于是同一列里几个同系的人**在屏幕上叠成一根实心色条**：
 ## 玩家看不出那是五个人，也点不中中间那个（实测截图，M6-c）。
 ##
@@ -175,16 +185,20 @@ static func _add(
 
 ## 一帧己方白模。[param lift] 整体抬几像素、[param lean] 前倾几像素、
 ## [param arm] 手往前伸多长（攻击段就是靠它读出来的）。
+##
+## **三个参数和下面那批坐标都是 36 画布下的数**，进来先过一遍
+## [method _s] 缩到当前画布 —— 改身高只动 [constant ALLY_CANVAS] 一个数。
 static func _ally_frame(lift: int, lean: int, arm: int) -> Image:
 	var image := _blank(ALLY_CANVAS)
-	var base: int = ALLY_CANVAS - lift
+	var base: int = ALLY_CANVAS - _s(lift)
+	var tilt: int = _s(lean)
 	# 腿、身、头三块，脚底贴在画布底边上（减掉 lift 那点腾空）。
-	_box(image, 13 + lean, base - 8, 4, 8)
-	_box(image, 19 + lean, base - 8, 4, 8)
-	_box(image, 13 + lean, base - 20, 10, 12)
-	_box(image, 14 + lean, base - 27, 8, 9)
+	_box(image, _s(13) + tilt, base - _s(8), _s(4), _s(8))
+	_box(image, _s(19) + tilt, base - _s(8), _s(4), _s(8))
+	_box(image, _s(13) + tilt, base - _s(20), _s(10), _s(12))
+	_box(image, _s(14) + tilt, base - _s(27), _s(8), _s(9))
 	if arm > 0:
-		_box(image, 23 + lean, base - 18, arm, 3)
+		_box(image, _s(23) + tilt, base - _s(18), _s(arm), _s(3))
 	_shade(image)
 	_outline(image)
 	return image
@@ -194,10 +208,23 @@ static func _ally_frame(lift: int, lean: int, arm: int) -> Image:
 ## 「他从来没上场」在画面上是同一件事。
 static func _ally_dead() -> Image:
 	var image := _blank(ALLY_CANVAS)
-	_box(image, 7, ALLY_CANVAS - 6, 22, 6)
+	_box(image, _s(7), ALLY_CANVAS - _s(6), _s(22), _s(6))
 	_shade(image)
 	_outline(image)
 	return image
+
+
+## 把一个「36 画布下的坐标」换算到当前画布上。
+##
+## 白模那身方块是按 36 见方画的，而画布尺寸走过 32 → 24 → 36 → 54 四档
+## （每一档的依据都不同，见 [constant ALLY_HEIGHT]）。逐个改字面量的话，
+## 改漏一处的表现是「胳膊长在肚子上」——看得见，但要盯着看才看得出。
+##
+## **不给它保底成 1。** 这里换算的既有宽高也有偏移，而偏移里
+## `lift = 0`（没腾空）和 `lean = -2`（后仰）都是正经取值 ——
+## 保底会把「不动」变成「往前一格」，把后仰变成前倾。
+static func _s(value: int) -> int:
+	return roundi(float(value) * float(ALLY_CANVAS) / ALLY_BASE_CANVAS)
 
 
 ## 一帧敌人白模：一个 [param sides] 边形，抬 [param lift]、缩放 [param scale]。
@@ -267,7 +294,7 @@ static func _touches_body(image: Image, x: int, y: int) -> bool:
 ## 所以这道暗边在五系上都成立。
 static func _shade(image: Image) -> void:
 	var height: int = image.get_height()
-	for row: int in SHADE_ROWS:
+	for row: int in maxi(_s(SHADE_ROWS), 1):
 		var y: int = height - 1 - row
 		if y < 0:
 			break

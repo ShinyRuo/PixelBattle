@@ -20,6 +20,16 @@
       "scene": "current"
     },
     {
+      // 战场形象预览台（PBActorLab，M6-e）：挑一个忍者，一段段放他的动作。
+      // 接真素材时看这里 —— 信息栏直接写着「这张皮是装上了还是退回了白模」，
+      // 而在战斗画面里那件事看不出来（小人 27 像素高、还被别人挡着）。
+      "name": "Godot: 战场形象预览台",
+      "type": "godot",
+      "request": "launch",
+      "project": "${workspaceFolder}",
+      "scene": "res://scenes/actor_lab.tscn"
+    },
+    {
       "name": "Godot: 运行 + 显示碰撞体",
       "type": "godot",
       "request": "launch",

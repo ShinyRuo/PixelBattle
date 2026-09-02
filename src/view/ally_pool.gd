@@ -31,8 +31,10 @@ extends Node2D
 ## 血条尺寸与它离**头顶**多远。头顶多高由那张皮说了算
 ## （[method PBActorSkin.head_px]）—— 写死一个数的话，换一套画得高一点的
 ## 素材，血条就埋进胸口里了。
-const BAR: Vector2 = Vector2(13.0, 2.0)
-const BAR_LIFT: float = 4.0
+## **跟着人物一起放大**（M6-g，1.5 倍）：一个 41 像素高的忍者配一条
+## 13 像素的血条，读数会比人本身还难认。
+const BAR: Vector2 = Vector2(20.0, 3.0)
+const BAR_LIFT: float = 6.0
 
 ## 脚下那圈影子的横向半径与段数（M6-a）。
 ##
@@ -48,7 +50,7 @@ const BAR_LIFT: float = 4.0
 ## 背景是 `(0.08,0.09,0.12)` —— 黑影子叠上去算出来和背景同一个色号，
 ## 画了等于没画（实测：影子在算，屏幕上一个都看不见）。M6-a 把底板提到
 ## `(0.17,0.18,0.22)`，那也正是「地面是一个平面」这句话的视觉前提。
-const SHADOW_RX: float = 6.0
+const SHADOW_RX: float = 9.0
 const SHADOW_SEGMENTS: int = 12
 const SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.45)
 

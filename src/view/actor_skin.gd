@@ -76,7 +76,10 @@ enum Facing { RIGHT, LEFT }
 
 ## 站着时从脚底到头顶有多高（像素，未乘 [member pixel_scale]）。
 ## 血条挂在这个高度之上 —— 读贴图尺寸的话，一张留白很多的画布会把血条顶到天上。
-@export var height_px: float = 27.0
+##
+## 默认值跟着白模走（[constant PBWhiteModel.ALLY_HEIGHT]）：真素材和白模
+## 同屏站在一起，两边不一样高的表现是「这个人怎么比别人矮一截」。
+@export var height_px: float = 41.0
 
 
 ## [param state] 走 [enum PBActorPose.State]。返回一个 [member frames] 里
@@ -132,8 +135,15 @@ func anim_seconds(anim: StringName) -> float:
 
 ## 精灵该怎么摆才能让**画布上的脚底落在节点原点上**。
 ## 配合 `centered = false` 用（[member Sprite2D.centered]）。
+##
+## **这里不乘 [member pixel_scale]。** [member Sprite2D.offset] 是在节点缩放
+## **之前**作用的，而放大是靠 [member Node2D.scale] 做的 —— 两处各乘一遍
+## 等于把偏移平方，人会浮在地面上方一整个身高。
+##
+## `pixel_scale` 恒为 1 的时候看不出来（1 的平方还是 1），而白模正好是 1，
+## 所以这一条要等真素材填 2 的那天才发作，**且不报错**。
 func draw_offset() -> Vector2:
-	return -anchor() * pixel_scale
+	return -anchor()
 
 
 ## 脚底在画布上的像素坐标。见 [member foot_offset]。

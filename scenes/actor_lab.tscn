@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/tools/actor_lab.gd" id="1_lab"]
+
+[node name="ActorLab" type="Node2D"]
+script = ExtResource("1_lab")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 640.0
+offset_bottom = 360.0
+mouse_filter = 2
+color = Color(0.08, 0.09, 0.12, 1)
+
+[node name="Stage" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.17, 0.18, 0.22, 1)
+
+[node name="Anchor" type="Node2D" parent="."]
+
+[node name="Guides" type="Node2D" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0

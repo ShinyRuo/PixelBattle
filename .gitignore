@@ -14,6 +14,14 @@ export.cfg
 /build/
 /exports/
 
+# ── AI 出图的原始素材（M6-f） ────────────────────────────
+# aires/ 装的是喂给 scripts/make_actor.ps1 的东西：一张立绘 + 四段视频。
+# 一个角色就 8 MB，三十个角色 240 MB，而 git 会永远留着每一版。
+# **成品才入库**：assets/actors/<键>/ 的帧和 data/actors/ 的形象表，
+# 两处加起来不到 100 KB —— 游戏跑起来只要这些。
+# 原始视频自己另外存着，重跑流水线时才用得上。
+aires/
+
 # 由 CSV 自动生成的翻译文件
 *.translation
 

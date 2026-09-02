@@ -33,6 +33,113 @@ func _prepared() -> Node2D:
 	return root
 
 
+func test_drawing_a_card_never_swaps_someone_off_the_field() -> void:
+	# **玩家报的 bug（M6-h）**：抽一张忍者，场上的人被换回仓库，
+	# 而他一根手指都没动过。
+	#
+	# 根因不是那个「带人方式」开关，是 [method PBStrategy.bring_to_field]
+	# 在自动模式下**每次刷新面板都把整队按战力重排一遍** ——
+	# 抽到一张更强的卡就顶掉最弱的那个。实测：抽到迪达拉，波风水门下场。
+	#
+	# 修法是进准备阶段时就把队伍**固化成手排名单**：自动排出来的队伍
+	# 在玩家看来就是他的队伍，系统不该背着他换人。
+	# **这一局的仓库从 0 人开始**，队伍靠抽卡一个个攒 —— 所以先攒满出战席。
+	var root := _prepared()
+	await wait_physics_frames(2)
+	var pool: Array[PBCharacter] = root._cfg.characters.all()
+	var capacity: int = root._state.field_slots(root._cfg)
+	for character: PBCharacter in pool.slice(0, capacity):
+		root._state.add_unit(PBUnit.new(character))
+		root._refresh_panels()
+	var before: Array[StringName] = root._state.field.duplicate()
+	assert_eq(before.size(), capacity, "攒满之后出战席该是满的")
+
+	# 再抽一张**全场最强**的卡 —— 重排的话它必然挤掉一个。
+	var best: PBUnit = null
+	for character: PBCharacter in pool:
+		var candidate := PBUnit.new(character)
+		if best == null or candidate.power(root._cfg) > best.power(root._cfg):
+			best = candidate
+	root._state.add_unit(best)
+	root._refresh_panels()
+
+	assert_eq(root._state.field, before, "抽一张卡不该换掉场上任何一个人")
+	# 上场的那批和屏幕上站的那批必须是同一批 —— 两份的表现是
+	# 「我摆好的阵型和实际打的人对不上」，而那不报错。
+	var fighting: Array[StringName] = []
+	for unit: PBUnit in root._strategy.deploy(root._state, root._plan.wave, root._cfg):
+		fighting.append(unit.key())
+	assert_eq(fighting, before, "真正上场的还是屏幕上那几个")
+
+
+func test_a_new_card_still_walks_into_an_empty_slot() -> void:
+	# 上面那条的反面，两条缺一不可：**顶不掉人**，但**空位还是要填**。
+	# 只钉一次的话后面抽到的人永远进不了队 —— 而这一局是从 0 人开始的。
+	var root := _prepared()
+	await wait_physics_frames(2)
+	var pool: Array[PBCharacter] = root._cfg.characters.all()
+	for i: int in mini(3, root._state.field_slots(root._cfg)):
+		root._state.add_unit(PBUnit.new(pool[i]))
+		root._refresh_panels()
+		assert_eq(root._state.field.size(), i + 1, "第 %d 张卡该走进空位" % (i + 1))
+
+
+func test_the_players_own_hand_stops_the_auto_upkeep() -> void:
+	# 玩家一旦自己拖过，系统就不再替他维护名单 —— 他留的空位从此是他的。
+	# **两个字段分开的全部理由**，见 [member PBRunState.lineup_by_hand]。
+	var root := _prepared()
+	await wait_physics_frames(2)
+	root._state.add_unit(PBUnit.new(root._cfg.characters.all()[0]))
+	root._refresh_panels()
+	assert_false(root._state.lineup_by_hand, "系统替他排的不算他亲手排的")
+	assert_true(root._state.lineup_manual, "但上场要按这份名单走，不能回去自动重排")
+
+	# 玩家亲手把人全拖下场。
+	root._strategy.set_lineup(root._state, [] as Array[PBUnit])
+	assert_true(root._state.lineup_by_hand, "拖过之后就归他了")
+	root._refresh_panels()
+	assert_eq(root._state.lineup.size(), 0, "他要空着就空着，别把名单替他填回去")
+	assert_eq(
+		root._strategy.deploy(root._state, root._plan.wave, root._cfg).size(),
+		0,
+		"上场的也该是零个"
+	)
+	# **羁绊也得跟着是零个**（M6-i 修的）。在那之前 `bring_to_field` 仍会
+	# 按策略往 `field` 里补满，而 `deploy` 只返回名单里的人 ——
+	# 于是羁绊算上了一个屏幕上根本不存在的人，不报错，只是倍率虚高。
+	assert_eq(root._state.field.size(), 0, "场上没人，在场名单就该是空的")
+	assert_eq(root._state.bonded_units(root._cfg).size(), 0, "羁绊不许算上一个不上场的人")
+
+
+func test_a_drawn_card_takes_an_empty_slot_but_never_a_taken_one() -> void:
+	# 玩家的原话：**场上有空位就上场，没空位就进仓库。**
+	# 亲手排过之后这条也得成立 —— 那时自动维护已经停手（上一条测的就是它）。
+	var root := _prepared()
+	await wait_physics_frames(2)
+	var pool: Array[PBCharacter] = root._cfg.characters.all()
+	var capacity: int = root._state.field_slots(root._cfg)
+	# 亲手把一个人拖上场：从这里起名单归玩家。
+	root._state.add_unit(PBUnit.new(pool[0]))
+	var mine: Array[PBUnit] = [root._state.all_units()[0]]
+	root._strategy.set_lineup(root._state, mine)
+	root._refresh_panels()
+	assert_true(root._state.lineup_by_hand, "前提：这份名单已经是玩家亲手排的")
+
+	# 空位还剩 capacity - 1 个，抽一张就该直接站上去。
+	for i: int in range(1, capacity):
+		root._state.pending_offer = [PBUnit.new(pool[i])] as Array[PBUnit]
+		root._on_offer_picked(0)
+		assert_eq(root._state.lineup.size(), i + 1, "有空位，第 %d 张卡该上场" % (i + 1))
+	assert_eq(root._state.field.size(), capacity, "空位填满了")
+
+	# 满了之后再抽，卡进仓库，场上一个人都不许换。
+	var before: Array[StringName] = root._state.field.duplicate()
+	root._state.pending_offer = [PBUnit.new(pool[capacity])] as Array[PBUnit]
+	root._on_offer_picked(0)
+	assert_eq(root._state.field, before, "没空位，新卡只能待在仓库")
+	assert_eq(root._state.roster.size(), capacity + 1, "但他确实进了仓库")
+
+
 func test_only_one_modal_is_open_at_a_time() -> void:
 	# 两层都是「不选就不能继续」。同时摊着两层的话，上面那一层挡住的
 	# 是一个玩家已经欠下的回答 —— 不报错，只是下面那层永远点不到。

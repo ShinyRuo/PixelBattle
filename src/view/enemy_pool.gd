@@ -70,7 +70,7 @@ const SKIN_KEYS := {
 ## 「本体是一个贴在地面上的小多边形」，而 M6-a 之后不是了。
 ## 画在脚下则和影子、射程圈同一个平面，视角一致，也不会挡住剪影。
 const RING_COLOR := Color(1.0, 1.0, 1.0, 0.75)
-const RING_RX: float = 8.0
+const RING_RX: float = 12.0
 const RING_SEGMENTS: int = 14
 
 ## 挨打之后白闪几帧。§02 的「命中反馈」，M3.5-h。

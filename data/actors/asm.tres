@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/asm/attack_0.png" id="1_d2d02"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/attack_1.png" id="2_ey5v0"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/attack_2.png" id="3_l8fc5"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/dead_0.png" id="4_slcwj"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/idle_0.png" id="5_vqfdj"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/idle_1.png" id="6_63ec2"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/run_0.png" id="7_mmd87"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/run_1.png" id="8_g8rfs"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/run_2.png" id="9_13k3i"]
+[ext_resource type="Texture2D" path="res://assets/actors/asm/run_3.png" id="10_fkl5d"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="11_mjepg"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_4fxqu"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_d2d02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_ey5v0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_l8fc5")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_slcwj")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_vqfdj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_63ec2")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_mmd87")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_g8rfs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_13k3i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_fkl5d")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("11_mjepg")
+key = &"asm"
+frames = SubResource("SpriteFrames_4fxqu")

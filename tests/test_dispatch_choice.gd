@@ -295,7 +295,10 @@ func test_the_deploy_command_matches_what_pressing_it_does() -> void:
 	# [method PBBattleView._set_on_field] 读的是真名单、发现他已经在里面，直接返回。
 	var root: Node2D = await _view_with(3)
 	var star: PBUnit = _deploy_of(root)[0]
-	assert_false(root._state.lineup_manual, "这一局还没手排过 —— 复现那个 bug 的前提")
+	# M6-h 之后名单是**系统替玩家维护**的（[member PBRunState.lineup_manual]
+	# 为 true、[member PBRunState.lineup_by_hand] 仍为 false），
+	# 而那个 bug 的前提只是「玩家还没亲手动过」——它照样成立。
+	assert_false(root._state.lineup_by_hand, "这一局玩家还没亲手排过 —— 复现那个 bug 的前提")
 	root._select(PBSelection.Kind.UNIT, star.key())
 
 	assert_eq(root._command.command_at(1), PBCommandCard.CMD_BENCH, "已经在场上的人该给「收回仓库」")

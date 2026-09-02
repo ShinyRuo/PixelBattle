@@ -110,6 +110,30 @@ var lineup: Array[StringName] = []
 ## 必须表示得出来。
 var lineup_manual: bool = false
 
+## 玩家**亲手**动过这份名单没有。M6-h。
+##
+## ## 它和 [member lineup_manual] 是两件事
+##
+## 那个字段回答的是「上场按名单还是按自动挑」；这个回答的是
+## **「还要不要替玩家维护这份名单」**。挤在一个字段里的时候，
+## 界面只有两个都不对的选项：
+##
+## - 一次都不钉：[method PBStrategy.bring_to_field] 每次刷新都按战力**重排一遍**，
+##   于是抽到一张更强的卡，场上最弱的那个当场被换回仓库 ——
+##   而玩家一根手指都没动过（**玩家实际报上来的 bug**）
+## - 钉一次就不管：这一局的仓库是从 **0 人**开始的，队伍靠抽卡一个个攒 ——
+##   钉完第一张之后，后面抽到的人永远进不了队
+##
+## 分开之后两边都对：界面**每次刷新都把名单重钉一遍**，而
+## `bring_to_field` 是「名单里的人优先占位、剩下的空位才补」——
+## 所以新卡只填空位，永远顶不掉已经站在场上的人。
+## 玩家一旦自己拖过（[PBCardMoves]），这里变 true，自动维护就停手，
+## 他留的空位从此不会被人补上。
+##
+## **脚本流派与批量扫描碰不到这个字段**：那条路上面板是收着的，
+## 界面那一步压根不跑，所以全部既有配平数字一个不动。
+var lineup_by_hand: bool = false
+
 ## 仓库里的装备配件，`{配件 id: 数量}`（§10，M3-c）。
 ##
 ## **M3-c 之前这里是一个整数**，因为 M-1 的替身曲线不区分种类：
@@ -288,7 +312,11 @@ func field_units(cfg: PBSimConfig) -> Array[PBUnit]:
 	# `dispatch_manual` 空着时它就等于 `open_slots`，脚本流派那一路不受影响。
 	var capacity: int = field_slots(cfg)
 	var out: Array[PBUnit] = []
-	if field.is_empty():
+	# **手排的空名单是空的，不是「还没挑过」**（M6-i）。玩家可以把人全拖下场，
+	# 那时 `field` 和 `lineup` 都是空的 —— 照旧兜底的话羁绊会按仓库前 N 个人算，
+	# 而场上一个人都没有。判据只能是 [member lineup_manual]：脚本流派和
+	# 现造局面的测试恒为 false，那条兜底一字不动。
+	if field.is_empty() and not lineup_manual:
 		var pool := all_units()
 		return pool.slice(0, mini(pool.size(), capacity))
 	for key: StringName in field:

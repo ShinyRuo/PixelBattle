@@ -117,7 +117,33 @@ func test_the_foot_sits_on_the_bottom_middle_of_the_canvas() -> void:
 		var canvas := skin.canvas_size()
 		assert_gt(canvas.x, 0.0, "画布尺寸得读得出来，读不出来锚点就是错的")
 		assert_eq(skin.anchor(), Vector2(canvas.x * 0.5, canvas.y), "默认锚是底边中点")
-		assert_eq(skin.draw_offset(), -skin.anchor() * skin.pixel_scale, "偏移把脚底挪到原点上")
+		assert_eq(skin.draw_offset(), -skin.anchor(), "偏移把脚底挪到原点上")
+
+
+func test_the_foot_stays_on_the_ground_after_scaling_up() -> void:
+	# **偏移和放大不能各乘一遍。** [member Sprite2D.offset] 是在节点缩放
+	# **之前**作用的，而放大走 [member Node2D.scale] —— 两处都乘
+	# [member PBActorSkin.pixel_scale] 等于把偏移平方，人浮在地面上方
+	# 一整个身高。`pixel_scale` 恒为 1 时看不出来（1 的平方还是 1），
+	# 而白模正好是 1，所以这条要等真素材填 2 的那天才发作，**且不报错**。
+	var skin := PBWhiteModel.ally()
+	skin = skin.duplicate() as PBActorSkin
+	skin.pixel_scale = 3.0
+	var sprite := AnimatedSprite2D.new()
+	sprite.centered = false
+	sprite.sprite_frames = skin.frames
+	sprite.offset = skin.draw_offset()
+	sprite.scale = Vector2.ONE * skin.pixel_scale
+	add_child_autofree(sprite)
+	# 画布底边中点（也就是脚底那一点）必须正好落在节点原点上。
+	#
+	# **要连 [member Sprite2D.offset] 一起算。** 它是绘制属性、不进节点变换，
+	# 所以 `get_global_transform()` 里没有它 —— 只拿变换乘画布坐标的话，
+	# 量到的是「没有偏移时脚底在哪」，这条断言会永远为假。
+	var canvas := skin.canvas_size()
+	var foot: Vector2 = sprite.transform * (sprite.offset + Vector2(canvas.x * 0.5, canvas.y))
+	assert_almost_eq(foot.x, 0.0, 0.001, "放大之后脚底横向跑偏了")
+	assert_almost_eq(foot.y, 0.0, 0.001, "放大之后人浮在地面上方了")
 
 
 func test_every_frame_in_a_skin_is_the_same_size() -> void:
