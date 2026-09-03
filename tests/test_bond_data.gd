@@ -86,22 +86,23 @@ func test_element_bonds_can_be_filled_from_the_real_roster() -> void:
 		)
 
 
-func test_the_top_tier_is_a_real_jump() -> void:
-	# M2 只有数值一种货币，所以最高档那一跳是 §09「解锁一个机制」的**替身**——
-	# 让「凑满一组」在 M2 就已经是个跳变，扫描才量得出组合深度够不够。
-	# M3 接上真功能时这个数要降回来，那时这条测试也该跟着改。
+func test_every_bond_is_all_or_nothing() -> void:
+	# **M6-j 起每组羁绊只有一档：不凑齐就是不生效**（玩家定的，见 [PBBond]）。
 	#
-	# 判据是「满档那一跳是这组里**最大的一跳**」。
-	# 一开始写成「跳幅 > 此前累计」，那个形式过严且没有依据 ——
-	# 凯班有三档（增量 0.10 / 0.14 / 0.18），最后一跳确实是最大的，
-	# 却过不了「> 前两档之和 0.24」。是断言写歪了，不是数据不对。
-	for bond: PBBond in _named():
-		var tiers: int = bond.tier_power.size()
-		assert_gt(tiers, 1, "%s 只有一档，谈不上阶梯" % bond.id)
-		var top_step: float = bond.tier_power[tiers - 1] - bond.tier_power[tiers - 2]
-		for i: int in tiers - 1:
-			var step: float = bond.tier_power[i] - (bond.tier_power[i - 1] if i > 0 else 0.0)
-			assert_gt(top_step, step, "%s 的满档跳幅应是最大的一跳，它替的是一个机制" % bond.id)
+	# 这条测试原来叫 `test_the_top_tier_is_a_real_jump`，断的是
+	# 「满档那一跳是这组里最大的一跳」—— 那在分档的时候是对的：
+	# M2 只有数值一种货币，最高档那一跳是 §09「解锁一个机制」的替身。
+	# 不分档之后那句话没有内容了（只有一跳，当然是最大的），
+	# 而**要守的东西换了一个**：数据里不许再出现第二档。
+	#
+	# 留着旧断言的话它会一直绿着却什么都不测；删掉的话，
+	# 哪天有人往 `.tres` 里加回一档，界面上「凑齐才生效」那句话就成了谎话。
+	for bond: PBBond in _cfg.bonds.all():
+		assert_eq(
+			bond.tier_counts.size(), 1, "%s 该只有一档 —— 不凑齐就是不生效" % bond.id
+		)
+		assert_eq(bond.tier_power.size(), 1, "%s 的加成表要和档位表等长" % bond.id)
+		assert_gt(bond.tier_power[0], 0.0, "%s 凑齐了却一分钱都不给" % bond.id)
 
 
 func test_the_reachable_ceiling_stays_in_a_sane_band() -> void:

@@ -122,6 +122,35 @@ func _ready() -> void:
 	clear()
 
 
+## 把这个格子缩到 [param to] 那么大。M6-k：任务栏那 4 个槽要排成一横排，
+## 而 100 像素宽的一列装不下四个 30 宽的格子。
+##
+## ## 为什么是「缩」而不是「另做一个小格子」
+##
+## 缩的是同一个类：底色、稀有度描边、克制亮边三样规则一个字都不变。
+## 另做一份的话，「克制系描亮边」这条 §03 最值钱的信息迟早只在一处更新，
+## 而那不报错 —— 玩家只会觉得任务栏里的卡「看起来跟仓库里不一样」。
+##
+## **字号跟着一起缩**：位置按比例挪、字号取比例的整数倍。
+## 只挪位置不缩字的话，11 号的属性字会宽出 21 像素的格子，
+## 而溢出的那一截**只是画在格子外面**，不报错（[PBLayout] 顶上那条断言
+## 讲的就是这种失败）。
+func shrink_to(to: Vector2) -> void:
+	var ratio: Vector2 = to / TILE_SIZE
+	custom_minimum_size = to
+	size = to
+	_border.size = to
+	_body.position = Vector2(1.0, 1.0)
+	_body.size = to - Vector2(2.0, 2.0)
+	_element.position = Vector2(2.0, -1.0)
+	_element.size.x = to.x - 3.0
+	_rarity.position = Vector2(1.0, roundf(17.0 * ratio.y))
+	_star.position = Vector2(roundf(16.0 * ratio.x), roundf(17.0 * ratio.y))
+	_element.add_theme_font_size_override(&"font_size", maxi(int(11.0 * ratio.x), 6))
+	for label: Label in [_rarity, _star]:
+		label.add_theme_font_size_override(&"font_size", maxi(int(8.0 * ratio.x), 6))
+
+
 ## 放一张卡进来。[param wave_element] 决定描什么边 —— 见函数体里那段克制编码。
 func set_unit(card: PBUnit, wave_element: PBElement.Type) -> void:
 	unit = card

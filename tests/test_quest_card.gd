@@ -46,6 +46,39 @@ func _state_of(count: int, maxed_pop: bool = false) -> PBRunState:
 	return state
 
 
+## 造一个**真的凑齐了一组羁绊**的局面。M6-j。
+##
+## 在场名单没挑过时按仓库顺序取前 N（[method PBRunState.field_units]），
+## 所以同系的那几个必须排在最前面 —— 排在后面的话他们进不了在场名单，
+## 羁绊照样是零，而断言的失败信息会指向「卡面没写」这个假原因。
+##
+## 挑属性型而不是小队型：属性型只要「同系四个人」，
+## 不依赖角色表里正好有哪几个人，角色表增删时它不会悄悄失效。
+func _state_with_a_bond(count: int) -> PBRunState:
+	var state := PBRunSim.new_state(_cfg)
+	var by_element: Dictionary = {}
+	for character: PBCharacter in _cfg.characters.all():
+		if not by_element.has(character.element):
+			by_element[character.element] = [] as Array[PBCharacter]
+		var bucket: Array = by_element[character.element]
+		bucket.append(character)
+	var picked: Array[PBCharacter] = []
+	for element: Variant in by_element:
+		var bucket: Array = by_element[element]
+		if bucket.size() >= 4 and picked.is_empty():
+			for i: int in 4:
+				picked.append(bucket[i])
+	assert_false(picked.is_empty(), "角色表里得有一个属性凑得满四个人")
+	for character: PBCharacter in _cfg.characters.all():
+		if picked.size() >= count:
+			break
+		if not picked.has(character):
+			picked.append(character)
+	for character: PBCharacter in picked:
+		state.add_unit(PBUnit.new(character))
+	return state
+
+
 func _plan_of(wave_index: int, grade: int) -> PBWavePlan:
 	var plan := PBWavePlan.new()
 	plan.wave = PBWaveRules.build(wave_index, _cfg, RandomNumberGenerator.new())
@@ -66,7 +99,10 @@ func test_the_card_names_which_bonds_dispatch_would_break() -> void:
 	# 那在替身曲线下成立（一个人就是一档），装上真羁绊表之后就不成立了 ——
 	# 档位是每组羁绊各有各的。而且玩家要的本来也不是一个标量，
 	# 是「我会失去哪一组」。
-	var state := _state_of(7)
+	# **M6-j 起这个局面要专门凑一组羁绊出来。** 羁绊改成全有或全无之后
+	# （见 [PBBond]），按角色表顺序取 7 张卡一组都凑不齐 ——
+	# 于是「派人会掉哪一组」这条断言没有东西可掉，测不到它要测的分支。
+	var state := _state_with_a_bond(7)
 	var plan := _plan_of(6, 2)  # A 级，派 3 人
 	var card := _card()
 	card.reset(state, plan)
@@ -219,7 +255,8 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 		if need > state.dispatch_available(_cfg):
 			continue
 		assert_true(card._terms.text.contains("%d 金" % reward), "%d 级：%s" % [grade, card._terms.text])
-		assert_true(card._need.text.contains("需派 %d 人" % need), card._need.text)
+		# M6-k 压成「需 N · 已 M」——面板从 142 高掉到 58，那一行要和奖励并排。
+		assert_true(card._need.text.contains("需 %d" % need), card._need.text)
 		assert_true(
 			card._head.text.contains(String(PBEconomyRules.QUEST_GRADES[grade])), card._head.text
 		)

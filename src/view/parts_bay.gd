@@ -1,18 +1,27 @@
 class_name PBPartsBay
 extends Control
-## G 区：**忍具仓库**，常驻。§10 / §02，M5-5。
+## G 区：**忍具仓库**，常驻 + 可滚动。§10 / §02，M5-5；M6-j 改成滚动。
 ##
-## ## 上排是合得出的成品，下排是配件
+## ## 上排是合得出的成品，下面是配件
 ##
 ## §10 的三级树里这两级完全不同：**成品能挂到人身上**（拖到 [PBEquipBay] 去），
-## **配件只能等配方凑齐**。摆成两排、颜色也分开，是因为
+## **配件只能等配方凑齐**。分成两段、颜色也分开，是因为
 ## 「我现在能装备什么」和「我还差什么」是玩家在这块面板上问的两个不同问题。
 ##
-## ## 七个配件格永远都在，包括个数为 0 的
+## ## M6-j：固定槽位换成滚动
+##
+## 在那之前这里是 **5 个成品格 + 7 个配件格，位置写死**。两处代价：
+## 成品第 6 件起只在标题里报一个「+2」，玩家**看不见也拖不动**；
+## 而框宽只够摆五列，H（信息栏）想加宽就得从这儿拿地方。
+##
+## 现在是一片流式的格子加裁剪滚动（和 [PBRosterBay] 同一套：
+## `clip_contents` + 行偏移 + 滚轮），**列数按框宽算出来**，
+## 所以 M6-j 把框从 110 缩到 74 之后这一块一行摆 3 个，一件都没少。
+##
+## ## 七种配件仍然全摆着，包括个数为 0 的
 ##
 ## 少一格就少一条信息：**「这一种我一个都没有」正是配方凑不齐的原因**。
-## 只摆有的那几种时，玩家看到的是一排数字，看不出缺口在哪 ——
-## 而缺口才是他下一笔钱该往哪花的依据。
+## 「没有固定槽位」改的是位置（谁排在第几格），不是「摆不摆」。
 ##
 ## ## 50 格上限现在只是显示容量
 ##
@@ -28,17 +37,28 @@ signal tip_requested(at: Rect2, title: String, body: String)
 ## 有人把一件装备拖回仓库了（= 卸下）。
 signal item_returned(item_id: StringName)
 
-## 上排最多摆几件成品。摆不下的在标题里报个数。
-const MAX_ITEMS: int = 5
+## 滚了一行，请调用方重画一次 —— 本类不持有 state，自己重画不出来。
+## 和 [signal PBRosterBay.scrolled] 是同一条。
+signal scrolled
+
+## 一次建满多少格（§14：战斗中零新建节点）。成品最多七种、配件七种，
+## 各自还可能有多份要分行摆 —— 40 是个宽到不用再想的数。
+const CAP: int = 40
 
 const PITCH: float = 21.0
 const PAD: float = 4.0
 const TITLE_H: float = 11.0
 
-var _items: Array[PBItemTile] = []
-var _parts: Array[PBItemTile] = []
+## 成品和配件之间空一行。两级东西的用法完全不同，挨着摆会被当成一片。
+const GAP_ROWS: int = 1
+
+var _tiles: Array[PBItemTile] = []
 var _title: Label
 var _table: PBEquipTable
+var _clip: Control
+var _columns: int = 3
+var _rows_shown: int = 1
+var _row_offset: int = 0
 
 
 func _ready() -> void:
@@ -58,14 +78,29 @@ func _ready() -> void:
 		self, rect.position + Vector2(PAD, 0.0), rect.size.x - PAD * 2.0,
 		PBSkin.FONT_BODY, PBSkin.TITLE
 	)
-	var origin := rect.position + Vector2(PAD, TITLE_H)
-	for i: int in MAX_ITEMS:
-		_items.append(_add_tile(origin + Vector2(float(i) * PITCH, 0.0)))
-	# 七种配件排成两行，和上排的成品隔开一行。
-	for i: int in 7:
-		_parts.append(
-			_add_tile(origin + Vector2(float(i % 5) * PITCH, PITCH + 8.0 + float(i / 5) * PITCH))
-		)
+
+	# 裁剪区：滚出去的那几行必须真的看不见，否则会漫到 F 和 H 上面。
+	_clip = Control.new()
+	_clip.position = rect.position + Vector2(PAD, TITLE_H)
+	_clip.size = Vector2(rect.size.x - PAD * 2.0, rect.size.y - TITLE_H - 2.0)
+	_clip.clip_contents = true
+	# 要收滚轮，所以这一层**不能**是 IGNORE。
+	_clip.mouse_filter = Control.MOUSE_FILTER_PASS
+	_clip.gui_input.connect(_on_scroll)
+	add_child(_clip)
+
+	# **列数是算出来的，不是写死的。** 写死的话 [PBLayout] 一改框宽，
+	# 最右边那一列就画到隔壁面板上去了 —— 而那不报错。
+	_columns = maxi(int(_clip.size.x / PITCH), 1)
+	_rows_shown = maxi(int(_clip.size.y / PITCH), 1)
+
+	for i: int in CAP:
+		var tile := PBItemTile.new()
+		tile.visible = false
+		tile.zone = PBUnitTile.ZONE_STASH
+		tile.picked.connect(_on_tile_picked)
+		_clip.add_child(tile)
+		_tiles.append(tile)
 
 
 func refresh(state: PBRunState, cfg: PBSimConfig) -> void:
@@ -75,35 +110,62 @@ func refresh(state: PBRunState, cfg: PBSimConfig) -> void:
 	_table = table
 	var spare := PBEquipRules.craftable(state.equip_parts, table)
 	var ids: Array = spare.keys()
+	var item_rows: int = int(ceilf(float(ids.size()) / float(_columns)))
+	var part_rows: int = int(ceilf(float(table.parts.size()) / float(_columns)))
+	var rows: int = item_rows + (GAP_ROWS if item_rows > 0 else 0) + part_rows
+	# 滚过尾巴之后整个框是空的，而玩家看不出是「没有东西」还是「滚过头了」。
+	_row_offset = clampi(_row_offset, 0, maxi(rows - _rows_shown, 0))
+
 	_title.text = "忍具 %d　配件 %d" % [ids.size(), PBEquipRules.part_total(state.equip_parts)]
-	if ids.size() > MAX_ITEMS:
-		_title.text += "　+%d" % (ids.size() - MAX_ITEMS)
-	for i: int in _items.size():
-		var tile: PBItemTile = _items[i]
-		tile.visible = i < ids.size()
-		if tile.visible:
-			tile.set_item(table.item(ids[i]), int(spare[ids[i]]))
-	for i: int in _parts.size():
-		var tile: PBItemTile = _parts[i]
-		tile.visible = i < table.parts.size()
-		if tile.visible:
-			tile.set_part(table.parts[i], int(state.equip_parts.get(table.parts[i], 0)))
+	if rows > _rows_shown:
+		_title.text += "　↕%d/%d" % [_row_offset + 1, rows - _rows_shown + 1]
+
+	var slot: int = 0
+	for i: int in ids.size():
+		_place(slot, i, 0)
+		_tiles[slot].set_item(table.item(ids[i]), int(spare[ids[i]]))
+		slot += 1
+	var below: int = item_rows + (GAP_ROWS if item_rows > 0 else 0)
+	for i: int in table.parts.size():
+		if slot >= _tiles.size():
+			break
+		_place(slot, i, below)
+		_tiles[slot].set_part(table.parts[i], int(state.equip_parts.get(table.parts[i], 0)))
+		slot += 1
+	for i: int in range(slot, _tiles.size()):
+		_tiles[i].visible = false
 
 
-func _add_tile(at: Vector2) -> PBItemTile:
-	var tile := PBItemTile.new()
-	tile.position = at
-	tile.visible = false
-	tile.zone = PBUnitTile.ZONE_STASH
-	tile.picked.connect(_on_tile_picked)
-	add_child(tile)
-	return tile
+## 把第 [param slot] 个格子摆到「第 [param index] 个、从第 [param base] 行起」那一格上。
+func _place(slot: int, index: int, base: int) -> void:
+	var tile: PBItemTile = _tiles[slot]
+	tile.visible = true
+	tile.position = Vector2(
+		float(index % _columns) * PITCH,
+		float(base + index / _columns - _row_offset) * PITCH
+	)
+
+
+## 滚轮翻行。**钳在两头**，滚过尾巴会得到一个空框。
+func _on_scroll(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var click := event as InputEventMouseButton
+	if not click.pressed:
+		return
+	if click.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		_row_offset += 1
+	elif click.button_index == MOUSE_BUTTON_WHEEL_UP:
+		_row_offset = maxi(_row_offset - 1, 0)
+	else:
+		return
+	scrolled.emit()
 
 
 ## 拼说明卡的文字。**文案全部走 [PBShopLabels]** ——
 ## 装备栏那边点开的是同一张卡，各写一份迟早在措辞上分叉。
 func _on_tile_picked(tile: PBItemTile) -> void:
-	var at := Rect2(tile.position, tile.size)
+	var at := Rect2(tile.global_position, tile.size)
 	if not tile.draggable:
 		tip_requested.emit(
 			at, PBLocale.text("equip_part.%s" % tile.item_id), PBShopLabels.part_body()

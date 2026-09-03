@@ -52,7 +52,7 @@ func test_scene_has_the_nodes_the_script_expects() -> void:
 	# @onready 取不到节点会在 _ready 里炸，而 .tscn 是手写的、
 	# 节点名很容易和脚本对不上。这条把两边钉在一起。
 	var root := _spawn_battle()
-	for path: String in ["Actors/Enemies", "Actors/Deployed", "Base", "HUD/Info"]:
+	for path: String in ["Actors/Enemies", "Actors/Deployed", "HUD/Slots", "HUD/Info"]:
 		assert_not_null(root.get_node_or_null(path), "场景里应该有 %s 节点" % path)
 
 

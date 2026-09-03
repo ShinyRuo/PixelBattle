@@ -8,15 +8,20 @@
 
     输入：aires\<Key>_idle.mp4 / _run.mp4 / _attack.mp4 / _dead.mp4
           （文件名里的段名要和 make_actor.gd 的 ANIMS 对得上）
-    输出：assets\actors\<Key>\*.png
-          data\actors\<Key>_frames.tres  图集
-          data\actors\<Key>.tres         形象表（PBActorSkin）
+    输出：assets\actors\<Key>\*.png       成品帧
+          data\actors\frames\<Key>.tres   图集（SpriteFrames）
+          data\actors\<Key>.tres          形象表（PBActorSkin）
 
-    做完之后开预览台看一眼：
-        .\scripts\make_actor.ps1 -Key asm -Preview
-    或者 VSCode 里 F5 → 「Godot: 战场形象预览台」。
+    最后把 data\characters\<角色>.tres 的 actor_key 填成 <Key>，
+    再开预览台看一眼。**-Preview 是「跑完顺手打开」，不是「只打开」** ——
+    只想看的话走 VSCode 的 F5 →「Godot: 战场形象预览台」，或者：
+        F:\Godot_PJ\_engine\4.7.2\godot.exe --path . res://scenes/actor_lab.tscn
 
-    最后把 data\characters\<角色>.tres 的 actor_key 填成 <Key>。
+    一次完整的走法（含出错对照表）写在 Docs\AI出图_战场形象.md 的 §4.0.2。
+
+    **想自己逐帧挑**：开 Godot 编辑器，底栏那排按钮里点「战场形象」（§4.0.3）。
+    两条路走的是同一条流水线（src/tools/actor_forge.gd），出的素材逐字节相同；
+    这条命令挑帧是算出来的，插件那条是人挑的。
 
 .NOTES
     重活分给 ffmpeg 的理由写在 make_actor.gd 顶部：一帧 92 万像素，

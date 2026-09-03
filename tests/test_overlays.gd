@@ -238,7 +238,7 @@ func test_the_warehouse_only_holds_the_ones_who_are_neither_fighting_nor_away() 
 	for _i: int in 6:
 		root._on_command(&"gacha")
 		root._on_offer_picked(0)
-	var away: Array[PBUnit] = root._dispatch_preview()
+	var away: Array[PBUnit] = PBFieldRoster.dispatch_preview(root._state)
 	var deployed: Array[PBUnit] = root._fighting_now(away)
 	assert_gt(deployed.size(), 0, "这一波该有人上场，否则测不到「减掉」那一步")
 

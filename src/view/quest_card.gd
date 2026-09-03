@@ -89,10 +89,14 @@ const FONT_SIZE: int = 8
 ## 任务栏一共几个槽。**固定 4 个**，见类顶部与 [constant PBEconomyRules.QUEST_SLOTS]。
 const SLOT_COUNT: int = PBEconomyRules.QUEST_SLOTS
 
-## 4 个槽排成 2×2。见类顶部那段。
-const SLOT_COLUMNS: int = 2
-const SLOT_ORIGIN := Vector2(14.0, 63.0)
-const SLOT_PITCH := Vector2(32.0, 36.0)
+## **4 个槽排成一横排**（M6-k，玩家定的）。
+##
+## M5-6 排成 2×2 的理由是那时格子是 30 宽的 [constant PBUnitTile.TILE_SIZE]，
+## 四个横着要 120 而这一列只有 100。**格子能缩之后那条理由就没了** ——
+## 21 见方装得下属性字和稀有度字，而一横排换来的正是这次要让给 C/D 的高度。
+const SLOT_SIZE := Vector2(21.0, 24.0)
+const SLOT_ORIGIN := Vector2(5.0, 32.0)
+const SLOT_PITCH: float = 23.0
 
 var _head: Label
 var _terms: Label
@@ -111,13 +115,22 @@ func _ready() -> void:
 	var at: Vector2 = PANEL_RECT.position
 	var width: float = PANEL_RECT.size.x - PAD * 2.0
 
-	_head = PBSkin.label(self, at + Vector2(PAD, 2.0), 62.0, PBSkin.FONT_TITLE, PBSkin.TITLE)
-	_terms = _add_label(at + Vector2(PAD, 15.0), width)
-	_need = _add_label(at + Vector2(PAD, 26.0), width)
+	# **M6-k 压成三行 + 一排槽**（面板从 142 高掉到 58）。挤掉的是行距，
+	# 不是内容：奖励和人数并进一行，判定那一行**一个字都不能省** ——
+	# 「人数不符」是一次有代价的失误，它必须在开打**之前**看得见（M5-7）。
+	_head = PBSkin.label(self, at + Vector2(PAD, 1.0), 60.0, PBSkin.FONT_TITLE, PBSkin.TITLE)
+	# 奖励和人数并成一行，「已派几个」缩到行尾的一个数 ——
+	# **那个数本来也不必写得长**：底下那排槽子里站着几个人一眼就数得出来。
+	_terms = _add_label(at + Vector2(PAD, 12.0), 48.0)
+	_need = _add_label(at + Vector2(width - 34.0, 12.0), 38.0)
+	# 右对齐：奖励涨到四位数、派的人从 0 数到 4，左对齐的话这两截会互相挤。
+	_need.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	# 判定行：**这一行就是原来那个按钮**。绿 = 拖满了、红 = 人数不符。
-	_away = PBSkin.label(self, at + Vector2(PAD, 40.0), width, PBSkin.FONT_TITLE, PBSkin.DIM)
+	# **整行留给它，一个字都不省** —— 「人数不符」是一次有代价的失误，
+	# 缩成两个字之后玩家读到的只是一个颜色（M5-7 那条的全部意义就在这句话）。
+	_away = _add_label(at + Vector2(PAD, 21.0), width)
 
-	_detail = _add_button(at + Vector2(width - 20.0, 2.0), Vector2(24.0, 12.0), "详情")
+	_detail = _add_button(at + Vector2(width - 18.0, 1.0), Vector2(22.0, 11.0), "详情")
 	_detail.pressed.connect(_on_detail)
 
 	# **整块槽位区都能接**，不只是那些格子：一个人都没派的时候
@@ -125,7 +138,7 @@ func _ready() -> void:
 	# 加在格子之前，好让格子画在它上面。
 	var drop := PBDropArea.new()
 	drop.cover(
-		Rect2(at + Vector2(PAD, 52.0), Vector2(width, PANEL_RECT.size.y - 55.0)),
+		Rect2(at + Vector2(PAD, 30.0), Vector2(width, PANEL_RECT.size.y - 32.0)),
 		PBUnitTile.ZONE_QUEST
 	)
 	drop.card_dropped.connect(
@@ -143,16 +156,9 @@ func _ready() -> void:
 
 	# 按上限一次建满，之后只改内容 —— 和敌人池、指令卡同一条规矩（§14）。
 	for i: int in SLOT_COUNT:
-		_tiles.append(
-			_add_tile(
-				at
-				+ SLOT_ORIGIN
-				+ Vector2(
-					float(i % SLOT_COLUMNS) * SLOT_PITCH.x,
-					float(i / SLOT_COLUMNS) * SLOT_PITCH.y
-				)
-			)
-		)
+		var tile := _add_tile(at + SLOT_ORIGIN + Vector2(float(i) * SLOT_PITCH, 0.0))
+		tile.shrink_to(SLOT_SIZE)
+		_tiles.append(tile)
 
 
 ## 这一波的任务算不算完成了。**判据只有一条：任务栏里正好站着要求的人数。**
@@ -185,7 +191,7 @@ func reset(state: PBRunState, plan: PBWavePlan) -> void:
 ##
 ## [param away] 是「这一波谁去做任务」，由调用方算好传进来 ——
 ## 战斗中它是**锁定的那一份**（`dispatched_ids`），准备阶段是任务栏里站着的那几个
-## （见 [method PBBattleView._dispatch_preview]）。
+## （见 [method PBFieldRoster.dispatch_preview]）。
 ##
 ## **不收 `cfg`**（M5-7）：判定只看「拖进来几个 vs 本波要几个」，
 ## 两个数一个在状态里一个在任务表里，配置一样都用不上。
@@ -202,7 +208,7 @@ func refresh(
 
 	_head.text = "任务 %s 级" % _grade_name(grade)
 	_terms.text = "奖 %d 金" % PBEconomyRules.quest_reward(grade, plan.wave.index)
-	_need.text = "需派 %d 人　已 %d" % [need, picked]
+	_need.text = "需 %d · 已 %d" % [need, picked]
 	_show_slots(selection, plan.wave, away)
 
 	# **判定行，也就是原来那个按钮。** 三种状态各有各的颜色，
@@ -256,7 +262,7 @@ func _show_slots(selection: PBSelection, wave: PBWave, away: Array[PBUnit]) -> v
 		tile.set_unit(away[i], wave.element)
 		if selection.kind == PBSelection.Kind.DISPATCHED and selection.unit_id == away[i].key():
 			_mark.position = tile.position - Vector2(2.0, 2.0)
-			_mark.size = PBUnitTile.TILE_SIZE + Vector2(4.0, 4.0)
+			_mark.size = tile.size + Vector2(4.0, 4.0)
 			_mark.visible = true
 			move_child(_mark, 0)
 
@@ -351,6 +357,12 @@ func _add_label(at: Vector2, width: float) -> Label:
 	return PBSkin.label(self, at, width, FONT_SIZE, PBSkin.TEXT)
 
 
+## **上下内边距要清掉**（M6-k）。[method PBSkin.style_button] 的
+## [StyleBoxFlat] 各留 2 像素内边距，于是一个写着 11 高的按钮实际有 15 高 ——
+## 面板压到 58 之后，那多出来的 4 像素正好盖住下一行的「已 N」。
+##
+## 和 [PBActorLab] 那次是同一个坑，那边的解法是把行距放大；
+## 这里没有行距可放，所以改成把内边距摘掉。
 func _add_button(at: Vector2, of_size: Vector2, text: String) -> Button:
 	var button := Button.new()
 	button.position = at
@@ -358,6 +370,12 @@ func _add_button(at: Vector2, of_size: Vector2, text: String) -> Button:
 	button.text = text
 	button.focus_mode = Control.FOCUS_NONE
 	PBSkin.style_button(button, PBSkin.Tone.PLAIN, FONT_SIZE)
+	for state: String in ["normal", "hover", "pressed", "disabled"]:
+		var box := button.get_theme_stylebox(state) as StyleBoxFlat
+		if box != null:
+			box.content_margin_top = 0.0
+			box.content_margin_bottom = 0.0
+	button.custom_minimum_size = of_size
 	add_child(button)
 	return button
 

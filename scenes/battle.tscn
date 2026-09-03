@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://src/view/drop_area.gd" id="16_ground"]
 [ext_resource type="Script" path="res://src/view/aim_lines.gd" id="19_aim"]
 [ext_resource type="Script" path="res://src/view/system_menu.gd" id="20_menu"]
+[ext_resource type="Script" path="res://src/view/battle_log_panel.gd" id="21_log"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_view")
@@ -32,10 +33,6 @@ color = Color(0.08, 0.09, 0.12, 1)
 [node name="Lane" type="ColorRect" parent="."]
 mouse_filter = 2
 color = Color(0.17, 0.18, 0.22, 1)
-
-[node name="Base" type="ColorRect" parent="."]
-mouse_filter = 2
-color = Color(0.35, 0.75, 0.45, 1)
 
 [node name="Limit" type="ColorRect" parent="."]
 mouse_filter = 2
@@ -101,6 +98,11 @@ text = ""
 offset_right = 640.0
 offset_bottom = 360.0
 script = ExtResource("10_stash")
+
+[node name="Log" type="Control" parent="HUD"]
+offset_right = 640.0
+offset_bottom = 360.0
+script = ExtResource("21_log")
 
 [node name="Equip" type="Control" parent="HUD"]
 offset_right = 640.0

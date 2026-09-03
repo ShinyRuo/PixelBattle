@@ -78,6 +78,7 @@ func _ready() -> void:
 func show_card(anchor: Rect2, title: String, body: String) -> void:
 	_title.text = title
 	_body.text = body
+	_catch.visible = true
 	visible = true
 	# RichTextLabel 的 `fit_content` 要等它自己排版完才知道高度，
 	# 所以先摆好宽度、等一帧、再定位。少了这一步第一次点开会摆错地方。
@@ -94,6 +95,20 @@ func show_card(anchor: Rect2, title: String, body: String) -> void:
 	_title.position = at + Vector2(5.0, 2.0)
 	_body.position = at + Vector2(5.0, _title.size.y + 2.0)
 	_body.size.x = CARD_WIDTH - 10.0
+
+
+## 悬停版：**同一张卡，但不吃点击**（M6-j）。
+##
+## 类顶部那段「点开，不是悬停」讲的是**格子** —— 20 像素见方的东西
+## 划过去会连弹五张卡，而手机上压根没有悬停。**一行字不是格子**：
+## 它有名字、有宽度、划过去只可能命中一行，而玩家要的正是
+## 「我想知道这组羁绊都有谁」这种一瞥即走的问题。
+##
+## 不吃点击是这一档唯一的区别：悬停卡摊着的时候，底下那些面板
+## 必须照样点得到 —— 鼠标从字上移开它就没了，而那一下点击已经发出去了。
+func show_hint(anchor: Rect2, title: String, body: String) -> void:
+	show_card(anchor, title, body)
+	_catch.visible = false
 
 
 ## 摊着没有。`Esc` 那条链靠它决定这一下该收谁。

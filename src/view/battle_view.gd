@@ -90,6 +90,10 @@ var _feel := PBHitFeedback.new()
 ## 战场上「点到了谁」和「让谁打谁」（§02 的战斗中操作，M4-e）。见 [PBFieldPicker]。
 var _picker := PBFieldPicker.new()
 
+## 这一局的战斗播报（M6-j）。**整局一份，重开才清**：每波清的话，
+## 「上一波是怎么崩的」在结算那一眼就没了。
+var _log := PBBattleLog.new()
+
 ## 选中那个忍者上一帧放不放得出忍术（M5-9）。
 ## 只记「上一次是什么」，好在真的翻面那一帧才去重排指令卡。
 var _cast_ready: bool = false
@@ -110,7 +114,6 @@ var _hitstop_frames: int = 0
 @onready var _floats: PBFloatTextPool = $Floats
 @onready var _aim: PBAimLines = $Aim
 @onready var _lane: ColorRect = $Lane
-@onready var _base_rect: ColorRect = $Base
 @onready var _limit: ColorRect = $Limit
 @onready var _info: Label = $HUD/Info
 @onready var _preview: Label = $HUD/Preview
@@ -124,6 +127,7 @@ var _hitstop_frames: int = 0
 @onready var _tip: PBTooltip = $HUD/Tip
 @onready var _menu: PBSystemMenu = $HUD/Menu
 @onready var _bay: PBRosterBay = $HUD/Stash
+@onready var _log_panel: PBBattleLogPanel = $HUD/Log
 @onready var _ground: PBDropArea = $HUD/Ground
 @onready var _beasts: PBBeastModal = $HUD/Beasts
 
@@ -141,7 +145,7 @@ func _ready() -> void:
 	_cfg.aim_policy = PBAimRules.Policy.NONE
 	_frames_per_tick = maxi(Engine.physics_ticks_per_second / _cfg.tick_rate, 1)
 
-	PBLayout.apply_to(_lane, _base_rect, _limit, _info, _preview, _field(), _cfg.deploy_limit_x)
+	PBLayout.apply_to(_lane, _limit, _info, _preview, _field(), _cfg.deploy_limit_x)
 
 	_rng = PBRngStreams.new(_resolve_seed())
 	_state = PBRunSim.new_state(_cfg)
@@ -166,7 +170,13 @@ func _ready() -> void:
 	_gear.item_equipped.connect(_on_equip_changed.bind(true))
 	_parts.item_returned.connect(_on_equip_changed.bind(false))
 	_parts.tip_requested.connect(_tip.show_card)
+	_parts.scrolled.connect(_refresh_panels)
 	_gear.tip_requested.connect(_tip.show_card)
+	# 羁绊那几行两条路都通（M6-j）：悬停一瞥即走，点开的那张吃掉下一次
+	# 点击 —— 手机上没有悬停，那是唯一收得掉它的办法。
+	_unit_info.hint_requested.connect(_tip.show_hint)
+	_unit_info.hint_closed.connect(_tip.hide_card)
+	_unit_info.tip_requested.connect(_tip.show_card)
 	_bay.unit_picked.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
 	_beasts.beast_chosen.connect(_on_beast_chosen)
 	_menu.resumed.connect(_close_menu)
@@ -338,40 +348,13 @@ func _close_modal() -> bool:
 	return true
 
 
-## 这一波谁去做任务：锁过了照 `dispatched_ids` 念，准备阶段就是任务栏里站着的那几个。
-##
-## **M5-7 少了一种口径**：「接了任务但一个人都没挑」跟着那个按钮一起没了 ——
-## 接不接现在**就是**任务栏里站着几个人（见 [PBQuestCard] 顶部）。
-## 脚本玩家仍走末尾规则，但那条路在 `lock_plan` 里，不经过这里。
-func _dispatch_preview() -> Array[PBUnit]:
-	if not _state.dispatched_ids.is_empty():
-		return _units_of(_state.dispatched_ids)
-	return _units_of(_state.dispatch_manual)
-
-
-## 这一波**真会打**的人。派出去做任务的不在里面（§06）。
-##
-## 战斗与结算阶段照 [member PBWavePlan.deployed] 念 ——
-## [method PBRunSim.lock_plan] 已经把派出去的滤掉了。
-## 准备阶段按「现在开打会是谁」预览一份，**同样要减掉派遣**：
-## 不减的话被派出去的人会**同时出现在战场和任务栏**，而他只可能在一处。
+## 这一波**真会打**的人。三档名单全在 [PBFieldRoster]（M6-j 搬出去的）——
+## 战斗与结算阶段照 [member PBWavePlan.deployed] 念，那一份 `lock_plan`
+## 已经把派出去的滤掉了；只有准备阶段要现算一份预览。
 func _fighting_now(away: Array[PBUnit]) -> Array[PBUnit]:
 	if _phase != Phase.PREPARE:
 		return _plan.deployed
-	var out: Array[PBUnit] = []
-	for unit: PBUnit in _strategy.deploy(_state, _plan.wave, _cfg):
-		if not away.has(unit):
-			out.append(unit)
-	return out
-
-
-func _units_of(keys: Array[StringName]) -> Array[PBUnit]:
-	var out: Array[PBUnit] = []
-	for key: StringName in keys:
-		var unit := _state.roster.get(key, null) as PBUnit
-		if unit != null:
-			out.append(unit)
-	return out
+	return PBFieldRoster.fighting_now(_state, _strategy, _plan, away, _cfg)
 
 
 ## 一张卡被拖到了另一个区（§02 的拖放三区，M5-4）。规则在 [PBCardMoves] ——
@@ -588,6 +571,10 @@ func _finish_prepare() -> void:
 	_battle = PBBattleSim.new(
 		_plan.wave, _plan.dps, _state.def_reduction(_cfg), _cfg, _plan.attackers
 	)
+	# 播报只接在**画面**这一路（M6-j）：扫描那一路 `log_to` 恒为 null。
+	_battle.log_to = _log
+	_log_panel.rewind()
+	_log.note(0, PBBattleLogPanel.opening_line(_plan.wave, _state, _cfg))
 	_frame_counter = 0
 	_phase = Phase.BATTLE
 	_picker.aim_mode = PBFieldPicker.Aim.OFF
@@ -626,12 +613,17 @@ func _end_wave() -> void:
 func _set_panels_visible(shown: bool) -> void:
 	_command.visible = shown or _phase == Phase.BATTLE
 	_unit_info.visible = _command.visible
-	_slots.visible = shown
+	# **C/D 战斗中也留着**（M6-k）：大本营的血条现在长在那张图上，
+	# 而「基地还剩多少」恰恰是打起来之后最要紧的一个数 ——
+	# 跟着准备阶段一起收掉的话，血条就只在不掉血的时候看得见。
+	_slots.visible = shown or _phase == Phase.BATTLE
 	_quest.visible = shown
 	# 仓库常驻，但只在准备阶段：战斗中改名单是没有意义的操作（M5-3）。
 	# 战场那块收件人同理 —— 打起来之后不该还能把人拖来拖去（M5-4）。
 	_bay.visible = shown
 	_ground.visible = shown
+	# 仓库让出来的那块地方给战斗日志（M6-j）：**同一个位置的两种模式**。
+	_log_panel.visible = not shown and _phase == Phase.BATTLE
 	if not shown:
 		# 弹层全部收起来。战斗中留着一层的话它会盖满整个画面，
 		# 而它上面的按钮此刻一个都不该生效。
@@ -680,12 +672,12 @@ func _refresh_panels() -> void:
 	# 不散的话指令卡会对着一张不存在的卡摆出「升级」。
 	if _selection.unit_id != &"" and not _state.roster.has(_selection.unit_id):
 		_selection.set_to(PBSelection.Kind.NONE)
-	var away: Array[PBUnit] = _dispatch_preview()
+	var away: Array[PBUnit] = PBFieldRoster.dispatch_preview(_state)
 	var deployed: Array[PBUnit] = _fighting_now(away)
 	_command.refresh(_selection, _state, _cfg, _plan, deployed, away)
 	var aware: bool = _strategy.field_policy == PBStrategy.Field.BOND_AWARE
 	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, deployed, aware)
-	_slots.refresh(_selection, _state)
+	_slots.refresh(_selection, _state, _cfg)
 	_quest.refresh(_selection, _state, _plan, away)
 	# 弹层只在摊着的时候重画 —— 关着的那一层每次都算一遍纯属浪费。
 	if _offer.visible:
@@ -786,7 +778,7 @@ func _on_drag_over_field(from_zone: StringName, unit_id: StringName, at: Vector2
 ## 屏幕上 [param at] 那个点站着哪个上场的忍者。空 = 没人。
 ## [PBDropArea] 拿它决定「按下去能不能拖起一个人」（M5-4）。
 func _unit_on_field_at(at: Vector2) -> StringName:
-	var units := _fighting_now(_dispatch_preview())
+	var units := _fighting_now(PBFieldRoster.dispatch_preview(_state))
 	var field := _field()
 	var hit: int = PBFieldPicker.unit_at(
 		units, _state.formation, _cfg, PBLayout.to_field(at, field), field, PICK_RADIUS_PX
@@ -799,6 +791,7 @@ func _restart() -> void:
 	_paused = false
 	_gap_frames = 0
 	_battle = null
+	_log.clear()  # **日志只保留一局**（M6-j）。开波那一下不清，见 [member _log]。
 	_set_panels_visible(false)
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
@@ -890,6 +883,7 @@ func _sync_visuals() -> void:
 	_sync_base()
 	_sync_info()
 	_sync_preview()
+	_sync_log()
 
 
 ## 下一波预告 + 克制覆盖度 + 现在能按哪些键。文案在 [PBPreviewLabel]。
@@ -914,7 +908,7 @@ func _sync_placed(field: Vector2) -> void:
 	if _run_over or _phase != Phase.PREPARE:
 		_allies.clear()
 		return
-	var units := _fighting_now(_dispatch_preview())
+	var units := _fighting_now(PBFieldRoster.dispatch_preview(_state))
 	var spots := PBFormationRules.spots_of(units, _state.formation, _cfg)
 	_allies.sync_placed(units, spots, field)
 	var live: int = -1
@@ -958,6 +952,13 @@ func _sync_selected(field: Vector2) -> void:
 		_refresh_battle_panels()
 
 
+## 战斗日志刷新（M6-j）。每帧调一次，但它自己按「条数变没变」早退 ——
+## 每帧重排整块 BBCode 太贵，而这块面板一秒钟只多几行。
+func _sync_log() -> void:
+	if _log_panel.visible:
+		_log_panel.refresh(_log, _plan.deployed, _plan.wave)
+
+
 ## 战场的尺寸，`Vector2(长, 高)`。渲染层全部坐标换算都收这一个参数。
 ##
 ## 现造而不是缓存：`_cfg` 是可变的（调试开关会改它），
@@ -970,12 +971,10 @@ func _field() -> Vector2:
 ## 下沿是**算出来的**（[method PBLayout.lane_bottom]）不是手写的常量 ——
 ## 手写那一版穿帮过一次，见 [method PBLayout.apply_to]。
 func _sync_base() -> void:
-	var ratio: float = clampf(_state.base_hp / _cfg.base_hp, 0.0, 1.0)
-	var bottom: float = PBLayout.lane_bottom(_field())
-	# 满血时和地面带一样高（M6-a 起那是 GROUND_TOP，不是框的上沿）。
-	_base_rect.size.y = lerpf(4.0, bottom - PBLayout.GROUND_TOP, ratio)
-	_base_rect.position.y = bottom - _base_rect.size.y
-	_base_rect.color = PBSkin.GOOD.lerp(PBSkin.BAD, 1.0 - ratio)
+	# **M6-k 起血条横在大本营那张图的顶上**（[PBFieldSlots]），
+	# 不再是贴着战场左沿的一条竖条 —— 「还剩多少血」和「大本营是什么」
+	# 本来就是同一个东西的两半，分在屏幕两处时玩家得来回找。
+	_slots.show_base_hp(_state.base_hp, _cfg.base_hp)
 
 
 ## 名单变了之后要跟着动的那两块：C/D 两个形象，和任务栏那 4 个槽。
@@ -986,8 +985,8 @@ func _sync_base() -> void:
 func _sync_deployed() -> void:
 	if not _quest.visible:
 		return
-	_slots.refresh(_selection, _state)
-	_quest.refresh(_selection, _state, _plan, _dispatch_preview())
+	_slots.refresh(_selection, _state, _cfg)
+	_quest.refresh(_selection, _state, _plan, PBFieldRoster.dispatch_preview(_state))
 
 
 func _sync_info() -> void:

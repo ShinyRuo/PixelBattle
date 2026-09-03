@@ -62,6 +62,14 @@ var element: PBElement.Type = PBElement.Type.PHYSICAL
 ## 每 tick 飞多远。由 [member PBSimConfig.projectile_cross_seconds] 反推。
 var speed: float = 0.0
 
+## **谁打的这一发**（M6-j）。下标那一头由 [member at_ally] 决定，
+## 和 [member target] 正好反过来：射向己方的那一半，这里是敌人的下标。
+##
+## 战斗结算一个字都不读它 —— 它只喂 [PBBattleLog]。**存在这里而不是
+## 让日志自己去猜**：一发子弹飞几个 tick，落地那一刻「谁离得最近」
+## 和「谁打的」可以是两个人，而猜错不报错。
+var source: int = -1
+
 
 ## 把这个实例重置成一发刚出膛的子弹。对象池复用走这里，不要 `.new()`。
 func launch(
@@ -70,7 +78,8 @@ func launch(
 	hit_for: float,
 	per_tick: float,
 	toward_ally: bool = false,
-	of_element: PBElement.Type = PBElement.Type.PHYSICAL
+	of_element: PBElement.Type = PBElement.Type.PHYSICAL,
+	from_slot: int = -1
 ) -> void:
 	alive = true
 	pos = from
@@ -79,6 +88,7 @@ func launch(
 	speed = per_tick
 	at_ally = toward_ally
 	element = of_element
+	source = from_slot
 
 
 ## 朝 [param goal] 飞一个 tick。返回这一 tick 是否够到了目标。

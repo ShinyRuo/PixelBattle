@@ -90,6 +90,16 @@ var _select: String = ""
 ## 「这块面板是不是挪了两像素」只能靠肉眼猜。
 var _seed: int = 0
 
+## 强行把这几个角色塞进这一局并推上场（按 [member PBCharacter.id]）。
+##
+## **它替掉的是「换种子碰运气」。** 「这个角色在战场上长什么样」是接素材时
+## 每次都要问一遍的问题，而卡池是抽出来的 —— 想看某个人只能反复换种子，
+## 每次都要重开一局。
+##
+## 它同时**清空原有阵容**：要比对两套素材的话，屏幕上只站着那两个人
+## 才看得清楚，旁边围着五个白模只会挡住。
+var _actors: PackedStringArray = []
+
 
 func _initialize() -> void:
 	_parse_args()
@@ -109,6 +119,11 @@ func _initialize() -> void:
 ## 节点自己的 `_process` 照常跑，不受这里影响。
 func _process(_delta: float) -> bool:
 	_frames += 1
+	# **发人排在第一帧，不在 `_initialize` 里。** 那时 `add_child` 刚返回，
+	# 画面的 `_ready` 还没跑完，`_strategy` / `_plan` 全是 null ——
+	# 而报错指的是这里，根因在那边。
+	if _frames == 1 and not _actors.is_empty():
+		_seed_actors()
 	# 按键走 `Input.parse_input_event` 而不是直接改画面的私有字段 ——
 	# 那样验的是「玩家按下去会怎样」，包括 `_unhandled_input` 那一段路。
 	# 绕过去直接设字段的话，键位接错了截图照样是对的。
@@ -142,6 +157,31 @@ func _process(_delta: float) -> bool:
 	else:
 		print("截图已存：%s　%dx%d　第 %d 波" % [path, image.get_width(), image.get_height(), _wave])
 	return true
+
+
+## 把 [member _actors] 里那几个角色发到手上并推上场。
+##
+## **先清空阵容再一个个塞。** [method PBCardMoves.set_on_field] 在出战席满了时
+## 什么都不做（那条规矩是对的：挤掉谁玩家不知道），所以不清的话
+## 后面几个会静默落空 —— 截出来的图少一个人，而命令行没有任何报错。
+##
+## 走 [method PBCardMoves.set_on_field] 而不是直接改 `state.lineup`：
+## 那个函数才带着 `field_slots` 那道门槛和「先记派遣再安排座位」的顺序
+## （M5-13），绕过去的话截图验的就不是玩家走的那条路了。
+func _seed_actors() -> void:
+	var state: PBRunState = _scene._state
+	var strategy: PBStrategy = _scene._strategy
+	strategy.set_lineup(state, [] as Array[PBUnit])
+	for raw: String in _actors:
+		var character := PBCharacterLoader.table().by_id(StringName(raw.strip_edges()))
+		if character == null:
+			printerr("角色表里没有：%s" % raw)
+			continue
+		var unit := PBUnit.new(character)
+		state.add_unit(unit)
+		PBCardMoves.set_on_field(state, strategy, _scene._plan, unit, true, _scene._cfg)
+	_scene._sync_deployed()
+	_scene._refresh_panels()
 
 
 ## 送一个按键。走 `Input.parse_input_event`，理由见 [method _process]。
@@ -261,6 +301,12 @@ func _parse_args() -> void:
 			"--modal":
 				i += 1
 				_modal = args[i].strip_edges().to_lower()
+			"--actors":
+				# 逗号分隔的角色 id，例如 `--actors <id>,<id>`。
+				# **举例不写真名字** —— `test_character_data.gd` 扫的是整个
+				# `src/`，注释也算（§14 铁律 5）。
+				i += 1
+				_actors = args[i].split(",", false)
 			"--press":
 				# 逗号分隔，例如 `--press b` 或 `--press q,b`。
 				i += 1

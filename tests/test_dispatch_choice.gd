@@ -319,7 +319,7 @@ func test_a_dispatched_ninja_leaves_the_deploy_row_right_away() -> void:
 	root._select(PBSelection.Kind.UNIT, star.key())
 	root._on_command(PBCommandCard.CMD_DISPATCH)
 
-	var away: Array[PBUnit] = root._dispatch_preview()
+	var away: Array[PBUnit] = PBFieldRoster.dispatch_preview(root._state)
 	assert_true(away.has(star), "他该出现在出任务那一排")
 	assert_false(root._fighting_now(away).has(star), "就不该同时还在出战席那一排")
 

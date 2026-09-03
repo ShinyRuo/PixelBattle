@@ -69,6 +69,11 @@ const SHOT_CAPACITY: int = 64
 ## 死循环在跑几万局的场景里表现为「卡住不动」，极难定位。
 const MAX_TICKS: int = 20000
 
+## 战斗播报（§02，M6-j）。**默认 null = 一个字都不记** ——
+## 批量扫描一局跑几万 tick，记下来的东西没有任何人会看。
+## 只有画面那一路塞得进来，见 [PBBattleLog]。
+var log_to: PBBattleLog = null
+
 var _cfg: PBSimConfig
 var _wave: PBWave
 var _enemies: Array[PBEnemy] = []
@@ -338,6 +343,10 @@ func can_cast(attacker: PBAttacker) -> bool:
 func _order(attacker: PBAttacker, spot: Vector2) -> void:
 	attacker.pay(attacker.ultimate.mp_cost)
 	attacker.ultimate.cast(spot, _tick)
+	# **播报记在下达这一刻，不是落地那一刻**（M6-j）：玩家点下去就该看见
+	# 回音，而落地还隔着一整段施法延迟（那段延迟正是 §02 要的预判窗口）。
+	if log_to != null:
+		log_to.ultimate(_tick, attacker.slot)
 
 
 ## 一发大招落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
@@ -455,6 +464,7 @@ func _fly_at_enemy(shot: PBProjectile) -> void:
 		return
 	if not shot.fly(enemy.pos()):
 		return
+	_note_hit(shot.source, enemy.slot, shot.damage, false)
 	if enemy.take_damage(shot.damage):
 		_outcome.kills += 1
 	shot.retire()
@@ -470,13 +480,29 @@ func _fly_at_ally(shot: PBProjectile) -> void:
 		return
 	if not shot.fly(target.pos):
 		return
-	if target.take_damage(
-		PBStatRules.strike_damage(
-			shot.damage, shot.element, target.defence, target.def_element, _cfg
-		)
-	):
+	var hurt: float = PBStatRules.strike_damage(
+		shot.damage, shot.element, target.defence, target.def_element, _cfg
+	)
+	_note_hit(shot.source, target.slot, hurt, true)
+	if target.take_damage(hurt):
 		_outcome.allies_lost += 1
+		_note_down(target.slot)
 	shot.retire()
+
+
+## 记一次命中。**每个见血的地方都走这一句**，而不是各写一遍
+## `if log_to != null` —— 漏一处的表现是「某一种攻击方式在日志里不存在」，
+## 而那要盯着日志看很久才发现。
+func _note_hit(source: int, target: int, amount: float, to_ally: bool) -> void:
+	if log_to != null:
+		log_to.hit(_tick, source, target, amount, to_ally)
+
+
+## 记一个忍者倒下。**怪物死了不记**（玩家定的）：一波死几十只，
+## 每只一行会把另外五种播报全部冲掉，见 [enum PBBattleLog.Kind]。
+func _note_down(slot: int) -> void:
+	if log_to != null:
+		log_to.ally_down(_tick, slot)
 
 
 ## 找一发空子弹。池子满了返回 null —— 那时**这一发就没了**，
@@ -740,7 +766,7 @@ func _enemies_attack() -> void:
 			break
 		if not enemy.alive or enemy.damage_per_shot <= 0.0:
 			continue
-		var target := _nearest_defender(enemy)
+		var target := PBTargetRules.nearest_defender(_attackers, enemy)
 		if target == null:
 			continue
 		# **M5-7 起远近都咬住。**
@@ -781,35 +807,17 @@ func _enemies_attack() -> void:
 					enemy.damage_per_shot,
 					enemy.shot_speed,
 					true,
-					enemy.element
+					enemy.element,
+					enemy.slot
 				)
 			continue
 		var damage: float = PBStatRules.strike_damage(
 			enemy.damage_per_shot, enemy.element, target.defence, target.def_element, _cfg
 		)
+		_note_hit(enemy.slot, target.slot, damage, true)
 		if target.take_damage(damage):
 			_outcome.allies_lost += 1
-
-
-## 这个敌人射程内离它最近的、还活着的己方单位。没有就返回 null。
-##
-## 遍历顺序固定（出战席顺序），平手时先找到的赢 —— 和
-## [member _attackers] 那条「不排序不打乱」是同一个理由：
-## 顺序一变结果就变，而那种差异只表现为「波次悄悄偏了一点」。
-func _nearest_defender(enemy: PBEnemy) -> PBAttacker:
-	var best: PBAttacker = null
-	var best_gap: float = 0.0
-	var at := enemy.pos()
-	for attacker: PBAttacker in _attackers:
-		if not attacker.is_targetable():
-			continue
-		var gap: float = at.distance_to(attacker.pos)
-		if gap > enemy.reach:
-			continue
-		if best == null or gap < best_gap:
-			best = attacker
-			best_gap = gap
-	return best
+			_note_down(target.slot)
 
 
 ## 单体攻击：打射程内最接近基地的那个。**打不到人返回 false。**
@@ -834,13 +842,17 @@ func _strike_single(attacker: PBAttacker) -> bool:
 	var damage: float = attacker.damage_per_shot() * _damage_scale()
 	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
 	if attacker.shot_speed <= 0.0:
+		_note_hit(attacker.slot, target.slot, damage, false)
 		if target.take_damage(damage):
 			_outcome.kills += 1
 		return true
 	var shot := _free_shot()
 	if shot == null:
 		return false
-	shot.launch(attacker.pos, target.slot, damage, attacker.shot_speed)
+	shot.launch(
+		attacker.pos, target.slot, damage, attacker.shot_speed,
+		false, PBElement.Type.PHYSICAL, attacker.slot
+	)
 	return true
 
 
@@ -913,6 +925,7 @@ func _strike_area(attacker: PBAttacker) -> bool:
 		index += 1
 		if not enemy.alive or not attacker.can_reach(enemy.pos()):
 			continue
+		_note_hit(attacker.slot, enemy.slot, damage, false)
 		if enemy.take_damage(damage):
 			_outcome.kills += 1
 		hits += 1
@@ -945,7 +958,7 @@ func _advance_and_leak() -> void:
 			break
 		if not enemy.alive:
 			continue
-		var prey := _nearest_ally(enemy)
+		var prey := PBTargetRules.nearest_ally(_attackers, enemy)
 		if prey != null:
 			# **围到自己那一格上去**（M5-10）：所有人都直奔 `prey.pos` 的话，
 			# 先到的把近侧堵死，后面的被防挤往身后垫成一条长队。
@@ -967,31 +980,9 @@ func _advance_and_leak() -> void:
 			enemy.alive = false
 			_outcome.leaked += 1
 			_outcome.base_damage += _leak_damage
+			if log_to != null:
+				log_to.base_hit(_tick, _leak_damage)
 	_skip_dead()
-
-
-## 离 [param enemy] 最近的还活着的己方单位，**不看射程**。没有就返回 null。
-##
-## 和 [method _nearest_defender] 分成两个函数：那一个回答「现在打得到谁」，
-## 这一个回答「该往谁那边走」。合成一个带射程参数的话，调用方每次都要
-## 想清楚自己问的是哪一件事，而问错的表现是敌人站在原地不动
-## （拿射程内的答案去决定走不走）。
-##
-## `max_hp == 0` 的退化标量（[method PBAttacker.whole_field]）
-## 在 [method PBAttacker.is_targetable] 里就被排除了 —— 敌人看不见它，
-## 所以 M3-a 的对拍路径上这一支恒为 null，行为与升级前一字不差。
-func _nearest_ally(enemy: PBEnemy) -> PBAttacker:
-	var best: PBAttacker = null
-	var best_gap: float = 0.0
-	var at := enemy.pos()
-	for attacker: PBAttacker in _attackers:
-		if not attacker.is_targetable():
-			continue
-		var gap: float = at.distance_to(attacker.pos)
-		if best == null or gap < best_gap:
-			best = attacker
-			best_gap = gap
-	return best
 
 
 ## 把游标推到下一个还活着的敌人。已经死掉或漏掉的不再参与任何计算。

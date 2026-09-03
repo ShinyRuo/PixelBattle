@@ -159,7 +159,7 @@ func test_dragging_moves_him_on_the_real_screen() -> void:
 	await wait_physics_frames(3)
 	assert_eq(root._phase, PBBattleView.Phase.PREPARE, "该停在准备阶段")
 
-	var units: Array[PBUnit] = root._fighting_now(root._dispatch_preview())
+	var units: Array[PBUnit] = root._fighting_now(PBFieldRoster.dispatch_preview(root._state))
 	assert_gt(units.size(), 0, "第 6 波该有人上场")
 	var field: Vector2 = root._field()
 	var spots := PBFormationRules.spots_of(units, root._state.formation, root._cfg)
@@ -195,7 +195,7 @@ func test_a_ninja_on_the_field_can_be_clicked_and_dragged_anywhere() -> void:
 	add_child_autofree(root)
 	await wait_physics_frames(3)
 
-	var units: Array[PBUnit] = root._fighting_now(root._dispatch_preview())
+	var units: Array[PBUnit] = root._fighting_now(PBFieldRoster.dispatch_preview(root._state))
 	assert_gt(units.size(), 0, "第 6 波该有人上场")
 	var spots := PBFormationRules.spots_of(units, root._state.formation, root._cfg)
 	var at := PBLayout.to_screen(spots[0], root._field())
@@ -215,7 +215,7 @@ func test_a_ninja_on_the_field_can_be_clicked_and_dragged_anywhere() -> void:
 	root._bay._drop_data(Vector2.ZERO, {"zone": PBUnitTile.ZONE_FIELD, "unit": units[0].key()})
 	assert_signal_emitted(root._bay, "card_dropped")
 	assert_false(
-		root._fighting_now(root._dispatch_preview()).has(units[0]), "松手之后他就该下场了"
+		root._fighting_now(PBFieldRoster.dispatch_preview(root._state)).has(units[0]), "松手之后他就该下场了"
 	)
 
 
@@ -234,7 +234,7 @@ func test_dragging_a_card_out_of_the_warehouse_puts_him_where_it_lands() -> void
 	for _i: int in 12:
 		root._on_command(&"gacha")
 		root._on_offer_picked(0)
-	var away: Array[PBUnit] = root._dispatch_preview()
+	var away: Array[PBUnit] = PBFieldRoster.dispatch_preview(root._state)
 	var deployed: Array[PBUnit] = root._fighting_now(away)
 	var idle := PBRosterBay.idle_units(root._state, deployed, away)
 	assert_gt(idle.size(), 0, "抽了 12 次，仓库里该有挤不上场的人")
@@ -245,7 +245,7 @@ func test_dragging_a_card_out_of_the_warehouse_puts_him_where_it_lands() -> void
 	var benched: PBUnit = deployed[deployed.size() - 1]
 	root._on_card_moved(PBUnitTile.ZONE_FIELD, benched.key(), PBUnitTile.ZONE_STASH)
 	assert_false(
-		root._fighting_now(root._dispatch_preview()).has(benched), "拖回仓库就该下场"
+		root._fighting_now(PBFieldRoster.dispatch_preview(root._state)).has(benched), "拖回仓库就该下场"
 	)
 
 	var goal := Vector2(0.2, 0.3)
@@ -253,7 +253,7 @@ func test_dragging_a_card_out_of_the_warehouse_puts_him_where_it_lands() -> void
 		PBUnitTile.ZONE_STASH, idle[0].key(), PBLayout.to_screen(goal, root._field())
 	)
 	assert_true(
-		root._fighting_now(root._dispatch_preview()).has(idle[0]), "拖到战场上就该上场"
+		root._fighting_now(PBFieldRoster.dispatch_preview(root._state)).has(idle[0]), "拖到战场上就该上场"
 	)
 	assert_almost_eq(
 		root._state.formation[idle[0].key()], goal, EPS2, "而且就站在松手的那个点"

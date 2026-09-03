@@ -1,0 +1,65 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_0.png" id="1_1w6mm"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_1.png" id="2_4crth"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_2.png" id="3_hek6p"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_0.png" id="4_2xjm1"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_0.png" id="5_m8i88"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_1.png" id="6_qgddx"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_0.png" id="7_wprvs"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_1.png" id="8_1abfs"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_2.png" id="9_o6p1e"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_3.png" id="10_rkrmf"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_1w6mm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_4crth")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_hek6p")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_2xjm1")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_m8i88")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_qgddx")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_wprvs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_1abfs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_o6p1e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_rkrmf")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

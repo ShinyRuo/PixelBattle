@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_0.png" id="1_xbaf5"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_1.png" id="2_4pbeb"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_2.png" id="3_l3lu3"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_0.png" id="4_cetgt"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_0.png" id="5_6fdmw"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_1.png" id="6_l8qdi"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_0.png" id="7_fwjw3"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_1.png" id="8_c8d7t"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_2.png" id="9_053u1"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_3.png" id="10_bggne"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="11_0ravc"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_kswv8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_xbaf5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_4pbeb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_l3lu3")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_cetgt")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_6fdmw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_l8qdi")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_fwjw3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_c8d7t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_053u1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_bggne")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("11_0ravc")
+key = &"choji"
+frames = SubResource("SpriteFrames_kswv8")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

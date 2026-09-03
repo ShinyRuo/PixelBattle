@@ -117,13 +117,18 @@ func _in_battle() -> Node2D:
 
 func test_the_command_card_stays_up_during_the_battle() -> void:
 	# §02 要求打起来之后照样点得到忍者。指令卡和信息栏因此从
-	# 「准备阶段专属」那一档里分了出来，而槽位列、任务卡、羁绊带没有 ——
-	# 它们全都占着战场那条道，而战斗中那条道是有人的。
+	# 「准备阶段专属」那一档里分了出来。
+	#
+	# **仓库和任务栏仍然收掉**：打起来之后改名单、派任务都没有意义
+	# （M5-3 / M5-4）。**C/D 那一列 M6-k 起留着** —— 大本营的血条
+	# 现在长在那张图上，而「基地还剩多少」恰恰是战斗中最要紧的一个数。
 	var root: Node2D = await _in_battle()
 	assert_eq(root._phase, PBBattleView.Phase.BATTLE, "这时候该已经在打了")
 	assert_true(root._command.visible, "指令卡该留着")
 	assert_true(root._unit_info.visible, "信息栏该留着")
-	assert_false(root._slots.visible, "槽位列该收掉 —— 它压在战场上")
+	assert_true(root._slots.visible, "大本营那一块要留着 —— 血条长在它上面")
+	assert_false(root._bay.visible, "仓库该收掉 —— 战斗中改名单没有意义")
+	assert_false(root._quest.visible, "任务栏也该收掉")
 	assert_false(root._quest.visible, "任务卡也是")
 
 

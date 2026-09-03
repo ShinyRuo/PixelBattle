@@ -56,8 +56,32 @@ enum Facing { RIGHT, LEFT }
 ## 源图朝向，见 [enum Facing]。
 @export var source_faces: Facing = Facing.RIGHT
 
-## 放大几倍。像素素材只用整数倍，非整数会把像素栅格切碎。
+## 放大几倍。**像素档只用整数倍**，非整数会把像素栅格切碎。
+##
+## [member smooth] 那一档正好相反：它填的是 `1/N`（贴图比屏幕大 N 倍），
+## 缩小交给 GPU，所以不存在「栅格切碎」这回事。
 @export var pixel_scale: float = 1.0
+
+## 高清档：贴图比它在屏幕上占的地方**大好几倍**，缩小交给 GPU。
+##
+## ## 它换到的是什么
+##
+## `stretch/mode` 是 `canvas_items`（M6-d），也就是**坐标系恒为 640×360，
+## 但光栅化发生在窗口的真实分辨率上** —— 文字在 1080p 上清晰正是这条。
+## 于是一个「41 逻辑像素高」的精灵在 1080p 上实际占 123 个真实像素。
+## 贴图只有 41 像素高的话，那 123 个像素里只装得下 41 个色块的信息；
+## 贴图做到 123 像素高，GPU 就能在渲染时把全部细节铺满。
+##
+## ## 代价
+##
+## **它不是像素画了。** 边缘是软的、颜色是连续的，而屏幕上其余全部东西
+## （面板、卡面、白模、克制亮边）都是硬边像素。混着放看得出来 ——
+## 这是一个美术方向的取舍，不是一个可以两边都要的开关。
+##
+## 打开的那一档**必须配 mipmap**（[member PBActorForge.scale_up] 会把
+## 贴图的 `.import` 改掉）：720p 下这张图是缩小采样的，没有 mipmap
+## 的表现是人一走动身上就闪，而静止截图完全看不出来。
+@export var smooth: bool = false
 
 ## **脚底在画布上的位置**（像素，画布左上角为原点）。
 ##
@@ -168,3 +192,17 @@ func canvas_size() -> Vector2:
 ## 血条该挂在脚底上方多少像素。
 func head_px() -> float:
 	return height_px * pixel_scale
+
+
+## 这张皮该用哪种贴图过滤，见 [member smooth]。
+##
+## **两个池子共用这一个判断。** 各写一份的话「己方是高清、敌人还是最近邻」
+## 这种事迟早发生，而它不报错 —— 只表现为「有些人边缘糊、有些人边缘硬」。
+##
+## 不打开的那一档返回 [constant CanvasItem.TEXTURE_FILTER_PARENT_NODE]
+## （= 继承项目设置里的最近邻），**不是直接写最近邻**：
+## 项目要是哪天改了默认过滤，白模该跟着改，而不是被这里钉死。
+func filter_mode() -> CanvasItem.TextureFilter:
+	if not smooth:
+		return CanvasItem.TEXTURE_FILTER_PARENT_NODE
+	return CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS

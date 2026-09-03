@@ -338,6 +338,7 @@ func _dress(index: int, unit: PBUnit) -> PBActorSkin:
 		sprite.sprite_frames = skin.frames
 		sprite.offset = skin.draw_offset()
 		sprite.scale = Vector2.ONE * skin.pixel_scale
+		sprite.texture_filter = skin.filter_mode()
 	return skin
 
 

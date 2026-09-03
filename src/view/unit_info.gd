@@ -19,9 +19,25 @@ extends Control
 ## §03A 把它们拆开，正是为了让一张卡在「它打谁」和「它扛谁」两条线上
 ## 指向不同的波次。写成一行「火系」的话，玩家读到的还是旧模型。
 
+## 鼠标停在一行羁绊上（M6-j）。参数顺序对齐 [method PBTooltip.show_hint]。
+signal hint_requested(at: Rect2, title: String, body: String)
+
+## 鼠标从那一行上移开了，把卡收掉。
+signal hint_closed
+
+## 点在一行羁绊上。**和悬停走两条路**：点开的那张会吃掉下一次点击
+## （[method PBTooltip.show_card]），那是触屏上唯一收得掉它的办法 ——
+## 而 §01 要 PC + 手机双端，手机上压根没有悬停。
+signal tip_requested(at: Rect2, title: String, body: String)
+
 ## 面板占底栏中段，右边留给指令卡（[constant PBCommandCard.PANEL_RECT]）。
 const PANEL_RECT := PBLayout.H_INFO
 const FONT_SIZE: int = 8
+
+## 羁绊那一行的链接前缀。RichTextLabel 的 `[url=…]` 是这一栏唯一能
+## **按行**收鼠标的东西 —— 自己摆一排隐形按钮的话，行高、换行、
+## 字体度量三样都要复算一遍，而算错的表现是「有时候悬停不出来」。
+const BOND_META := "bond:"
 
 ## 血条与蓝条。**先画满血的底再画当前值**，比只画一条读得快。
 const BAR_SIZE := Vector2(96.0, 6.0)
@@ -30,9 +46,16 @@ const HP_COLOR := Color(0.85, 0.30, 0.30)
 const MP_COLOR := Color(0.35, 0.55, 0.90)
 const BAR_BACK := Color(0.16, 0.17, 0.21)
 
-## 「再补一个就能进」最多提几组。面板只有 132 像素宽、七八行高，
-## 提第三条就会把「点战场上的忍者」那句挤掉。
-const MAX_HINTS: int = 2
+## 羁绊成员的三色（M6-j，玩家点名要的「场上有的和没有的用颜色区分」）。
+##
+## **三档不是两档**：「在场」「抽到了但不在场上」「压根没抽到」是三种
+## 完全不同的处境 —— 第二档是**这一下就能补上**的，第三档只能等抽卡。
+## 合成两档的话，玩家看到一个灰名字不知道该去仓库找他还是该去抽卡。
+##
+## 这也正是编队页删掉之后一直没找到家的那份三色名单（M3-e 起记在待决策表上）。
+const MEMBER_ON_FIELD := PBSkin.GOOD
+const MEMBER_IN_STASH := PBSkin.WARN
+const MEMBER_MISSING := PBSkin.DIM
 
 var _portrait: PBUnitTile
 var _head: Label
@@ -41,6 +64,14 @@ var _hp_back: ColorRect
 var _hp_fill: ColorRect
 var _mp_back: ColorRect
 var _mp_fill: ColorRect
+
+## 悬停要用的上下文。**存起来而不是每次现查** —— 悬停发生在两次
+## [method refresh] 之间，那时调用方手上那几份名单已经不在栈上了。
+var _state: PBRunState
+var _cfg: PBSimConfig
+
+## 现在站在场上的角色 id。羁绊成员的第一档颜色按它判。
+var _on_field: Dictionary = {}
 
 
 func _ready() -> void:
@@ -70,11 +101,22 @@ func _ready() -> void:
 	_mp_back = _add_bar(PANEL_RECT.position + Vector2(42.0, 26.0), BAR_BACK)
 	_mp_fill = _add_bar(PANEL_RECT.position + Vector2(42.0, 26.0), MP_COLOR)
 
+	# **正文要五行**（属性 / 力敏智 / 攻防元素 / 射程装备 / 羁绊），而这个框
+	# 只有 94 高。M6-j 之前顶上留 36、底下留 4，装得下四行半 ——
+	# **第五行（羁绊）被裁掉一半**，而它正是玩家这次点名要看的那一行。
+	# 上下各收 2 像素买回一整行；头像那 34 像素本来就压着正文第一行的顶，
+	# 再往上挪会盖住数字。
 	_body = PBSkin.rich(
 		self,
-		Rect2(PANEL_RECT.position + Vector2(6.0, 36.0), PANEL_RECT.size - Vector2(12.0, 40.0)),
+		Rect2(PANEL_RECT.position + Vector2(6.0, 34.0), PANEL_RECT.size - Vector2(12.0, 36.0)),
 		FONT_SIZE
 	)
+	# **这一层不能是 IGNORE**，否则收不到悬停 —— 而本类自己仍然是 IGNORE，
+	# 挡住底下的东西不是它的职责。`PASS` 是「我自己要，但不拦别人」。
+	_body.mouse_filter = Control.MOUSE_FILTER_PASS
+	_body.meta_hover_started.connect(_on_meta_hover)
+	_body.meta_hover_ended.connect(func(_meta: Variant) -> void: hint_closed.emit())
+	_body.meta_clicked.connect(_on_meta_click)
 
 
 ## 按当前选中重画。[param deployed] 是「现在开打的话会是谁」，用来算装备。
@@ -87,6 +129,11 @@ func refresh(
 	deployed: Array[PBUnit],
 	bond_aware: bool = false
 ) -> void:
+	_state = state
+	_cfg = cfg
+	_on_field = {}
+	for one: PBUnit in deployed:
+		_on_field[one.character.id] = true
 	var unit := selection.unit_of(state)
 	if unit == null:
 		_show_team(state, cfg, wave, bond_aware)
@@ -119,11 +166,15 @@ func show_live(live: PBAttacker) -> void:
 ## **这一栏没选中人时本来就是空的**，而「整队现在什么样」正是
 ## 那个空档该回答的问题 —— 和指令卡「选中谁就显示谁能做的事」是同一条规矩。
 ##
-## ## 第二行才是产出
+## ## 只写已经生效的那几组（M6-j）
 ##
-## 「现在吃着哪些档」是结果，看一眼就够；
-## **「还差 1 人就能进满档，+18%」是可以立刻行动的信息** ——
-## 那正是「换人」从排序变成决策的那一刻。面板窄了之后先保它。
+## 在那之前这里还有第二段「再补就能进：某某 差1 +18%」。删掉是玩家定的，
+## 而它和羁绊改成**全有或全无**（见 [PBBond]）是同一个决定的两半：
+## 分档的时候「差一个人」处处都是，那份提示是导航；
+## 不分档之后**每一组都只有「够」和「不够」两种状态**，
+## 把没凑上的也摊开等于把整张羁绊表抄在一块 168 像素宽的面板上。
+##
+## 「都有谁」搬进了悬停卡 —— 那是问一次就走的信息，不该常驻占三行。
 func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: bool) -> void:
 	_portrait.visible = false
 	_set_bar(_hp_back, _hp_fill, 0.0)
@@ -140,62 +191,36 @@ func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: b
 	lines.append_array(_tier_lines(cfg, units))
 	if state.dispatched > 0:
 		lines.append(PBSkin.tint("出任务 %d 人（不算羁绊）" % state.dispatched, PBSkin.DIM))
-	lines.append_array(_next_tier_lines(cfg, units))
 	_body.text = "\n".join(lines)
 
 
-## 现在吃着哪些档。功能档缀在后面（M3-f）—— **载体是谁留给选中那个人看**，
+## 现在生效的是哪几组。功能缀在后面（M3-f）—— **载体是谁留给选中那个人看**，
 ## 这一栏塞不下「要把某某排进出战席」。
+##
+## 每一行都是一个 `[url]`：鼠标停上去弹出成员名单（[method _bond_body]）。
 func _tier_lines(cfg: PBSimConfig, units: Array[PBUnit]) -> PackedStringArray:
 	var out := PackedStringArray()
 	if units.is_empty():
 		out.append(PBSkin.tint("在场没有人 —— 先抽卡", PBSkin.DIM))
 		return out
-	var tiers := PBBondRules.active_tiers(units, cfg.bonds)
 	for bond: PBBond in cfg.bonds.all():
-		var tier: int = int(tiers.get(bond.id, 0))
-		if tier <= 0:
+		var active: int = PBBondRules.active_count(bond, units)
+		if bond.tier_at(active) <= 0:
 			continue
-		var full: String = "满" if tier >= bond.tier_counts.size() else "%d" % tier
-		var label: String = "· %s %s档" % [PBLocale.of_bond(bond), full]
-		var key: StringName = bond.function_at(PBBondRules.active_count(bond, units))
+		var label: String = "· %s %d 人" % [PBLocale.of_bond(bond), active]
+		var key: StringName = bond.function_at(active)
 		if key != &"":
 			label += "·" + PBLocale.of_bond_function(key)
-		out.append(label)
+		out.append(_link(bond, label))
 	if out.is_empty():
-		out.append(PBSkin.tint("一组都没凑上", PBSkin.DIM))
+		out.append(PBSkin.tint("一组都没凑齐", PBSkin.DIM))
 	return out
 
 
-## 差一点能吃到什么。**只提差 1–2 人的** —— 差 3 人以上一波之内凑不出来，
-## 摆上去只是噪音。按「补上去值多少」排序，窄面板只留最值钱的那两条。
-func _next_tier_lines(cfg: PBSimConfig, units: Array[PBUnit]) -> PackedStringArray:
-	var out := PackedStringArray()
-	if units.is_empty():
-		return out
-	var hints: Array[Dictionary] = []
-	for bond: PBBond in cfg.bonds.all():
-		var missing: int = PBBondRules.to_next_tier(bond, units)
-		if missing <= 0 or missing > 2:
-			continue
-		var active: int = PBBondRules.active_count(bond, units)
-		var gain: float = bond.bonus_at(active + missing) - bond.bonus_at(active)
-		if gain > 0.0:
-			hints.append({"name": PBLocale.of_bond(bond), "missing": missing, "gain": gain})
-	if hints.is_empty():
-		return out
-	hints.sort_custom(
-		func(a: Dictionary, b: Dictionary) -> bool: return float(a["gain"]) > float(b["gain"])
-	)
-	out.append(PBSkin.tint("再补就能进：", PBSkin.TITLE))
-	for hint: Dictionary in hints.slice(0, MAX_HINTS):
-		out.append(
-			PBSkin.tint(
-				"· %s 差%d +%.0f%%" % [hint["name"], hint["missing"], float(hint["gain"]) * 100.0],
-				PBSkin.TITLE
-			)
-		)
-	return out
+## 把一行包成可悬停的链接。**颜色留在外面** —— `[url]` 自带下划线，
+## 再套一层颜色标签会让「生效」和「没生效」两种行长得一样。
+func _link(bond: PBBond, label: String) -> String:
+	return "[url=%s%s]%s[/url]" % [BOND_META, bond.id, label]
 
 
 func _show_unit(
@@ -210,12 +235,14 @@ func _show_unit(
 	_portrait.visible = true
 	_portrait.set_unit(unit, wave.element)
 
+	# **不写星级**（M6-j，玩家定的）。M5-9 起重复抽到的是**另一个人**，
+	# 「同卡 3 张升 1 星」那条规则随之作废 —— 这个数因此恒为 1，
+	# 而一个永远不变的数字只会让人以为自己漏了一套没做出来的养成系统。
 	var away: String = "　出任务中" if selection.kind == PBSelection.Kind.DISPATCHED else ""
-	_head.text = "%s　%s　Lv%d　★%d%s" % [
+	_head.text = "%s　%s　Lv%d%s" % [
 		PBLocale.of_character(unit.character),
 		PBUnitTile.RARITY_NAMES[int(unit.rarity)],
 		unit.level,
-		unit.star(),
 		away,
 	]
 	# 准备阶段没有战斗实例，血蓝都是满的 —— 显示满条是诚实的：
@@ -297,7 +324,11 @@ func _equipment_text(
 	return "装备 ×%.2f（%s）" % [mults[index], "·".join(names)]
 
 
-## 这张卡进了哪几组羁绊，各在第几档。
+## 这张卡进了哪几组羁绊，每组**到了几个 / 要几个**。
+##
+## 每一组都是一个 `[url]`：停上去弹出成员名单，绿的在场、黄的在仓库、
+## 灰的还没抽到（[method _bond_body]）。**「他还差谁」是这一栏最值钱的
+## 一句话** —— 而它太长，写在行里会把攻防那几行挤没。
 func _bond_line(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> String:
 	if cfg.bonds == null:
 		return "羁绊：无"
@@ -307,14 +338,74 @@ func _bond_line(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> String:
 		if not bond.counts_character(unit.character):
 			continue
 		var active: int = PBBondRules.active_count(bond, counted)
-		var tier: int = bond.tier_at(active)
-		var text: String = "%s %d/%d" % [PBLocale.of_bond(bond), active, bond.full_tier_count()]
-		if tier > 0:
-			text += "·%d档" % tier
-		parts.append(text)
+		var need: int = bond.full_tier_count()
+		var text: String = "%s %d/%d" % [PBLocale.of_bond(bond), active, need]
+		# 生效的标一下。不标的话「3/3」和「2/3」在一行小字里几乎分不出来，
+		# 而那正好是这一组值不值钱的全部区别（M6-j：不凑齐就是不生效）。
+		text = PBSkin.tint(text + "✓", PBSkin.GOOD) if active >= need else text
+		parts.append(_link(bond, text))
 	if parts.is_empty():
 		return "羁绊：无"
 	return "羁绊　" + "　".join(parts)
+
+
+## 悬停卡的正文：这一组都有谁，各自在哪儿。
+##
+## [constant PBBond.Match.ELEMENT] 那几组没有点名的成员表，成员是
+## **角色表里所有这个属性的人** —— 现算而不是往数据里抄一份：
+## 抄一份的话，角色表加一个火系角色而忘了同步，表现是
+## 「明明抽到了却不算数」，不报错。
+func _bond_body(bond: PBBond) -> String:
+	if _cfg == null or _cfg.characters == null:
+		return ""
+	var owned: Dictionary = {}
+	if _state != null:
+		for unit: PBUnit in _state.all_units():
+			owned[unit.character.id] = true
+	var lines := PackedStringArray()
+	for character: PBCharacter in _cfg.characters.all():
+		if not bond.counts_character(character):
+			continue
+		var name: String = PBLocale.of_character(character)
+		if _on_field.has(character.id):
+			lines.append(PBSkin.tint("● " + name + "（在场）", MEMBER_ON_FIELD))
+		elif owned.has(character.id):
+			lines.append(PBSkin.tint("○ " + name + "（仓库）", MEMBER_IN_STASH))
+		else:
+			lines.append(PBSkin.tint("· " + name + "（未拥有）", MEMBER_MISSING))
+	return "\n".join(lines)
+
+
+## 悬停卡的标题：够没够，差几个。
+func _bond_head(bond: PBBond) -> String:
+	var active: int = PBBondRules.active_count(bond, _state.bonded_units(_cfg))
+	var need: int = bond.full_tier_count()
+	if active >= need:
+		return "%s　%d/%d 已生效 +%.0f%%" % [
+			PBLocale.of_bond(bond), active, need, bond.bonus_at(active) * 100.0
+		]
+	return "%s　%d/%d　还差 %d 人" % [PBLocale.of_bond(bond), active, need, need - active]
+
+
+## 鼠标停在一行羁绊上。**认不出来的 meta 一律不响应** ——
+## 将来这一栏多几种链接时，静默弹一张空卡比什么都不做更难查。
+func _on_meta_hover(meta: Variant) -> void:
+	var bond := _bond_of(meta)
+	if bond != null:
+		hint_requested.emit(PANEL_RECT, _bond_head(bond), _bond_body(bond))
+
+
+func _on_meta_click(meta: Variant) -> void:
+	var bond := _bond_of(meta)
+	if bond != null:
+		tip_requested.emit(PANEL_RECT, _bond_head(bond), _bond_body(bond))
+
+
+func _bond_of(meta: Variant) -> PBBond:
+	var text := str(meta)
+	if not text.begins_with(BOND_META) or _cfg == null or _cfg.bonds == null:
+		return null
+	return _cfg.bonds.by_id(StringName(text.substr(BOND_META.length())))
 
 
 func _set_bar(back: ColorRect, fill: ColorRect, ratio: float) -> void:

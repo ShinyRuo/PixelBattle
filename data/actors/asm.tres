@@ -69,3 +69,6 @@ animations = [{
 script = ExtResource("11_mjepg")
 key = &"asm"
 frames = SubResource("SpriteFrames_4fxqu")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0
