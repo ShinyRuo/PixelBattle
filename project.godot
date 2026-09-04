@@ -30,7 +30,7 @@ window/stretch/scale_mode="integer"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/godot_mcp/plugin.cfg", "res://addons/actor_forge/plugin.cfg")
+enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/godot_mcp/plugin.cfg", "res://addons/actor_forge/plugin.cfg", "res://addons/pixelate/plugin.cfg")
 
 [godot_mcp]
 
