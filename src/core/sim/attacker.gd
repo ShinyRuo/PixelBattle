@@ -34,6 +34,22 @@ enum Shape {
 	AOE,  ## 范围：对射程内最多 [member max_targets] 个目标各打一份，不结算溢出
 }
 
+## 走过去的时候停在射程的**九成**上，不是踩着边界停（M6-q）。
+##
+## ## 为什么不能停在射程本身上
+##
+## 停在正好 `reach` 处之后，[method can_reach] 量回来的那个距离
+## 是浮点算出来的 —— 实测经常是 `0.020000000000000018 > 0.02`，
+## 于是**他站在自己的射程边上却判定够不着，一枪不放**。
+##
+## 表现是「离怪一点点距离原地跑」：够不着 → 每 tick 重走
+## [method PBMoveRules.close_in] → 目标被防挤推得一直在动 → 落脚点跟着抖，
+## 而净位移是零。实测第 20 波那个近战 **125/271 tick 卡在这个边界上**。
+##
+## **敌人那一侧 M5-10 就修过同一个 bug**（[constant PBCrowdRules.SIEGE_RING]），
+## 当时只改了敌人那半边 —— 又一次「同一件事两把尺子」。
+const STOP_RING: float = 0.9
+
 ## 每秒伤害。属性克制、攻击科技、羁绊、装备**全部已经乘进来了** ——
 ## 战斗层不认识那些系统，它只认这个数。
 var dps: float = 0.0
@@ -363,6 +379,11 @@ func can_reach(at: Vector2) -> bool:
 	return pos.distance_to(at) <= reach
 
 
+## 走过去要停在离目标多远。见 [constant STOP_RING]。
+func stop_gap() -> float:
+	return reach * STOP_RING
+
+
 ## 想够到 [param at] 的话，x 最远能停在哪。
 ##
 ## 二维之后「往前压到刚好够得着」不再是 `目标 − 射程`：
@@ -370,5 +391,8 @@ func can_reach(at: Vector2) -> bool:
 ## 纵向就已经超出射程时返回 [param at] 的 x —— 也就是「只能贴上去」，
 ## 由皮带绳（[member leash]）去拦。
 func reach_stop_x(at: Vector2) -> float:
-	var budget: float = reach * reach - (at.y - pos.y) * (at.y - pos.y)
+	# 用 [method stop_gap] 不用 `reach`：压到正好够得着那一点上，
+	# 浮点会让 [method can_reach] 判成够不着，见 [constant STOP_RING]。
+	var gap: float = stop_gap()
+	var budget: float = gap * gap - (at.y - pos.y) * (at.y - pos.y)
 	return at.x - (sqrt(budget) if budget > 0.0 else 0.0)

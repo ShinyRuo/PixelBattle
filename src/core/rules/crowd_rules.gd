@@ -30,7 +30,12 @@ const SPREAD_ANGLE: float = 2.399963229728653
 ##
 ## 0.9 是「明显在里面」而不是「差一点点」—— 靠 `is_equal_approx` 那类
 ## 容差去救的话，救的是判定，而站位本身仍然贴在悬崖边上。
-const SIEGE_RING: float = 0.9
+##
+## **它和己方那一侧是同一把尺子**（[constant PBAttacker.STOP_RING]）。
+## M5-10 只改了敌人这半边，己方那半边一直踩着边界停 —— 同一个 bug
+## 在另一侧又活了六个里程碑，M6-q 才补上。写成引用而不是又抄一个 0.9：
+## 抄一份的话哪天调了一边、另一边的现象会一模一样地回来。
+const SIEGE_RING: float = PBAttacker.STOP_RING
 
 
 ## 围住 [param at] 的时候，第 [param slot] 个敌人该站在环上的哪一格（M5-10）。

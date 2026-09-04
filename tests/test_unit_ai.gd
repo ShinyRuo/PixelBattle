@@ -163,8 +163,81 @@ func test_a_parked_shooter_beyond_the_leash_gets_chased_down() -> void:
 	for _i: int in 200:
 		sim.step()
 	assert_true(enemy.engaged, "它已经站定了 —— 这是那个例外的前提")
+	# **停在射程的九成上**（M6-q，[constant PBAttacker.STOP_RING]）：
+	# 停在正好 `reach` 上的话浮点会让他判成够不着，于是站在敌人脸上一枪不放。
 	assert_almost_eq(
-		squad[0].pos.x, enemy.distance - _cfg.reach_melee, 1e-3, "站定的是个静止靶，就该走过去打"
+		squad[0].pos.x, enemy.distance - squad[0].stop_gap(), 1e-3, "站定的是个静止靶，就该走过去打"
+	)
+	assert_true(squad[0].can_reach(enemy.pos()), "走到位了就必须真的够得着 —— 这条才是重点")
+
+
+func test_walking_up_to_a_target_always_ends_in_range() -> void:
+	# **「离怪一点点距离原地跑」的根因**（M6-q）：停在正好 `reach` 上之后，
+	# [method PBAttacker.can_reach] 量回来的是 `0.020000000000000018 > 0.02`，
+	# 于是够不着 → 每 tick 重走一遍靠近 → 目标被防挤推得一直在动 →
+	# 落脚点跟着抖，而净位移是零。实测一个近战 76/271 tick 在原地跑。
+	#
+	# 扫一圈角度，因为翻车的是浮点：某几个方向上正好差最后一位。
+	for step: int in 16:
+		var angle: float = TAU * float(step) / 16.0
+		var target := Vector2(0.5, 0.2) + Vector2(cos(angle), sin(angle)) * 0.19
+		var who := _fighter(Vector2(0.5, 0.2), _cfg.reach_melee, 0.0)
+		who.leash = 1.0
+		var foe := PBEnemy.new()
+		foe.distance = target.x
+		foe.lane = target.y
+		for _i: int in 200:
+			PBMoveRules.close_in(who, foe, who.leash)
+		assert_true(
+			who.can_reach(foe.pos()), "第 %d 个方向走到位了却判够不着（差 %.17f）" % [
+				step, who.pos.distance_to(foe.pos()) - who.reach
+			]
+		)
+
+
+func test_a_shooter_biting_someone_else_never_drags_me_out_of_position() -> void:
+	# **「追着怪物跑」的根因**（M6-q）：松绳的条件原来是「任何一个站定的敌人」，
+	# 于是围着**别人**打的那一群也会把我拽出去 —— 一个人被拽走 →
+	# 敌人跟着停在他的新位置上 → 队友的目标也到了绳外 → 全队塌到同一点。
+	# 实测第 20 波那个近战 210/271 tick 在绳外、离家 0.55，而绳长 0.35。
+	var mine := _fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)
+	var mate := _fighter(Vector2(0.30, 0.40), _cfg.reach_melee, 0.0)
+	var squad: Array[PBAttacker] = [mine, mate]
+	# 一个站定的敌人，咬的是队友那一边、离我很远。
+	var foe := PBEnemy.new()
+	foe.distance = 0.90
+	foe.lane = 0.40
+	foe.engaged = true
+	assert_eq(
+		PBMoveRules.leash_for(mine, foe, null, squad, _cfg),
+		mine.leash,
+		"它咬的不是我 —— 绳子一寸都不许放"
+	)
+	assert_gt(
+		PBMoveRules.leash_for(mate, foe, null, squad, _cfg), mate.leash, "咬的是他，他才该去"
+	)
+
+
+func test_the_released_leash_is_a_spring_not_a_ratchet() -> void:
+	# 放长是为了够到**咬住我的那一个**，不是从此不受约束（M6-q）。
+	# 原来返回的是战场对角线，而判据量的是永不移动的 `home` ——
+	# 于是这一波剩下的时间里绳子再也收不回来。
+	var mine := _fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)
+	var squad: Array[PBAttacker] = [mine]
+	var near := PBEnemy.new()
+	near.distance = 0.30 + mine.leash + 0.05
+	near.engaged = true
+	var far := PBEnemy.new()
+	far.distance = 0.95
+	far.engaged = true
+	var rope_near: float = PBMoveRules.leash_for(mine, near, null, squad, _cfg)
+	var rope_far: float = PBMoveRules.leash_for(mine, far, null, squad, _cfg)
+	assert_gt(rope_near, mine.leash, "咬住我的那个够不着，绳子要放长")
+	assert_lt(rope_near, rope_far, "放多长是按目标算的，不是一个写死的值")
+	assert_lte(
+		rope_far,
+		mine.leash + _cfg.enemy_reach_ranged + 1e-9,
+		"再远也有天花板 —— 没有它，每杀一个就往外挪一截"
 	)
 
 

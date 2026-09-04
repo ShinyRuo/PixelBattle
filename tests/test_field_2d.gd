@@ -83,12 +83,21 @@ func test_stopping_distance_pays_for_the_lane_gap() -> void:
 	# 「往前压到刚好够得着」在二维里不再是 `目标 − 射程`：
 	# 纵向差掉的那一截要先从射程里扣掉，否则单位会停在一个打不到的地方，
 	# 而现象是「他明明走到位了却不开火」。
+	#
+	# **M6-q 起扣的是 [method PBAttacker.stop_gap] 不是 `reach`** ——
+	# 停在正好够得着那一点上，浮点会让 [method PBAttacker.can_reach] 判成
+	# 够不着（下面最后那条断言量的就是这件事）。
 	var attacker := PBAttacker.new()
 	attacker.pos = Vector2(0.30, 0.0)
 	attacker.reach = 0.50
-	assert_almost_eq(attacker.reach_stop_x(Vector2(1.0, 0.0)), 0.5, 1e-6, "同一条泳道就是目标减射程")
+	var flat: float = attacker.reach_stop_x(Vector2(1.0, 0.0))
+	assert_almost_eq(flat, 1.0 - attacker.stop_gap(), 1e-6, "同一条泳道就是目标减停火距离")
+	var flat_stand := PBAttacker.new()
+	flat_stand.pos = Vector2(flat, 0.0)
+	flat_stand.reach = attacker.reach
+	assert_true(flat_stand.can_reach(Vector2(1.0, 0.0)), "站到那儿就必须真的够得着")
 	var slanted: float = attacker.reach_stop_x(Vector2(1.0, 0.30))
-	assert_gt(slanted, 0.5, "斜着够要往前多走一截")
+	assert_gt(slanted, flat, "斜着够要往前多走一截")
 	attacker.pos.x = slanted
 	assert_true(attacker.can_reach(Vector2(1.0, 0.30)), "走到那儿就该正好够得着")
 

@@ -527,17 +527,12 @@ func _free_shot() -> PBProjectile:
 ## 近战会真的迎上去。射程档因此从「站在哪一列」变成「跑到多近就停」，
 ## 梯度靠停火距离维持，不靠固定坐标。
 ##
-## ## 三条互斥的状态，顺序就是优先级（M4-c）
+## **怎么挪在 [PBMoveRules]**（M6-q 拆出去的），这里只管挑目标和分支。
 ##
-## 1. **够得着 → 站住。** 交战中绝不挪窝
-## 2. **够不着 → 按自己的打法靠过去**（近战贴身、远程只前压）
-## 3. **场上一个活人都没有 → 慢慢走回自己的位置**
+## 三条互斥的状态，顺序就是优先级（M4-c）：够得着就站住、够不着按自己的
+## 打法靠过去、场上一个活人都没有就慢慢走回自己的位置。
 ##
-## 第 1 条是 M4-c 修掉的那个 bug：在它之前，「够得着」走的是「回家」那一支，
-## 于是敌人贴到脸上时忍者**边打边往基地退**。看起来荒谬，代码里却很自然 ——
-## 「回家」是默认值，而「压上去」是唯一的例外分支，中间那档没人写。
-##
-## 第 3 条不能省：不退的话，一波打完全队会停在最前沿，
+## 最后那条不能省：不退的话，一波打完全队会停在最前沿，
 ## 下一波开波的阵型就不是玩家排的那个了。
 func _move_attackers() -> void:
 	for attacker: PBAttacker in _attackers:
@@ -549,88 +544,13 @@ func _move_attackers() -> void:
 			continue
 		if attacker.can_reach(target.pos()):
 			continue
-		var leash: float = _leash_for(attacker, target)
+		var leash: float = PBMoveRules.leash_for(
+			attacker, target, _named_target(attacker), _attackers, _cfg
+		)
 		if attacker.shot_speed > 0.0:
-			_press_forward(attacker, target, leash)
+			PBMoveRules.press_forward(attacker, target, leash)
 		else:
-			_close_in(attacker, target, leash)
-
-
-## 这一 tick 这根皮带绳有多长。平时就是 [member PBAttacker.leash]，
-## **一种情形下松开**：目标已经站定（[member PBEnemy.engaged]），
-## 而且绳子够不着它。
-##
-## ## 为什么必须有这个例外
-##
-## 敌人一走进自己的射程就**永久站住**。它站的位置由「最靠前的那个忍者」决定，
-## 而忍者能走多远由**他自己的站位**决定 —— 两把尺子量的不是同一件事，
-## 于是很容易出现一个谁都够不着的位置。M5-8 之前的实测：一队全近战
-## （皮带绳顶到 0.65）对上停在 0.80 放枪的远程敌人，**105 秒、每人打出
-## 6 下、全灭** —— 屏幕上是四个忍者站成一排挨枪，一动不动。
-##
-## ## 为什么条件是「已经站定」，不是「够不着」
-##
-## 只看够不着的话，开波那一刻全部敌人都在 x≥1.0，近战忍者的活动范围
-## （0.67）本来就罩不住 —— 绳子当场松开，他会**冲向出怪点**，
-## 把自己送到远离远程队友的地方单挑整波。
-##
-## 站定的那个已经不动了，追它是一段有终点的路；迎面走来的那一群不是。
-func _leash_for(attacker: PBAttacker, target: PBEnemy) -> float:
-	if not target.engaged:
-		return attacker.leash
-	if attacker.home.distance_to(target.pos()) <= attacker.leash + attacker.reach:
-		return attacker.leash
-	# 松开就是彻底松开：够不着的那一截没有一个「多给一点」的自然长度，
-	# 给一个中间值只会把死局挪到下一个位置上，而现象一模一样。
-	return _cfg.field_diagonal()
-
-
-## 远程：**只在推进轴上前压**，压到刚好够得着为止。
-##
-## 不走二维是有意的：远程的射程圈本来就罩着大半条道，横着挪一步能多够到的人
-## 远比竖着挪多。让他们也追着敌人上下跑的话，一队远程会跟着最近的目标
-## 来回甩动，而那不是玩家排的阵型。
-##
-## ## 一个例外：纵向差本身就超出射程（M5-8）
-##
-## 那一档里**横着挪多远都够不着** —— 射程圈是个真圆（M4-a），
-## 纵向已经出圈的话 x 上没有任何一个点能把它收回来。
-##
-## 这一档在 M5-7 之前几乎不发生：敌人沿直线推进，每条泳道上迟早都有人走过。
-## 敌人改成扑向最近的活忍者之后，**整波会聚到前排那一个人身上** ——
-## 于是一个站在另一头的远程忍者，视野里从头到尾一个敌人都没有，
-## 全程站着不动、一发不放，直到前排倒下敌人才散开找他。
-##
-## 补法是掉头走 [method _close_in]（**二维靠过去，停在射程边缘**），
-## 而不是放开皮带绳：绳子仍然拴着，所以他挪的是自己那一格附近，
-## 不是横穿半个战场去接敌。
-func _press_forward(attacker: PBAttacker, target: PBEnemy, leash: float) -> void:
-	if absf(target.pos().y - attacker.pos.y) >= attacker.reach:
-		_close_in(attacker, target, leash)
-		return
-	# 二维之后「刚好够得着」要先扣掉纵向差的那一截，见 [method PBAttacker.reach_stop_x]。
-	var want: float = minf(attacker.reach_stop_x(target.pos()), attacker.home.x + leash)
-	attacker.pos.x = _step_toward(attacker.pos.x, maxf(want, attacker.home.x), attacker.move_speed)
-
-
-## 近战：**二维贴上去**，停在自己的接触距离上。
-##
-## 停在射程边缘而不是踩到对方身上：踩上去的话防挤会立刻把两边推开，
-## 而推开之后又够不着了 —— 整场战斗表现为近战在敌人身上来回抖。
-##
-## 皮带绳按**二维距离**量（[member PBAttacker.leash]）。放开它就等于
-## 「自由跑向敌人」，所有人挤到最前面接敌，§02 的射程梯度
-## （「场上稳定有人」的唯一来源，实测 1.7 → 6.0）就没了。
-func _close_in(attacker: PBAttacker, target: PBEnemy, leash: float) -> void:
-	var at := target.pos()
-	var gap: Vector2 = at - attacker.pos
-	var want: float = gap.length()
-	var stop: Vector2 = at if want <= 0.0 else at - gap / want * attacker.reach
-	var from_home: Vector2 = stop - attacker.home
-	var leashed: float = from_home.length()
-	if leashed > leash:
-		stop = attacker.home + from_home / leashed * leash
-	attacker.pos = attacker.pos.move_toward(stop, attacker.move_speed)
+			PBMoveRules.close_in(attacker, target, leash)
 
 
 ## 离 [param attacker] 最近的、已出场且活着的敌人。没有就返回 null。
@@ -644,6 +564,22 @@ func _close_in(attacker: PBAttacker, target: PBEnemy, leash: float) -> void:
 ##
 ## 代价是每个攻击者各扫一遍（10 × 48 ≈ 480 次比较/tick），
 ## 和 [method _enemies_attack] 那一遍同量级，不是新的数量级。
+##
+## ## 为什么「守得住的那个」优先（M6-q）
+##
+## 挑全场最近的那个，会挑中一个**站在皮带绳外面**的敌人 —— 而
+## [method _leash_for] 恰恰在「目标站定了且绳子够不着」时**整根松开**。
+## 那一松是个棘轮：判据量的是 `home`，而 `home` 不动，所以这一波剩下的
+## 时间里绳子再也收不回来；那个敌人死了之后他就地再挑一个，同样在绳外，
+## 于是继续放开。实测第 20 波那个近战 **210/271 tick 在绳外，离家 0.55
+## 而绳长 0.35** —— 屏幕上就是「追着怪一路跑出去」。
+##
+## 所以先在**自己守得住的范围**（`home` 半径 `leash + reach`）里挑，
+## 挑不到才退回全场最近的。退回那一档正是 M5-8 那个死局
+## （谁都够不着 → 全队站着挨打），它必须留着。
+##
+## 反过来说：**只要自己那一格还有活可干，就不许跑去帮别人打** ——
+## 而那也正是 §02 的射程梯度想要的站位。
 func _nearest_enemy(attacker: PBAttacker) -> PBEnemy:
 	# 玩家点名了就朝那个走（§02，M4-e）—— **哪怕现在够不着**，
 	# 那正是「点他」的意思。皮带绳照旧拴着，所以他不会横穿半个战场。
@@ -652,6 +588,10 @@ func _nearest_enemy(attacker: PBAttacker) -> PBEnemy:
 		return named
 	var best: PBEnemy = null
 	var best_gap: float = 0.0
+	# **守得住的那个优先。** 见下面那段注释。
+	var post: PBEnemy = null
+	var post_gap: float = 0.0
+	var post_reach: float = attacker.leash + attacker.reach
 	for i: int in range(_front, _enemies.size()):
 		var enemy: PBEnemy = _enemies[i]
 		if not enemy.has_spawned(_tick):
@@ -663,7 +603,11 @@ func _nearest_enemy(attacker: PBAttacker) -> PBEnemy:
 		if best == null or gap < best_gap:
 			best = enemy
 			best_gap = gap
-	return best
+		if attacker.home.distance_to(enemy.pos()) <= post_reach:
+			if post == null or gap < post_gap:
+				post = enemy
+				post_gap = gap
+	return post if post != null else best
 
 
 ## 玩家点名的那个敌人，**这一 tick 还算不算数**（活着、已出场）。不算就 null。
