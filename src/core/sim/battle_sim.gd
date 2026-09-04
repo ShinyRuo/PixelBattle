@@ -102,20 +102,26 @@ var _aim_policy: PBAimRules.Policy = PBAimRules.Policy.AUTO
 ## 手动档最多攒多少 tick 就得放。由 `ultimate_max_hold_seconds` 换算。
 var _max_hold_ticks: int = 0
 
-## 场上的减速与全队增伤（M3-d，§11 的一尾 / 五尾 / 二尾）。
+## 场上的减速（M3-d，§11 的一尾 / 五尾）。
 ##
-## **两个都是「场」的属性，不是单位的属性。** 减速存到每个敌人身上的话，
-## 减速期间新出场的敌人会漏掉它；增伤存到每个攻击者身上的话，
-## 每次生效和失效都要遍历改一遍缓存的每 tick 伤害。存在这里只有一份，
-## 到期就是一个下标比较。
+## **它是「场」的属性，不是单位的属性。** 存到每个敌人身上的话，
+## 减速期间**新出场**的敌人会漏掉它，而那只表现为
+## 「后半波怪走得比前半波快」，不报任何错。
 ##
-## **同类效果后来者覆盖前者**，不叠加也不取最强。当前一局只有一只尾兽、
-## 冷却 75 秒，两次同类效果不可能重叠；等 §09 的功能档进来真会重叠时，
-## 「怎么叠」是一个要有依据的设计决定，不该现在拍一个。
+## **后来者覆盖前者**，不叠加也不取最强。当前一局只有一只尾兽、冷却 75 秒，
+## 两次同类效果不可能重叠；等真会重叠时，「怎么叠」是一个要有依据的
+## 设计决定，不该现在拍一个。
+##
+## ## 全队增伤 M7-a 搬走了，减速没有
+##
+## 增伤原来是这旁边的一对 `_buff_scale` / `_buff_until`，现在是
+## 挂在每个 [member PBAttacker.buffs] 上的一份 [PBBuff] ——
+## 「全队增伤」于是变成「给每个人都挂一份」的那种特例，而不是另一套机制。
+##
+## 减速留在这里，因为上面那条理由今天仍然成立：**它要作用于还没出场的敌人。**
+## M7-d 给敌人挂个体减速时，两者相乘，而不是把这一份也搬过去。
 var _slow_scale: float = 1.0
 var _slow_until: int = -1
-var _buff_scale: float = 1.0
-var _buff_until: int = -1
 
 ## 队伍最前面那个还活着的敌人在 [member _enemies] 里的下标。
 ##
@@ -177,6 +183,9 @@ func step() -> void:
 		return
 	_tick += 1
 	_resolve_ultimates()
+	# **排在大招落地之后**：这一 tick 挂上的 buff 对这一 tick 的出手就生效，
+	# 和 M7-a 之前那对 `_buff_scale` / `_buff_until` 逐字一致。
+	_advance_buffs()
 	_move_attackers()
 	# **排在跑动之后**：目标是「他站定之后打得到谁」，跑动之前算的是上一帧的位置。
 	_aim_targets()
@@ -399,8 +408,14 @@ func _apply_field_effects(ult: PBUltimate) -> void:
 		_slow_scale = ult.slow_scale
 		_slow_until = _tick + ult.slow_ticks
 	if ult.buff_ticks > 0 and ult.team_damage_scale > 1.0:
-		_buff_scale = ult.team_damage_scale
-		_buff_until = _tick + ult.buff_ticks
+		# **一份 Dictionary 发给全队**，不是一人造一个：谁都不改
+		# [member PBBuffState.mods]，共用是安全的，而 §14 那条
+		# 「热路径不 `.new()`」在这里省的是十一次分配。
+		var boost: Dictionary = {PBBuffRules.DAMAGE_SCALE: ult.team_damage_scale}
+		for attacker: PBAttacker in _attackers:
+			attacker.buffs.add(
+				PBBuffRules.team_damage(), boost, _tick, ult.buff_ticks, 0
+			)
 	if not ult.reset_cooldowns:
 		return
 	for attacker: PBAttacker in _attackers:
@@ -414,9 +429,28 @@ func _speed_scale() -> float:
 	return _slow_scale if _tick <= _slow_until else 1.0
 
 
-## 这一 tick 的普攻伤害倍率。1.0 是正常，全队增伤生效期间大于 1。
-func _damage_scale() -> float:
-	return _buff_scale if _tick <= _buff_until else 1.0
+## 推进身上挂着的效果一个 tick（M7-a）：周期型该触发的触发，过期的腾出来。
+##
+## ## 清扫和触发合在一个循环里是安全的
+##
+## 过期的判据是 [method PBBuffState.is_live] 每次查询时比 tick，
+## **清扫只是回收槽位** —— 漏跑、早跑、晚跑都不可能改变任何结算结果
+## （见 [PBBuffBag] 顶部）。所以它不必单独占一趟遍历。
+##
+## ## 这里只做回复，不做伤害
+##
+## 回血回蓝改的是自己的量，结算完就完了；而**掉血要走
+## [method PBAttacker.take_damage] 那一整套**（阵亡记账、日志、`allies_lost`）。
+## 那条路 M7-d 给敌人接易伤时本来就要重走一遍，两次改同一处不如一次改完。
+func _advance_buffs() -> void:
+	for attacker: PBAttacker in _attackers:
+		for state: PBBuffState in attacker.buffs.states():
+			if not state.is_due(_tick):
+				continue
+			state.on_fired(_tick)
+			attacker.heal(float(state.mods.get(PBBuffRules.HEAL, 0.0)))
+			attacker.restore_mana(float(state.mods.get(PBBuffRules.MANA, 0.0)))
+		attacker.buffs.sweep(_tick)
 
 
 ## 把这一 tick 的伤害打出去。**每个攻击者各自选目标，互不共享伤害池。**
@@ -783,7 +817,7 @@ func _strike_single(attacker: PBAttacker) -> bool:
 	var target := _first_reachable(attacker)
 	if target == null:
 		return false
-	var damage: float = attacker.damage_per_shot() * _damage_scale()
+	var damage: float = attacker.strike_for(_tick)
 	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
 	if attacker.shot_speed <= 0.0:
 		_note_hit(attacker.slot, target.slot, damage, false)
@@ -824,7 +858,7 @@ func _first_reachable(attacker: PBAttacker) -> PBEnemy:
 ## 溢出必须结算：高 DPS 一 tick 能打死好几个，漏掉溢出会让战斗时长
 ## 被系统性拉长 —— 而这条路径存在的全部理由就是与解析式排队模型对拍。
 func _pour_damage(attacker: PBAttacker) -> bool:
-	var remaining: float = attacker.damage_per_shot() * _damage_scale()
+	var remaining: float = attacker.strike_for(_tick)
 	var hit: bool = false
 	var index: int = _front
 	while remaining > 0.0 and index < _enemies.size():
@@ -857,7 +891,7 @@ func _pour_damage(attacker: PBAttacker) -> bool:
 ## 那和大招的落点是同一个问题，而大招已经有一整套答案（[PBUltimate]）。
 ## 在角色表真的需要「会飞的范围普攻」之前，多一套实现只会多一处分叉。
 func _strike_area(attacker: PBAttacker) -> bool:
-	var damage: float = attacker.damage_per_shot() * _damage_scale()
+	var damage: float = attacker.strike_for(_tick)
 	if damage <= 0.0:
 		return false
 	var hits: int = 0

@@ -212,6 +212,16 @@ var aim_at: int = -1
 ## 所以 M3-a 那条对拍不受大招系统影响。
 var ultimate: PBUltimate = null
 
+## 他身上现在挂着的效果（§03A，M7-a）。**永远不为 null** ——
+## 空 bag 的合计值是不折不扣的中性值（率型 1.0、量型 0.0），
+## 所以「没有 buff」和「有一个什么都不改的 buff」在数值上不可区分，
+## 调用方因此不需要到处判空。
+##
+## **[method revive] 会清空它**：效果是**波内作用域**的，不跨波、不进 §12 的存档。
+## 跨波的东西已经有自己的字段（[member PBUltimate.carry_over_ticks]），
+## 把 buff 也做成跨波的会让「这一波我身上有什么」变成一个存档问题。
+var buffs: PBBuffBag = PBBuffBag.new()
+
 ## 一发打多少、隔几 tick 一发。由 [method prime] 从 [member dps] 与
 ## [member attack_speed] 换算，不要手写。
 ##
@@ -264,6 +274,9 @@ func clone() -> PBAttacker:
 	out.mp_regen = mp_regen
 	if ultimate != null:
 		out.ultimate = ultimate.clone()
+	# **不复制身上挂着的效果**，给一个空的 —— 和 `hp` 取 `max_hp` 同一条：
+	# 复制品是「一个刚站起来的他」，不是「他现在这个样子」。
+	out.buffs = PBBuffBag.new()
 	return out
 
 
@@ -285,6 +298,10 @@ func revive() -> void:
 	# 点名是一波一份（见 [member forced_target]）。
 	forced_target = -1
 	aim_at = -1
+	# 效果也是一波一份（见 [member buffs]）。**必须显式清** ——
+	# 攻击者对象会跨波、跨探测复用，不清的话上一场剩下的增伤会漏进这一场，
+	# 而那和这个函数顶上说的残血漏进下一场是同一个形状。
+	buffs.clear()
 
 
 ## 回一 tick 的蓝。上限封顶。
@@ -350,9 +367,42 @@ func prime(tick_rate: int) -> void:
 	_damage_per_shot = maxf(dps, 0.0) * float(_interval_ticks) / float(rate)
 
 
-## 一发打多少。
+## 一发打多少，**不算身上挂着的效果**。想要真伤害走 [method strike_for]。
 func damage_per_shot() -> float:
 	return _damage_per_shot
+
+
+## 这一 tick 他一发真打多少 —— 基数乘上身上的
+## [constant PBBuffRules.DAMAGE_SCALE]（M7-a）。
+##
+## ## 为什么读点在这里，不在 [PBBattleSim] 的三个调用处
+##
+## 出手在那边有三条路（单体、连续输出、范围），**漏乘一处的表现是
+## 「某一种攻击方式吃不到增伤」** —— 而那要盯着数字看很久才发现。
+## 放进类里就只有一个读点，和 §2.4 里 `hurt` 必须写进
+## [method PBEnemy.take_damage] 是同一条理由。
+##
+## M7-a 之前这件事是 [PBBattleSim] 上的一对 `_buff_scale` / `_buff_until`：
+## 一份、全场、后来者覆盖前者。搬进 bag 之后**每个人身上各一份**，
+## 而全场增伤只是「给每个人都挂一份」的那种特例。
+func strike_for(at_tick: int) -> float:
+	return _damage_per_shot * buffs.amount(PBBuffRules.DAMAGE_SCALE, at_tick)
+
+
+## 回血，上限封顶。**死人回不了** —— 复活是另一件事（[method revive]），
+## 而「回血能把倒下的人拉起来」会让 §03A 那条「一波之内的失误有真实代价」
+## 变成一句空话。
+func heal(amount: float) -> void:
+	if not is_targetable() or amount <= 0.0:
+		return
+	hp = minf(hp + amount, max_hp)
+
+
+## 回蓝，上限封顶。没有蓝条的单位（[member max_mp] 为 0）什么都不发生。
+func restore_mana(amount: float) -> void:
+	if max_mp <= 0.0 or not alive or amount <= 0.0:
+		return
+	mp = minf(mp + amount, max_mp)
 
 
 ## 隔几 tick 出一手。1 = 每 tick（连续输出那条退化路径）。
