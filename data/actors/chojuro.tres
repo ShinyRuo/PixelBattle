@@ -1,28 +1,32 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://d1h52d7h2rtql"]
 
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/attack_0.png" id="1_arsq0"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/attack_1.png" id="2_6yvco"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/attack_2.png" id="3_vcdq4"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/dead_0.png" id="4_si4xg"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/idle_0.png" id="5_fsl6a"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/idle_1.png" id="6_phn3t"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/run_0.png" id="7_gool4"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/run_1.png" id="8_dhct2"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/run_2.png" id="9_tk1tm"]
-[ext_resource type="Texture2D" path="res://assets/actors/chojuro/run_3.png" id="10_380c0"]
-[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="11_6ng08"]
+[ext_resource type="Texture2D" uid="uid://ds2gg4h5q6a82" path="res://assets/actors/chojuro/attack_0.png" id="1_6yvco"]
+[ext_resource type="Texture2D" uid="uid://btudl0qjlmadv" path="res://assets/actors/chojuro/attack_1.png" id="2_vcdq4"]
+[ext_resource type="Texture2D" uid="uid://d4nfs5b6axgeh" path="res://assets/actors/chojuro/attack_2.png" id="3_si4xg"]
+[ext_resource type="Texture2D" uid="uid://boxqafbhc78gw" path="res://assets/actors/chojuro/attack_3.png" id="4_fsl6a"]
+[ext_resource type="Texture2D" uid="uid://hkqa8b0fucic" path="res://assets/actors/chojuro/dead_0.png" id="5_phn3t"]
+[ext_resource type="Texture2D" uid="uid://dy2vs8kfwfpi6" path="res://assets/actors/chojuro/idle_0.png" id="6_gool4"]
+[ext_resource type="Texture2D" uid="uid://cydeht1hem4ex" path="res://assets/actors/chojuro/idle_1.png" id="7_dhct2"]
+[ext_resource type="Texture2D" uid="uid://bl2ssu88n5xri" path="res://assets/actors/chojuro/run_0.png" id="8_tk1tm"]
+[ext_resource type="Texture2D" uid="uid://cyx118k7dm2n7" path="res://assets/actors/chojuro/run_1.png" id="9_380c0"]
+[ext_resource type="Texture2D" uid="uid://be2v6pjffcos2" path="res://assets/actors/chojuro/run_2.png" id="10_6ng08"]
+[ext_resource type="Texture2D" uid="uid://cnr8lgbar01iy" path="res://assets/actors/chojuro/run_3.png" id="11_dxjxd"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="12_gqvum"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_dxjxd"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_b8nuw"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_arsq0")
+"texture": ExtResource("1_6yvco")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_6yvco")
+"texture": ExtResource("2_vcdq4")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3_vcdq4")
+"texture": ExtResource("3_si4xg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_fsl6a")
 }],
 "loop": 0,
 "name": &"attack",
@@ -30,7 +34,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4_si4xg")
+"texture": ExtResource("5_phn3t")
 }],
 "loop": 0,
 "name": &"dead",
@@ -38,10 +42,10 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_fsl6a")
+"texture": ExtResource("6_gool4")
 }, {
 "duration": 1.0,
-"texture": ExtResource("6_phn3t")
+"texture": ExtResource("7_dhct2")
 }],
 "loop": 1,
 "name": &"idle",
@@ -49,16 +53,16 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("7_gool4")
+"texture": ExtResource("8_tk1tm")
 }, {
 "duration": 1.0,
-"texture": ExtResource("8_dhct2")
+"texture": ExtResource("9_380c0")
 }, {
 "duration": 1.0,
-"texture": ExtResource("9_tk1tm")
+"texture": ExtResource("10_6ng08")
 }, {
 "duration": 1.0,
-"texture": ExtResource("10_380c0")
+"texture": ExtResource("11_dxjxd")
 }],
 "loop": 1,
 "name": &"run",
@@ -66,9 +70,9 @@ animations = [{
 }]
 
 [resource]
-script = ExtResource("11_6ng08")
+script = ExtResource("12_gqvum")
 key = &"chojuro"
-frames = SubResource("SpriteFrames_dxjxd")
+frames = SubResource("SpriteFrames_b8nuw")
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

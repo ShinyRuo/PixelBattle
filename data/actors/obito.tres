@@ -1,0 +1,98 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_0.png" id="1_6wuwf"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_1.png" id="2_ho1hd"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_2.png" id="3_il7tl"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_3.png" id="4_lipx0"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_4.png" id="5_iqxs8"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/dead_0.png" id="6_vm00u"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/dead_1.png" id="7_4bxgf"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/dead_2.png" id="8_xwwc8"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_0.png" id="9_cuvn8"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_1.png" id="10_ih00x"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_2.png" id="11_li8ph"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_3.png" id="12_4psn7"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/run_0.png" id="13_wsvwi"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/run_1.png" id="14_deh2n"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/run_2.png" id="15_b0jaw"]
+[ext_resource type="Texture2D" path="res://assets/actors/obito/run_3.png" id="16_h5jak"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="17_vf4oj"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_1xe5l"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_6wuwf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_ho1hd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_il7tl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_lipx0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_iqxs8")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_vm00u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_4bxgf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_xwwc8")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_cuvn8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_ih00x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_li8ph")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_4psn7")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_wsvwi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_deh2n")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_b0jaw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_h5jak")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("17_vf4oj")
+key = &"obito"
+frames = SubResource("SpriteFrames_1xe5l")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

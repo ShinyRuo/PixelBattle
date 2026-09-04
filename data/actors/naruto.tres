@@ -1,0 +1,86 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://8mic5klfejak"]
+
+[ext_resource type="Texture2D" uid="uid://bspxlb41yofyj" path="res://assets/actors/naruto/attack_0.png" id="1_rrvhp"]
+[ext_resource type="Texture2D" uid="uid://bk08dtg32dihi" path="res://assets/actors/naruto/attack_1.png" id="2_qefjr"]
+[ext_resource type="Texture2D" uid="uid://qvqugcxhnjov" path="res://assets/actors/naruto/attack_2.png" id="3_llf5s"]
+[ext_resource type="Texture2D" uid="uid://4qb2aigviteh" path="res://assets/actors/naruto/attack_3.png" id="4_m5510"]
+[ext_resource type="Texture2D" uid="uid://c3f6qfk54ei2f" path="res://assets/actors/naruto/dead_0.png" id="5_xjsdm"]
+[ext_resource type="Texture2D" uid="uid://dg6d47lr7cf4w" path="res://assets/actors/naruto/dead_1.png" id="6_fa2vs"]
+[ext_resource type="Texture2D" uid="uid://b1sk1cy6wg18k" path="res://assets/actors/naruto/idle_0.png" id="7_kxylh"]
+[ext_resource type="Texture2D" uid="uid://bmdvcuvrgers6" path="res://assets/actors/naruto/idle_1.png" id="8_gp6nd"]
+[ext_resource type="Texture2D" uid="uid://cnw88d5n4ydfc" path="res://assets/actors/naruto/idle_2.png" id="9_fig8b"]
+[ext_resource type="Texture2D" uid="uid://d0dbtxdgjdfao" path="res://assets/actors/naruto/run_0.png" id="10_5qrfy"]
+[ext_resource type="Texture2D" uid="uid://d0c271mqjuiv4" path="res://assets/actors/naruto/run_1.png" id="11_ii6xa"]
+[ext_resource type="Texture2D" uid="uid://1k2i577wciu6" path="res://assets/actors/naruto/run_2.png" id="12_6pu17"]
+[ext_resource type="Texture2D" uid="uid://omdbnvcdoqiq" path="res://assets/actors/naruto/run_3.png" id="13_q6itt"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="14_d453o"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_cr8fg"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_rrvhp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_qefjr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_llf5s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_m5510")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_xjsdm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_fa2vs")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_kxylh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_gp6nd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_fig8b")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_5qrfy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ii6xa")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_6pu17")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_q6itt")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("14_d453o")
+key = &"naruto"
+frames = SubResource("SpriteFrames_cr8fg")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0
