@@ -402,6 +402,33 @@ func _on_export() -> void:
 			% [anim, picked.size(), canvas.x, canvas.y]
 		)
 	await _rescan()
+	await _relink_if_needed(key)
+
+
+## 已经有形象表的角色，覆盖完一段要**顺手把表重生成一遍**。
+##
+## ## 为什么这一步不能等玩家按③
+##
+## [method PBActorForge.save_frames] 会删掉多出来的旧帧（这次挑 3 帧、
+## 上次挑 4 帧的话 `dead_3.png` 就没了），**而已经存在的图集还指着那一张**。
+## 中间这段时间项目是坏的：[PBActorLibrary] 每次读表都 `push_error`，
+## `tests/test_actor_data.gd` 全红，而屏幕上只是「那个角色还是白模」。
+##
+## 实测就是这么坏的：某个角色的 `dead` 段重导过一次，
+## 图集里留着一个 `ext_resource` 指向已经删掉的 `dead_3.png`。
+##
+## 四段一起导的那一版没有这个洞（表总是紧跟着重生成），
+## **是 M6-n 拆按钮拆出来的**。所以这里不是「②偷偷做了③的事」——
+## 是②必须维持它自己弄坏的那个不变量。表还不存在时什么都不做，
+## 那一档归③（那时四段可能还没齐，`link` 本来就该失败）。
+func _relink_if_needed(key: String) -> void:
+	if not ResourceLoader.exists("%s/%s.tres" % [_forge.data_dir, key]):
+		return
+	var err := _forge.link(key)
+	if err != "":
+		_say("[color=#e0a666]帧写好了，但形象表没跟上：%s[/color]" % err)
+		return
+	await _rescan()
 
 
 ## 新角色的第一趟：四段一把全出，帧全由算法挑（M6-o，玩家定的）。
