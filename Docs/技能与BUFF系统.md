@@ -1,0 +1,565 @@
+# 技能与 BUFF 系统
+
+M7 的规格。**还没开工**，这份文档是施工前的方案，不是实装记录。
+
+一句话：**把「大招」泛化成「技能」，并给单位一个身上挂着东西的地方。**
+
+玩家要的三件事：
+
+1. 忍者可以对**另一个忍者**放技能（远程施放 → 目标身上加一个瞬间回血）
+2. 通用施法流程：点技能格 → 不要目标就直接放；要单位目标就等他点一个；
+   要地面目标就和现在的大招一样
+3. buff 分**瞬间**与**持续**，参考 UE 的 GAS：有图标、影响属性、有特效
+
+---
+
+## 0. 六条已决策
+
+玩家拍的，下面全部按这个写：
+
+| # | 决策 | 影响到哪 |
+|---|---|---|
+| 1 | 施法时高亮的是**施法者** | §4.2 |
+| 2 | **敌人也吃 buff** | §2.4 第二张表、§2.8 |
+| 3 | 单体技能**不要飞行体** | §3.3 |
+| 4 | buff 显示**两样都留**（信息栏图标条 + 战场上的染色） | §4.4 |
+| 5 | 同名 buff 重复施放 = **刷新时长** | §2.5 |
+| 6 | 一个角色**最多两个**技能（大招之外） | §3.6 |
+
+---
+
+## 1. 三层，以及每层的边界
+
+| 层 | 回答什么 | 类 | 谁读它 |
+|---|---|---|---|
+| **效果层** | 「他身上现在有什么，因此他的攻/防/速是多少」 | `PBBuff` / `PBBuffState` / `PBBuffBag` / `PBBuffRules` | sim 的每个读点 |
+| **技能层** | 「这一发怎么放、落在谁身上、挂哪几个效果」 | `PBSkill` / `PBSkillCast` / `PBSkillRules` | `PBBattleSim` |
+| **操作层** | 「玩家点了哪一格、接下来那一下点击是什么意思」 | 泛化现有 `PBFieldPicker` / `PBCommandCard` | 渲染层 |
+
+**分层的判据不是「大招 vs 技能」，是「定义 / 这一波的状态 / 玩家的意图」。**
+
+今天 `PBUltimate` 把前两样混在一个类里 —— 那正是它需要一个
+「只带设定不带状态」的 `clone()` 外加一个 `reset()` 的全部原因。
+拆开之后这两样税自动消失。
+
+---
+
+## 2. 效果层（buff）
+
+### 2.1 三个类，对着 GAS 的三个概念
+
+| 本案 | GAS | 是什么 | 存哪 |
+|---|---|---|---|
+| `PBBuff` | `GameplayEffect` | **定义**，不可变，全局一份 | `data/buffs/*.tres` |
+| `PBBuffState` | `ActiveGameplayEffect` | **一份正在生效的**：到期 tick、谁给的 | 单位身上 |
+| `PBBuffBag` | `AbilitySystemComponent` 里聚合那一半 | 一个单位身上的全部 + 合计值 | `PBAttacker` / `PBEnemy` |
+
+**`PBBuffBag` 不认识 `PBAttacker`，也不认识 `PBEnemy`** —— 它收裸值、返回裸值。
+和 [PBActorPose] 同一条规矩：敌我两边字段名不同，收裸值才能一份实现两处用。
+两套的话「减速的判定」迟早在两边分叉，而那不报错。
+
+### 2.2 三档时长
+
+| 档 | 进不进 bag | 语义 | 例 |
+|---|---|---|---|
+| `INSTANT` | **不进** | 当场改一次量，然后就没了 | 回血、回蓝、直接伤害 |
+| `DURATION` | 进 | 在窗口内改「率」 | 5 秒 +30% 攻、3 秒 −50% 移速 |
+| `PERIODIC` | 进 | 窗口内每 N tick 触发一次 `INSTANT` | 持续回血、中毒 |
+
+> **持续回血是「周期性的瞬间回血」，不是一个修饰符。**
+> 分不清这一条的话，回血会被写成「血上限 +X」那一类，
+> 而它一过期血就掉回去 —— 那不是治疗，那是护盾，而且是一个坏护盾。
+
+### 2.3 核心不变量：持续效果永远不写回基础字段
+
+```
+瞬间效果改的是「量」（hp / mp）      —— 写进字段
+持续效果改的是「率」（倍率 / 加值）  —— 永远不写字段，只在用的那一刻问一次
+```
+
+反过来（上 buff 时 `dps *= 1.3`，过期时 `dps /= 1.3`）看起来更省，但：
+
+- 浮点乘除不可逆，几十次上下之后基础值会漂
+- 两个 buff 重叠时**先后顺序开始有意义**，而那说不清
+- 期间基础值本身变了（装备重算、羁绊重建）就永久错位
+- **三条全都不报错**，只表现为「这个人打着打着好像变弱了」
+
+所以是 `damage_per_shot() * bag.scale(DAMAGE)`，在开火那一行乘，不在别处。
+这个项目为「同一件事两把尺子」付过四次代价，这一条是同一个形状。
+
+### 2.4 词汇表
+
+和 [PBBondFunctionRules] 的 `ALL` 同一套：一份 const 键表，加载时校验，
+**拼错的键当场报错**。静默什么都不发生的话，从现象反推不出来。
+
+**己方（挂在 `PBAttacker` 上）**
+
+| 键 | 落在哪个读点 | 多份怎么合 | v1 |
+|---|---|---|---|
+| `heal` | `hp`，上限封顶 | 累加 | ✅ |
+| `mana` | `mp`，上限封顶 | 累加 | ✅ |
+| `shield` | `take_damage` 先扣盾 | 累加 | ✅ |
+| `damage_scale` | `damage_per_shot()` | **连乘** | ✅ |
+| `defence_add` | `PBStatRules.strike_damage` 的 defence | 累加 | ✅ |
+| `attack_speed_scale` | `attack_interval()` | 连乘 | v2 |
+| `move_speed_scale` | `PBMoveRules` | 连乘 | v2 |
+| `reach_scale` | `can_reach` / `stop_gap` | 连乘 | v2 |
+| `mp_regen_scale` | `regen_mana` | 连乘 | v2 |
+| `cooldown_scale` | `PBSkillCast` | 连乘 | v2 |
+
+**敌方（挂在 `PBEnemy` 上）**
+
+**不是把上面那张表照搬过来** —— `PBEnemy` 压根没有 `defence` 字段
+（`take_damage(amount)` 直接扣血），也没有蓝、没有射程档。
+它要的是另外四个：
+
+| 键 | 落在哪个读点 | 多份怎么合 | v1 |
+|---|---|---|---|
+| `hurt` | `take_damage` 内部乘一次（易伤） | 连乘 | ✅ |
+| `enemy_speed_scale` | `advance` / `march_to` 内部（个体减速、定身） | 连乘 | ✅ |
+| `harm` | `take_damage`（瞬间/周期伤害，中毒灼烧） | 累加 | ✅ |
+| `enemy_damage_scale` | `_enemies_attack` 出手那一行（削弱） | 连乘 | v2 |
+
+> **`hurt` 必须在 `PBEnemy.take_damage` 里面乘，不在调用方。**
+> 调用方有五处（单体、AOE、连续输出、子弹命中、大招落地），
+> 而漏乘一处的表现是「某一种攻击方式吃不到易伤」——
+> 要盯着日志看很久才发现。放进类里就只有一个读点。
+>
+> 同理 `enemy_speed_scale` 放在 `advance` / `march_to` 里面，
+> 不在 `_advance_and_leak` 的三个调用点上各乘一遍。
+
+**v1 己方砍到五个、敌方砍到三个是有意的**：每个键就是一个读点，
+而一个读点漏乘的表现是「这个 buff 好像没用」，不报错。
+这八个够覆盖医疗忍术 + 增伤 + 护盾 + 易伤 + 单体控。
+
+> `attack_speed_scale` 单独说一句（v2 才做，但形状现在就定）：
+> 间隔是 `prime()` 缓存的，所以 buff 要在 `attack_interval()` 的**返回值**上乘，
+> 不是回去改缓存。副作用是「buff 在两发之间过期」不追溯上一发 ——
+> 那是对的，出手节奏在开火那一刻就定了。
+
+### 2.5 叠加：只做「刷新」（决策 5）
+
+| 策略 | 语义 | 做不做 |
+|---|---|---|
+| `REPLACE` | 同一个 buff id 只留一份，重复施放**取较长的到期 tick** | ✅ |
+| `STACK` | 叠层，`max_stacks` 封顶 | ❌ |
+| `INDEPENDENT` | 每次各一份，各自计时 | ❌ |
+
+和项目已记录的立场一致 —— `PBBattleSim._slow_scale` 那里写着：
+「等真会重叠时，怎么叠是一个要有依据的设计决定，不该现在拍一个」。
+
+键是 **buff id 单独**，不是 `(buff id, 施法者)`。代价说清楚：
+两个医疗忍者给同一个人上同一个持续回血会互相覆盖。角色数少，先这样；
+要改就是把键换成二元组，`PBBuffBag` 内部的事，外面一行不动。
+
+### 2.6 容量：满了顶掉剩余时间最短的那个
+
+bag 的槽位数**固定**（暂定 6），随对象池一起预分配 —— §14 那条
+「热路径不 `.new()`」，48 个敌人 × 20 tick/s 的规模下这笔开销很实在。
+
+满了之后**顶掉剩余时间最短的那一个**，不是丢掉新来的那个。
+丢新的话表现是「我上的 debuff 没生效」，而它不报错；
+顶掉最短的至少保证「刚放的技能一定看得见效果」。
+
+### 2.7 过期：查询是真相，清扫只是回收
+
+```
+bag.scale(key) 遍历时按 tick 过滤   ← 真相
+每 tick 末尾扫一遍删掉死条目        ← 只是回收槽位和 UI 行
+```
+
+**漏跑一次清扫不可能改变任何结算结果。** 反过来（删除即真相）的话，
+清扫的时机、顺序、和暂停的关系全都变成正确性问题。
+现有的 `_speed_scale()` / `_damage_scale()` 就是这个写法，照抄。
+
+### 2.8 tick 顺序，以及敌人那一侧的两条坑
+
+`step()` 现在是八步，插两处：
+
+```
+_tick += 1
+_resolve_skills()      ← 原 _resolve_ultimates；技能落地 = buff 挂上
+_tick_buffs()          ← PERIODIC 那一档在这里触发（回血、中毒）
+_move_attackers()
+_aim_targets()
+_advance_shots()
+_deal_damage()         ← 读 bag.scale(damage_scale)
+_enemies_attack()      ← 读 bag.scale(defence_add) 和护盾
+_advance_and_leak()    ← 读 bag.scale(enemy_speed_scale)
+_separate()
+_sweep_buffs()         ← 纯回收
+```
+
+**这一 tick 挂上的 buff 对这一 tick 的出手生效** —— 和现有全场增伤
+（`_buff_until = _tick + ticks`，读的时候 `_tick <= _buff_until`）一致。
+
+#### 坑一：敌人是对象池复用的，`spawn()` 必须清 bag
+
+不清的话上一波的减速会漏进这一波，表现是「后半局的怪好像变慢了」。
+**这和代码里已经记着的「大招冷却漏进下一场」是同一个形状**
+（`PBUltimate.reset()` 顶上那段），而它同样不报错。
+
+#### 坑二：全场减速和个体减速是两个东西，都要留着
+
+`PBEnemy.advance` 顶上写着：
+
+> 它是个参数而不是敌人身上的一个字段，因为减速是**场的属性**不是单位的属性
+> —— 存到每个敌人身上的话，新出场的敌人会漏掉当前正生效的减速。
+
+那条理由今天仍然成立，所以**全场那一份不动**。个体减速是新加的一层，
+两者**相乘**：
+
+```
+实际速度 = speed × 全场 speed_scale × 个体 bag.scale(enemy_speed_scale)
+```
+
+一条测试钉着这个乘法：全场定身（0.0）期间再上一个个体减速，速度仍是 0。
+
+### 2.9 现成的第一个客户
+
+M3-d 那个全场增伤 `_buff_scale` / `_buff_until` **改成走 bag**（挂在每个攻击者身上）。
+
+这不是顺手重构，是**唯一一条能验证 bag 是对的路**：它有一批既有测试钉着，
+改完必须逐位还绿。全场减速 `_slow_scale` 不动，理由见上。
+
+---
+
+## 3. 技能层
+
+### 3.1 定义与状态拆开
+
+```gdscript
+# PBSkill —— Resource，data/skills/*.tres，不可变
+id, name_key, icon_key
+anim_key                                  # 对上已有的 PBActorSkin.skill_anims
+target: Target                            # 玩家要点什么
+affects: Side                             # 结算落在哪一边
+cooldown_seconds, delay_seconds, mp_cost
+radius, max_targets
+power_mult, element_override              # 伤害 = 施法者战力 × power_mult
+on_hit:  Array[StringName]                # 命中目标挂哪几个 buff
+on_self: Array[StringName]                # 施法者自己挂哪几个
+# 外加现有那五个全场字段（gather / knockback / slow / team_damage / reset_cd）
+```
+
+```gdscript
+# PBSkillCast —— RefCounted，一波一份，战斗结束就扔
+skill: PBSkill
+ready_at: int
+spot: Vector2        # GROUND 档的待落地落点，沿用 NO_SPOT 哨兵
+target_slot: int     # ALLY / ENEMY 档锁定的那一个
+lands_at: int
+```
+
+### 3.2 目标与影响是**两根轴**，不是一个枚举
+
+| `target`（点什么） | `affects`（落在谁） | 组合出来是什么 |
+|---|---|---|
+| `NONE` | ALLIES | 自增益 / 全队增益，点一下就放 |
+| `NONE` | ENEMIES | 全场打击 |
+| `ALLY` | ALLIES | **医疗忍术** |
+| `ENEMY` | ENEMIES | 单体爆发、单体控 |
+| `GROUND` | ENEMIES | **现在的大招** |
+| `GROUND` | ALLIES | 团队治疗圈 |
+
+合成一个枚举的话「地面范围治疗」表达不出来，而那是治疗系角色第二个技能的
+自然形态 —— 也就是决策 6 里那两格中的一格。
+
+**没有 `SELF` 这一档**：自增益就是 `target = NONE` + `on_self`。
+两种写法表达同一件事就是两把尺子。
+
+数据断言：`target == ALLY ⇒ affects == ALLIES`，`target == ENEMY ⇒ affects == ENEMIES`。
+
+### 3.3 施法延迟只对 `GROUND` 有意义（决策 3）
+
+施法延迟存在的**全部理由**是 §02 的预判窗口（`PBUltimate` 顶上写着，
+那两条分层验收全建在它上面）。而锁定单体的技能没有预判可言 ——
+目标跟着走，落点也跟着走。
+
+所以：**`target != GROUND` 时 `delay_seconds` 必须为 0**，写成数据测试的一条断言。
+允许非 0 的话「飞行途中目标死了怎么办」「飞行途中目标跑出射程怎么办」
+两个问题要现在回答，而它们没有依据。
+
+玩家已经拍了不要飞行体，所以这一条同时是决策 3 的落点。
+视觉上要不要画一道光弧是**渲染层的事，且它不参与判定** ——
+那是 `PBProjectile` 顶上那条「渲染层画一道假弹道是便宜的，但它会撒谎」的另一面：
+不撒谎的前提是它不声称自己有飞行时间。
+
+### 3.4 大招归位：留在 `PBSimConfig`，不下沉到 `.tres`
+
+大招 = **每个角色的 0 号技能**，仍由 `PBCombatRules._build_ultimate` 按
+`PBSimConfig` 生成，一个数不动。角色表里的 `skill_ids` 是**额外**的。
+
+理由用项目自己记下来的那一条（`PBCharacter.reach` 的注释）：
+
+> 具体距离是要扫的参数，写在 `PBSimConfig` 里才扫得动；
+> 写进 30 个 `.tres` 等于把可调参数散进数据文件。
+
+界线因此很清楚：**全 30 个角色共用的那一份走配置，逐角色独有的走 `data/skills/`。**
+
+`PBBondFunctionRules.apply_to_ultimate` 与 `PBBeastRules` 照旧写 0 号技能，
+一行不用改 —— `PBSkill` 保留它们用的那五个字段。
+
+### 3.5 门槛只有一份
+
+```gdscript
+PBBattleSim.can_cast(attacker, skill_index) -> bool   # 活着 / 冷却好了 / 蓝够
+PBBattleSim.cast_skill(attacker, skill_index, order) -> bool
+```
+
+指令卡那一格的亮/灰读 `can_cast`，点下去走 `cast_skill`，
+而 `cast_skill` 第一行**再问一次** `can_cast`。
+各写一份的话「按钮亮着但点了没反应」迟早出现 —— 现有的
+`cast_ultimate` / `can_cast` 已经是这个写法，照抄。
+
+**冷却和蓝两道门槛都保留**，理由沿用 `PBUltimate.mp_cost` 顶上那段：
+冷却管「多久来一次」，蓝管「连着放几发」，只有冷却的话智力没有用途。
+
+### 3.6 一个角色最多两个（决策 6），正好接上 §08 的稀有度阶梯
+
+`PBCharacter.skill_ids: Array[StringName]`，**长度上限 2**，数据测试钉着。
+
+把大招数进去之后，它和 §08 那张表严丝合缝：
+
+| 稀有度 | §08 写的技能数 | 本案怎么兑现 |
+|---|---|---|
+| R | 1 | 大招 |
+| SR | 2 | 大招 + 1 |
+| SSR | 3 | 大招 + 2 |
+| USR | 3 + 专属机制 | 大招 + 2 + 羁绊功能档 / 尾兽那套词汇 |
+
+**这不是巧合凑出来的** —— §08 那句「稀有度剩下的价值走技能数，不走数值」
+本来就要一个技能表来承接，而它从 M2-a 起一直空着
+（`PBCharacter` 顶上「已知的省略」第一条）。
+
+### 3.7 结算放新文件
+
+`battle_sim.gd` 现在 **938 / 1000 行**。技能结算（挑目标、圈人、挂 buff、
+全场效果）进 **`src/core/rules/skill_rules.gd`**，和已有的两块对称：
+
+| 类 | 答什么 |
+|---|---|
+| `PBTargetRules` | 敌人该打哪个己方单位 |
+| `PBMoveRules` | 己方单位该往哪儿走 |
+| **`PBSkillRules`** | **这一发技能落在谁身上** |
+
+`PBBattleSim` 只留「什么时候调它」和状态推进。
+
+---
+
+## 4. 操作与表现
+
+### 4.1 状态机泛化
+
+现在是 `PBFieldPicker.Aim { OFF, TARGET, ULTIMATE }`。改成：
+
+```gdscript
+enum Aim { OFF, TARGET, SKILL }
+var aim_skill: int = -1     # SKILL 档时，是 0 号还是几号技能
+```
+
+**接下来那一下点击是什么意思，由那个技能自己的 `target` 决定** —— 一把尺子。
+
+加成 `SKILL_ALLY` / `SKILL_GROUND` / `SKILL_ENEMY` 三个枚举值的话就有两份真相
+（枚举值和技能表），而它们可以分叉。这和那个枚举顶上原来那句
+「两个 bool 就有四种组合，其中『两个都开』是个说不清的状态」是同一条道理。
+
+`target = NONE` 的技能**不进这个状态机**：点一下就放完了。
+
+取消三条路照旧：**右键 / `Esc` / 再点一次那一格**。
+
+### 4.2 高亮（决策 1）
+
+高亮的是**正在施法的那个忍者**。它解决的是
+「我按了技能之后视线回到战场，忘了是谁在放」——
+地面技能也要它，而地面技能没有「候选目标」可高亮。
+
+`target = ALLY` 时**另加一档**：可选目标脚下画一圈淡环。
+不加的话玩家不知道能不能点已经倒下的人、能不能点自己。
+这一档和施法者高亮**不同色** —— 理由和 `PBAimLines` 的 A/B/C 三色一样：
+一个是既成事实，一个是等你点。
+
+虚线跟着加一条：`PBAimLines` 现有 B（红，等你点敌人）/ C（橙，等你点落点），
+加 **D（青，等你点友军）**。
+
+### 4.3 指令卡
+
+3×3 九格，战斗中现在只用 3 格。加上最多两个技能之后是 5 格：
+
+```
+[攻击]     [自动选敌]   [忍术]
+[技能 1]   [技能 2]     [      ]
+```
+
+- 忍术留在第 2 格不动 —— 肌肉记忆。
+- 格子上写**短的**：技能名两三个字 + 冷却剩余秒数。
+  冷却中是灰的，不是点了没反应（后者玩家分不清「还没好」和「我点歪了」）。
+- 长句进 `PBTooltip`，走已有的悬停 → `_hint` 那条路。
+  提示行预算 **22 个汉字**（`PBCommandCard.HINT_BUDGET`），不够就上 tooltip。
+
+### 4.4 buff 显示（决策 4：两样都留）
+
+#### 先说一条几何事实：头顶放不下
+
+```
+FIELD_TOP        = 34
+SPRITE_HEADROOM  = 64          ← 已经是算出来的天花板
+GROUND_TOP       = 34 + 64 = 98
+人物身高          = 60（M6-m 定的）
+最后一排那个的头  = 98 − 60 = 38
+可用             = 38 − 34 = 4 像素
+```
+
+§02 第 8 点那句「头顶名字/等级/buff」在当前几何下**做不到**，
+除非改配平（压 `field_height` 或撑大 B）—— 那是数值回归的事。
+
+#### 所以是这两处
+
+**一、信息栏 H 的图标条**
+
+`H_INFO = Rect2(222, 260, 168, 94)`，正文右边界在 x 偏移 162。
+血蓝条现在从偏移 42 起、宽 96，右端到 138，只剩 24 像素。
+
+**把两条从 96 缩到 76**（右端 118），腾出 118..162 共 44 像素：
+
+```
+图标条  x 偏移 122 .. 162（40 宽）
+        y 偏移  20 ..  30（10 高，压在两条中间）
+        4 格，10×10，pitch 10
+        超过 4 个时最后一格变成「+N」
+```
+
+条从 96 缩到 76 仍然读得出比例（那是一条百分比条，不是刻度尺）。
+
+**正文五行一行不动** —— 属性 / 力敏智 / 攻防元素 / 射程装备 / 羁绊。
+M6-j 刚为第五行付过账（上下各收 2 像素买回一整行），
+而 58 像素高**装不下第六行**：每行会掉到 9.6 像素，而 8 号字的行高要 11。
+
+**二、战场上的染色**
+
+`PBBuffBag` 里有增益就在人身上描一圈暖色、有减益就冷色，一帧一次查询。
+**不占垂直空间**，所以不受上面那条几何限制。
+
+它和图标条分工明确：染色回答「**谁**身上有东西」（一眼扫全场），
+图标条回答「**是什么、还剩多久**」（选中之后才问）。
+
+### 4.5 特效
+
+现在是白模 + 代码画的美术阶段（`PBIconArt` / `PBWhiteModel` 那条路），
+所以特效也是代码画的：
+
+| 时机 | 画什么 | 复用谁 |
+|---|---|---|
+| 施法瞬间 | `skill_anims` 那一段 + 一圈扩散的环 | `PBActorSkin` 已支持；环走新的 `PBSkillFxPool`，与 `PBTelegraphPool` 同构 |
+| 命中瞬间 | 目标身上闪一次色（回血用绿） | `PBHitFeedback` |
+| 持续期间 | 单位描边染色 | §4.4 |
+
+**特效一律不参与判定。**
+
+---
+
+## 5. 数据布局
+
+```
+data/skills/*.tres     PBSkill    —— 逐角色的技能
+data/buffs/*.tres      PBBuff     —— 效果定义
+src/data/skill_loader.gd          —— ResourceLoader 被 core 纯度检查挡着
+src/data/buff_loader.gd
+```
+
+铁律 5：`data/` 里可以叫 `medical_ninjutsu`，**`src/` 一个角色名都不出现**。
+`test_character_data.gd` 扫整个 `src/`，**注释也算**（实测被它拦下过），
+所以代码里举例一律写 `<id>`。
+
+新类落点：
+
+```
+src/core/sim/buff.gd          PBBuff        (Resource)
+src/core/sim/buff_state.gd    PBBuffState   (RefCounted)
+src/core/sim/buff_bag.gd      PBBuffBag     (RefCounted)
+src/core/rules/buff_rules.gd  PBBuffRules   (static)
+src/core/sim/skill.gd         PBSkill       (Resource)
+src/core/sim/skill_cast.gd    PBSkillCast   (RefCounted)
+src/core/rules/skill_rules.gd PBSkillRules  (static)
+src/view/buff_strip.gd        PBBuffStrip
+src/view/skill_fx_pool.gd     PBSkillFxPool
+```
+
+`PBBuff` / `PBSkill` `extends Resource` 不违反铁律 1 —— 和 `PBCharacter` 一样：
+不是 Node、不碰场景树、不读 delta。被 core 纯度检查挡住的是 `ResourceLoader`，
+所以「加载 `.tres`」这件事发生在 `src/data/`。
+
+---
+
+## 6. 安全属性
+
+### 落地那一刻，全部既有配平数字一个不动
+
+**因为没有任何角色的 `skill_ids` 非空。**
+
+和 M3.5-f 把装备交给玩家时那条「空着 = 和 M3-c 到 M3.5-e 一字不差」
+完全同形，也是它敢在数值回归之前落地的全部理由。
+加技能是**改 `data/`**，那时才动数字。
+
+`test_skill_data.gd` 第一条锁着这个：空技能表的一局与不带技能系统逐字段一致。
+
+### 批量扫描不吃技能
+
+`PBStrategy` 里没有玩家，而技能是手动放的。
+和 `_aim_policy` 一样 —— 画面走手动、扫描走自动档；
+**v1 扫描那一路一个技能都不放**。给手机端做自动施法是 v2 的事，
+那时它是 `PBAimRules` 的兄弟，不是第二套。
+
+### buff 不进存档
+
+战斗是一波一场，`PBAttacker.revive()` 每波满血满蓝复活，
+所以 buff 是**波内作用域**的，不跨波、不进 §12 的存档。
+尾兽冷却那种跨波的东西已经有它自己的字段（`carry_over_ticks`），
+不要把 buff 也塞成跨波的 —— 那会让「这一波我身上有什么」变成一个存档问题。
+
+### 不引入新的 RNG
+
+三条流（gacha / quest / combat）一条都不动。技能与 buff 全部确定性，
+同种子两局逐 tick 一致 —— 一条测试钉着。
+
+---
+
+## 7. 分步与验收
+
+| 步 | 做什么 | 验收（功能，不是数值） |
+|---|---|---|
+| **M7-a** | 效果层四个类；把 M3-d 全场增伤改成走 bag | 既有增伤测试逐位还绿；「持续效果过期后 `dps` 逐位等于原值」；「不跑清扫也必须过期」 |
+| **M7-b** | `PBUltimate` 拆成 `PBSkill` + `PBSkillCast`；`PBSkillRules` 接结算 | `test_ultimate.gd` 那批**一字不改**还绿；同种子两局逐 tick 一致 |
+| **M7-c** | 两根轴；`ALLY` / `NONE` 两档接上 sim | 「目标死了 → 空放不崩」；「`target != GROUND` ⇒ `delay == 0`」数据断言 |
+| **M7-d** | 敌人那一侧：`PBEnemy` 挂 bag、`spawn()` 清、全场 × 个体相乘 | 「上一波的减速不许漏进下一波」；「全场定身期间再上个体减速，速度仍是 0」 |
+| **M7-e** | 操作层：状态机泛化、施法者高亮、候选环、D 线、指令卡两格 | 「按钮亮 ⇔ 放得出」；推真事件的点击测试（装自己的 `SubViewport`，否则先被 GUT 的面板吃掉） |
+| **M7-f** | 表现：血蓝条缩到 76 + 图标条、染色、`PBSkillFxPool`、`skill_anims` | `test_layout.gd` 全绿（新控件不许出界） |
+| **M7-g** | 数据：`data/buffs/` 几个基础效果 + 给一个角色配医疗忍术 | 真跑一局，肉眼确认 |
+
+每一步 `.\scripts\check.ps1` 退出码 0。
+
+**顺序不能换的两处**：`a` 必须在 `c` 之前（技能要有东西可挂），
+`b` 必须在 `e` 之前（指令卡要按技能表画格子）。
+`d` 可以和 `c` 并行，它们不碰同一批文件。
+
+---
+
+## 8. 已知缺口
+
+### 治疗在 `PBValuation` 里没有定价
+
+一个回血技能值多少 = **它挡掉了多少伤害**，而现有估值口径里没有这个维度
+（`PBValuation` 数的是 DPS 与羁绊）。
+
+不影响 v1（扫描不放技能），但配一个治疗角色进 `data/` 的那一天，
+比价会**看不见他的价值** —— 表现是模拟玩家永远不买他，
+而那会让他在全部扫描结论里显示成一张废卡。归数值回归。
+
+### 头顶 buff 图标要等几何松动
+
+见 §4.4。压 `field_height` 或撑大 B 都改配平，归数值回归。
+
+### 自动施法（手机端）没做
+
+§02 的分层验收（手动比自动强 15–25%）只覆盖大招落点那一维。
+技能加进来之后那条验收要不要跟着扩，得先有一批真技能才谈得上。
