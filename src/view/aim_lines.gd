@@ -179,6 +179,8 @@ func sync(
 				cast_px = cast.skill.radius * PBLayout.px_per_unit(field)
 			elif tier == PBSkill.Target.ALLY:
 				_gather_allies(picks, battle, field)
+			elif tier == PBSkill.Target.ENEMY:
+				_gather_enemies(picks, battle, field)
 	var orders := PackedVector2Array()
 	var tiers := PackedInt32Array()
 	_gather_orders(orders, tiers, battle, field)
@@ -234,6 +236,19 @@ static func _gather_allies(
 	for attacker: PBAttacker in battle.attackers():
 		if attacker.slot >= 0 and attacker.is_targetable():
 			out.append(PBLayout.to_screen(attacker.pos, field))
+
+
+## 点敌人那一档下点得中的那几个（[constant PBSkill.Target.ENEMY]，M8-b）。
+##
+## **判据是 [method PBEnemy.is_active]，和 [method PBFieldPicker.enemy_at] 那道门
+## 读同一份** —— 各写一份的话会画出一圈「看着能点、点了没反应」的候选，
+## 而那正是这一层要消灭的猜测（同 [method _gather_allies]）。
+static func _gather_enemies(
+	out: PackedVector2Array, battle: PBBattleSim, field: Vector2
+) -> void:
+	for enemy: PBEnemy in battle.enemies():
+		if enemy.is_active(battle.current_tick()):
+			out.append(PBLayout.to_screen(enemy.pos(), field))
 
 
 ## 一个忍者的 A 线，有目标才收进 [param out]（两个点一对）。
@@ -337,12 +352,15 @@ func _draw() -> void:
 		return
 	if _mode != PBFieldPicker.Aim.SKILL:
 		return
-	if _tier == PBSkill.Target.ALLY:
-		draw_dashed_line(_from, _cursor, LINE_ALLY, WIDTH, DASH)
+	if _tier == PBSkill.Target.ALLY or _tier == PBSkill.Target.ENEMY:
+		# **点敌人那一档用橙线，不是「攻击」那条红线**（M8-b）：红说的是
+		# 「这一下是改打谁」（一个偏好），橙说的是「这一发技能落在谁身上」
+		# —— 两件事同时都在等一下点击，同色的话玩家分不出自己按的是哪一格。
+		var hue := LINE_ALLY if _tier == PBSkill.Target.ALLY else LINE_CAST
+		var edge := CANDIDATE_EDGE if _tier == PBSkill.Target.ALLY else CAST_EDGE
+		draw_dashed_line(_from, _cursor, hue, WIDTH, DASH)
 		for at: Vector2 in _candidates:
-			draw_polyline(
-				PBLayout.ground_disc(at, CANDIDATE_PX, SEGMENTS), CANDIDATE_EDGE, WIDTH
-			)
+			draw_polyline(PBLayout.ground_disc(at, CANDIDATE_PX, SEGMENTS), edge, WIDTH)
 		return
 	if _tier != PBSkill.Target.GROUND:
 		return

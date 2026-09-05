@@ -149,5 +149,11 @@ static func land(
 	if cast.skill.target == PBSkill.Target.ALLY:
 		battle.cast_skill_on(live, picker.ally_at(battle, spot, field, pick), picker.aim_skill)
 		return
+	if cast.skill.target == PBSkill.Target.ENEMY:
+		# 点敌人那一档（M8-b，火球术那一类）。**和「攻击」共用同一份命中判定**
+		# （[method PBFieldPicker.enemy_at]）—— 各写一份的话「点得中谁」
+		# 在两条路上会分叉，而玩家分不出自己点的是哪一条。
+		battle.cast_skill_at(live, picker.enemy_at(battle, spot, field, pick), picker.aim_skill)
+		return
 	if cast.skill.target == PBSkill.Target.GROUND:
 		battle.cast_skill(live, spot, picker.aim_skill)

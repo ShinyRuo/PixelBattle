@@ -308,7 +308,7 @@ func _resolve_ultimates() -> void:
 			# 已经下达的照样落地，哪怕施法者中途死了 —— 技能已经出手了。
 			# 那是 §02 施法延迟的直接后果，也是「预判」这件事的对称代价。
 			if cast != null and cast.is_pending() and _tick >= cast.lands_at:
-				_land_skill(cast)
+				_land_skill(attacker, cast)
 	for attacker: PBAttacker in _attackers:
 		attacker.regen_mana()
 	for attacker: PBAttacker in _attackers:
@@ -365,6 +365,17 @@ func cast_skill_on(attacker: PBAttacker, target: PBAttacker, index: int = 0) -> 
 	)
 
 
+## 玩家亲手把一发技能放在**一个敌人**身上（[constant PBSkill.Target.ENEMY]，M8-b）。
+##
+## 这一档 M7-c 就有合法形状，但一直没有入口 —— 火球术那一类
+## （[member PBSkill.shot_cross_seconds] 不为 0）落地时才需要它。
+func cast_skill_at(attacker: PBAttacker, enemy: PBEnemy, index: int = 0) -> bool:
+	var slot: int = -1 if enemy == null else enemy.slot
+	return _orders.place(
+		_attackers, _attackers.find(attacker), index, PBSkillCast.NO_SPOT, slot, _tick
+	)
+
+
 ## 玩家亲手放一发**不需要挑目标**的技能（[constant PBSkill.Target.NONE]，M7-c）。
 func cast_skill_now(attacker: PBAttacker, index: int = 0) -> bool:
 	return _orders.place(
@@ -415,8 +426,16 @@ func _order(attacker: PBAttacker, spot: Vector2) -> void:
 ## 地面档按半径圈人，锁定档只找那一个，不挑目标的那一档打全场。
 ## 全场效果（减速 / 全队增伤 / 重置冷却）**三档共用**，
 ## 它们本来就和「打中了谁」无关。
-func _land_skill(cast: PBSkillCast) -> void:
+func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 	var skill := cast.skill
+	# **子弹技能：这一刻只是出膛**（M8-b）。伤害与 `on_hit` 等它飞到目标身上
+	# 才结算，见 [member PBSkill.shot_cross_seconds]。冷却从出膛算起 ——
+	# `is_pending` 那个状态的全部意义是「落点已定、还没结算」，也就是地面档的
+	# 预判窗口；子弹追着目标走，没有预判可言。
+	if skill.shot_cross_seconds > 0.0:
+		_launch_skill(attacker, cast)
+		cast.land(_tick)
+		return
 	match skill.target:
 		PBSkill.Target.ALLY:
 			PBSkillRules.land_on_ally(cast, _attackers, _cfg, _tick)
@@ -426,9 +445,7 @@ func _land_skill(cast: PBSkillCast) -> void:
 					cast, _enemies, _front, _cfg, _tick
 				)
 		PBSkill.Target.ENEMY:
-			# 单体点敌 M7-c 还没接（roadmap 那一步只做 ALLY / NONE）——
-			# 也没有任何入口放得出来，所以这里落不到。
-			pass
+			_outcome.kills += PBSkillRules.land_on_enemy(cast, _enemies, _cfg, _tick)
 		_:
 			_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _cfg, _tick)
 	if skill.slow_ticks > 0 and skill.slow_scale < 1.0:
@@ -437,6 +454,40 @@ func _land_skill(cast: PBSkillCast) -> void:
 	PBSkillRules.apply_team_buff(skill, _attackers, _tick)
 	PBSkillRules.reset_other_cooldowns(skill, cast, _attackers, _tick)
 	cast.land(_tick)
+
+
+## 一发子弹技能出膛（M8-b）。池子满了或者目标已经不在名单里就当空放 ——
+## 不报错，也不退回「瞬间结算」：那会让同一个技能在池子满的时候
+## 变成另一种技能，而它不报错。
+##
+## 目标在飞行途中死掉是另一回事：那一发照样飞完，到了发现人没了就消失
+## （[method PBShotRules._hit_enemy]），同 [PBProjectile] 顶上那条。
+func _launch_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
+	var shot := PBShotRules.free_shot(_shots)
+	if shot == null:
+		return
+	var skill := cast.skill
+	var at_ally: bool = skill.target == PBSkill.Target.ALLY
+	var limit: int = _attackers.size() if at_ally else _enemies.size()
+	if cast.target_slot < 0 or cast.target_slot >= limit:
+		return
+	# 速度由「飞完全场要几秒」反推，和普攻子弹同一条换算
+	# （[member PBSimConfig.projectile_cross_seconds]）—— 两处各拍一个速度单位
+	# 的话，「技能子弹比普攻快多少」会变成一个没人说得清的数。
+	var per_tick: float = _cfg.field_length / maxf(
+		skill.shot_cross_seconds * float(_cfg.tick_rate), 1.0
+	)
+	shot.launch(
+		attacker.pos,
+		cast.target_slot,
+		skill.damage,
+		per_tick,
+		at_ally,
+		skill.element,
+		attacker.slot,
+		skill,
+		cast.caster_level
+	)
 
 
 ## 这一 tick 敌人走多快。1.0 是正常速度，减速生效期间小于 1。
@@ -493,51 +544,12 @@ func _deal_damage() -> void:
 	_skip_dead()
 
 
-## 子弹飞一个 tick，够到目标就结算（M4-b）。
+## 子弹飞一个 tick，够到目标就结算（M4-b；结算搬进 [PBShotRules] 是 M8-b）。
 ##
 ## 目标死了子弹就消失，**不改打别人** —— 理由写在 [PBProjectile] 顶部。
 func _advance_shots() -> void:
-	for shot: PBProjectile in _shots:
-		if not shot.alive:
-			continue
-		if shot.at_ally:
-			_fly_at_ally(shot)
-		else:
-			_fly_at_enemy(shot)
+	PBShotRules.advance(_shots, _enemies, _attackers, _cfg, _tick, log_to, _outcome)
 	_skip_dead()
-
-
-func _fly_at_enemy(shot: PBProjectile) -> void:
-	var enemy: PBEnemy = _enemies[shot.target]
-	if not enemy.alive:
-		shot.retire()
-		return
-	if not shot.fly(enemy.pos()):
-		return
-	_note_hit(shot.source, enemy.slot, shot.damage, false)
-	if enemy.take_damage(shot.damage, _tick):
-		_outcome.kills += 1
-	shot.retire()
-
-
-## 敌人的子弹（M4-c）。伤害在**命中时**才按防御与属性折算 ——
-## 出膛时算的话，飞行途中换了减伤（装备、光环）就对不上了，
-## 而那种偏差只表现为「同一发子弹有时候疼有时候不疼」。
-func _fly_at_ally(shot: PBProjectile) -> void:
-	var target: PBAttacker = _attackers[shot.target]
-	if not target.is_targetable():
-		shot.retire()
-		return
-	if not shot.fly(target.pos):
-		return
-	var hurt: float = PBStatRules.strike_damage(
-		shot.damage, shot.element, target.defence, target.def_element, _cfg
-	)
-	_note_hit(shot.source, target.slot, hurt, true)
-	if target.take_damage(hurt):
-		_outcome.allies_lost += 1
-		_note_down(target.slot)
-	shot.retire()
 
 
 ## 记一次命中。**每个见血的地方都走这一句**，而不是各写一遍
@@ -553,16 +565,6 @@ func _note_hit(source: int, target: int, amount: float, to_ally: bool) -> void:
 func _note_down(slot: int) -> void:
 	if log_to != null:
 		log_to.ally_down(_tick, slot)
-
-
-## 找一发空子弹。池子满了返回 null —— 那时**这一发就没了**，
-## 不扩池也不覆盖别人：扩池会在热路径里分配（§14），
-## 覆盖会让一发已经在飞的伤害凭空消失，而两者都不报错。
-func _free_shot() -> PBProjectile:
-	for shot: PBProjectile in _shots:
-		if not shot.alive:
-			return shot
-	return null
 
 
 ## 己方跑动（§02 / §03A，M3.5-c）。**射程内没目标就往前压，有目标就站住开火。**
@@ -720,12 +722,6 @@ func name_target(attacker: PBAttacker, slot: int) -> void:
 	_aim_one(attacker)
 
 
-static func _step_toward(from: float, to: float, step: float) -> float:
-	if absf(to - from) <= step:
-		return to
-	return from + (step if to > from else -step)
-
-
 ## 防挤：把重合的单位推开（§03A，M3.5-c）。**两边都做**，实现在 [PBCrowdRules]。
 ##
 ## 搬出去的理由和 [PBFieldPicker] 当初从 [PBBattleView] 里分出来一样：
@@ -793,7 +789,7 @@ func _enemies_attack() -> void:
 		enemy.on_fired(_tick)
 		# 远程的那一份走弹道（M4-c），减伤与克制在命中时才折算。
 		if enemy.shot_speed > 0.0:
-			var shot := _free_shot()
+			var shot := PBShotRules.free_shot(_shots)
 			if shot != null:
 				shot.launch(
 					enemy.pos(),
@@ -840,7 +836,7 @@ func _strike_single(attacker: PBAttacker) -> bool:
 		if target.take_damage(damage, _tick):
 			_outcome.kills += 1
 		return true
-	var shot := _free_shot()
+	var shot := PBShotRules.free_shot(_shots)
 	if shot == null:
 		return false
 	shot.launch(

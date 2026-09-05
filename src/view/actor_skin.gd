@@ -92,6 +92,41 @@ enum Facing { RIGHT, LEFT }
 ## 留 [constant Vector2.ZERO] 表示「画布底边中点」，也就是规格里的默认锚。
 @export var foot_offset: Vector2 = Vector2.ZERO
 
+## 这个人的普攻子弹用哪一份 [PBShotSkin]（M8-a）。空着退回
+## [method PBWhiteModel.shot]（今天那个小方块）。
+##
+## 挂在**形象**上而不是角色数值上：一发苦无长什么样是「这份素材的性质」，
+## 和脚底锚点、源图朝向同一类东西 —— 换一套美术就该跟着换。
+## 技能自己的子弹另配（[member PBSkill.shot_key]）：那是技能的性质，不是人的。
+@export var shot_key: StringName = &""
+
+## **枪口在哪**（像素，相对脚底，**向上为负 y**；未乘 [member pixel_scale]）。
+##
+## ## 为什么它只在渲染层生效，绝不进 sim
+##
+## 两条，第二条更硬：
+##
+## - sim 是一个**平面**，[member PBAttacker.pos] 的 y 是泳道深度不是高度 ——
+##   「枪口在胸口」这句话在那边没有地方表达。
+## - 进 sim 会改飞行距离 → 改命中时刻 → **改配平**。
+##
+## 屏幕上那条弹道因此是同一次飞行的**重新参数化**：进度还是 sim 算的
+## （从 [member PBProjectile.from] 到目标走了几成），只是把两个端点
+## 从脚底换成枪口和胸口。
+##
+## 留 [constant Vector2.ZERO] 表示按 [member height_px] 派生（约六成身高）——
+## M6-m 之后人有 60 像素高，而在这之前子弹是**从脚踝射向脚踝**的。
+##
+## **x 会跟着朝向翻转**（由 [PBShotPool] 按飞行方向做）：填正数就是「身前」。
+@export var muzzle_offset: Vector2 = Vector2.ZERO
+
+## **子弹打在身上哪个高度**（同 [member muzzle_offset] 的坐标约定）。
+## 留 [constant Vector2.ZERO] 表示按 [member height_px] 派生（半身高）。
+##
+## 命中特效也放在这一点上 —— 两处各配一个的话，「子弹打在胸口、
+## 火花炸在脚下」迟早发生，而它不报错。
+@export var hit_offset: Vector2 = Vector2.ZERO
+
 ## 按属性染色（[member CanvasItem.modulate]）。**白模是 `true`，真素材是 `false`。**
 ##
 ## 白模只有一个形状，五系全靠色相分；真素材各画各的，再染一层
@@ -192,6 +227,24 @@ func canvas_size() -> Vector2:
 ## 血条该挂在脚底上方多少像素。
 func head_px() -> float:
 	return height_px * pixel_scale
+
+
+## 枪口相对脚底的**屏幕**偏移（像素）。见 [member muzzle_offset]。
+##
+## 默认取六成身高：那大致是一个人举手投足的高度，而且**必须高于半身**——
+## 和命中点（半身高）取同一个数的话，一队人对射时子弹会连成水平的一条线，
+## 看不出是谁射的。
+func muzzle() -> Vector2:
+	if muzzle_offset != Vector2.ZERO:
+		return muzzle_offset * pixel_scale
+	return Vector2(head_px() * 0.18, -head_px() * 0.62)
+
+
+## 子弹打在身上哪一点的**屏幕**偏移（像素）。见 [member hit_offset]。
+func chest() -> Vector2:
+	if hit_offset != Vector2.ZERO:
+		return hit_offset * pixel_scale
+	return Vector2(0.0, -head_px() * 0.5)
 
 
 ## 这张皮该用哪种贴图过滤，见 [member smooth]。

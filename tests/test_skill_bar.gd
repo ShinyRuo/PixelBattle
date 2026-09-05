@@ -280,6 +280,21 @@ func test_a_real_click_casts_the_waiting_skill() -> void:
 	assert_gt(cast.ready_at, 0, "冷却从这一发算起")
 
 
+func test_the_enemy_tier_finally_has_a_way_in() -> void:
+	# `ENEMY` 档 M7-c 就有合法形状，但**没有任何入口放得出来** ——
+	# M8-b 的子弹技能（火球术）需要它，所以这一档才接上。
+	var root: Node2D = await _in_battle()
+	var live := _pick_first(root)
+	_give(live, PBSkill.Target.ENEMY)
+	var mark: PBEnemy = root._battle.active_enemies()[0]
+
+	root._on_command(PBCommandCard.CMD_SKILL_1)
+	assert_eq(root._picker.aim_mode, PBFieldPicker.Aim.SKILL, "进入等点击的状态")
+	root._on_field_click(PBLayout.to_screen(mark.pos(), root._field()))
+	assert_eq(root._battle.order_of(live), 1, "点中敌人就该下令")
+	assert_eq(root._battle.orders().target_of(0), mark.slot, "锁的是点中的那一只")
+
+
 # ── 暂停下的指令（M7-h） ────────────────────────────────────────
 
 

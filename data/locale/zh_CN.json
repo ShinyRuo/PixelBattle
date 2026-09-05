@@ -71,5 +71,7 @@
 	"skill.medical_ninjutsu": "医疗忍术",
 	"buff.heal_burst": "瞬回",
 	"buff.regen": "持续回复",
-	"buff.team_damage": "全队增伤"
+	"buff.team_damage": "全队增伤",
+	"skill.fireball": "豪火球之术",
+	"buff.burn": "灼烧"
 }

@@ -143,7 +143,7 @@ func flush(attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int, book: PBBa
 		match cast.skill.target:
 			PBSkill.Target.GROUND:
 				cast.cast(_spot[at], tick)
-			PBSkill.Target.ALLY:
+			PBSkill.Target.ALLY, PBSkill.Target.ENEMY:
 				cast.cast_on(_target[at], tick)
 			_:
 				cast.cast_now(tick)
@@ -176,10 +176,17 @@ static func issue(
 
 ## 这条指令配不配得上这个技能的档位。
 ##
-## 三档各要一样东西，而**要哪一样由 [member PBSkill.target] 说**：
-## 地面档要一个真落点、锁定档要一个还站得住的队友、不挑目标的那一档什么都不要。
-## [constant PBSkill.Target.ENEMY] 一律不收 —— 它是个合法形状，
-## 但操作层没有入口放得出来（M7-c），收下就等于攒一条永远放不掉的指令。
+## 四档各要一样东西，而**要哪一样由 [member PBSkill.target] 说**：
+## 地面档要一个真落点、锁定队友那档要一个还站得住的人、点敌人那档要一个槽位、
+## 不挑目标的那一档什么都不要。
+##
+## ## 点敌人那一档只查槽位，不查他还活着没有（M8-b）
+##
+## 查了也没用：从下令到放出去中间隔着一个 tick，从放出去到子弹飞到
+## 还隔着一整段飞行 —— 那个人随时可能死。**「目标没了就空放」这条
+## 在落地那一侧已经写好了**（[method PBSkillRules.land_on_enemy]、
+## [method PBShotRules._hit_enemy]），在这儿再判一次只会给出
+## 「下令那一刻他还活着」这种没人需要的保证。
 static func _fits(
 	skill: PBSkill, spot: Vector2, target_slot: int, attackers: Array[PBAttacker]
 ) -> bool:
@@ -190,6 +197,8 @@ static func _fits(
 			if target_slot < 0 or target_slot >= attackers.size():
 				return false
 			return attackers[target_slot].is_targetable()
+		PBSkill.Target.ENEMY:
+			return target_slot >= 0
 		PBSkill.Target.NONE:
 			return true
 	return false

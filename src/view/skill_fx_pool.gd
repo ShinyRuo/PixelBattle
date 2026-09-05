@@ -52,8 +52,11 @@ var _left: PackedInt32Array = PackedInt32Array()
 var _warm: Array[bool] = []
 var _live: int = 0
 
-## 播报已经消化到第几条。**存下标不存 tick**：日志是环形的、会丢最老的
-## 那几条，而下标只需要「从这儿往后是新的」这一个语义。
+## 播报已经消化到**第几条**（[member PBBattleLog.total]，只增不减）。
+##
+## **不能存 [member PBBattleLog.entries] 的长度**：日志是环形的，写满之后
+## 那个长度恒等于 [constant PBBattleLog.CAP]，于是游标和长度永远相等 ——
+## 回音从此再也不触发，而日志面板一切正常。M8-a 修的就是这一条。
 var _echoed: int = 0
 
 
@@ -114,7 +117,7 @@ func echo(book: PBBattleLog, attackers: Array[PBAttacker], field: Vector2) -> vo
 	step()
 	if book == null:
 		return
-	for i: int in range(mini(_echoed, book.entries.size()), book.entries.size()):
+	for i: int in range(book.fresh_from(_echoed), book.entries.size()):
 		var entry: Dictionary = book.entries[i]
 		if int(entry.get("kind", -1)) != PBBattleLog.Kind.ULTIMATE:
 			continue
@@ -123,7 +126,7 @@ func echo(book: PBBattleLog, attackers: Array[PBAttacker], field: Vector2) -> vo
 			if who.slot == slot:
 				flash(PBLayout.to_screen(who.pos, field), bool(entry.get("to_ally", false)))
 				break
-	_echoed = book.entries.size()
+	_echoed = book.total
 
 
 func clear() -> void:

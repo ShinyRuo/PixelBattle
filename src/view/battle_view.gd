@@ -867,9 +867,9 @@ func _sync_visuals() -> void:
 		_fx.echo(_log, _battle.attackers(), field)
 		var now: int = _battle.current_tick()
 		_telegraph.sync_pending(_battle.attackers(), now, field)
-		# 飞行中的子弹（M4-b）。**它是 sim 里真有的东西** ——
+		# 飞行中的子弹与命中火花（M4-b / M8-a）。**它是 sim 里真有的东西** ——
 		# 伤害要等它够到目标才结算，见 [PBProjectile]。
-		_shots.sync_shots(_battle.shots(), field)
+		_shots.sync_shots(_battle, _plan.deployed, _log, field)
 		# §02 第 8 点：己方忍者也要画在场上。射程、站位、防挤、敌人还手
 		# 四件事全都只有在这里才看得见 —— 那是 M3-a 到 M3.5-c 做的全部内容。
 		# 敌人那一份只用来查「他要打的那个在哪」（朝向，M6-b）。

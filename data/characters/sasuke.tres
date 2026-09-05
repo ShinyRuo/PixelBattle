@@ -27,3 +27,4 @@ mp_per_intellect = 8.0
 atk_per_primary = 1.0
 def_per_agility = 0.22
 attack_speed_per_agility = 0.008
+skill_ids = Array[StringName]([&"fireball"])

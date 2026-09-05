@@ -29,6 +29,16 @@ var alive: bool = false
 ## 战场坐标，与 [member PBAttacker.pos] 同一套。
 var pos: Vector2 = Vector2.ZERO
 
+## 出膛的地方（M8-a）。**纯记录，任何规则都不读它。**
+##
+## 渲染层要把这条弹道从**枪口**画到**胸口**（[method PBActorSkin.muzzle]），
+## 而那需要「这一发飞了几成」这个比例 —— 没有起点就算不出来。
+##
+## **存在这里而不是让渲染层自己记**：这个类是对象池复用的，
+## 一发回池之后槽位立刻被下一发接管，渲染层那份记录会对不上，
+## 而它不报错 —— 只表现为「偶尔有一发子弹从别人身上冒出来」。
+var from: Vector2 = Vector2.ZERO
+
 ## 追的是第几个。**存下标不存引用** —— §12 的存档要序列化这个，
 ## 而引用序列化不了。下标指向哪个数组由 [member at_ally] 决定。
 var target: int = -1
@@ -62,6 +72,23 @@ var element: PBElement.Type = PBElement.Type.PHYSICAL
 ## 每 tick 飞多远。由 [member PBSimConfig.projectile_cross_seconds] 反推。
 var speed: float = 0.0
 
+## 这一发是**哪个技能**射出去的（M8-b）。**null = 普攻。**
+##
+## ## 为什么子弹要背着技能，而不是出膛时就把效果算掉
+##
+## 玩家的原话：「火球术就是子弹技能，飞到了才出伤」。伤害与
+## [member PBSkill.on_hit] 因此要等到 [method PBShotRules._hit_enemy] 那一刻 ——
+## 而那时施法者可能已经死了、技能可能已经转好了下一发冷却，
+## 所以这一份**必须挂在子弹上**，不能回头去问施法者。
+##
+## 背的是**引用**不是拷贝：[PBSkill] 是不可变的定义（谁都不改它的字段），
+## 而每发子弹拷一份是热路径上的分配（§14）。
+var skill: PBSkill = null
+
+## 射出这一发的人**当时**几级（M8-b）。效果数值按它现算，
+## 理由同 [member PBSkillCast.caster_level]。
+var level: int = 1
+
 ## **谁打的这一发**（M6-j）。下标那一头由 [member at_ally] 决定，
 ## 和 [member target] 正好反过来：射向己方的那一半，这里是敌人的下标。
 ##
@@ -73,22 +100,27 @@ var source: int = -1
 
 ## 把这个实例重置成一发刚出膛的子弹。对象池复用走这里，不要 `.new()`。
 func launch(
-	from: Vector2,
+	from_at: Vector2,
 	at: int,
 	hit_for: float,
 	per_tick: float,
 	toward_ally: bool = false,
 	of_element: PBElement.Type = PBElement.Type.PHYSICAL,
-	from_slot: int = -1
+	from_slot: int = -1,
+	of_skill: PBSkill = null,
+	caster_level: int = 1
 ) -> void:
 	alive = true
-	pos = from
+	pos = from_at
+	from = from_at
 	target = at
 	damage = hit_for
 	speed = per_tick
 	at_ally = toward_ally
 	element = of_element
 	source = from_slot
+	skill = of_skill
+	level = caster_level
 
 
 ## 朝 [param goal] 飞一个 tick。返回这一 tick 是否够到了目标。
@@ -109,3 +141,8 @@ func fly(goal: Vector2) -> bool:
 func retire() -> void:
 	alive = false
 	target = -1
+	# 回池的子弹不该再攥着一份技能引用。[method launch] 每次都会重设它，
+	# 所以这一行是第二道保险 —— 而「背着上一发火球的效果飞出去」
+	# 恰恰是那种只在特定顺序下发作、且不报错的毛病。
+	skill = null
+	level = 1

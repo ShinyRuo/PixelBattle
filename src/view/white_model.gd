@@ -95,8 +95,24 @@ const FPS_IDLE: float = 4.0
 const FPS_RUN: float = 10.0
 const FPS_ATTACK: float = 12.0
 
+## 子弹白模的画布（见方）。**比子弹本身大一圈** —— 命中那一段要在同一块
+## 画布上向外扩散，而 [AnimatedSprite2D] 一段一段共用同一个原点。
+const SHOT_CANVAS: int = 13
+
+## 飞行那一帧是几像素的方块。**3 就是 M4-b 起屏幕上那个方块**（`PBShotPool.SIZE`）——
+## 换成白模之后大小一个像素都不变，这样「接上了美术管线」和「子弹变样了」
+## 是两件分得开的事。
+const SHOT_DOT: int = 3
+
+## 命中那一圈火花扩散几帧，以及帧率。**短** —— 它是一次「刚才打中了」的回音，
+## 拖长了会和命中白闪（[PBHitFeedback]）在屏幕上同时存在，
+## 而那两句话说的是同一件事。
+const SPARK_STEPS: int = 4
+const FPS_SPARK: float = 16.0
+
 static var _ally: PBActorSkin = null
 static var _enemies: Dictionary = {}
+static var _shot: PBShotSkin = null
 
 
 ## 己方的白模。全局一份，按属性染色。
@@ -168,6 +184,58 @@ static func enemy(sides: int) -> PBActorSkin:
 	var skin := _skin(&"_white_enemy_%d" % key, frames, ENEMY_RADIUS * 2.0 + 1.0)
 	_enemies[key] = skin
 	return skin
+
+
+## 子弹的白模：飞行是一个小方块，命中是一圈扩散的火花。全局一份。M8-a。
+##
+## **不描边也不压暗**（[method _outline] / [method _shade]）：那两样是给
+## 「一个站在地上的人」用的 —— 描边买的是「同一列里有几个人」这个读数
+## （见 [constant OUTLINE]），而子弹不会挤成一列；压暗买的是体积感，
+## 而子弹不站在地上。给一个 3 像素的方块描边等于把它变成 5 像素的方块。
+static func shot() -> PBShotSkin:
+	if _shot != null:
+		return _shot
+	var frames := SpriteFrames.new()
+	_add(frames, &"fly", FPS_IDLE, true, [_shot_dot()])
+	var sparks: Array = []
+	for i: int in SPARK_STEPS:
+		sparks.append(_spark(i))
+	_add(frames, &"hit", FPS_SPARK, false, sparks)
+	frames.remove_animation(&"default")
+	var skin := PBShotSkin.new()
+	skin.key = &"_white_shot"
+	skin.frames = frames
+	skin.tint_by_side = true
+	# 一个对称的方块转起来边缘会抖，而它本来也没有朝向可言。
+	skin.spin = false
+	_shot = skin
+	return _shot
+
+
+## 飞行那一帧：画布正中一个 [constant SHOT_DOT] 见方的白块。
+static func _shot_dot() -> Image:
+	var image := _blank(SHOT_CANVAS)
+	var at: int = (SHOT_CANVAS - SHOT_DOT) / 2
+	_box(image, at, at, SHOT_DOT, SHOT_DOT)
+	return image
+
+
+## 命中那一段的第 [param step] 帧：一圈越扩越大、越扩越淡的菱形。
+##
+## 菱形（`|dx| + |dy| == r`）而不是圆：13 见方的画布上，一个用
+## `distance_to` 量出来的圆会在四个正方向上出现锯齿般的断点，
+## 而菱形每一格都落在整数上 —— 这块画布小到形状差别看不出来，断点看得出来。
+static func _spark(step: int) -> Image:
+	var image := _blank(SHOT_CANVAS)
+	var centre: int = SHOT_CANVAS / 2
+	var radius: int = 1 + step * 2
+	var fade: float = 1.0 - float(step) / float(SPARK_STEPS)
+	for y: int in SHOT_CANVAS:
+		for x: int in SHOT_CANVAS:
+			if absi(x - centre) + absi(y - centre) != radius:
+				continue
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, fade))
+	return image
 
 
 ## 造一张皮。白模一律**按属性染色**、朝右、不放大。

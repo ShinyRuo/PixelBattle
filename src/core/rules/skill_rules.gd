@@ -80,7 +80,49 @@ static func validate(skill: PBSkill) -> String:
 		return "target=ENEMY 的技能必须 affects=ENEMIES —— 点敌人却打自己人说不通"
 	if skill.target != PBSkill.Target.GROUND and skill.delay_ticks != 0:
 		return "只有 GROUND 档能配施法延迟 —— 锁定目标的技能没有预判窗口"
+	return _check_shot(skill)
+
+
+## 子弹那几条（M8-b）。见 [member PBSkill.shot_cross_seconds]。
+##
+## ## 三条都是静默生效的错
+##
+## - **地面档配了飞行速度**：那一档的飞行时间是 [member PBSkill.delay_ticks]
+##   （预判窗口），再来一个就是两把尺子 —— 而两者不会打架，只会有一个生效
+## - **不挑目标的那一档配了飞行速度**：它没有目标可飞，那一发不知道往哪去
+## - **子弹技能配了位置操纵与全场效果**：那五个字段
+##   （[member PBSkill.gather] 那一批）是 §11 尾兽与 §09 功能档的词汇，
+##   全部挂在地面档的大招上。子弹这一发只结算「打中的那一个」
+##   （[method PBShotRules._hit_enemy]），配了**不会生效** ——
+##   而「配了不生效」比「配不了」难查得多
+static func _check_shot(skill: PBSkill) -> String:
+	if skill.shot_cross_seconds <= 0.0:
+		return ""
+	if skill.target != PBSkill.Target.ALLY and skill.target != PBSkill.Target.ENEMY:
+		return "只有锁定档（ALLY / ENEMY）能配飞行速度 —— 别的档没有目标可追"
+	if skill.gather or skill.knockback > 0.0 or skill.reset_cooldowns:
+		return "子弹技能不结算位置操纵与重置冷却 —— 那几项是地面档大招的词汇"
+	if skill.slow_ticks > 0 or skill.buff_ticks > 0:
+		return "子弹技能不结算全场效果（减速 / 全队增伤）—— 同上"
 	return ""
+
+
+## 一发**子弹**打在敌人身上（M8-b）。返回它有没有被这一下打死。
+##
+## 伤害由 [method PBShotRules._hit_enemy] 先结算（那本账在它手上），
+## 这里只挂 [member PBSkill.on_hit] —— 拆成两半是因为「打死了几个」
+## 必须只有一个来源。
+static func apply_hit(
+	enemy: PBEnemy, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
+) -> bool:
+	return _apply_all_enemy(enemy, skill.on_hit, level, cfg, tick)
+
+
+## 一发**子弹**落在己方单位身上（M8-b，治疗那一类）。
+static func apply_hit_ally(
+	unit: PBAttacker, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
+) -> void:
+	_apply_all(unit, skill.on_hit, level, cfg, tick)
 
 
 ## 一发落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
@@ -152,6 +194,28 @@ static func land_on_ally(
 	if not target.is_targetable():
 		return
 	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick)
+
+
+## 落在一个**锁定的敌人**身上（[constant PBSkill.Target.ENEMY]，M8-b）。
+## 返回这一下打死了几个（0 或 1）。
+##
+## 和 [method land_on_ally] 对称，连「目标没了就空放」那条也一样：
+## 下达和落地之间隔着一个 tick，那一 tick 里他可能已经死了 ——
+## 这时改打别人的话，玩家点的那个和实际挨打的那个不是同一个，而他不会知道。
+##
+## **这一档 M7-c 只做了合法形状，没有入口**；M8-b 接上操作层之后
+## 它才真的落得到（火球术那一类）。
+static func land_on_enemy(
+	cast: PBSkillCast, enemies: Array[PBEnemy], cfg: PBSimConfig, tick: int
+) -> int:
+	if cast.target_slot < 0 or cast.target_slot >= enemies.size():
+		return 0
+	var enemy: PBEnemy = enemies[cast.target_slot]
+	if not enemy.alive or not enemy.has_spawned(tick):
+		return 0
+	if enemy.take_damage(cast.skill.damage, tick):
+		return 1
+	return 1 if _apply_all_enemy(enemy, cast.skill.on_hit, cast.caster_level, cfg, tick) else 0
 
 
 ## 打全场：伤害发给**每一个已出场且还活着的敌人**，不看位置

@@ -93,6 +93,15 @@ enum Party {
 ## 逐角色独有的走 `data/`）。
 @export var id: StringName = &""
 
+## 这一发飞出去的东西长什么样（[PBShotSkin] 的键，M8-a）。
+##
+## 空着退回白模（[method PBWhiteModel.shot]）。和 [member name_key] 同一类东西 ——
+## 一个查表用的外键，`src/core/` 不认识它指向什么，读盘那一半在 `src/data/`。
+##
+## **配在技能上而不是配在人身上**（[member PBActorSkin.shot_key] 管的是普攻）：
+## 火球术长什么样是这个技能的性质，换个人放还是火球。
+@export var shot_key: StringName = &""
+
 ## 显示名的翻译键（铁律 5：`src/` 里一个技能名都不出现）。
 ##
 ## 指令卡那一格写的就是它查出来的字（[method PBLocale.of_skill]）。
@@ -155,6 +164,29 @@ enum Party {
 ## **`target != GROUND` 的技能这里必须是 0**（§3.3，M7-c 起数据校验拦着）：
 ## 锁定单体的技能没有预判可言 —— 目标跟着走，落点也跟着走。
 @export var delay_ticks: int = 0
+
+## 这一发要**飞过去**的话，飞完全场要几秒（M8-b）。**0 = 瞬发。**
+##
+## ## 锁定档分两种，这个数就是分界线
+##
+## 玩家的原话：「锁定档也分瞬发技能和子弹技能 —— 医疗忍术就是瞬发，
+## 直接给对方上 buff；火球术就是子弹技能，飞到了才出伤」。
+##
+## 填了之后，下达 → 发一发 [PBProjectile] → **飞到目标身上才结算**
+## [member damage] 与 [member on_hit]（[method PBShotRules._hit_enemy]）。
+## 目标在半路死了那一发就消失，不改打别人 —— 同 [PBProjectile] 顶上那条。
+##
+## ## 为什么不复用 [member delay_ticks]
+##
+## 那个是**地面档**的预判窗口：落点在下达时定死，若干 tick 之后在**那个点**结算，
+## 时间与距离无关。子弹反过来 —— 追着会动的目标，飞多久由距离决定。
+## 两件事挤进一个字段的话，「延迟 20 tick」在两档下是两个意思，
+## 而 [method PBSkillRules.validate] 因此拦着：**地面档不许配这一项，
+## 锁定档不许配 `delay_ticks`。**
+##
+## 口径和 [member PBSimConfig.projectile_cross_seconds] 一样是「飞完全场几秒」，
+## 不是「每 tick 飞多远」—— 后者依赖战场长度，改一次战场尺寸就要重配全部技能。
+@export var shot_cross_seconds: float = 0.0
 
 ## 一发最多命中几个。**0 表示不限**（半径内全中）。
 ##
@@ -262,6 +294,7 @@ func clone() -> PBSkill:
 	var out := PBSkill.new()
 	out.id = id
 	out.name_key = name_key
+	out.shot_key = shot_key
 	out.target = target
 	out.affects = affects
 	# 两张效果表**共享同一份引用**，不逐个复制：[PBBuff] 是不可变的定义
@@ -274,6 +307,7 @@ func clone() -> PBSkill:
 	out.radius = radius
 	out.cooldown_ticks = cooldown_ticks
 	out.delay_ticks = delay_ticks
+	out.shot_cross_seconds = shot_cross_seconds
 	out.max_targets = max_targets
 	out.carry_over_ticks = carry_over_ticks
 	out.mp_cost = mp_cost

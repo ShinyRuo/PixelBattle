@@ -37,8 +37,13 @@ var ready_at: int = 0
 ## [member lands_at]，见 [method is_pending]。
 var spot: Vector2 = NO_SPOT
 
-## 锁定的那一个己方单位（[member PBAttacker.slot]），
-## [constant PBSkill.Target.ALLY] 档用（M7-c）。**-1 表示没锁定谁。**
+## 锁定的那一个单位的槽位。**-1 表示没锁定谁。**
+##
+## **指向哪个数组由 [member PBSkill.target] 说**：`ALLY` 档是
+## [member PBAttacker.slot]（M7-c），`ENEMY` 档是 [member PBEnemy.slot]（M8-b）。
+## 两档各存一个字段的话，「这一发锁的是谁」就有两个答案，
+## 而读错一个的表现是「治疗打到了敌人身上」—— 同 [member PBProjectile.at_ally]
+## 那条「一个开关而不是两个池子」。
 ##
 ## 存**槽位号**不存引用：§12 的存档要序列化它，而引用序列化不了 ——
 ## 和 [member PBProjectile.target] 同一条规矩。
@@ -122,9 +127,9 @@ func cast(at_spot: Vector2, tick: int) -> void:
 	lands_at = tick + skill.delay_ticks
 
 
-## 下达一发**锁定己方单位**的技能（[constant PBSkill.Target.ALLY]，M7-c）。
+## 下达一发**锁定单个单位**的技能（`ALLY` / `ENEMY` 两档，M7-c / M8-b）。
 ##
-## 锁的是槽位不是位置：目标会跑，而「治谁」这件事不该跟着他的坐标走。
+## 锁的是槽位不是位置：目标会跑，而「打谁 / 治谁」这件事不该跟着他的坐标走。
 func cast_on(slot: int, tick: int) -> void:
 	target_slot = slot
 	lands_at = tick + skill.delay_ticks
