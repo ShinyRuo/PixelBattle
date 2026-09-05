@@ -37,13 +37,29 @@ extends RefCounted
 ##
 ## 两个 bool 就有四种组合，其中「两个都开」是个说不清的状态 ——
 ## 那一下点击到底是指定目标还是下忍术？枚举里它不存在。
+## ## 为什么 M7-e 之后只有一个 `SKILL`，不是每一档一个值
+##
+## 接下来那一下点击是什么意思（点地面 / 点队友 / 点敌人），
+## **由那个技能自己的 [member PBSkill.target] 决定** —— 一把尺子。
+## 加成 `SKILL_ALLY` / `SKILL_GROUND` / `SKILL_ENEMY` 三个值的话就有两份真相
+## （枚举值和技能表），而它们可以分叉：改了技能表却忘了改按下按钮那一行，
+## 表现是「点了队友却在地上炸了一发」，不报错。
+##
+## 这和上面那句「两个 bool 有四种组合」是同一条道理。
 enum Aim {
 	OFF,  ## 没在等
 	TARGET,  ## 「攻击」：等他点一个敌人（M4-e）
-	ULTIMATE,  ## 「忍术」：等他点一个落点（M5-9）
+	SKILL,  ## 「忍术」或某个技能：等他点什么由 [member aim_skill] 那一格自己说（M7-e）
 }
 
 var aim_mode: Aim = Aim.OFF
+
+## [constant Aim.SKILL] 档下，正在放的是第几格技能
+## （[method PBSkillRules.cast_at] 的下标：0 = 大招）。**-1 = 没在放。**
+##
+## 和 [member aim_mode] 是**一对**，不是两份真相：`OFF` 时它恒为 -1
+## （[method toggle] 保证），所以「在等点击」这件事只有一个答案。
+var aim_skill: int = -1
 
 
 ## 正在等他点一个敌人。留着这个名字是因为它比 `aim_mode == Aim.TARGET` 好读，
@@ -158,12 +174,28 @@ func aim(battle: PBBattleSim, live: PBAttacker, enemy: PBEnemy) -> void:
 func release(battle: PBBattleSim, live: PBAttacker) -> void:
 	if battle != null and live != null:
 		battle.name_target(live, -1)
+	stop()
+
+
+## 不再等任何点击。取消的三条路（右键 / `Esc` / 再点一次那一格）都走这里 ——
+## **两个字段必须一起清**，各清各的话会留下「`OFF` 但还记着第 1 格」这种
+## 说不清的状态，而下一次进入 [constant Aim.SKILL] 时它会悄悄生效。
+func stop() -> void:
 	aim_mode = Aim.OFF
+	aim_skill = -1
 
 
-## 玩家按了「攻击」或「忍术」（M4-e / M5-9）。**再按一次退出**。
+## 玩家按了「攻击」或某一格技能（M4-e / M5-9 / M7-e）。**再按一次退出**。
 ##
-## 一步到位（按一下就打最近的）的话那两格没有意义 —— 那本来就是自动规则。
-## 两者互斥是 [member aim_mode] 这个字段本身保证的，不靠调用方记得清另一个。
-func toggle(want: Aim) -> void:
-	aim_mode = Aim.OFF if aim_mode == want else want
+## 一步到位（按一下就打最近的）的话那几格没有意义 —— 那本来就是自动规则。
+## 几种模式互斥是 [member aim_mode] 这个字段本身保证的，不靠调用方记得清另一个。
+##
+## [param skill] 只在 [constant Aim.SKILL] 档有意义。**同一格再按一次才退出** ——
+## 「忍术」按下去之后再按「技能 1」该是**换成技能 1**，不是退出，
+## 否则玩家要按两下才换得了格子。
+func toggle(want: Aim, skill: int = -1) -> void:
+	if aim_mode == want and (want != Aim.SKILL or aim_skill == skill):
+		stop()
+		return
+	aim_mode = want
+	aim_skill = skill if want == Aim.SKILL else -1

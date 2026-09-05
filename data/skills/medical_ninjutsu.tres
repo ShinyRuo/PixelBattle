@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="PBSkill" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="1_skill"]
+[ext_resource type="Resource" path="res://data/buffs/heal_burst.tres" id="2_burst"]
+[ext_resource type="Resource" path="res://data/buffs/regen.tres" id="3_regen"]
+
+[resource]
+script = ExtResource("1_skill")
+id = &"medical_ninjutsu"
+name_key = "skill.medical_ninjutsu"
+target = 1
+affects = 0
+on_hit = Array[Resource]([ExtResource("2_burst"), ExtResource("3_regen")])
+on_self = Array[Resource]([])
+damage = 0.0
+radius = 0.0
+cooldown_ticks = 240
+delay_ticks = 0
+mp_cost = 25.0

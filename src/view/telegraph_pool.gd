@@ -77,26 +77,37 @@ func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector
 	var scale: float = PBLayout.px_per_unit(field)
 	_shown = 0
 	for attacker: PBAttacker in attackers:
-		if _shown >= CAPACITY:
-			break
-		var cast: PBSkillCast = attacker.ultimate
-		if cast == null or not cast.is_pending() or cast.lands_at <= current_tick:
-			continue
-		# **只有地面档有落点预示**（M7-c）。锁定队友的治疗、不挑目标的自增益
-		# 照样是「一发在路上」（[method PBSkillCast.is_pending]），但它们
-		# 没有落点 —— 不拦的话这里会照着 [constant PBSkillCast.NO_SPOT]
-		# 在场外画一个半径 0 的圈，而且白占一个池子槽位。
-		if cast.skill.target != PBSkill.Target.GROUND:
-			continue
-		# 还剩多少比例的等待时间。落地那一刻是 1，刚下达时接近 0。
-		var total: int = maxi(cast.skill.delay_ticks, 1)
-		_centers[_shown] = PBLayout.to_screen(cast.spot, field)
-		_radii[_shown] = cast.skill.radius * scale
-		_closeness[_shown] = clampf(
-			1.0 - float(cast.lands_at - current_tick) / float(total), 0.0, 1.0
-		)
-		_shown += 1
+		# **每一格都要扫，不只大招那一格**（M7-h 补的）。M7-e 给了玩家自己的
+		# 技能格，而这里一直只看 [member PBAttacker.ultimate] ——
+		# 于是玩家手放的地面技能在飞的那几 tick 没有落点预示圈，
+		# 也就是 §02 那个预判窗口对**唯一由玩家下达的那一发**不存在。
+		# 和 M7-e 修的「落地那一趟只扫大招那一格」是同一个形状。
+		for i: int in PBSkillRules.cast_count(attacker):
+			if _shown >= CAPACITY:
+				break
+			_add(PBSkillRules.cast_at(attacker, i), current_tick, field, scale)
 	queue_redraw()
+
+
+## 一发待落地的技能，够格就收进池子。
+##
+## **只有地面档有落点预示**（M7-c）。锁定队友的治疗、不挑目标的自增益
+## 照样是「一发在路上」（[method PBSkillCast.is_pending]），但它们
+## 没有落点 —— 不拦的话这里会照着 [constant PBSkillCast.NO_SPOT]
+## 在场外画一个半径 0 的圈，而且白占一个池子槽位。
+func _add(cast: PBSkillCast, current_tick: int, field: Vector2, scale: float) -> void:
+	if cast == null or not cast.is_pending() or cast.lands_at <= current_tick:
+		return
+	if cast.skill.target != PBSkill.Target.GROUND:
+		return
+	# 还剩多少比例的等待时间。落地那一刻是 1，刚下达时接近 0。
+	var total: int = maxi(cast.skill.delay_ticks, 1)
+	_centers[_shown] = PBLayout.to_screen(cast.spot, field)
+	_radii[_shown] = cast.skill.radius * scale
+	_closeness[_shown] = clampf(
+		1.0 - float(cast.lands_at - current_tick) / float(total), 0.0, 1.0
+	)
+	_shown += 1
 
 
 func clear() -> void:

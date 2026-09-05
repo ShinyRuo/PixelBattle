@@ -40,7 +40,15 @@ const FONT_SIZE: int = 8
 const BOND_META := "bond:"
 
 ## 血条与蓝条。**先画满血的底再画当前值**，比只画一条读得快。
-const BAR_SIZE := Vector2(96.0, 6.0)
+##
+## **M7-f 从 96 缩到 76**，腾出右边 44 像素给 buff 图标条
+## （[PBBuffStrip]，那里有这笔几何账）。条是一条**百分比条不是刻度尺**，
+## 缩掉两成仍然读得出比例；而正文那五行一行都动不了
+## （M6-j 刚为第五行上下各收 2 像素买回一整行）。
+const BAR_SIZE := Vector2(76.0, 6.0)
+
+## 图标条摆在条的右边。x 从 122 起、宽 40，正好接到正文右边界 162。
+const STRIP_AT := Vector2(122.0, 20.0)
 
 const HP_COLOR := Color(0.85, 0.30, 0.30)
 const MP_COLOR := Color(0.35, 0.55, 0.90)
@@ -64,6 +72,7 @@ var _hp_back: ColorRect
 var _hp_fill: ColorRect
 var _mp_back: ColorRect
 var _mp_fill: ColorRect
+var _strip: PBBuffStrip
 
 ## 悬停要用的上下文。**存起来而不是每次现查** —— 悬停发生在两次
 ## [method refresh] 之间，那时调用方手上那几份名单已经不在栈上了。
@@ -100,6 +109,9 @@ func _ready() -> void:
 	_hp_fill = _add_bar(PANEL_RECT.position + Vector2(42.0, 17.0), HP_COLOR)
 	_mp_back = _add_bar(PANEL_RECT.position + Vector2(42.0, 26.0), BAR_BACK)
 	_mp_fill = _add_bar(PANEL_RECT.position + Vector2(42.0, 26.0), MP_COLOR)
+	_strip = PBBuffStrip.new()
+	_strip.position = PANEL_RECT.position + STRIP_AT
+	add_child(_strip)
 
 	# **正文要五行**（属性 / 力敏智 / 攻防元素 / 射程装备 / 羁绊），而这个框
 	# 只有 94 高。M6-j 之前顶上留 36、底下留 4，装得下四行半 ——
@@ -150,11 +162,16 @@ func refresh(
 ## 会变的只有这两条，所以它们单独有一条便宜的路。
 ##
 ## [param live] 为 null（没选人、或者选中的人这一波没上场）就把条收掉。
-func show_live(live: PBAttacker) -> void:
+##
+## 身上挂着的效果也走这一条（M7-f）：它每 tick 都在变（周期触发、到期），
+## 和血蓝同一个量级，而重排整块文字那条路一秒六十次太贵。
+func show_live(live: PBAttacker, at_tick: int = 0) -> void:
 	if live == null:
 		return
 	_set_bar(_hp_back, _hp_fill, 0.0 if live.max_hp <= 0.0 else live.hp / live.max_hp)
 	_set_bar(_mp_back, _mp_fill, 1.0 if live.max_mp <= 0.0 else live.mp / live.max_mp)
+	if _cfg != null:
+		_strip.show_bag(live.buffs, at_tick, _cfg)
 
 
 ## 没选人时显示**整队的账**，也就是原来那条羁绊带（M5-5 并进来的）。

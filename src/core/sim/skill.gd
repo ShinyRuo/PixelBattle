@@ -85,6 +85,21 @@ enum Party {
 ## 两种写法表达同一件事就是两把尺子。
 @export var target: Target = Target.GROUND
 
+## 这份技能是谁（M7-e）。`data/skills/<id>.tres` 的文件名就是它。
+##
+## **大招不填这一项**：它由 [method PBCombatRules._build_skill] 按
+## [PBSimConfig] 现造，全场共用一套数值，不是 `data/` 里的一条 —— 理由
+## 同 [method PBBuffRules.team_damage] 顶上那段（全场共用的走配置，
+## 逐角色独有的走 `data/`）。
+@export var id: StringName = &""
+
+## 显示名的翻译键（铁律 5：`src/` 里一个技能名都不出现）。
+##
+## 指令卡那一格写的就是它查出来的字（[method PBLocale.of_skill]）。
+## 空着时那一格会退回 [member id] —— 少一条翻译不该让按钮变成空白，
+## 那样玩家会以为是格子坏了。
+@export var name_key: String = ""
+
 ## 结算落在哪一边。**默认 [constant Party.ENEMIES]**，理由同 [member target]。
 ##
 ## 两条约束由 [method PBSkillRules.validate] 拦着：
@@ -245,6 +260,8 @@ enum Party {
 ## 只表现为「悬崖二分跑着跑着，真实队伍的大招变了」。
 func clone() -> PBSkill:
 	var out := PBSkill.new()
+	out.id = id
+	out.name_key = name_key
 	out.target = target
 	out.affects = affects
 	# 两张效果表**共享同一份引用**，不逐个复制：[PBBuff] 是不可变的定义

@@ -124,6 +124,10 @@ var _max_hold_ticks: int = 0
 var _slow_scale: float = 1.0
 var _slow_until: int = -1
 
+## 玩家下了但还没放出去的施法指令（M7-h）。**每 tick 推进之前一次放完**，
+## 理由见 [PBSkillOrders] 顶部（暂停时状态一个字都不变，而且能反悔）。
+var _orders: PBSkillOrders = PBSkillOrders.new()
+
 ## 队伍最前面那个还活着的敌人在 [member _enemies] 里的下标。
 ##
 ## 全体敌人同速前进、且按出场顺序排列，所以**数组顺序天然就是距离顺序** ——
@@ -156,9 +160,13 @@ func _init(
 		# 开波满血（§03A）。和大招的冷却一样，攻击者对象会跨波、跨探测复用，
 		# 不重置的话上一场的残血会漏进这一场，表现为「同一支队伍越探越弱」。
 		attacker.revive()
-		# 大招对象跨波、跨探测复用，不清的话上一场剩下的冷却会漏进这一场。
-		if attacker.ultimate != null:
-			attacker.ultimate.reset()
+		# 技能对象跨波、跨探测复用，不清的话上一场剩下的冷却会漏进这一场。
+		# **每一格都要清**（M7-e）——漏掉一格的表现是「某个技能开波就是灰的」。
+		for i: int in PBSkillRules.cast_count(attacker):
+			var cast := PBSkillRules.cast_at(attacker, i)
+			if cast != null:
+				cast.reset()
+	_orders.reset(_attackers.size())
 
 	var leak_mult: float = cfg.boss_leak_mult if wave.is_boss() else 1.0
 	_leak_damage = wave.atk_each * leak_mult * (1.0 - clampf(def_reduction, 0.0, 0.95))
@@ -182,6 +190,10 @@ func _init(
 func step() -> void:
 	if is_finished():
 		return
+	# **玩家攒着的指令排在推进之前**（M7-h）：这样「排队再放」和「当场放」
+	# 算出来的 `lands_at` 与冷却逐位相同，暂停下攒的一批因此在
+	# 取消暂停后的第一个 tick 一起放出。见 [PBSkillOrders]。
+	_orders.flush(_attackers, _cfg, _tick, log_to)
 	_tick += 1
 	_resolve_ultimates()
 	# **排在大招落地之后**：这一 tick 挂上的 buff 对这一 tick 的出手就生效，
@@ -289,13 +301,14 @@ func _spawn_all(wave: PBWave, cfg: PBSimConfig) -> void:
 ## （见 [PBSkill] 顶部）。
 func _resolve_ultimates() -> void:
 	for attacker: PBAttacker in _attackers:
-		var cast: PBSkillCast = attacker.ultimate
-		if cast == null:
-			continue
-		# 已经下达的照样落地，哪怕施法者中途死了 —— 大招已经出手了。
-		# 那是 §02 施法延迟的直接后果，也是「预判」这件事的对称代价。
-		if cast.is_pending() and _tick >= cast.lands_at:
-			_land_skill(cast)
+		# **每一格都要过一遍**（M7-e）：玩家手放的技能也在飞，
+		# 只扫大招那一格的话它永远落不了地，而按钮那边看起来一切正常。
+		for i: int in PBSkillRules.cast_count(attacker):
+			var cast := PBSkillRules.cast_at(attacker, i)
+			# 已经下达的照样落地，哪怕施法者中途死了 —— 技能已经出手了。
+			# 那是 §02 施法延迟的直接后果，也是「预判」这件事的对称代价。
+			if cast != null and cast.is_pending() and _tick >= cast.lands_at:
+				_land_skill(cast)
 	for attacker: PBAttacker in _attackers:
 		attacker.regen_mana()
 	for attacker: PBAttacker in _attackers:
@@ -326,7 +339,8 @@ func _resolve_ultimates() -> void:
 	_skip_dead()
 
 
-## 玩家亲手下达一发大招（§02，M5-9）。放得出来返回 true。
+## 玩家亲手下达一发地面技能（§02，M5-9）。**收下了返回 true，下一个 tick 才放出去**
+## （M7-h，见 [PBSkillOrders]）。
 ##
 ## ## 为什么手动要有一条自己的入口
 ##
@@ -336,77 +350,61 @@ func _resolve_ultimates() -> void:
 ##
 ## 门槛仍然是同一组（活着 / 冷却好了 / 蓝够），**而且必须共用一份**：
 ## 各写一份的话「按钮亮着但点了没反应」迟早出现，而它不报错。
-func cast_ultimate(attacker: PBAttacker, spot: Vector2) -> bool:
-	if not can_cast(attacker) or not PBSkillCast.is_spot(spot):
-		return false
-	var cast: PBSkillCast = attacker.ultimate
-	if cast.skill.target != PBSkill.Target.GROUND:
-		return false
-	cast.cast(spot, _tick)
-	_ordered(attacker, cast)
-	return true
+func cast_skill(attacker: PBAttacker, spot: Vector2, index: int = 0) -> bool:
+	return _orders.place(_attackers, _attackers.find(attacker), index, spot, -1, _tick)
 
 
 ## 玩家亲手把一发技能放在**一个队友**身上（[constant PBSkill.Target.ALLY]，M7-c）。
-## 放得出来返回 true。
 ##
 ## 目标要活着 —— 死人身上放不了。**而下达之后他再死掉是另一回事**：
 ## 那一发照样飞完，落地时空放（见 [method PBSkillRules.land_on_ally]）。
-func cast_ultimate_on(attacker: PBAttacker, target: PBAttacker) -> bool:
-	if not can_cast(attacker) or target == null or not target.is_targetable():
-		return false
-	var cast: PBSkillCast = attacker.ultimate
-	if cast.skill.target != PBSkill.Target.ALLY:
-		return false
-	cast.cast_on(target.slot, _tick)
-	_ordered(attacker, cast)
-	return true
+func cast_skill_on(attacker: PBAttacker, target: PBAttacker, index: int = 0) -> bool:
+	var slot: int = -1 if target == null else target.slot
+	return _orders.place(
+		_attackers, _attackers.find(attacker), index, PBSkillCast.NO_SPOT, slot, _tick
+	)
 
 
 ## 玩家亲手放一发**不需要挑目标**的技能（[constant PBSkill.Target.NONE]，M7-c）。
-## 放得出来返回 true。
-func cast_ultimate_now(attacker: PBAttacker) -> bool:
-	if not can_cast(attacker):
-		return false
-	var cast: PBSkillCast = attacker.ultimate
-	if cast.skill.target != PBSkill.Target.NONE:
-		return false
-	cast.cast_now(_tick)
-	_ordered(attacker, cast)
-	return true
+func cast_skill_now(attacker: PBAttacker, index: int = 0) -> bool:
+	return _orders.place(
+		_attackers, _attackers.find(attacker), index, PBSkillCast.NO_SPOT, -1, _tick
+	)
 
 
-## 这个人现在放不放得出大招。**指令卡那一格的亮/灰读的就是它。**
-func can_cast(attacker: PBAttacker) -> bool:
-	if attacker == null or not attacker.alive or attacker.ultimate == null:
-		return false
-	var cast: PBSkillCast = attacker.ultimate
-	return cast.is_ready(_tick) and attacker.can_pay(cast.skill.mp_cost)
+## 收回这个人手上那条还没放出去的指令（M7-h）。
+func cancel_order(attacker: PBAttacker) -> void:
+	_orders.cancel(_attackers.find(attacker))
 
 
-## 自动档下达一发地面技能。手动那三条各自定完落点/目标之后走
-## [method _ordered]，和这里共用后半段。
+## 这个人手上攒着的是第几格技能（-1 = 没有）。指令卡拿它显示「已下令」。
+func order_of(attacker: PBAttacker) -> int:
+	return _orders.index_of(_attackers.find(attacker))
+
+
+## 攒着的全部指令，下标和 [method attackers] 一一对应。**渲染层只读，不要改。**
+func orders() -> PBSkillOrders:
+	return _orders
+
+
+## 这个人现在放不放得出第 [param index] 个技能（0 = 大招）。
+## **指令卡那一格的亮/灰读的就是它。** 规则在 [method PBSkillRules.can_cast]。
+##
+## **它不看「手上攒着一条没放出去的指令」** —— 那是操作层的事
+## （指令卡把那一格写成「已下令」，见 [method PBSkillBar.show_on]）。
+## 混进来的话，一个攒着指令的人会被判成「放不出」，而放出去那一遍
+## 恰恰要再问一次这个函数。
+func can_cast(attacker: PBAttacker, index: int = 0) -> bool:
+	return PBSkillRules.can_cast(attacker, index, _tick)
+
+
+## 自动档下达一发地面技能。**不进指令队列** —— 队列是「玩家下的令」，
+## 而这一支是 [PBAimRules] 替玩家挑的落点，本来就发生在 tick 里面。
+## 下达之后那三件事两条路共用（[method PBSkillOrders.issue]）。
 func _order(attacker: PBAttacker, spot: Vector2) -> void:
 	var cast: PBSkillCast = attacker.ultimate
 	cast.cast(spot, _tick)
-	_ordered(attacker, cast)
-
-
-## 下达之后共同要做的三件事：扣蓝、挂自增益、记播报。
-##
-## 蓝在**下达**时扣，不是落地时 —— 落地时扣的话，施法延迟那段窗口里
-## 还能再下达一发（蓝还没扣掉），于是延迟越长反而放得越多，
-## 和冷却从落地算是同一个道理。
-##
-## [member PBSkill.on_self] 同理挂在这一刻（M7-c）：人已经把技能交出去了，
-## 自增益却要等落地才生效的话，玩家看到的是「按下去没反应」。
-func _ordered(attacker: PBAttacker, cast: PBSkillCast) -> void:
-	attacker.pay(cast.skill.mp_cost)
-	PBSkillRules.apply_on_self(attacker, cast, _cfg, _tick)
-	# **播报记在下达这一刻，不是落地那一刻**（M6-j）：玩家点下去就该看见
-	# 回音，而落地还隔着一整段施法延迟（那段延迟正是 §02 要的预判窗口）。
-	if log_to != null:
-		log_to.ultimate(_tick, attacker.slot)
+	PBSkillOrders.issue(attacker, cast, _cfg, _tick, log_to)
 
 
 ## 一发技能落地：圈人、挂效果、位置操纵全部交给 [PBSkillRules]。

@@ -15,6 +15,48 @@ extends RefCounted
 ## 混在一起写会让 [PBBattleSim] 的 `step()` 越来越难读。
 
 
+## 一个单位的第 [param index] 个技能（M7-e）。**0 是大招，1.. 是他自己表里的。**
+## 越界或者压根没有就返回 null。
+##
+## ## 为什么要一个统一的下标
+##
+## [member PBAttacker.ultimate] 和 [member PBAttacker.skills] 是两个字段
+## （来源不同，见那里），但**指令卡、瞄准状态机、施放入口三处只该认一个数**。
+## 各自去判「这一格是大招还是技能表里的」就是同一句话写三遍，
+## 而漏改一处的表现是「第二个技能的按钮点了放出第一个」，不报错。
+##
+## ## 为什么在这里，不做成 [PBAttacker] 的方法
+##
+## 那个类已经贴着 gdlint 的 20 个公开方法上限。而这件事本来就是**规则**
+## 不是**状态** —— 「第 0 个是大招」是一条约定，和「一发落在谁身上」同层。
+static func cast_at(unit: PBAttacker, index: int) -> PBSkillCast:
+	if unit == null or index < 0:
+		return null
+	if index == 0:
+		return unit.ultimate
+	var i: int = index - 1
+	return unit.skills[i] if i < unit.skills.size() else null
+
+
+## 这个人一共有几格技能（含大招那一格）。指令卡拿它决定画几个格子。
+static func cast_count(unit: PBAttacker) -> int:
+	return 0 if unit == null else 1 + unit.skills.size()
+
+
+## 他这一刻放不放得出第 [param index] 个技能：活着 / 冷却转好 / 蓝够（§3.5）。
+##
+## **指令卡那一格的亮灰、和真正下达时的第一道门，读的是同一份。**
+## 各写一份的话「按钮亮着但点了没反应」迟早出现，而它不报错 ——
+## 玩家只会觉得这一格时灵时不灵。
+static func can_cast(unit: PBAttacker, index: int, at_tick: int) -> bool:
+	if unit == null or not unit.alive:
+		return false
+	var cast := cast_at(unit, index)
+	if cast == null:
+		return false
+	return cast.is_ready(at_tick) and unit.can_pay(cast.skill.mp_cost)
+
+
 ## 这份技能的数据合不合法。返回空串表示没问题，否则是给人看的原因（M7-c）。
 ##
 ## 三条都是**静默生效**的错，所以必须在装表那一刻拦下来：
@@ -237,6 +279,10 @@ static func reset_other_cooldowns(
 	if not skill.reset_cooldowns:
 		return
 	for attacker: PBAttacker in attackers:
-		var other: PBSkillCast = attacker.ultimate
-		if other != null and other != caster and not other.is_pending():
-			other.ready_at = tick
+		# **每一格都清，不只是大招那一格**（M7-e）。只清大招的话，
+		# 这一条的强度会在角色配上技能的那一天悄悄缩水一半 ——
+		# 它的价值本来就与队伍里技能的**总量**成正比（见上）。
+		for i: int in cast_count(attacker):
+			var other := cast_at(attacker, i)
+			if other != null and other != caster and not other.is_pending():
+				other.ready_at = tick

@@ -219,8 +219,12 @@ func test_the_player_can_order_one_by_hand() -> void:
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	sim.step()
 	assert_true(sim.can_cast(caster), "开波冷却就是好的 —— 指令卡那一格该亮着")
-	assert_true(sim.cast_ultimate(caster, Vector2(0.5, 0.0)), "点了落点就该下达")
-	assert_false(sim.can_cast(caster), "下达之后进冷却，那一格立刻转灰")
+	assert_true(sim.cast_skill(caster, Vector2(0.5, 0.0)), "点了落点就该下令")
+	# **令攒着，下一个 tick 才出手**（M7-h，见 [PBSkillOrders]）——
+	# 在那之前指令卡把那一格写成「已下令」，而不是靠冷却把它变灰。
+	assert_eq(sim.order_of(caster), 0, "这一刻是攒在手上")
+	sim.step()
+	assert_false(sim.can_cast(caster), "出手之后进冷却，那一格才转灰")
 	for _i: int in 10:
 		sim.step()
 	assert_gt(sim.result().kills, 0, "延迟走完之后它该真的落地")
@@ -235,7 +239,7 @@ func test_an_order_off_the_field_is_refused_instead_of_swallowing_the_cooldown()
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	sim.step()
-	assert_false(sim.cast_ultimate(caster, PBSkillCast.NO_SPOT), "非法落点该被拒绝")
+	assert_false(sim.cast_skill(caster, PBSkillCast.NO_SPOT), "非法落点该被拒绝")
 	assert_true(sim.can_cast(caster), "而且冷却一点都没动")
 
 
@@ -245,10 +249,10 @@ func test_the_two_click_to_aim_modes_are_mutually_exclusive() -> void:
 	var picker := PBFieldPicker.new()
 	picker.toggle(PBFieldPicker.Aim.TARGET)
 	assert_true(picker.aiming, "按一下进入指定状态")
-	picker.toggle(PBFieldPicker.Aim.ULTIMATE)
+	picker.toggle(PBFieldPicker.Aim.SKILL)
 	assert_false(picker.aiming, "按忍术就该退出指定状态")
-	assert_eq(picker.aim_mode, PBFieldPicker.Aim.ULTIMATE, "并且换成等落点")
-	picker.toggle(PBFieldPicker.Aim.ULTIMATE)
+	assert_eq(picker.aim_mode, PBFieldPicker.Aim.SKILL, "并且换成等落点")
+	picker.toggle(PBFieldPicker.Aim.SKILL)
 	assert_eq(picker.aim_mode, PBFieldPicker.Aim.OFF, "再按一次退出 —— 那是能后悔的地方")
 
 
@@ -325,8 +329,11 @@ func test_right_click_takes_back_the_two_step_command() -> void:
 	# `Esc` 是第二条路，但按键和鼠标不在一只手上。
 	var root: Node2D = await _in_battle()
 	root._select(PBSelection.Kind.UNIT, root._plan.deployed[0].key())
-	root._on_command(PBCommandCard.CMD_ULTIMATE)
-	assert_eq(root._picker.aim_mode, PBFieldPicker.Aim.ULTIMATE, "先进入选落点状态")
+	# 忍术那一格 M7-h 删了，所以先给他配一个真技能 —— 没配技能的忍者
+	# 现在只会普攻，指令卡上一格都没有。
+	_lend_skill(root, 0)
+	root._on_command(PBCommandCard.CMD_SKILL_1)
+	assert_eq(root._picker.aim_mode, PBFieldPicker.Aim.SKILL, "先进入选落点状态")
 
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_RIGHT
@@ -341,12 +348,29 @@ func test_a_right_click_never_casts_or_names_anything() -> void:
 	var root: Node2D = await _in_battle()
 	var live: PBAttacker = root._battle.attackers()[0]
 	root._select(PBSelection.Kind.UNIT, root._plan.deployed[live.slot].key())
-	root._on_command(PBCommandCard.CMD_ULTIMATE)
-	var ready: bool = root._battle.can_cast(live)
+	_lend_skill(root, 0)
+	root._on_command(PBCommandCard.CMD_SKILL_1)
+	var ready: bool = root._battle.can_cast(live, 1)
 
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_RIGHT
 	press.pressed = true
 	press.position = PBLayout.to_screen(live.pos, root._field())
 	root._unhandled_input(press)
-	assert_eq(root._battle.can_cast(live), ready, "冷却一点都不该动")
+	assert_eq(root._battle.can_cast(live, 1), ready, "冷却一点都不该动")
+	assert_eq(root._battle.order_of(live), -1, "也不该顺手下一条令")
+
+
+## 给场上第 [param slot] 个忍者临时配一格地面技能，返回那一格的状态对象。
+##
+## 忍术那一格 M7-h 从指令卡上删了（见 [constant PBCommandCard.CMD_ULTIMATE]），
+## 而两步操作本身没变 —— 只是现在必须有一个**真配了技能**的人才按得着。
+func _lend_skill(root: Node2D, slot: int) -> PBSkillCast:
+	var skill := PBSkill.new()
+	skill.id = &"probe"
+	skill.radius = 1.0
+	skill.cooldown_ticks = 100
+	var cast := PBSkillCast.new(skill)
+	root._battle.attackers()[slot].skills.append(cast)
+	root._refresh_battle_panels()
+	return cast

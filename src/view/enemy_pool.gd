@@ -158,7 +158,10 @@ func sync_enemies(
 		node.position = screen_position(enemy, field)
 		_dress(i, enemy.element)
 		_animate(i, enemy)
-		node.modulate = _color_of(enemy)
+		# 身上挂着东西就染一层（M7-f）。**排在血量与白闪之后** ——
+		# 那两层讲的是「还剩多少血」和「刚挨了一下」，而这一层讲的是
+		# 「他现在被上了状态」，三句话都要说得出。
+		node.modulate = PBBuffStrip.tinted(_color_of(enemy), enemy.buffs, current_tick)
 		feet.append(node.position)
 	_ringed = show_counter_ring
 	_set_shadows(feet)

@@ -49,6 +49,17 @@ static func of_character(character: PBCharacter) -> String:
 	return text(character.name_key)
 
 
+## 一个技能的显示名（M7-e）。
+##
+## **查不到就退回它的 id**，不返回空串：指令卡那一格写的就是这个字，
+## 空的话玩家看到一个没有字的按钮，会以为格子坏了 —— 而少一条翻译
+## 本来只是「名字还没填」。
+static func of_skill(skill: PBSkill) -> String:
+	if skill == null:
+		return ""
+	return text(skill.name_key) if skill.name_key != "" else String(skill.id)
+
+
 ## 一组羁绊的显示名。
 static func of_bond(bond: PBBond) -> String:
 	if bond == null:

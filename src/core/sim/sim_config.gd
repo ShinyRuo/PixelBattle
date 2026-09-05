@@ -604,6 +604,15 @@ var equip_items_per_unit: int = 3
 ## 真表由 core 外面的加载器从 `data/equipment/*.tres` 装进来。
 var equipment: PBEquipTable = null
 
+## 逐角色的技能表（M7-g）。[member PBCharacter.skill_ids] 按 id 查它。
+##
+## **默认 null，而 null 就是「一个技能都没有」** —— 那不是没装表，
+## 那是 M7-g 之前的每一天。上面三张表各自有一份 `synthetic()` 替身，
+## 这一张没有，理由写在 [PBSkillTable] 顶上。
+##
+## 真表由 core 外面的加载器（[PBSkillLoader]）装进来。
+var skills: PBSkillTable = null
+
 ## 每件成品给持有者的战力加成。§10 的成品特效大多在 +20% 量级
 ## （物理档 +20% 普攻、法术档 +20% 法伤）。
 ##

@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://src/view/shot_pool.gd" id="15_shots"]
 [ext_resource type="Script" path="res://src/view/drop_area.gd" id="16_ground"]
 [ext_resource type="Script" path="res://src/view/aim_lines.gd" id="19_aim"]
+[ext_resource type="Script" path="res://src/view/skill_fx_pool.gd" id="20_skillfx"]
 [ext_resource type="Script" path="res://src/view/system_menu.gd" id="20_menu"]
 [ext_resource type="Script" path="res://src/view/battle_log_panel.gd" id="21_log"]
 
@@ -54,6 +55,9 @@ script = ExtResource("2_pool")
 
 [node name="Shots" type="Node2D" parent="."]
 script = ExtResource("15_shots")
+
+[node name="SkillFx" type="Node2D" parent="."]
+script = ExtResource("20_skillfx")
 
 [node name="Aim" type="Node2D" parent="."]
 script = ExtResource("19_aim")

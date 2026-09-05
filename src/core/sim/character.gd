@@ -20,9 +20,10 @@ extends Resource
 ##
 ## ## 已知的省略
 ##
-## - `skill_ids: Array[StringName]` —— 技能表还没有（M7 的 `Docs/技能与BUFF系统.md`，
-##   决策 6：大招之外最多两个）；大招现在由 [PBSkill] 按统一规则生成，
-##   角色只能覆盖它的属性（[member ultimate_element_override]）
+## - ~~`skill_ids`~~ **M7-g 兑现了**，见 [member skill_ids]。
+##   大招仍然由 [PBSkill] 按统一规则生成（全场共用一套数值），
+##   角色只能覆盖它的属性（[member ultimate_element_override]）；
+##   而 `skill_ids` 点的是 `data/skills/` 里逐角色独有的那几个
 ##
 ## §09 那行 `base_stats: PBStats` 从 M2-a 起一直空着（那时战力只有一条
 ## `rarity_power` 阶梯），**M3.5-a 把它兑现了** —— 见下面那一批二级属性字段。
@@ -47,6 +48,9 @@ enum Reach {
 ## 原作是 War3 的 RPG 地图，这套「三属性 + 一个主属性吃攻击」的骨架直接沿用 ——
 ## 它已经被验证过几十年，而且玩家一眼就懂。
 enum Primary { STRENGTH, AGILITY, INTELLECT }
+
+## 一个角色最多配几个技能（决策 6）。见 [member skill_ids]。
+const MAX_SKILLS: int = 2
 
 ## 全局唯一 id。**代码里不出现角色名，一律走 id**（§14 铁律 5）。
 ##
@@ -165,6 +169,25 @@ enum Primary { STRENGTH, AGILITY, INTELLECT }
 ## 那个枚举是 §03 的克制环本身，往里塞一个不参与克制的值，
 ## 会让每一处遍历五系的代码都要多记一条例外。
 @export var ultimate_element_override: int = -1
+
+## 大招之外，这个角色还会哪几个技能（决策 6，M7-g）。
+## 每一项是 `data/skills/<id>.tres` 的 id。**最多两个**，数据测试钉着。
+##
+## ## 为什么上限是 2
+##
+## 把大招数进去之后它和 §08 那张稀有度表严丝合缝：
+## R 一个（大招）、SR 两个、SSR 三个、USR 三个 + 专属机制。
+## §08 那句「稀有度剩下的价值走技能数，不走数值」本来就要一个技能表来承接，
+## 而它从 M2-a 起一直空着（本类顶上「已知的省略」第一条）。
+##
+## ## 空着 = 一字不差
+##
+## 技能**只有玩家手动放得出**（自动档只挑地面落点，`PBAimRules` 不知道
+## 该治谁；§6 那条「批量扫描不吃技能」就是这个意思）。所以给一个角色
+## 填上这一项**不改变任何自动跑出来的数字** —— 批量扫描、悬崖二分、
+## 配平回归全都碰不到它，和 M3.5-f 装备那条「空着 = 一字不差」同形，
+## 只是这一次连「填上了」也一字不差。
+@export var skill_ids: Array[StringName] = []
 
 
 ## 大招实际打什么属性。见 [member ultimate_element_override]。

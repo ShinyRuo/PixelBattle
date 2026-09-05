@@ -165,7 +165,8 @@ func sync_allies(
 	attackers: Array[PBAttacker],
 	units: Array[PBUnit],
 	field: Vector2,
-	enemies: Array[PBEnemy]
+	enemies: Array[PBEnemy],
+	current_tick: int = 0
 ) -> void:
 	var shown: int = 0
 	var feet := PackedVector2Array()
@@ -177,7 +178,7 @@ func sync_allies(
 			continue
 		var at := PBLayout.to_screen(attacker.pos, field)
 		var unit: PBUnit = units[attacker.slot] if attacker.slot < units.size() else null
-		_place(shown, at, attacker, unit, _look_x(attacker, enemies))
+		_place(shown, at, attacker, unit, _look_x(attacker, enemies), current_tick)
 		# 死人不留影子 —— 人已经躺下了，一个还站在地上的影子会让人
 		# 以为他还在那儿挡着。
 		if attacker.alive:
@@ -212,7 +213,7 @@ func sync_placed(units: Array[PBUnit], spots: Array[Vector2], field: Vector2) ->
 		sprite.modulate = _tint(skin, units[i].element)
 		# 站着等开打：一律待机、一律朝着敌人来的那一侧。
 		_poses[i].reset(spots[i], PBActorPose.FACE_RIGHT)
-		_animate(i, skin, PBActorPose.State.IDLE, 1.0)
+		_animate(i, skin, skin.anim_for(PBActorPose.State.IDLE), 1.0)
 		_backs[i].visible = false
 		_fills[i].visible = false
 		feet.append(at)
@@ -274,28 +275,42 @@ func _set_shadows(feet: PackedVector2Array) -> void:
 ## 按中心锚的话，一个高个子和一个矮个子站在同一条线上会排出先后，
 ## 而他们其实并排站着。真精灵进来之后这条更硬：素材高度各不相同，
 ## 中心锚会让同一排人前后乱跳。
-func _place(index: int, at: Vector2, attacker: PBAttacker, unit: PBUnit, look_x: float) -> void:
+func _place(
+	index: int,
+	at: Vector2,
+	attacker: PBAttacker,
+	unit: PBUnit,
+	look_x: float,
+	current_tick: int
+) -> void:
 	_anchors[index].position = at
 	var skin := _dress(index, unit)
 	var sprite: AnimatedSprite2D = _sprites[index]
 	sprite.visible = true
 
-	var casting: bool = attacker.ultimate != null and attacker.ultimate.is_pending()
+	# **每一格都要问**（M7-e/f）：只看大招那一格的话，玩家手放的技能
+	# 一整段施法期间人是站着不动的，而那半秒正是 §02 的预判窗口。
+	var cast := _pending_cast(attacker)
 	var hold: int = _hold_frames(attacker.attack_interval())
 	var pose: PBActorPose = _poses[index]
-	pose.update(attacker.pos, attacker.alive, attacker.next_shot_at, casting, look_x, hold)
+	pose.update(attacker.pos, attacker.alive, attacker.next_shot_at, cast != null, look_x, hold)
 
 	var fit: float = 1.0
+	var anim: StringName = skin.anim_for(pose.state)
 	if pose.state == PBActorPose.State.ATTACK:
-		fit = _fit(skin, skin.anim_for(pose.state), attacker.attack_interval())
-	_animate(index, skin, pose.state, fit)
+		fit = _fit(skin, anim, attacker.attack_interval())
+	elif pose.state == PBActorPose.State.CAST and cast != null and cast.skill.id != &"":
+		# 逐角色的忍术动画（[member PBActorSkin.skill_anims]）。这张表
+		# M6-b 就建好了，但在 [member PBSkill.id] 之前**没有键可查** ——
+		# §09 的功能档与 §11 的尾兽大招共用一套实现，区别只在这张表里。
+		anim = skin.skill_anim(cast.skill.id)
+	_animate(index, skin, anim, fit)
 
 	if not attacker.alive:
 		sprite.modulate = DEAD_COLOR
-	elif unit == null:
-		sprite.modulate = Color.WHITE
 	else:
-		sprite.modulate = _tint(skin, unit.element)
+		var base: Color = Color.WHITE if unit == null else _tint(skin, unit.element)
+		sprite.modulate = PBBuffStrip.tinted(base, attacker.buffs, current_tick)
 
 	# 死了不画血条 —— 一条空血条和一条读不出来的血条长得一样，
 	# 而人已经躺下并压暗了，那一格信息不需要说两遍。
@@ -344,9 +359,20 @@ func _dress(index: int, unit: PBUnit) -> PBActorSkin:
 
 ## 播这一段。**同一段不重播** —— 每帧重播会把动画钉死在第一帧，
 ## 而那看起来就是「这个人不会动」。
-func _animate(index: int, skin: PBActorSkin, state: int, fit: float) -> void:
+## 有没有一发在路上，有的话是哪一格（M7-e）。没有就返回 null。
+##
+## 先到先得：同一 tick 里两发都在飞时播前一格那一段 —— 一个人身上
+## 只有一副骨架，而「同时播两段」不是一个能表达的东西。
+static func _pending_cast(attacker: PBAttacker) -> PBSkillCast:
+	for i: int in PBSkillRules.cast_count(attacker):
+		var cast := PBSkillRules.cast_at(attacker, i)
+		if cast != null and cast.is_pending():
+			return cast
+	return null
+
+
+func _animate(index: int, skin: PBActorSkin, anim: StringName, fit: float) -> void:
 	var sprite: AnimatedSprite2D = _sprites[index]
-	var anim: StringName = skin.anim_for(state)
 	if sprite.animation != anim or not sprite.is_playing():
 		sprite.play(anim)
 	sprite.speed_scale = _anim_speed * fit

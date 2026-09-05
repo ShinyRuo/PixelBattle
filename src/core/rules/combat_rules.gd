@@ -231,6 +231,7 @@ static func build_attackers(
 		# 而 [PBAttacker] 身上没有也不该有 `level` —— 见
 		# [member PBSkillCast.caster_level]。
 		attacker.ultimate = PBSkillCast.new(skill, unit.level)
+		_equip_skills(attacker, unit, cfg)
 		out[i] = attacker
 
 	var beast_attacker := PBBeastRules.build_ultimate_attacker(
@@ -239,6 +240,37 @@ static func build_attackers(
 	if beast_attacker != null:
 		out.append(beast_attacker)
 	return out
+
+
+## 把角色表里那几个技能挂到攻击者身上（决策 6，M7-g）。
+##
+## ## 每人一份自己的拷贝，不共享 `data/` 里那一份
+##
+## [PBSkillCast] 会记冷却与落点，共享的话两个人的冷却是同一个 ——
+## 而 [method PBSkill.clone] 顶上还有一条更硬的：悬崖二分要能就地改伤害
+## （[method PBValuation._leaks_at]），共享会污染正在真正战斗的那一份。
+##
+## ## 查不到就跳过，而且要报错
+##
+## 拼错一个 id 的表现是「这个角色少了一个技能」—— 指令卡上少一格，
+## 而少的那一格看起来和「他本来就只有一个技能」一模一样。
+## 静默跳过的话没有任何地方说得出发生过什么。
+##
+## 超过两个也只取前两个（决策 6）：指令卡那一行只画得下两格
+## （[constant PBCommandCard.SKILL_COMMANDS]），多出来的放不出去 ——
+## 而「配了却放不出」比「没配」更难查。
+static func _equip_skills(attacker: PBAttacker, unit: PBUnit, cfg: PBSimConfig) -> void:
+	if cfg.skills == null:
+		return
+	for id: StringName in unit.character.skill_ids:
+		if attacker.skills.size() >= PBCharacter.MAX_SKILLS:
+			push_error("这个角色配了超过 %d 个技能，多出来的放不出去" % PBCharacter.MAX_SKILLS)
+			return
+		var skill: PBSkill = cfg.skills.by_id(id)
+		if skill == null:
+			push_error("角色表里点了一个不存在的技能：%s" % id)
+			continue
+		attacker.skills.append(PBSkillCast.new(skill.clone(), unit.level))
 
 
 ## 造一个单位这一波的大招（§02，M3-b）。

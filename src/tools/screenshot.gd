@@ -56,7 +56,7 @@ var _press: Array[int] = []
 ## 而那正是本工具存在的理由。
 var _hover: int = -1
 
-## 摆出「正在等你点」的那一档：`attack` / `ultimate`。空 = 不摆。
+## 摆出「正在等你点」的那一档：`attack` / `skill`。空 = 不摆。
 var _aim: String = ""
 
 ## 截图前一刻按下暂停（M5-12）。**A 线在暂停时画全场**，
@@ -221,11 +221,15 @@ func _hover_tile() -> void:
 ## 鼠标要**真的挪过去**（`warp_mouse`）—— 那两条线的终点读的是
 ## [method Viewport.get_mouse_position]，不挪的话终点是屏幕左上角。
 func _aim_at() -> void:
-	if _aim != "attack" and _aim != "ultimate":
-		printerr("--aim 只认 attack / ultimate，收到：%s" % _aim)
+	# **`ultimate` 这一档 M7-h 没了**：忍术格从指令卡上删掉了，
+	# 而 [method PBSkillBar.begin] 连带堵死了下标 0 那条路 ——
+	# 留着这个名字的话它会静默什么都不发生。`skill` 指的是选中那个人的第 1 格，
+	# 他没配技能就什么都不摆（那正是现在的默认情况）。
+	if _aim != "attack" and _aim != "skill":
+		printerr("--aim 只认 attack / skill，收到：%s" % _aim)
 		return
 	_scene._on_command(
-		PBCommandCard.CMD_ATTACK if _aim == "attack" else PBCommandCard.CMD_ULTIMATE
+		PBCommandCard.CMD_ATTACK if _aim == "attack" else PBCommandCard.CMD_SKILL_1
 	)
 	Input.warp_mouse(PBLayout.B_FIELD.position + PBLayout.B_FIELD.size * Vector2(0.62, 0.45))
 

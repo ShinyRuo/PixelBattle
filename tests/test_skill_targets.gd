@@ -133,7 +133,7 @@ func test_a_heal_reaches_the_one_who_was_pointed_at() -> void:
 	# 开波会 revive（满血），所以掉血放在那之后。
 	hurt.hp = 100.0
 	medic.hp = 100.0
-	assert_true(sim.cast_ultimate_on(medic, hurt), "点了队友就该放得出")
+	assert_true(sim.cast_skill_on(medic, hurt), "点了队友就该放得出")
 	sim.step()
 	assert_almost_eq(hurt.hp, 220.0, 0.001, "被点的那个该回血")
 	assert_almost_eq(medic.hp, 100.0, 0.001, "没被点的施法者自己不该跟着回")
@@ -149,7 +149,7 @@ func test_a_target_that_dies_before_impact_is_a_dud_not_a_crash() -> void:
 	skill.on_hit = [_heal(120.0)]
 	var squad: Array[PBAttacker] = [medic, doomed]
 	var sim := PBBattleSim.new(_wave(), 0.0, 0.0, _cfg, squad)
-	assert_true(sim.cast_ultimate_on(medic, doomed), "先放出去")
+	assert_true(sim.cast_skill_on(medic, doomed), "先放出去")
 	doomed.alive = false
 	doomed.hp = 0.0
 	sim.step()
@@ -167,7 +167,7 @@ func test_a_dead_friend_cannot_be_pointed_at_in_the_first_place() -> void:
 	var squad: Array[PBAttacker] = [medic, corpse]
 	var sim := PBBattleSim.new(_wave(), 0.0, 0.0, _cfg, squad)
 	corpse.alive = false
-	assert_false(sim.cast_ultimate_on(medic, corpse), "死人身上放不了")
+	assert_false(sim.cast_skill_on(medic, corpse), "死人身上放不了")
 	assert_true(sim.can_cast(medic), "而且冷却一点都没动")
 
 
@@ -180,7 +180,7 @@ func _heal_at_level(level: int) -> float:
 	var squad: Array[PBAttacker] = [medic, patient]
 	var sim := PBBattleSim.new(_wave(), 0.0, 0.0, _cfg, squad)
 	patient.hp = 100.0
-	sim.cast_ultimate_on(medic, patient)
+	sim.cast_skill_on(medic, patient)
 	sim.step()
 	return patient.hp
 
@@ -204,7 +204,7 @@ func test_a_skill_edited_after_it_was_wrapped_still_takes_effect() -> void:
 	# 包完之后才往技能上装效果 —— 顺序反过来也必须一样。
 	skill.on_hit = [_heal(70.0)]
 	patient.hp = 100.0
-	sim.cast_ultimate_on(medic, patient)
+	sim.cast_skill_on(medic, patient)
 	sim.step()
 	assert_almost_eq(patient.hp, 170.0, 0.001, "后装上去的效果照样要生效")
 
@@ -212,17 +212,22 @@ func test_a_skill_edited_after_it_was_wrapped_still_takes_effect() -> void:
 # ── 不用挑目标那一档 ────────────────────────────────────────────
 
 
-func test_a_self_buff_lands_the_moment_it_is_ordered() -> void:
-	# 人已经把技能交出去了，自增益却要等落地才生效的话，
-	# 玩家看到的是「按下去没反应」。
+func test_a_self_buff_lands_the_moment_the_skill_goes_off() -> void:
+	# 人已经把技能交出去了，自增益却要等**落地**才生效的话，
+	# 玩家看到的是「按下去没反应」—— 所以它挂在出手那一刻，不是落地那一刻。
+	#
+	# **出手是下一个 tick**（M7-h）：玩家下的令先攒在
+	# [PBSkillOrders] 里，暂停时因此一个字都不变。
 	var caster := _ally(0)
 	var skill := _give(caster, PBSkill.Target.NONE, PBSkill.Party.ALLIES)
 	skill.on_self = [_heal(90.0)]
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(_wave(), 0.0, 0.0, _cfg, squad)
 	caster.hp = 100.0
-	assert_true(sim.cast_ultimate_now(caster), "不用挑目标，按下去就该放得出")
-	assert_almost_eq(caster.hp, 190.0, 0.001, "**下达那一刻**就该回上，不用等下一 tick")
+	assert_true(sim.cast_skill_now(caster), "不用挑目标，按下去就该下得了令")
+	assert_almost_eq(caster.hp, 100.0, 0.001, "令还攒着的时候一点都不该回")
+	sim.step()
+	assert_almost_eq(caster.hp, 190.0, 0.001, "**出手那一刻**就该回上，不用等落地")
 
 
 func test_a_field_wide_strike_reaches_everyone_regardless_of_distance() -> void:
@@ -235,7 +240,7 @@ func test_a_field_wide_strike_reaches_everyone_regardless_of_distance() -> void:
 	skill.radius = 0.0
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(wave, 0.0, 0.0, _cfg, squad)
-	assert_true(sim.cast_ultimate_now(caster), "该放得出")
+	assert_true(sim.cast_skill_now(caster), "该放得出")
 	sim.step()
 	assert_eq(sim.result().kills, wave.count, "整波都该吃到，半径一点都不管用")
 
@@ -251,10 +256,10 @@ func test_each_entry_only_takes_the_shape_it_is_for() -> void:
 	_give(caster, PBSkill.Target.ALLY, PBSkill.Party.ALLIES)
 	var squad: Array[PBAttacker] = [caster, mate]
 	var sim := PBBattleSim.new(_wave(), 0.0, 0.0, _cfg, squad)
-	assert_false(sim.cast_ultimate(caster, Vector2(0.5, 0.1)), "锁定档不吃落点")
-	assert_false(sim.cast_ultimate_now(caster), "也不吃「不挑目标」那条")
+	assert_false(sim.cast_skill(caster, Vector2(0.5, 0.1)), "锁定档不吃落点")
+	assert_false(sim.cast_skill_now(caster), "也不吃「不挑目标」那条")
 	assert_true(sim.can_cast(caster), "两次都被拒之后冷却该一点没动")
-	assert_true(sim.cast_ultimate_on(caster, mate), "对的那条照样放得出")
+	assert_true(sim.cast_skill_on(caster, mate), "对的那条照样放得出")
 
 
 func test_the_automatic_policy_never_fires_a_targeted_skill() -> void:

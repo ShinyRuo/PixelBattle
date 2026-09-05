@@ -27,4 +27,5 @@ static func install(cfg: PBSimConfig) -> PBSimConfig:
 	PBBondLoader.install(cfg)
 	PBEquipLoader.install(cfg)
 	PBBeastLoader.install(cfg)
+	PBSkillLoader.install(cfg)
 	return cfg

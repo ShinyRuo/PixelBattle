@@ -134,7 +134,10 @@ func test_casting_a_jutsu_is_announced_when_it_is_ordered() -> void:
 	squad[0].ultimate = PBSkillCast.new(skill)
 	var sim := _sim(_wave(9), squad, log)
 	sim.step()
-	assert_true(sim.cast_ultimate(squad[0], Vector2(0.5, 0.0)), "前提：这一发放得出去")
+	assert_true(sim.cast_skill(squad[0], Vector2(0.5, 0.0)), "前提：这一发放得出去")
+	# 玩家下的令先攒一个 tick（M7-h，见 [PBSkillOrders]）——
+	# 播报记的是**出手**那一刻，而那一刻在下一个 tick 上。
+	sim.step()
 	var casts: int = 0
 	for entry: Dictionary in log.entries:
 		if entry["kind"] == PBBattleLog.Kind.ULTIMATE:

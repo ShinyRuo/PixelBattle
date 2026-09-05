@@ -75,8 +75,13 @@ func base_hit(at_tick: int, amount: float) -> void:
 
 ## 谁下达了忍术（**下达那一刻，不是落地那一刻**）——
 ## 玩家点下去就该看见回音，而落地还要等施法延迟。
-func ultimate(at_tick: int, slot: int) -> void:
-	_add({"kind": Kind.ULTIMATE, "tick": at_tick, "source": slot})
+##
+## [param to_ally] 是这一发落在自己人身上（治疗、增益）还是敌人身上。
+## **记在这里而不是让渲染层回头去问那个技能**（M7-f）：一个人现在有好几格
+## （[method PBSkillRules.cast_at]），而这条播报只记了「谁放的」——
+## 回头去问的话只能问到第 0 格，于是第 1 格的治疗会被画成打人的颜色。
+func ultimate(at_tick: int, slot: int, to_ally: bool = false) -> void:
+	_add({"kind": Kind.ULTIMATE, "tick": at_tick, "source": slot, "to_ally": to_ally})
 
 
 ## 整局清空。**只在重开一局时调**（玩家定的：日志只保留一局）——

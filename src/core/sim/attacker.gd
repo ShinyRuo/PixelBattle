@@ -212,6 +212,23 @@ var aim_at: int = -1
 ## 所以 M3-a 那条对拍不受技能系统影响。
 var ultimate: PBSkillCast = null
 
+## 这个角色**自己表里**的技能（M7-e）。**最多两个**（决策 6）。
+##
+## ## 为什么和 [member ultimate] 分成两个字段
+##
+## 它们的来源不同：大招由 [method PBCombatRules._build_skill] 按
+## [PBSimConfig] 现造（全场共用一套数值），而这几个来自
+## `PBCharacter.skill_ids` → `data/skills/*.tres`（逐角色）。
+## 合成一个数组的话「第 0 个是不是大招」就成了一条要靠约定维持的规矩，
+## 而 [member PBSkill.carry_over_ticks]（尾兽的跨波冷却）恰恰只对大招成立。
+##
+## 统一的下标访问走 [method PBSkillRules.cast_at]（0 = 大招，1.. = 这里），
+## 指令卡与 [PBBattleSim] 的入口都只认那个下标 —— **两个字段，一把尺子。**
+##
+## **v1 是空的**：没有任何角色配了 `skill_ids`，所以全部既有配平数字一个不动，
+## 和 M3.5-f 装备那条「空着 = 一字不差」同形。
+var skills: Array[PBSkillCast] = []
+
 ## 他身上现在挂着的效果（§03A，M7-a）。**永远不为 null** ——
 ## 空 bag 的合计值是不折不扣的中性值（率型 1.0、量型 0.0），
 ## 所以「没有 buff」和「有一个什么都不改的 buff」在数值上不可区分，
@@ -277,7 +294,11 @@ func clone() -> PBAttacker:
 		# （见 [method PBValuation._leaks_at]），共享的话那一下改动会
 		# 污染真正在战斗的那一份，而它不报错。冷却/落点状态不带 ——
 		# 复制品对应「这一波都还没放过的它」。见 [method PBSkill.clone]。
-		out.ultimate = PBSkillCast.new(ultimate.skill.clone())
+		out.ultimate = PBSkillCast.new(ultimate.skill.clone(), ultimate.caster_level)
+	# 角色自己那几个走同一条规矩（M7-e）。**等级要跟过来** ——
+	# 效果数值是按它现算的（决策 7），漏掉的话复制品的治疗量恒等于 1 级。
+	for cast: PBSkillCast in skills:
+		out.skills.append(PBSkillCast.new(cast.skill.clone(), cast.caster_level))
 	# **不复制身上挂着的效果**，给一个空的 —— 和 `hp` 取 `max_hp` 同一条：
 	# 复制品是「一个刚站起来的他」，不是「他现在这个样子」。
 	out.buffs = PBBuffBag.new()

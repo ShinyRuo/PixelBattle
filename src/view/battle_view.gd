@@ -16,7 +16,7 @@ extends Node2D
 ## 画图与 HUD 一个字段都不回写；改状态只能走 [PBRunSim] 的 `plan_wave` /
 ## `settle_wave`（批量模拟走的同一条路）。**只有两个例外，都是玩家的指令，
 ## 而且各自只有一个入口**：点名（[member PBAttacker.forced_target]）
-## 和手动放忍术（[method PBBattleSim.cast_ultimate]）。
+## 和手动放忍术（[method PBBattleSim.cast_skill]）。
 
 ## 一波的三个阶段（§01）。**准备阶段不限时，等玩家**（M1 把它显式拆出来，
 ## 在那之前它被 [method PBRunSim.plan_wave] 在一帧里做完了）。
@@ -94,9 +94,10 @@ var _picker := PBFieldPicker.new()
 ## 「上一波是怎么崩的」在结算那一眼就没了。
 var _log := PBBattleLog.new()
 
-## 选中那个忍者上一帧放不放得出忍术（M5-9）。
+## 选中那个忍者上一帧那几格技能是什么状态（M5-9；M7-h 起是一个位掩码）。
 ## 只记「上一次是什么」，好在真的翻面那一帧才去重排指令卡。
-var _cast_ready: bool = false
+## 压的是哪两件事见 [method PBSkillBar.state_mask]。
+var _cast_ready: int = 0
 
 
 ## 击杀顿帧还剩几个物理帧。**它不碰 tick 序列**：期间只是不调
@@ -112,6 +113,7 @@ var _hitstop_frames: int = 0
 @onready var _allies: PBAllyPool = $Actors/Deployed
 @onready var _telegraph: PBTelegraphPool = $Telegraph
 @onready var _floats: PBFloatTextPool = $Floats
+@onready var _fx: PBSkillFxPool = $SkillFx
 @onready var _aim: PBAimLines = $Aim
 @onready var _lane: ColorRect = $Lane
 @onready var _limit: ColorRect = $Limit
@@ -258,10 +260,12 @@ func _on_battle_command(command_id: StringName) -> void:
 	match command_id:
 		PBCommandCard.CMD_ATTACK:
 			_picker.toggle(PBFieldPicker.Aim.TARGET)
-		PBCommandCard.CMD_ULTIMATE:
-			_picker.toggle(PBFieldPicker.Aim.ULTIMATE)
 		PBCommandCard.CMD_CLEAR_TARGET:
 			_picker.release(_battle, _selected_attacker())
+		_:
+			# 忍术和角色自己那两个技能走同一条路（M7-e）：格子号就是
+			# [method PBSkillRules.cast_at] 的下标，**不在这儿再分一次档**。
+			PBSkillBar.begin(_battle, _picker, _selected_attacker(), command_id)
 	_refresh_battle_panels()
 
 
@@ -414,7 +418,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# 玩家需要一条不用把手挪回指令卡的退路。`Esc` 是第二条路。
 		elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed:
 			if _picker.aim_mode != PBFieldPicker.Aim.OFF:
-				_picker.aim_mode = PBFieldPicker.Aim.OFF
+				_picker.stop()
 				_refresh_battle_panels()
 		return
 	if not (event is InputEventKey) or not event.is_pressed() or event.is_echo():
@@ -469,7 +473,7 @@ func _on_escape() -> void:
 		return
 	# 战斗中还多一层：先退出「正在等你点战场」（M4-e / M5-9 的忍术）。
 	if _picker.aim_mode != PBFieldPicker.Aim.OFF:
-		_picker.aim_mode = PBFieldPicker.Aim.OFF
+		_picker.stop()
 		_refresh_panels()
 		return
 	if _selection.kind != PBSelection.Kind.NONE:
@@ -577,7 +581,7 @@ func _finish_prepare() -> void:
 	_log.note(0, PBBattleLogPanel.opening_line(_plan.wave, _state, _cfg))
 	_frame_counter = 0
 	_phase = Phase.BATTLE
-	_picker.aim_mode = PBFieldPicker.Aim.OFF
+	_picker.stop()
 	# **再摆一次面板。** 上面那次是在 `_phase` 还是 PREPARE 时调的，
 	# 而指令卡与信息栏的可见性现在要看阶段（§02 的战斗中操作，M4-e）——
 	# 少这一行的话那两块会一直藏到下一波准备阶段。
@@ -695,13 +699,7 @@ func _refresh_panels() -> void:
 ## 每帧重排整块文字要跑一次装备分配，一秒六十次太贵，而那几行字
 ## 在一波之内根本不变。会变的血蓝条走 [method PBUnitInfo.show_live]。
 func _refresh_battle_panels() -> void:
-	var live := _selected_attacker()
-	_command.set_battle(
-		true,
-		_picker.aim_mode,
-		live.forced_target if live != null else -1,
-		_battle != null and _battle.can_cast(live)
-	)
+	PBSkillBar.show_on(_command, _battle, _selected_attacker(), _picker)
 	_command.refresh(_selection, _state, _cfg, _plan, _plan.deployed)
 	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, _plan.deployed)
 
@@ -743,14 +741,12 @@ func _on_field_click(at: Vector2) -> void:
 		_picker.aim(
 			_battle, _selected_attacker(), _picker.enemy_at(_battle, spot, field, pick)
 		)
-		_picker.aim_mode = PBFieldPicker.Aim.OFF
+		_picker.stop()
 		_refresh_battle_panels()
 		return
-	# 正在选忍术落点（M5-9）：战场上**哪个点都算**，不用点中谁 ——
-	# 大招打的是一个圆，「落在哪」本来就是玩家要挑的那件事。
-	if _picker.aim_mode == PBFieldPicker.Aim.ULTIMATE:
-		_battle.cast_ultimate(_selected_attacker(), spot)
-		_picker.aim_mode = PBFieldPicker.Aim.OFF
+	if _picker.aim_mode == PBFieldPicker.Aim.SKILL:
+		PBSkillBar.land(_battle, _picker, _selected_attacker(), spot, field, pick)
+		_picker.stop()
 		_refresh_battle_panels()
 		return
 	var ally := _picker.ally_at(_battle, spot, field, pick)
@@ -863,22 +859,25 @@ func _sync_visuals() -> void:
 	if _battle == null:
 		_pool.sync_enemies([], 0, field, false)
 		_telegraph.clear()
+		_fx.clear()
 		_shots.clear()
 		_sync_placed(field)
 	else:
 		_feedback()
-		_telegraph.sync_pending(_battle.attackers(), _battle.current_tick(), field)
+		_fx.echo(_log, _battle.attackers(), field)
+		var now: int = _battle.current_tick()
+		_telegraph.sync_pending(_battle.attackers(), now, field)
 		# 飞行中的子弹（M4-b）。**它是 sim 里真有的东西** ——
 		# 伤害要等它够到目标才结算，见 [PBProjectile]。
 		_shots.sync_shots(_battle.shots(), field)
 		# §02 第 8 点：己方忍者也要画在场上。射程、站位、防挤、敌人还手
 		# 四件事全都只有在这里才看得见 —— 那是 M3-a 到 M3.5-c 做的全部内容。
 		# 敌人那一份只用来查「他要打的那个在哪」（朝向，M6-b）。
-		_allies.sync_allies(_battle.attackers(), _plan.deployed, field, _battle.enemies())
+		_allies.sync_allies(_battle.attackers(), _plan.deployed, field, _battle.enemies(), now)
 		# §02 的第三层视觉编码：克得住的敌人加一圈亮边。
 		# 这是玩家在战斗中最需要的即时信息 —— 原版要点开技能说明才看得到。
 		var counterable: bool = _state.can_counter(_plan.wave.element)
-		_pool.sync_enemies(_battle.enemies(), _battle.current_tick(), field, counterable)
+		_pool.sync_enemies(_battle.enemies(), now, field, counterable)
 		_sync_selected(field)
 	_sync_base()
 	_sync_info()
@@ -934,7 +933,7 @@ func _sync_selected(field: Vector2) -> void:
 	# **暂停时绿线画全场**（M5-12）：那正是用来读局面的一刻。
 	_aim.sync(
 		# 鼠标同样走画布坐标，不走窗口像素 —— 见 [method _unhandled_input]。
-		_battle, field, live, _picker.aim_mode, get_global_mouse_position(), _paused
+		_battle, field, live, _picker, get_global_mouse_position(), _paused
 	)
 	if live == null:
 		_allies.show_range(Vector2.ZERO, 0.0)
@@ -942,11 +941,12 @@ func _sync_selected(field: Vector2) -> void:
 	_allies.show_range(
 		PBLayout.to_screen(live.pos, field), live.reach * PBLayout.px_per_unit(field)
 	)
-	_unit_info.show_live(live)
-	# 忍术那一格的亮/灰会在战斗中途自己变（冷却转好、蓝攒够，M5-9），
+	_unit_info.show_live(live, _battle.current_tick())
+	# 技能格的亮/灰会在战斗中途自己变（冷却转好、蓝攒够，M5-9），
+	# 攒着的那条指令放出去时也要换字（M7-h），
 	# 而指令卡整块只在选中变了之后才重排。**只在真的翻面那一帧重排** ——
 	# 每帧重排要跑一次装备分配，一秒六十次太贵（见 [method _refresh_battle_panels]）。
-	var ready: bool = _battle != null and _battle.can_cast(live)
+	var ready: int = PBSkillBar.state_mask(_battle, live)
 	if ready != _cast_ready:
 		_cast_ready = ready
 		_refresh_battle_panels()

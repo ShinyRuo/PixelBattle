@@ -213,7 +213,7 @@ func test_the_team_damage_buff_lands_on_everyone() -> void:
 	one.ultimate = PBSkillCast.new(skill)
 	var squad: Array[PBAttacker] = [one, two]
 	var sim := PBBattleSim.new(wave, 0.0, 0.0, _cfg, squad)
-	sim.cast_ultimate(one, Vector2(0.5, 0.1))
+	sim.cast_skill(one, Vector2(0.5, 0.1))
 	for _i: int in 20:
 		sim.step()
 	var at: int = sim.current_tick()

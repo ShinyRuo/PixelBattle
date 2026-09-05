@@ -67,5 +67,9 @@
 	"beast.saiken": "六尾 犀犬",
 	"beast.chomei": "七尾 重明",
 	"beast.gyuki": "八尾 牛鬼",
-	"beast.kurama": "九尾 九喇嘛"
+	"beast.kurama": "九尾 九喇嘛",
+	"skill.medical_ninjutsu": "医疗忍术",
+	"buff.heal_burst": "瞬回",
+	"buff.regen": "持续回复",
+	"buff.team_damage": "全队增伤"
 }
