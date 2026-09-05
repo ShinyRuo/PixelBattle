@@ -104,7 +104,7 @@ func sync(
 			# 半径读大招自己的，不读配置：羁绊功能档会放大它
 			# （[member PBSimConfig.bond_pull_radius_scale]），而圈画小了
 			# 等于告诉玩家一件错的事。
-			cast_px = live.ultimate.radius * PBLayout.px_per_unit(field)
+			cast_px = live.ultimate.skill.radius * PBLayout.px_per_unit(field)
 	_apply(links, from, cursor, mode, cast_px)
 
 

@@ -25,7 +25,7 @@ enum State {
 	IDLE,  ## 站着
 	RUN,  ## 在挪
 	ATTACK,  ## 刚出了一手
-	CAST,  ## 大招已经点了落点、还没落地（[method PBUltimate.is_pending]）
+	CAST,  ## 大招已经点了落点、还没落地（[method PBSkillCast.is_pending]）
 	DEAD,  ## 倒了。**不隐藏** —— 见 [constant PBAllyPool.DEAD_COLOR]
 }
 

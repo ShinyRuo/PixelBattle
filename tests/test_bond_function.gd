@@ -149,21 +149,21 @@ func test_gathering_really_drags_the_pack_onto_the_landing_spot() -> void:
 
 func test_pulling_reaches_further_than_plain_gathering() -> void:
 	# 单点吸附 = 聚拢 + 半径放大。强化的是**够得着多远**，不是伤害。
-	var ult := PBUltimate.new()
-	ult.radius = _cfg.ultimate_radius
-	PBBondFunctionRules.apply_to_ultimate(ult, PBBondFunctionRules.PULL, _cfg)
-	assert_true(ult.gather, "吸附也是一种聚拢")
-	assert_gt(ult.radius, _cfg.ultimate_radius, "吸附该够得更远")
+	var skill := PBSkill.new()
+	skill.radius = _cfg.ultimate_radius
+	PBBondFunctionRules.apply_to_skill(skill, PBBondFunctionRules.PULL, _cfg)
+	assert_true(skill.gather, "吸附也是一种聚拢")
+	assert_gt(skill.radius, _cfg.ultimate_radius, "吸附该够得更远")
 
 
 func test_rooting_stops_the_advance_and_boosts_damage_in_the_same_window() -> void:
 	# §09 把定身和「井野控制期间敌人受伤 +30%」写成同一条功能 ——
 	# 那个 +30% 的条件就是这段定身窗口，两者必须同长。
-	var ult := PBUltimate.new()
-	PBBondFunctionRules.apply_to_ultimate(ult, PBBondFunctionRules.ROOT, _cfg)
-	assert_eq(ult.slow_scale, 0.0, "定身就是速度归零")
-	assert_gt(ult.team_damage_scale, 1.0, "控制期间该有增伤")
-	assert_eq(ult.buff_ticks, ult.slow_ticks, "增伤窗口 = 定身窗口")
+	var skill := PBSkill.new()
+	PBBondFunctionRules.apply_to_skill(skill, PBBondFunctionRules.ROOT, _cfg)
+	assert_eq(skill.slow_scale, 0.0, "定身就是速度归零")
+	assert_gt(skill.team_damage_scale, 1.0, "控制期间该有增伤")
+	assert_eq(skill.buff_ticks, skill.slow_ticks, "增伤窗口 = 定身窗口")
 
 	_cfg.ultimate_delay_seconds = 0.0
 	var wave := _wave(9)
@@ -175,13 +175,13 @@ func test_rooting_stops_the_advance_and_boosts_damage_in_the_same_window() -> vo
 
 
 func test_the_slow_field_lasts_much_longer_than_the_root() -> void:
-	# 两者走同一个字段（[member PBUltimate.slow_scale]），差别只有「多狠」「多久」。
+	# 两者走同一个字段（[member PBSkill.slow_scale]），差别只有「多狠」「多久」。
 	# 定身刻意短：M3-d 实测过每波一发的长时全屏控制会把行军队列压扁成一堆，
 	# 解除那一刻整群同时涌进交战区，反而更糟。
-	var root := PBUltimate.new()
-	PBBondFunctionRules.apply_to_ultimate(root, PBBondFunctionRules.ROOT, _cfg)
-	var field := PBUltimate.new()
-	PBBondFunctionRules.apply_to_ultimate(field, PBBondFunctionRules.SLOW_FIELD, _cfg)
+	var root := PBSkill.new()
+	PBBondFunctionRules.apply_to_skill(root, PBBondFunctionRules.ROOT, _cfg)
+	var field := PBSkill.new()
+	PBBondFunctionRules.apply_to_skill(field, PBBondFunctionRules.SLOW_FIELD, _cfg)
 	assert_gt(field.slow_scale, root.slow_scale, "减速力场比定身温和")
 	assert_gt(field.slow_ticks, root.slow_ticks, "减速力场比定身持久")
 
@@ -248,7 +248,7 @@ func test_the_carrier_gets_the_function_through_build_attackers() -> void:
 	)
 	var seen: int = 0
 	for i: int in units.size():
-		if squad[i].ultimate.gather:
+		if squad[i].ultimate.skill.gather:
 			seen += 1
 			assert_eq(units[i].key(), carrier_id, "只有载体该拿到聚拢")
 	assert_eq(seen, 1, "一组羁绊只出一个载体 —— 发给全组就变成乘以人数的倍率了")
@@ -297,12 +297,13 @@ func _ultimate_sim(key: StringName, wave: PBWave) -> PBBattleSim:
 	var attacker := PBAttacker.new()
 	attacker.dps = 0.0
 	attacker.reach = 1.0
-	attacker.ultimate = PBUltimate.new()
-	attacker.ultimate.damage = 1.0
-	attacker.ultimate.radius = _cfg.ultimate_radius
-	attacker.ultimate.cooldown_ticks = 40
+	var skill := PBSkill.new()
+	skill.damage = 1.0
+	skill.radius = _cfg.ultimate_radius
+	skill.cooldown_ticks = 40
 	if key != &"":
-		PBBondFunctionRules.apply_to_ultimate(attacker.ultimate, key, _cfg)
+		PBBondFunctionRules.apply_to_skill(skill, key, _cfg)
+	attacker.ultimate = PBSkillCast.new(skill)
 	return PBBattleSim.new(wave, 0.0, 0.0, _cfg, [attacker] as Array[PBAttacker])
 
 

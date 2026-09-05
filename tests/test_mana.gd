@@ -37,11 +37,12 @@ func _caster(mp: float, cost: float, cooldown: int = 1) -> PBAttacker:
 	out.max_mp = mp
 	out.mp = mp
 	out.mp_regen = mp * _cfg.mp_regen_rate / float(_cfg.tick_rate)
-	out.ultimate = PBUltimate.new()
-	out.ultimate.damage = 1.0
-	out.ultimate.radius = _cfg.field_diagonal()
-	out.ultimate.cooldown_ticks = cooldown
-	out.ultimate.mp_cost = cost
+	var skill := PBSkill.new()
+	skill.damage = 1.0
+	skill.radius = _cfg.field_diagonal()
+	skill.cooldown_ticks = cooldown
+	skill.mp_cost = cost
+	out.ultimate = PBSkillCast.new(skill)
 	return out
 
 
@@ -95,7 +96,7 @@ func test_mana_is_spent_when_the_order_goes_out_not_when_it_lands() -> void:
 	# 落地时扣的话，施法延迟那段窗口里还能再下达一发（蓝还没扣掉），
 	# 于是延迟越长反而放得越多 —— 和「冷却从落地算起」是同一个道理。
 	var caster := _caster(120.0, 60.0)
-	caster.ultimate.delay_ticks = 40
+	caster.ultimate.skill.delay_ticks = 40
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	while not caster.ultimate.is_pending() and sim.current_tick() < 200:
@@ -135,4 +136,4 @@ func test_the_real_squad_gets_a_mana_bar_from_its_intellect() -> void:
 	for i: int in deployed.size():
 		assert_gt(squad[i].max_mp, 0.0, "每个真单位都该有蓝条")
 		assert_gt(squad[i].mp_regen, 0.0, "而且回得上来")
-		assert_gt(squad[i].ultimate.mp_cost, 0.0, "大招该要钱")
+		assert_gt(squad[i].ultimate.skill.mp_cost, 0.0, "大招该要钱")

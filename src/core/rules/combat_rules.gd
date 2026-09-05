@@ -148,7 +148,7 @@ static func unit_multipliers(
 ##
 ## [param bond_functions] 是 [method PBBondRules.active_functions] 的结果，
 ## `{ 载体角色 id: [功能键…] }`。功能装在**已经建好的**大招上，
-## 理由见 [method PBBondFunctionRules.apply_to_ultimate]。
+## 理由见 [method PBBondFunctionRules.apply_to_skill]。
 ##
 ## > 本函数已经到了 `.gdlintrc` 的参数上限（10 个）。**再加一种加成时
 ## > 不要接第 11 个参数**，该把「队伍这一波的全部加成」折成一个对象了 ——
@@ -220,15 +220,14 @@ static func build_attackers(
 				cfg.projectile_cross_seconds * float(cfg.tick_rate), 1.0
 			)
 		)
-		attacker.ultimate = _build_ultimate(unit, wave_element, mult, i < gather_count, cfg)
+		var skill := _build_skill(unit, wave_element, mult, i < gather_count, cfg)
 		# 羁绊功能档（§09，M3-f）：这个人是不是某组凑满了的羁绊的载体。
 		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
-			PBBondFunctionRules.apply_to_ultimate(attacker.ultimate, key, cfg)
+			PBBondFunctionRules.apply_to_skill(skill, key, cfg)
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
-		attacker.ultimate.cooldown_ticks = maxi(
-			int(round(float(attacker.ultimate.cooldown_ticks) * cd_scale)), 1
-		)
+		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)
+		attacker.ultimate = PBSkillCast.new(skill)
 		out[i] = attacker
 
 	var beast_attacker := PBBeastRules.build_ultimate_attacker(
@@ -244,19 +243,19 @@ static func build_attackers(
 ## **伤害按大招自己的属性算克制，不按单位的**（§03 铁律 4：element 挂在
 ## 伤害事件上）。所以「本体土属性、大招火系」的角色，普攻和大招会在
 ## 同一波里吃到不同的倍率 —— 那正是那条铁律想留出来的空间。
-static func _build_ultimate(
+static func _build_skill(
 	unit: PBUnit, wave_element: PBElement.Type, mult: float, gather: bool, cfg: PBSimConfig
-) -> PBUltimate:
-	var ult := PBUltimate.new()
-	ult.element = unit.character.ultimate_element()
-	var rel := PBElement.relation(ult.element, wave_element)
-	ult.damage = unit.power(cfg) * cfg.damage_multiplier(rel) * mult * cfg.ultimate_power_mult
-	ult.radius = cfg.ultimate_radius
-	ult.cooldown_ticks = int(round(cfg.ultimate_cooldown_seconds * float(cfg.tick_rate)))
-	ult.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
-	ult.mp_cost = cfg.ultimate_mp_cost
-	ult.gather = gather
-	return ult
+) -> PBSkill:
+	var skill := PBSkill.new()
+	skill.element = unit.character.ultimate_element()
+	var rel := PBElement.relation(skill.element, wave_element)
+	skill.damage = unit.power(cfg) * cfg.damage_multiplier(rel) * mult * cfg.ultimate_power_mult
+	skill.radius = cfg.ultimate_radius
+	skill.cooldown_ticks = int(round(cfg.ultimate_cooldown_seconds * float(cfg.tick_rate)))
+	skill.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
+	skill.mp_cost = cfg.ultimate_mp_cost
+	skill.gather = gather
+	return skill
 
 
 ## 一组攻击者的 DPS 之和 —— 也就是对外报的「队伍战力」。

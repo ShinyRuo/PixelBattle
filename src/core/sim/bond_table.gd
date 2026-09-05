@@ -49,7 +49,7 @@ static func synthetic(per_unit: float, cap: int) -> PBBondTable:
 ##
 ## 这几条尤其要拦 —— 档位表写歪了不会崩，只会让某一档静默失效，
 ## 而那种偏差只表现为「这组羁绊好像没什么用」。功能档那两条同理：
-## `&"gathr"` 拼错一个字母，[method PBBondFunctionRules.apply_to_ultimate]
+## `&"gathr"` 拼错一个字母，[method PBBondFunctionRules.apply_to_skill]
 ## 会安静地什么都不做。
 func add(bond: PBBond) -> bool:
 	if bond == null or bond.id == &"":

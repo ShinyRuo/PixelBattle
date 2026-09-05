@@ -357,7 +357,7 @@ static func _leaks_at(
 	for i: int in squad.size():
 		squad[i].dps = total * share[i]
 		if squad[i].ultimate != null:
-			squad[i].ultimate.damage = total * ult_share[i]
+			squad[i].ultimate.skill.damage = total * ult_share[i]
 	return PBBattleSim.new(wave, total, def_reduction, cfg, squad).run_to_end().leaked > 0
 
 

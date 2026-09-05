@@ -5,14 +5,14 @@ extends Node2D
 ## ## 这是施法延迟存在的理由
 ##
 ## M3-b 给大招加了 `delay_ticks`：落点在下达时定死，伤害在若干 tick 之后
-## 才落地（[PBUltimate] 顶部）。那段窗口的**全部意义**是让玩家能预判走位 ——
+## 才落地（[PBSkill] 顶部）。那段窗口的**全部意义**是让玩家能预判走位 ——
 ## 而预判的前提是他**看得见落点**。在这之前那个窗口只存在于数据里，
 ## 玩家能观测到的只有「伤害有时候延迟一下才出现」。
 ##
 ## ## 为什么先画成带子、现在又改回圆
 ##
 ## M3.5-h 画的是一条**竖带**，理由写得很硬：
-## [member PBUltimate.radius] 那时只作用在推进轴上，纵向散布是渲染层
+## [member PBSkill.radius] 那时只作用在推进轴上，纵向散布是渲染层
 ## 为了不让 48 个敌人挤成一条线才编的，一点都不算数 ——
 ## 画成圆会让玩家去躲一个根本不存在的纵向判定，那比不画更糟。
 ##
@@ -79,16 +79,16 @@ func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector
 	for attacker: PBAttacker in attackers:
 		if _shown >= CAPACITY:
 			break
-		var ult: PBUltimate = attacker.ultimate
-		# 没有落点 = 现在没有待落地的大招（[constant PBUltimate.NO_SPOT]）。
-		if ult == null or not ult.is_pending() or ult.lands_at <= current_tick:
+		var cast: PBSkillCast = attacker.ultimate
+		# 没有落点 = 现在没有待落地的大招（[constant PBSkillCast.NO_SPOT]）。
+		if cast == null or not cast.is_pending() or cast.lands_at <= current_tick:
 			continue
 		# 还剩多少比例的等待时间。落地那一刻是 1，刚下达时接近 0。
-		var total: int = maxi(ult.delay_ticks, 1)
-		_centers[_shown] = PBLayout.to_screen(ult.spot, field)
-		_radii[_shown] = ult.radius * scale
+		var total: int = maxi(cast.skill.delay_ticks, 1)
+		_centers[_shown] = PBLayout.to_screen(cast.spot, field)
+		_radii[_shown] = cast.skill.radius * scale
 		_closeness[_shown] = clampf(
-			1.0 - float(ult.lands_at - current_tick) / float(total), 0.0, 1.0
+			1.0 - float(cast.lands_at - current_tick) / float(total), 0.0, 1.0
 		)
 		_shown += 1
 	queue_redraw()

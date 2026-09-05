@@ -369,8 +369,9 @@ lands_at: int
 
 ### 3.4 大招归位：留在 `PBSimConfig`，不下沉到 `.tres`
 
-大招 = **每个角色的 0 号技能**，仍由 `PBCombatRules._build_ultimate` 按
-`PBSimConfig` 生成，一个数不动。角色表里的 `skill_ids` 是**额外**的。
+大招 = **每个角色的 0 号技能**，仍由 `PBCombatRules._build_skill`
+（M7-b 落地时从 `_build_ultimate` 改名）按 `PBSimConfig` 生成，
+一个数不动。角色表里的 `skill_ids` 是**额外**的。
 
 理由用项目自己记下来的那一条（`PBCharacter.reach` 的注释）：
 
@@ -379,8 +380,12 @@ lands_at: int
 
 界线因此很清楚：**全 30 个角色共用的那一份走配置，逐角色独有的走 `data/skills/`。**
 
-`PBBondFunctionRules.apply_to_ultimate` 与 `PBBeastRules` 照旧写 0 号技能，
-一行不用改 —— `PBSkill` 保留它们用的那五个字段。
+`PBBondFunctionRules.apply_to_skill`（M7-b 落地时从 `apply_to_ultimate` 改名）
+与 `PBBeastRules` 照旧写 0 号技能，**结算逻辑一行不用改** ——
+五个字段（`gather` / `radius` / `slow_scale` / `slow_ticks` / `team_damage_scale` /
+`buff_ticks`）的写法原样保留，`PBSkill` 就是保留它们的那个类。
+签名改了（参数类型从 `PBUltimate` 换成 `PBSkill`），那是重命名的代价，
+不是逻辑的代价。
 
 ### 3.5 门槛只有一份
 
@@ -611,7 +616,7 @@ src/view/skill_fx_pool.gd     PBSkillFxPool
 | 步             | 做什么                                                                     | 验收（功能，不是数值）                                                                       |
 | -------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **M7-a** | 效果层四个类；把 M3-d 全场增伤改成走 bag                                   | 既有增伤测试逐位还绿；「持续效果过期后`dps` 逐位等于原值」；「不跑清扫也必须过期」；「同一份 buff 由 1 级和 10 级的人放出来数值不同」；「只写成长不写基数要报错」         |
-| **M7-b** | `PBUltimate` 拆成 `PBSkill` + `PBSkillCast`；`PBSkillRules` 接结算 | `test_ultimate.gd` 那批**一字不改**还绿；同种子两局逐 tick 一致                      |
+| **M7-b** | ✅ `PBUltimate` 拆成 `PBSkill` + `PBSkillCast`；`PBSkillRules` 接结算 | 见 `Docs/开发路线图.md`「M7-b 的验收结果」——原计划的 `test_ultimate.gd` 不存在，实测是散在十个测试文件里的既有断言，逐条核对名字与意图未变 |
 | **M7-c** | 两根轴；`ALLY` / `NONE` 两档接上 sim                                   | 「目标死了 → 空放不崩」；「`target != GROUND` ⇒ `delay == 0`」数据断言                 |
 | **M7-d** | 敌人那一侧：`PBEnemy` 挂 bag、`spawn()` 清、全场 × 个体相乘           | 「上一波的减速不许漏进下一波」；「全场定身期间再上个体减速，速度仍是 0」                     |
 | **M7-e** | 操作层：状态机泛化、施法者高亮、候选环、D 线、指令卡两格                   | 「按钮亮 ⇔ 放得出」；推真事件的点击测试（装自己的`SubViewport`，否则先被 GUT 的面板吃掉） |

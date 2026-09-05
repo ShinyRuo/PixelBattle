@@ -55,7 +55,7 @@ var damage: float = 0.0
 ## 这一发按哪一系算克制（§14 铁律 4：**element 挂在伤害事件上，不挂在单位上**）。
 ##
 ## 只有射向己方的那一半读它（见 [member damage]）。铁律在这里第二次真正用上 ——
-## 第一次是大招（[member PBUltimate.element]），而普攻在离散化之前
+## 第一次是大招（[member PBSkill.element]），而普攻在离散化之前
 ## 根本没有「一次伤害事件」这种东西可以挂。
 var element: PBElement.Type = PBElement.Type.PHYSICAL
 

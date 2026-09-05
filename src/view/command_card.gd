@@ -135,7 +135,7 @@ var _target: int = -1
 ## 选中那个忍者这一刻放不放得出忍术（[method PBBattleSim.can_cast]）。
 ##
 ## **传进来而不是自己算**：指令卡手上没有 [PBBattleSim]，而冷却和蓝
-## 只有那儿知道。自己照着 [PBUltimate] 再算一遍就是第二把尺子 ——
+## 只有那儿知道。自己照着 [PBSkillCast] 再算一遍就是第二把尺子 ——
 ## 「按钮亮着点了没反应」正是这种分叉的标准表现。
 var _can_cast: bool = false
 

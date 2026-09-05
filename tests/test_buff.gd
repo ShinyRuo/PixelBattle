@@ -178,7 +178,7 @@ func test_healing_never_goes_over_the_cap_or_raises_the_dead() -> void:
 
 func test_a_wave_never_inherits_the_last_wave_buffs() -> void:
 	# 攻击者对象会跨波、跨探测复用。不清的话上一场剩下的增伤会漏进这一场，
-	# 而那和 PBUltimate.reset 顶上记着的「冷却漏进下一场」是同一个形状。
+	# 而那和 PBSkillCast.reset 顶上记着的「冷却漏进下一场」是同一个形状。
 	var attacker := _attacker()
 	attacker.buffs.add(_lasting(&"boost", {}), {PBBuffRules.DAMAGE_SCALE: 9.0}, 0, 9999, 0)
 	assert_eq(attacker.buffs.count(1), 1, "先挂上")
@@ -205,11 +205,12 @@ func test_the_team_damage_buff_lands_on_everyone() -> void:
 	var wave := PBWaveRules.build(4, _cfg, RandomNumberGenerator.new())
 	var one := _attacker()
 	var two := _attacker()
-	one.ultimate = PBUltimate.new()
-	one.ultimate.damage = 1.0
-	one.ultimate.radius = 0.5
-	one.ultimate.team_damage_scale = 2.0
-	one.ultimate.buff_ticks = 40
+	var skill := PBSkill.new()
+	skill.damage = 1.0
+	skill.radius = 0.5
+	skill.team_damage_scale = 2.0
+	skill.buff_ticks = 40
+	one.ultimate = PBSkillCast.new(skill)
 	var squad: Array[PBAttacker] = [one, two]
 	var sim := PBBattleSim.new(wave, 0.0, 0.0, _cfg, squad)
 	sim.cast_ultimate(one, Vector2(0.5, 0.1))

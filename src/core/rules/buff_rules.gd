@@ -51,8 +51,8 @@ static var _team_damage: PBBuff = null
 ##
 ## ## 为什么它在代码里而不在 `data/buffs/`
 ##
-## 它的窗口和倍率来自**大招**（[member PBUltimate.buff_ticks] /
-## [member PBUltimate.team_damage_scale]），而那两个数一个来自尾兽表、
+## 它的窗口和倍率来自**大招**（[member PBSkill.buff_ticks] /
+## [member PBSkill.team_damage_scale]），而那两个数一个来自尾兽表、
 ## 一个来自 [member PBSimConfig.bond_root_damage_scale] —— 都是要扫的参数。
 ## 再抄一份进 `.tres` 就是第二处真相，而 [member PBCharacter.reach] 顶上
 ## 那条已经讲过这件事：**全场共用的那一份走配置，逐角色独有的走 `data/`。**

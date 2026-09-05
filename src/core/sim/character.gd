@@ -20,8 +20,9 @@ extends Resource
 ##
 ## ## 已知的省略
 ##
-## - `skill_ids: Array[StringName]` —— 技能表还没有；大招现在由 [PBUltimate]
-##   按统一规则生成，角色只能覆盖它的属性（[member ultimate_element_override]）
+## - `skill_ids: Array[StringName]` —— 技能表还没有（M7 的 `Docs/技能与BUFF系统.md`，
+##   决策 6：大招之外最多两个）；大招现在由 [PBSkill] 按统一规则生成，
+##   角色只能覆盖它的属性（[member ultimate_element_override]）
 ##
 ## §09 那行 `base_stats: PBStats` 从 M2-a 起一直空着（那时战力只有一条
 ## `rarity_power` 阶梯），**M3.5-a 把它兑现了** —— 见下面那一批二级属性字段。

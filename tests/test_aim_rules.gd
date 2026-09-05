@@ -1,5 +1,6 @@
 extends GutTest
-## [PBAimRules] 与 [PBUltimate] 的测试。M3-b。
+## [PBAimRules] 与 [PBSkillCast] 的测试。M3-b，M7-b 起大招拆成
+## [PBSkill]（设定）+ [PBSkillCast]（这一波的冷却/落点状态）。
 ##
 ## ## 这个文件守的是一对上下夹，不是一个功能
 ##
@@ -23,9 +24,9 @@ var _cfg: PBSimConfig
 var _rng: RandomNumberGenerator
 
 
-## 造一个只关心半径与延迟的大招，别的字段用不上。
-func _ult(radius: float, delay_ticks: int) -> PBUltimate:
-	var out := PBUltimate.new()
+## 造一个只关心半径与延迟的技能定义，别的字段用不上。
+func _skill(radius: float, delay_ticks: int) -> PBSkill:
+	var out := PBSkill.new()
 	out.radius = radius
 	out.delay_ticks = delay_ticks
 	return out
@@ -66,7 +67,7 @@ func test_it_picks_the_densest_cluster_not_the_nearest_enemy() -> void:
 	# 大招永远只打一个人，§02 中间那个因子就恒等于 1。
 	var enemies := _enemies_at([0.10, 0.50, 0.52, 0.54])
 	var spot := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.05, 0), 0, 1, 1, 0
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
 	)
 	assert_almost_eq(spot.x, 0.52, 0.021, "该罩住 0.50–0.54 那三个，而不是孤零零的 0.10")
 
@@ -75,7 +76,7 @@ func test_a_tie_goes_to_the_cluster_closest_to_the_base() -> void:
 	# 两堆一样多时打更紧急的那堆 —— 同样打 n 个，打掉快漏进去的那 n 个更值。
 	var enemies := _enemies_at([0.20, 0.22, 0.70, 0.72])
 	var spot := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.03, 0), 0, 1, 1, 0
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.03, 0), 0, 1, 1, 0
 	)
 	assert_lt(spot.x, 0.5, "并列时该选靠近基地的那一堆")
 
@@ -85,18 +86,18 @@ func test_it_holds_fire_when_too_few_targets_are_in_reach() -> void:
 	# 一发喂给一个杂兵等于这一波白打。
 	var enemies := _enemies_at([0.40])
 	var spot := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.05, 0), 0, 3, 1, 0
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 3, 1, 0
 	)
-	assert_false(PBUltimate.is_spot(spot), "只有一个目标、门槛是三个，应该攒着")
+	assert_false(PBSkillCast.is_spot(spot), "只有一个目标、门槛是三个，应该攒着")
 
 
 func test_the_none_policy_never_fires() -> void:
 	# 基线档。用来量「大招整体值多少」，它必须真的一发都不放。
 	var enemies := _enemies_at([0.40, 0.42, 0.44, 0.46])
 	var spot := PBAimRules.pick_spot(
-		PBAimRules.Policy.NONE, enemies, 0, _ult(0.05, 0), 0, 1, 1, 0
+		PBAimRules.Policy.NONE, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
 	)
-	assert_false(PBUltimate.is_spot(spot), "NONE 档不该给出任何落点")
+	assert_false(PBSkillCast.is_spot(spot), "NONE 档不该给出任何落点")
 
 
 func test_dead_enemies_in_the_middle_do_not_hide_the_ones_behind_them() -> void:
@@ -106,7 +107,7 @@ func test_dead_enemies_in_the_middle_do_not_hide_the_ones_behind_them() -> void:
 	var enemies := _enemies_at([0.10, 0.50, 0.52, 0.54])
 	enemies[0].alive = false
 	var spot := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.05, 0), 0, 1, 1, 0
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
 	)
 	assert_almost_eq(spot.x, 0.52, 0.021, "队头的尸体不该挡住后面那一堆")
 
@@ -120,10 +121,10 @@ func test_leading_aims_where_the_pack_will_be_not_where_it_is() -> void:
 	# 行进路线前方」。敌人朝基地走（distance 变小），所以预判点必然更靠前。
 	var enemies := _enemies_at([0.50, 0.52, 0.54], 0.01)
 	var now := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.05, 10), 0, 1, 1, 0
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 10), 0, 1, 1, 0
 	)
 	var ahead := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 10), 0, 1, 1, 0
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 10), 0, 1, 1, 0
 	)
 	assert_lt(ahead.x, now.x, "预判落点该压在敌人前方（更靠近基地）")
 	assert_almost_eq(now.x - ahead.x, 0.10, 1e-6, "领先量应正好等于 速度 × 延迟")
@@ -135,10 +136,10 @@ func test_without_a_cast_delay_the_two_policies_cannot_differ() -> void:
 	# 这条把「延迟是分层的前提」这件事钉死，免得有人顺手把它调成 0。
 	var enemies := _enemies_at([0.50, 0.52, 0.54])
 	var now := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.05, 0), 0, 1, 1, 0
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
 	)
 	var ahead := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 0), 0, 1, 1, 0
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
 	)
 	assert_eq(now, ahead, "没有施法延迟就没有预判，两档必须同分")
 
@@ -148,7 +149,7 @@ func test_enemies_that_arrive_before_impact_are_not_aimed_at() -> void:
 	# 把落点压在他身上等于白放一发。
 	var enemies := _enemies_at([0.05, 0.60, 0.62, 0.64], 0.01)
 	var ahead := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 10), 0, 1, 1, 0
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 10), 0, 1, 1, 0
 	)
 	assert_gt(ahead.x, 0.3, "已经跑进基地的那个不该被选为落点")
 
@@ -163,22 +164,22 @@ func test_the_manual_policy_saves_it_for_a_worthwhile_cluster() -> void:
 	# §02 那条「手动带来 15–25% 提升」就永远量不出来。
 	var enemies := _enemies_at([0.40, 0.42])
 	var auto_spot := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _ult(0.05, 0), 0, 2, 5, 100
+		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 2, 5, 100
 	)
 	var held := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 0), 0, 2, 5, 100
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 0), 0, 2, 5, 100
 	)
-	assert_true(PBUltimate.is_spot(auto_spot), "自动档够门槛就该放")
-	assert_false(PBUltimate.is_spot(held), "手动档该攒着等更多目标")
+	assert_true(PBSkillCast.is_spot(auto_spot), "自动档够门槛就该放")
+	assert_false(PBSkillCast.is_spot(held), "手动档该攒着等更多目标")
 
 
 func test_the_manual_policy_fires_once_the_cluster_is_worth_it() -> void:
 	# 攒是有条件的，不是一味不放。够五个就该按下去。
 	var enemies := _enemies_at([0.40, 0.42, 0.44, 0.46, 0.48])
 	var held := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 0), 0, 2, 5, 100
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 0), 0, 2, 5, 100
 	)
-	assert_true(PBUltimate.is_spot(held), "罩得住五个了就该放")
+	assert_true(PBSkillCast.is_spot(held), "罩得住五个了就该放")
 
 
 func test_holding_has_a_deadline_so_the_strike_is_never_wasted() -> void:
@@ -186,13 +187,13 @@ func test_holding_has_a_deadline_so_the_strike_is_never_wasted() -> void:
 	# 一发没放比手机端还差，验收会得出「手动是负收益」的假结论。
 	var enemies := _enemies_at([0.40, 0.42])
 	var still_holding := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 0), 30, 2, 5, 100
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 0), 30, 2, 5, 100
 	)
 	var past_deadline := PBAimRules.pick_spot(
-		PBAimRules.Policy.LEAD, enemies, 0, _ult(0.05, 0), 100, 2, 5, 100
+		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 0), 100, 2, 5, 100
 	)
-	assert_false(PBUltimate.is_spot(still_holding), "没到死线继续攒")
-	assert_true(PBUltimate.is_spot(past_deadline), "到了死线就得放，不能捏死在手里")
+	assert_false(PBSkillCast.is_spot(still_holding), "没到死线继续攒")
+	assert_true(PBSkillCast.is_spot(past_deadline), "到了死线就得放，不能捏死在手里")
 
 
 # ── 大招在战斗里的行为 ──────────────────────────────────────────
@@ -208,13 +209,13 @@ func _squad_with_ultimate(damage: float, radius: float, gather: bool = false) ->
 	attacker.dps = 0.0
 	attacker.pos = Vector2.ZERO
 	attacker.reach = 0.0
-	var ult := PBUltimate.new()
-	ult.damage = damage
-	ult.radius = radius
-	ult.cooldown_ticks = 10000
-	ult.delay_ticks = 10
-	ult.gather = gather
-	attacker.ultimate = ult
+	var skill := PBSkill.new()
+	skill.damage = damage
+	skill.radius = radius
+	skill.cooldown_ticks = 10000
+	skill.delay_ticks = 10
+	skill.gather = gather
+	attacker.ultimate = PBSkillCast.new(skill)
 	var squad: Array[PBAttacker] = [attacker]
 	return squad
 
@@ -285,12 +286,13 @@ func test_a_battle_with_ultimates_still_conserves_enemies() -> void:
 func test_the_cooldown_starts_at_impact_not_at_the_order() -> void:
 	# 从下达算的话，施法延迟会被白送成冷却的一部分 —— 延迟越长反而越强，
 	# 而延迟本该是预判的**代价**。
-	var ult := PBUltimate.new()
-	ult.cooldown_ticks = 100
-	ult.delay_ticks = 10
-	ult.cast(Vector2(0.5, 0.0), 0)
-	assert_true(ult.is_pending(), "下达之后应处于待落地状态")
-	assert_false(ult.is_ready(0), "手上还有一发没落地时不该再下达")
-	ult.land(10)
-	assert_false(ult.is_ready(105), "冷却该从落地那一刻算起")
-	assert_true(ult.is_ready(110), "落地后满一个冷却才转好")
+	var skill := PBSkill.new()
+	skill.cooldown_ticks = 100
+	skill.delay_ticks = 10
+	var cast := PBSkillCast.new(skill)
+	cast.cast(Vector2(0.5, 0.0), 0)
+	assert_true(cast.is_pending(), "下达之后应处于待落地状态")
+	assert_false(cast.is_ready(0), "手上还有一发没落地时不该再下达")
+	cast.land(10)
+	assert_false(cast.is_ready(105), "冷却该从落地那一刻算起")
+	assert_true(cast.is_ready(110), "落地后满一个冷却才转好")

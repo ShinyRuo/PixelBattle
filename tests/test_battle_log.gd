@@ -128,9 +128,10 @@ func test_casting_a_jutsu_is_announced_when_it_is_ordered() -> void:
 	_cfg.aim_policy = PBAimRules.Policy.NONE
 	var log := PBBattleLog.new()
 	var squad: Array[PBAttacker] = [_unit(0.30, 1.0e9, 50.0)]
-	squad[0].ultimate = PBUltimate.new()
-	squad[0].ultimate.radius = 0.2
-	squad[0].ultimate.damage = 10.0
+	var skill := PBSkill.new()
+	skill.radius = 0.2
+	skill.damage = 10.0
+	squad[0].ultimate = PBSkillCast.new(skill)
 	var sim := _sim(_wave(9), squad, log)
 	sim.step()
 	assert_true(sim.cast_ultimate(squad[0], Vector2(0.5, 0.0)), "前提：这一发放得出去")

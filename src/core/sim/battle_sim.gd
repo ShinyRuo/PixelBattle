@@ -34,9 +34,9 @@ extends RefCounted
 ##
 ## ## M3-b：大招与落点
 ##
-## 每个攻击者可以带一个 [PBUltimate]：长冷却、一次性、**有落点**，
-## 而且落点在下达时定死、若干 tick 之后才落地。那个延迟是 §02
-## 「PC 可预判走位」成立的前提，理由见 [PBUltimate] 顶部。
+## 每个攻击者可以带一个 [PBSkillCast]（挂着一份 [PBSkill] 定义）：
+## 长冷却、一次性、**有落点**，而且落点在下达时定死、若干 tick 之后才落地。
+## 那个延迟是 §02「PC 可预判走位」成立的前提，理由见 [PBSkill] 顶部。
 ## 落点怎么挑由 [PBAimRules] 决定 —— 手机端看当前帧，PC 端看落地那一刻。
 ##
 ## ## M3.5-b：敌人还手，忍者会死
@@ -285,37 +285,37 @@ func _spawn_all(wave: PBWave, cfg: PBSimConfig) -> void:
 ##
 ## 反过来的话，同一 tick 下达的大招会在下达的那一瞬间就落地，
 ## 施法延迟等于 0 —— 而那个延迟正是 §02 分层验收的全部依据
-## （见 [PBUltimate] 顶部）。
+## （见 [PBSkill] 顶部）。
 func _resolve_ultimates() -> void:
 	for attacker: PBAttacker in _attackers:
-		var ult: PBUltimate = attacker.ultimate
-		if ult == null:
+		var cast: PBSkillCast = attacker.ultimate
+		if cast == null:
 			continue
 		# 已经下达的照样落地，哪怕施法者中途死了 —— 大招已经出手了。
 		# 那是 §02 施法延迟的直接后果，也是「预判」这件事的对称代价。
-		if ult.is_pending() and _tick >= ult.lands_at:
-			_land_ultimate(ult)
+		if cast.is_pending() and _tick >= cast.lands_at:
+			_land_skill(cast)
 	for attacker: PBAttacker in _attackers:
 		attacker.regen_mana()
 	for attacker: PBAttacker in _attackers:
-		var ult: PBUltimate = attacker.ultimate
-		if ult == null or not attacker.alive or not ult.is_ready(_tick):
+		var cast: PBSkillCast = attacker.ultimate
+		if cast == null or not attacker.alive or not cast.is_ready(_tick):
 			continue
 		# 第二道门槛（M3.5-d）：冷却转好了还得有蓝。
 		# 这道门槛让六尾的「重置全体 CD」不再是免费的连放。
-		if not attacker.can_pay(ult.mp_cost):
+		if not attacker.can_pay(cast.skill.mp_cost):
 			continue
 		var spot := PBAimRules.pick_spot(
 			_aim_policy,
 			_enemies,
 			_tick,
-			ult,
-			_tick - ult.ready_at,
+			cast.skill,
+			_tick - cast.ready_at,
 			_cfg.ultimate_min_targets,
 			_cfg.ultimate_hold_targets,
 			_max_hold_ticks
 		)
-		if PBUltimate.is_spot(spot):
+		if PBSkillCast.is_spot(spot):
 			_order(attacker, spot)
 	_skip_dead()
 
@@ -331,7 +331,7 @@ func _resolve_ultimates() -> void:
 ## 门槛仍然是同一组（活着 / 冷却好了 / 蓝够），**而且必须共用一份**：
 ## 各写一份的话「按钮亮着但点了没反应」迟早出现，而它不报错。
 func cast_ultimate(attacker: PBAttacker, spot: Vector2) -> bool:
-	if not can_cast(attacker) or not PBUltimate.is_spot(spot):
+	if not can_cast(attacker) or not PBSkillCast.is_spot(spot):
 		return false
 	_order(attacker, spot)
 	return true
@@ -341,7 +341,8 @@ func cast_ultimate(attacker: PBAttacker, spot: Vector2) -> bool:
 func can_cast(attacker: PBAttacker) -> bool:
 	if attacker == null or not attacker.alive or attacker.ultimate == null:
 		return false
-	return attacker.ultimate.is_ready(_tick) and attacker.can_pay(attacker.ultimate.mp_cost)
+	var cast: PBSkillCast = attacker.ultimate
+	return cast.is_ready(_tick) and attacker.can_pay(cast.skill.mp_cost)
 
 
 ## 下达一发：扣蓝、定落点、进冷却。自动与手动共用这一段。
@@ -350,78 +351,27 @@ func can_cast(attacker: PBAttacker) -> bool:
 ## 还能再下达一发（蓝还没扣掉），于是延迟越长反而放得越多，
 ## 和冷却从落地算是同一个道理。
 func _order(attacker: PBAttacker, spot: Vector2) -> void:
-	attacker.pay(attacker.ultimate.mp_cost)
-	attacker.ultimate.cast(spot, _tick)
+	var cast: PBSkillCast = attacker.ultimate
+	attacker.pay(cast.skill.mp_cost)
+	cast.cast(spot, _tick)
 	# **播报记在下达这一刻，不是落地那一刻**（M6-j）：玩家点下去就该看见
 	# 回音，而落地还隔着一整段施法延迟（那段延迟正是 §02 要的预判窗口）。
 	if log_to != null:
 		log_to.ultimate(_tick, attacker.slot)
 
 
-## 一发大招落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
-##
-## 和 [method _strike_area] 一样**不结算溢出** —— 大招的价值写在命中数上
-## （§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
-## 再让它吃溢出的话，一发大招在密集波里等于无限伤害。
-##
-## 落地之后还要结算三样**全场**效果（M3-d）：减速、全队增伤、重置冷却。
-## 它们和圈人无关，所以放在循环外面。
-func _land_ultimate(ult: PBUltimate) -> void:
-	var hits: int = 0
-	for i: int in range(_front, _enemies.size()):
-		if ult.max_targets > 0 and hits >= ult.max_targets:
-			break
-		var enemy: PBEnemy = _enemies[i]
-		if not enemy.has_spawned(_tick):
-			break
-		if not enemy.alive:
-			continue
-		# M4-a 起是真圆（[member PBUltimate.radius]）。
-		if enemy.pos().distance_to(ult.spot) > ult.radius:
-			continue
-		hits += 1
-		if enemy.take_damage(ult.damage):
-			_outcome.kills += 1
-			continue
-		# 活下来的才挪 —— 挪一个尸体没有意义，而且会让「聚拢值多少」虚高。
-		if ult.gather:
-			# 聚拢是**两轴一起**拖到落点上：只拖 x 的话一圈人会被拉成
-			# 一条横线，而「聚成一堆」正是这个机制唯一的产出。
-			enemy.distance = ult.spot.x
-			enemy.lane = ult.spot.y
-		elif ult.knockback > 0.0:
-			# 击退只作用在推进轴上 —— 它买的是「敌人晚到基地多久」。
-			# 上限是**他自己的出生点**，不是战场长度：方阵后面几列出生在
-			# 战场之外，拿战场长度封顶会把他们往前拽（见 [member PBEnemy.start_x]）。
-			enemy.distance = minf(enemy.distance + ult.knockback, enemy.start_x)
-	_apply_field_effects(ult)
-	ult.land(_tick)
-
-
-## 大招落地时的三样全场效果：减速、全队增伤、重置**其他**大招的冷却。
-##
-## 重置清的是别人不是自己 —— 自己也清的话它会在同一 tick 反复自我重置。
-## 这一条（§11 六尾）的强度与队伍里大招的总量成正比，而不是和它自己的
-## 数值成正比，所以它在数据上伤害为 0 却可能是最强的一只。
-func _apply_field_effects(ult: PBUltimate) -> void:
-	if ult.slow_ticks > 0 and ult.slow_scale < 1.0:
-		_slow_scale = ult.slow_scale
-		_slow_until = _tick + ult.slow_ticks
-	if ult.buff_ticks > 0 and ult.team_damage_scale > 1.0:
-		# **一份 Dictionary 发给全队**，不是一人造一个：谁都不改
-		# [member PBBuffState.mods]，共用是安全的，而 §14 那条
-		# 「热路径不 `.new()`」在这里省的是十一次分配。
-		var boost: Dictionary = {PBBuffRules.DAMAGE_SCALE: ult.team_damage_scale}
-		for attacker: PBAttacker in _attackers:
-			attacker.buffs.add(
-				PBBuffRules.team_damage(), boost, _tick, ult.buff_ticks, 0
-			)
-	if not ult.reset_cooldowns:
-		return
-	for attacker: PBAttacker in _attackers:
-		var other: PBUltimate = attacker.ultimate
-		if other != null and other != ult and not other.is_pending():
-			other.ready_at = _tick
+## 一发大招落地：圈人、挂效果、位置操纵全部交给 [PBSkillRules]。
+## 本类只留三件跟「场」有关的事 —— 减速是场的属性
+## （见 [member _slow_scale] 顶上的注释）、记账、转入冷却。
+func _land_skill(cast: PBSkillCast) -> void:
+	var skill := cast.skill
+	_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _tick)
+	if skill.slow_ticks > 0 and skill.slow_scale < 1.0:
+		_slow_scale = skill.slow_scale
+		_slow_until = _tick + skill.slow_ticks
+	PBSkillRules.apply_team_buff(skill, _attackers, _tick)
+	PBSkillRules.reset_other_cooldowns(skill, cast, _attackers, _tick)
+	cast.land(_tick)
 
 
 ## 这一 tick 敌人走多快。1.0 是正常速度，减速生效期间小于 1。
@@ -888,7 +838,7 @@ func _pour_damage(attacker: PBAttacker) -> bool:
 ##
 ## **范围型不发子弹**（M4-b）：一发子弹只追一个目标，而这里要同时打几个。
 ## 要给它一个飞行中的形态，得先回答「范围伤害在半空中是什么形状」——
-## 那和大招的落点是同一个问题，而大招已经有一整套答案（[PBUltimate]）。
+## 那和大招的落点是同一个问题，而大招已经有一整套答案（[PBSkill]）。
 ## 在角色表真的需要「会飞的范围普攻」之前，多一套实现只会多一处分叉。
 func _strike_area(attacker: PBAttacker) -> bool:
 	var damage: float = attacker.strike_for(_tick)

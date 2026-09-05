@@ -162,7 +162,7 @@ var attack_speed: float = 0.0
 ## 是同一条规矩：一个不发子弹的东西不需要配置开关，那就是它的性质。
 var shot_speed: float = 0.0
 
-## 第几 tick 起可以出下一手。和 [member PBUltimate.ready_at] 同一套写法。
+## 第几 tick 起可以出下一手。和 [member PBSkillCast.ready_at] 同一套写法。
 var next_shot_at: int = 0
 
 ## 玩家在战斗中点名要打的敌人下标。**-1 表示照常自动选目标**（§02，M4-e）。
@@ -207,10 +207,10 @@ var slot: int = 0
 ## 这一个是**这一 tick 的结论**，点名的那个死了它立刻改口。
 var aim_at: int = -1
 
-## 这个单位的大招（§02，M3-b）。**`null` 表示没有** ——
-## [method whole_field] 造出来的那个退化攻击者就没有，
-## 所以 M3-a 那条对拍不受大招系统影响。
-var ultimate: PBUltimate = null
+## 这个单位的大招（§02，M3-b；M7-b 起是「0 号技能」的 [PBSkillCast]）。
+## **`null` 表示没有** —— [method whole_field] 造出来的那个退化攻击者就没有，
+## 所以 M3-a 那条对拍不受技能系统影响。
+var ultimate: PBSkillCast = null
 
 ## 他身上现在挂着的效果（§03A，M7-a）。**永远不为 null** ——
 ## 空 bag 的合计值是不折不扣的中性值（率型 1.0、量型 0.0），
@@ -218,7 +218,7 @@ var ultimate: PBUltimate = null
 ## 调用方因此不需要到处判空。
 ##
 ## **[method revive] 会清空它**：效果是**波内作用域**的，不跨波、不进 §12 的存档。
-## 跨波的东西已经有自己的字段（[member PBUltimate.carry_over_ticks]），
+## 跨波的东西已经有自己的字段（[member PBSkill.carry_over_ticks]），
 ## 把 buff 也做成跨波的会让「这一波我身上有什么」变成一个存档问题。
 var buffs: PBBuffBag = PBBuffBag.new()
 
@@ -273,7 +273,11 @@ func clone() -> PBAttacker:
 	out.mp = max_mp
 	out.mp_regen = mp_regen
 	if ultimate != null:
-		out.ultimate = ultimate.clone()
+		# **技能定义要真复制，不能共享同一份**：探测要能独立改动伤害
+		# （见 [method PBValuation._leaks_at]），共享的话那一下改动会
+		# 污染真正在战斗的那一份，而它不报错。冷却/落点状态不带 ——
+		# 复制品对应「这一波都还没放过的它」。见 [method PBSkill.clone]。
+		out.ultimate = PBSkillCast.new(ultimate.skill.clone())
 	# **不复制身上挂着的效果**，给一个空的 —— 和 `hp` 取 `max_hp` 同一条：
 	# 复制品是「一个刚站起来的他」，不是「他现在这个样子」。
 	out.buffs = PBBuffBag.new()
@@ -349,7 +353,7 @@ func take_damage(amount: float) -> bool:
 ## 队伍越弱大招占比越高，缩到最后大招一发定生死 —— 那量出来的悬崖
 ## 是另一支队伍的悬崖。
 func ultimate_damage() -> float:
-	return 0.0 if ultimate == null else ultimate.damage
+	return 0.0 if ultimate == null else ultimate.skill.damage
 
 
 ## 把 [member dps] 与 [member attack_speed] 换算成「隔几 tick 打多少」。

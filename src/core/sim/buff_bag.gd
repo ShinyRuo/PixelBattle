@@ -49,7 +49,7 @@ func states() -> Array[PBBuffState]:
 
 
 ## 全部腾空。**开波、复用对象时必须调** —— 不调的话上一波的效果会漏进这一波，
-## 而那和 [method PBUltimate.reset] 顶上记着的「上一场剩下的冷却漏进下一场」
+## 而那和 [method PBSkillCast.reset] 顶上记着的「上一场剩下的冷却漏进下一场」
 ## 是同一个形状：不报任何错，只表现为「后半局怎么好像变了」。
 func clear() -> void:
 	for state: PBBuffState in _slots:

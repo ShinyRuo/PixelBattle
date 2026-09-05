@@ -109,9 +109,13 @@ func test_the_aura_grows_with_the_level_but_the_mechanisms_do_not() -> void:
 
 	var a1 := PBBeastRules.build_ultimate_attacker(beast, 1, 1000.0, PBElement.Type.WIND, _cfg)
 	var a5 := PBBeastRules.build_ultimate_attacker(beast, 5, 1000.0, PBElement.Type.WIND, _cfg)
-	assert_gt(a5.ultimate.damage, a1.ultimate.damage, "伤害该随等级涨")
-	assert_lt(a5.ultimate.cooldown_ticks, a1.ultimate.cooldown_ticks, "冷却该随等级缩短")
-	assert_eq(a5.ultimate.slow_scale, a1.ultimate.slow_scale, "减速倍率**不该**随等级变强")
+	assert_gt(a5.ultimate.skill.damage, a1.ultimate.skill.damage, "伤害该随等级涨")
+	assert_lt(
+		a5.ultimate.skill.cooldown_ticks, a1.ultimate.skill.cooldown_ticks, "冷却该随等级缩短"
+	)
+	assert_eq(
+		a5.ultimate.skill.slow_scale, a1.ultimate.skill.slow_scale, "减速倍率**不该**随等级变强"
+	)
 
 
 func test_the_beast_ultimate_scales_with_the_team_not_with_itself() -> void:
@@ -121,8 +125,10 @@ func test_the_beast_ultimate_scales_with_the_team_not_with_itself() -> void:
 	beast.ultimate_damage_seconds = 8.0
 	var weak := PBBeastRules.build_ultimate_attacker(beast, 1, 100.0, PBElement.Type.WIND, _cfg)
 	var strong := PBBeastRules.build_ultimate_attacker(beast, 1, 800.0, PBElement.Type.WIND, _cfg)
-	assert_almost_eq(weak.ultimate.damage, 800.0, 1e-6, "一发 = 全队 8 秒输出")
-	assert_almost_eq(strong.ultimate.damage / weak.ultimate.damage, 8.0, 1e-6, "该按全队输出等比例放大")
+	assert_almost_eq(weak.ultimate.skill.damage, 800.0, 1e-6, "一发 = 全队 8 秒输出")
+	assert_almost_eq(
+		strong.ultimate.skill.damage / weak.ultimate.skill.damage, 8.0, 1e-6, "该按全队输出等比例放大"
+	)
 	assert_eq(weak.dps, 0.0, "尾兽没有普攻 —— 它只是一个挂着大招的空壳")
 	assert_eq(PBCombatRules.total_dps([weak]), 0.0, "所以它一分战力都不该报进队伍战力里")
 
@@ -275,8 +281,8 @@ func test_the_cooldown_aura_makes_character_ultimates_come_round_sooner() -> voi
 		deployed, PBElement.Type.WIND, 1.0, 1.0, PackedFloat64Array(), _cfg, faster
 	)
 	assert_lt(
-		hasted[0].ultimate.cooldown_ticks,
-		plain[0].ultimate.cooldown_ticks,
+		hasted[0].ultimate.skill.cooldown_ticks,
+		plain[0].ultimate.skill.cooldown_ticks,
 		"回蓝光环该让角色大招的冷却变短"
 	)
 
@@ -315,11 +321,12 @@ func test_upgrading_actually_spends_the_gold() -> void:
 func _mate_with_ultimate(wave: PBWave) -> PBAttacker:
 	var mate := PBAttacker.new()
 	mate.reach = _cfg.field_length
-	mate.ultimate = PBUltimate.new()
-	mate.ultimate.damage = wave.hp_each * 1.5
-	mate.ultimate.radius = _cfg.field_length
-	mate.ultimate.max_targets = 1
-	mate.ultimate.cooldown_ticks = 100000
+	var skill := PBSkill.new()
+	skill.damage = wave.hp_each * 1.5
+	skill.radius = _cfg.field_length
+	skill.max_targets = 1
+	skill.cooldown_ticks = 100000
+	mate.ultimate = PBSkillCast.new(skill)
 	return mate
 
 

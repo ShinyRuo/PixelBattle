@@ -165,17 +165,18 @@ func test_a_swarm_does_not_stutter_on_every_kill() -> void:
 
 
 func test_the_telegraph_only_shows_while_a_strike_is_in_the_air() -> void:
-	# 施法延迟存在的全部理由就是让玩家看得见落点（[PBUltimate] 顶部）。
+	# 施法延迟存在的全部理由就是让玩家看得见落点（[PBSkill] 顶部）。
 	# 落地之后还画着的话，玩家会去躲一发已经结算完的大招。
 	var pool := PBTelegraphPool.new()
 	add_child_autofree(pool)
-	var ult := PBUltimate.new()
-	ult.radius = 0.2
-	ult.delay_ticks = 10
-	ult.spot = Vector2(0.5, 0.1)
-	ult.lands_at = 30
+	var skill := PBSkill.new()
+	skill.radius = 0.2
+	skill.delay_ticks = 10
+	var cast := PBSkillCast.new(skill)
+	cast.spot = Vector2(0.5, 0.1)
+	cast.lands_at = 30
 	var attacker := PBAttacker.new()
-	attacker.ultimate = ult
+	attacker.ultimate = cast
 	var squad: Array[PBAttacker] = [attacker]
 
 	pool.sync_pending(squad, 25, FIELD)
@@ -183,7 +184,7 @@ func test_the_telegraph_only_shows_while_a_strike_is_in_the_air() -> void:
 	pool.sync_pending(squad, 30, FIELD)
 	assert_eq(pool.shown(), 0, "落地那一刻就该收掉")
 
-	ult.spot = PBUltimate.NO_SPOT
+	cast.spot = PBSkillCast.NO_SPOT
 	pool.sync_pending(squad, 20, FIELD)
 	assert_eq(pool.shown(), 0, "没有待落地的大招时什么都不画")
 
@@ -196,23 +197,24 @@ func test_the_telegraph_covers_exactly_what_the_strike_will_hit() -> void:
 	# 圈心和半径差几个像素的话，玩家看到的是「大招好像打偏了」。
 	var pool := PBTelegraphPool.new()
 	add_child_autofree(pool)
-	var ult := PBUltimate.new()
-	ult.radius = 0.1
-	ult.delay_ticks = 10
-	ult.spot = Vector2(0.5, 0.15)
-	ult.lands_at = 30
+	var skill := PBSkill.new()
+	skill.radius = 0.1
+	skill.delay_ticks = 10
+	var cast := PBSkillCast.new(skill)
+	cast.spot = Vector2(0.5, 0.15)
+	cast.lands_at = 30
 	var attacker := PBAttacker.new()
-	attacker.ultimate = ult
+	attacker.ultimate = cast
 	pool.sync_pending([attacker] as Array[PBAttacker], 25, FIELD)
 
 	assert_eq(pool.shown(), 1, "该有一个圈")
 	assert_almost_eq(
-		pool.center_of(0), PBLayout.to_screen(ult.spot, FIELD), Vector2(0.01, 0.01), "圈心对上落点"
+		pool.center_of(0), PBLayout.to_screen(cast.spot, FIELD), Vector2(0.01, 0.01), "圈心对上落点"
 	)
 	# **两轴共用同一个像素比例**，所以半径是一个数而不是两个 ——
 	# 各算各的话画出来是椭圆，而判定是圆。
 	assert_almost_eq(
-		pool.radius_of(0), ult.radius * PBLayout.px_per_unit(FIELD), 0.01, "半径按同一个比例换算"
+		pool.radius_of(0), skill.radius * PBLayout.px_per_unit(FIELD), 0.01, "半径按同一个比例换算"
 	)
 
 

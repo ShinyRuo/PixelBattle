@@ -162,14 +162,15 @@ func test_a_cast_ultimate_still_lands_when_its_caster_dies() -> void:
 	# 已经出手的大招照样落地。那是 §02 施法延迟的直接后果，
 	# 也是「预判」这件事的对称代价 —— 落点先定死，之后发生什么都改不了。
 	var caster := _unit(0.30, 1.0)
-	caster.ultimate = PBUltimate.new()
-	caster.ultimate.damage = 1.0e9
+	var skill := PBSkill.new()
+	skill.damage = 1.0e9
 	# **半径要小**（M4-d）：整波一次全刷之后，一发罩住全场的大招会把
 	# 整波清光，于是施法者根本不会死，这条就测不到「他死了大招照样落地」。
 	# 在那之前出怪窗口 10 秒，落地那一刻场上只有前几个，剩下的照样走过来。
-	caster.ultimate.radius = 0.05
-	caster.ultimate.delay_ticks = 6
-	caster.ultimate.cooldown_ticks = 10000
+	skill.radius = 0.05
+	skill.delay_ticks = 6
+	skill.cooldown_ticks = 10000
+	caster.ultimate = PBSkillCast.new(skill)
 	var squad: Array[PBAttacker] = [caster]
 	var outcome := _sim(_wave(9), squad).run_to_end()
 	assert_false(caster.alive, "施法者该死在落地之前")

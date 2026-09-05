@@ -50,7 +50,7 @@ enum Facing { RIGHT, LEFT }
 @export var anim_dead: StringName = &"dead"
 
 ## 逐角色的忍术动画：`{忍术 id: 动画名}`。§09 的功能档与 §11 的尾兽大招
-## 各有各的表现，而它们共用 [PBUltimate] 一套实现 —— 区别只在这张表里。
+## 各有各的表现，而它们共用 [PBSkill] 一套实现 —— 区别只在这张表里。
 @export var skill_anims: Dictionary = {}
 
 ## 源图朝向，见 [enum Facing]。

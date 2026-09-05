@@ -6,7 +6,7 @@ extends RefCounted
 ##
 ## 1. **光环** → 逐人的乘算倍率，和装备走同一条路（[method unit_multipliers]）
 ## 2. **对角色大招的加速** → 一个冷却倍率，乘在每个角色的大招上
-## 3. **大招** → 一个 `dps = 0` 的 [PBAttacker]，挂着一个 [PBUltimate]
+## 3. **大招** → 一个 `dps = 0` 的 [PBAttacker]，挂着一个 [PBSkillCast]
 ##
 ## 第 3 条是这次实现里唯一值得解释的地方，见 [method build_ultimate_attacker]。
 ##
@@ -127,7 +127,7 @@ static func def_reduction_bonus(beast: PBBeast, level: int, cfg: PBSimConfig) ->
 ## [param pending_cooldown_ticks] 是**上一波打完时还欠的冷却**。尾兽的 75 秒
 ## 冷却比单波（约 16 秒）长四五倍，不跨波带的话它每波都放得出来，
 ## §11 那句「必须选择在哪一波交底牌」就没有对象了 ——
-## 见 [member PBUltimate.carry_over_ticks]。
+## 见 [member PBSkill.carry_over_ticks]。
 static func build_ultimate_attacker(
 	beast: PBBeast,
 	level: int,
@@ -143,26 +143,26 @@ static func build_ultimate_attacker(
 	if seconds <= 0.0:
 		seconds = cfg.beast_ultimate_cooldown_seconds
 
-	var ult := PBUltimate.new()
-	ult.element = _ultimate_element(beast)
-	ult.damage = team_dps * beast.ultimate_damage_seconds * scale * _element_mult(
+	var skill := PBSkill.new()
+	skill.element = _ultimate_element(beast)
+	skill.damage = team_dps * beast.ultimate_damage_seconds * scale * _element_mult(
 		beast, wave_element, cfg
 	)
 	# 半径为 0 = 「打全场」，所以要的是**对角**而不是长度 ——
 	# 二维之后用长度的话罩不到角落（见 [method PBSimConfig.field_diagonal]）。
-	ult.radius = beast.ultimate_radius if beast.ultimate_radius > 0.0 else cfg.field_diagonal()
+	skill.radius = beast.ultimate_radius if beast.ultimate_radius > 0.0 else cfg.field_diagonal()
 	# 频率也吃等级：零伤害的机制型尾兽靠这一条才有升级曲线，见本类顶部。
-	ult.cooldown_ticks = maxi(int(round(seconds / scale * float(cfg.tick_rate))), 1)
-	ult.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
-	ult.max_targets = beast.ultimate_max_targets
-	ult.gather = beast.ultimate_gather
-	ult.knockback = beast.ultimate_knockback
-	ult.slow_scale = beast.ultimate_slow_scale
-	ult.slow_ticks = int(round(beast.ultimate_slow_seconds * float(cfg.tick_rate)))
-	ult.team_damage_scale = beast.ultimate_team_damage_scale
-	ult.buff_ticks = int(round(beast.ultimate_buff_seconds * float(cfg.tick_rate)))
-	ult.reset_cooldowns = beast.ultimate_reset_cooldowns
-	ult.carry_over_ticks = maxi(pending_cooldown_ticks, 0)
+	skill.cooldown_ticks = maxi(int(round(seconds / scale * float(cfg.tick_rate))), 1)
+	skill.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
+	skill.max_targets = beast.ultimate_max_targets
+	skill.gather = beast.ultimate_gather
+	skill.knockback = beast.ultimate_knockback
+	skill.slow_scale = beast.ultimate_slow_scale
+	skill.slow_ticks = int(round(beast.ultimate_slow_seconds * float(cfg.tick_rate)))
+	skill.team_damage_scale = beast.ultimate_team_damage_scale
+	skill.buff_ticks = int(round(beast.ultimate_buff_seconds * float(cfg.tick_rate)))
+	skill.reset_cooldowns = beast.ultimate_reset_cooldowns
+	skill.carry_over_ticks = maxi(pending_cooldown_ticks, 0)
 
 	var attacker := PBAttacker.new()
 	attacker.slot = BEAST_SLOT
@@ -170,7 +170,7 @@ static func build_ultimate_attacker(
 	# 尾兽没有本体：站在基地上、够得着全场、不挨打（`max_hp` 恒为 0）。
 	attacker.pos = Vector2.ZERO
 	attacker.reach = cfg.field_diagonal()
-	attacker.ultimate = ult
+	attacker.ultimate = PBSkillCast.new(skill)
 	return attacker
 
 
@@ -187,7 +187,7 @@ static func attacker_in(attackers: Array[PBAttacker]) -> PBAttacker:
 
 
 ## 大招打什么属性。不限属性的按物理算 —— 那只是给渲染层一个显示用的值，
-## 真正的克制倍率已经由 [method _element_mult] 乘进 [member PBUltimate.damage] 了。
+## 真正的克制倍率已经由 [method _element_mult] 乘进 [member PBSkill.damage] 了。
 static func _ultimate_element(beast: PBBeast) -> PBElement.Type:
 	if beast.ultimate_element == PBBeast.ANY_ELEMENT:
 		return PBElement.Type.PHYSICAL

@@ -31,8 +31,8 @@ enum Policy {
 	LEAD,  ## PC 鼠标：**攒着等聚拢**，落点取**落地那一刻**最密处
 }
 
-## 找不到值得放的落点时返回 [constant PBUltimate.NO_SPOT]。
-## 哨兵定义在 [PBUltimate] 那边 —— 字段在谁身上，哨兵就归谁。
+## 找不到值得放的落点时返回 [constant PBSkillCast.NO_SPOT]。
+## 哨兵定义在 [PBSkillCast] 那边 —— 字段在谁身上，哨兵就归谁。
 
 
 ## 挑一个落点。返回 [constant NO_SPOT] 表示这一 tick 不放。
@@ -72,16 +72,16 @@ static func pick_spot(
 	policy: Policy,
 	enemies: Array[PBEnemy],
 	tick: int,
-	ult: PBUltimate,
+	skill: PBSkill,
 	held_ticks: int,
 	min_targets: int,
 	hold_targets: int,
 	max_hold_ticks: int
 ) -> Vector2:
 	if policy == Policy.NONE:
-		return PBUltimate.NO_SPOT
+		return PBSkillCast.NO_SPOT
 
-	var lead: int = ult.delay_ticks if policy == Policy.LEAD else 0
+	var lead: int = skill.delay_ticks if policy == Policy.LEAD else 0
 	var xs := PackedFloat64Array()
 	var lanes := PackedFloat64Array()
 	for enemy: PBEnemy in enemies:
@@ -99,8 +99,8 @@ static func pick_spot(
 
 	var floor_targets: int = maxi(min_targets, 1)
 	if xs.size() < floor_targets:
-		return PBUltimate.NO_SPOT
-	var spot := _densest_spot(xs, lanes, ult.radius)
+		return PBSkillCast.NO_SPOT
+	var spot := _densest_spot(xs, lanes, skill.radius)
 	if policy != Policy.LEAD:
 		return spot
 
@@ -108,9 +108,9 @@ static func pick_spot(
 	# 攒到战斗结束等于一发没放，那比手机端还差。
 	if held_ticks >= max_hold_ticks:
 		return spot
-	if _count_within(xs, lanes, spot, ult.radius) >= maxi(hold_targets, floor_targets):
+	if _count_within(xs, lanes, spot, skill.radius) >= maxi(hold_targets, floor_targets):
 		return spot
-	return PBUltimate.NO_SPOT
+	return PBSkillCast.NO_SPOT
 
 
 ## 落点罩得住几个。**用真圆数**，不是用挑落点时那两轮滑窗数 ——

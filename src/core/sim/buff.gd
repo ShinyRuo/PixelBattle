@@ -10,10 +10,11 @@ extends Resource
 ## | [PBBuffState] | `ActiveGameplayEffect` | 一份正在生效的：到期 tick、谁给的 |
 ## | [PBBuffBag] | `AbilitySystemComponent` 里聚合那一半 | 一个单位身上的全部 |
 ##
-## 混成一个类的代价是现成的：[PBUltimate] 就把「定义」和「这一波的状态」
-## 装在一起，于是它需要一个「只带设定不带状态」的 [method PBUltimate.clone]
-## 外加一个 [method PBUltimate.reset]，而漏调任何一个都会让上一场的状态
-## 漏进下一场（那个类顶上记着实测：九只尾兽整局各放 28–33 发而不是 7 发）。
+## 混成一个类的代价是现成的：M3-b 的 `PBUltimate`（M7-b 已拆成
+## [PBSkill] + [PBSkillCast]）就把「定义」和「这一波的状态」装在一起，
+## 于是它当时需要一个「只带设定不带状态」的 `clone()` 外加一个 `reset()`，
+## 漏调任何一个都会让上一场的状态漏进下一场
+## （实测：不清冷却时九只尾兽整局各放 28–33 发而不是 7 发）。
 ##
 ## ## 为什么是 Resource
 ##

@@ -19,7 +19,7 @@ extends RefCounted
 ##
 ## ## 词汇表是从 M3-d 借来的，不是新造的
 ##
-## 下面这几个键全部落在 [PBUltimate] 已有的字段上（`gather` / `slow_scale` /
+## 下面这几个键全部落在 [PBSkill] 已有的字段上（`gather` / `slow_scale` /
 ## `team_damage_scale` / `radius`）—— 那几个字段是 §11 的机制型尾兽在 M3-d
 ## 加的，当时就写着「**同时也是 §09 功能档要的那套词汇**」。
 ##
@@ -52,7 +52,7 @@ const ROOT: StringName = &"root"
 
 ## 减速力场：落地后全场减速，持续时间比 [constant ROOT] 长得多。
 ##
-## 和定身是同一个机制的两个极端（[member PBUltimate.slow_scale] 取 0 或取 0.5），
+## 和定身是同一个机制的两个极端（[member PBSkill.slow_scale] 取 0 或取 0.5），
 ## 走同一个字段是有意的：它们在战斗层的差别只有「多狠」和「多久」。
 const SLOW_FIELD: StringName = &"slow_field"
 
@@ -82,30 +82,30 @@ static func is_combat(key: StringName) -> bool:
 	return key != GOLD_FLOOR and is_known(key)
 
 
-## 把一个功能装到载体的大招上。返回 false 表示这个键不归大招管。
+## 把一个功能装到载体的大招（0 号技能）上。返回 false 表示这个键不归它管。
 ##
-## 改的是**已经建好的** [PBUltimate]，而不是在建造时分支：
-## 建造那一步（[method PBCombatRules._build_ultimate]）管的是伤害与冷却，
+## 改的是**已经建好的** [PBSkill]，而不是在建造时分支：
+## 建造那一步（[method PBCombatRules._build_skill]）管的是伤害与冷却，
 ## 和「这个人恰好在一组凑满的羁绊里」是两件独立的事，
 ## 混在一起写会让大招的基础属性依赖队伍构成，之后谁都不敢改其中一边。
-static func apply_to_ultimate(ult: PBUltimate, key: StringName, cfg: PBSimConfig) -> bool:
-	if ult == null:
+static func apply_to_skill(skill: PBSkill, key: StringName, cfg: PBSimConfig) -> bool:
+	if skill == null:
 		return false
 	match key:
 		GATHER:
-			ult.gather = true
+			skill.gather = true
 		PULL:
-			ult.gather = true
-			ult.radius *= cfg.bond_pull_radius_scale
+			skill.gather = true
+			skill.radius *= cfg.bond_pull_radius_scale
 		ROOT:
-			ult.slow_scale = 0.0
-			ult.slow_ticks = _to_ticks(cfg.bond_root_seconds, cfg)
-			ult.team_damage_scale = cfg.bond_root_damage_scale
+			skill.slow_scale = 0.0
+			skill.slow_ticks = _to_ticks(cfg.bond_root_seconds, cfg)
+			skill.team_damage_scale = cfg.bond_root_damage_scale
 			# 增伤窗口 = 定身窗口。§09 的原话是「控制期间」，不是「另算一段」。
-			ult.buff_ticks = ult.slow_ticks
+			skill.buff_ticks = skill.slow_ticks
 		SLOW_FIELD:
-			ult.slow_scale = cfg.bond_slow_scale
-			ult.slow_ticks = _to_ticks(cfg.bond_slow_seconds, cfg)
+			skill.slow_scale = cfg.bond_slow_scale
+			skill.slow_ticks = _to_ticks(cfg.bond_slow_seconds, cfg)
 		_:
 			return false
 	return true

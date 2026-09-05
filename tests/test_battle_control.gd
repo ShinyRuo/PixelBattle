@@ -193,9 +193,10 @@ func test_nothing_goes_off_by_itself_when_nobody_is_aiming() -> void:
 	var caster := _shooter()
 	caster.dps = 0.0
 	caster.attack_speed = 0.0
-	caster.ultimate = PBUltimate.new()
-	caster.ultimate.damage = 1.0e9
-	caster.ultimate.radius = 1.0
+	var skill := PBSkill.new()
+	skill.damage = 1.0e9
+	skill.radius = 1.0
+	caster.ultimate = PBSkillCast.new(skill)
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	for _i: int in 60:
@@ -209,10 +210,11 @@ func test_the_player_can_order_one_by_hand() -> void:
 	var caster := _shooter()
 	caster.dps = 0.0
 	caster.attack_speed = 0.0
-	caster.ultimate = PBUltimate.new()
-	caster.ultimate.damage = 1.0e9
-	caster.ultimate.radius = 1.0
-	caster.ultimate.delay_ticks = 6
+	var skill := PBSkill.new()
+	skill.damage = 1.0e9
+	skill.radius = 1.0
+	skill.delay_ticks = 6
+	caster.ultimate = PBSkillCast.new(skill)
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	sim.step()
@@ -225,15 +227,15 @@ func test_the_player_can_order_one_by_hand() -> void:
 
 
 func test_an_order_off_the_field_is_refused_instead_of_swallowing_the_cooldown() -> void:
-	# 落点非法（[method PBUltimate.is_spot] 不认）时**不能进冷却** ——
+	# 落点非法（[method PBSkillCast.is_spot] 不认）时**不能进冷却** ——
 	# 吞掉一次冷却的表现是「我明明还没放，怎么就要等 20 秒」。
 	_cfg.aim_policy = PBAimRules.Policy.NONE
 	var caster := _shooter()
-	caster.ultimate = PBUltimate.new()
+	caster.ultimate = PBSkillCast.new(PBSkill.new())
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	sim.step()
-	assert_false(sim.cast_ultimate(caster, PBUltimate.NO_SPOT), "非法落点该被拒绝")
+	assert_false(sim.cast_ultimate(caster, PBSkillCast.NO_SPOT), "非法落点该被拒绝")
 	assert_true(sim.can_cast(caster), "而且冷却一点都没动")
 
 

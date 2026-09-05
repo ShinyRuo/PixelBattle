@@ -116,19 +116,18 @@ func test_enemies_spawn_onto_real_lanes() -> void:
 func test_an_ultimate_hits_a_disc_not_a_stripe() -> void:
 	# 半径升成真圆之后，落点正上方但隔了几条泳道的敌人打不到了。
 	# **一发大招因此比一维时代弱**，那是这次升维最大的一笔数值变动。
-	var ult := PBUltimate.new()
-	ult.radius = 0.10
-	ult.spot = Vector2(0.5, 0.10)
-	assert_true(ult.spot.distance_to(Vector2(0.5, 0.18)) <= ult.radius, "同一列近处的中")
-	assert_false(ult.spot.distance_to(Vector2(0.5, 0.24)) <= ult.radius, "同一列远处的不中")
+	var radius: float = 0.10
+	var spot := Vector2(0.5, 0.10)
+	assert_true(spot.distance_to(Vector2(0.5, 0.18)) <= radius, "同一列近处的中")
+	assert_false(spot.distance_to(Vector2(0.5, 0.24)) <= radius, "同一列远处的不中")
 
 
 func test_the_aim_picks_a_lane_not_just_a_distance() -> void:
 	# 落点是二维的，所以它得挑一条泳道。全挑 0 的话，一半的敌人
 	# 永远不会被大招碰到，而那不报错。
-	var ult := PBUltimate.new()
-	ult.radius = 0.06
-	ult.delay_ticks = 0
+	var skill := PBSkill.new()
+	skill.radius = 0.06
+	skill.delay_ticks = 0
 	var enemies: Array[PBEnemy] = []
 	for i: int in 6:
 		var enemy := PBEnemy.new()
@@ -137,8 +136,8 @@ func test_the_aim_picks_a_lane_not_just_a_distance() -> void:
 		enemy.distance = 0.5
 		enemy.lane = 0.20
 		enemies.append(enemy)
-	var spot := PBAimRules.pick_spot(PBAimRules.Policy.AUTO, enemies, 1, ult, 0, 1, 1, 10)
-	assert_true(PBUltimate.is_spot(spot), "有六个人挤在一起，该放")
+	var spot := PBAimRules.pick_spot(PBAimRules.Policy.AUTO, enemies, 1, skill, 0, 1, 1, 10)
+	assert_true(PBSkillCast.is_spot(spot), "有六个人挤在一起，该放")
 	assert_almost_eq(spot.y, 0.20, 1e-6, "落点该压在他们那条泳道上，不是压在 0")
 
 
