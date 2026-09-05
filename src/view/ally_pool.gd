@@ -304,7 +304,7 @@ func _place(
 		# M6-b 就建好了，但在 [member PBSkill.id] 之前**没有键可查** ——
 		# §09 的功能档与 §11 的尾兽大招共用一套实现，区别只在这张表里。
 		anim = skin.skill_anim(cast.skill.id)
-	_animate(index, skin, anim, fit)
+	_animate(index, skin, anim, fit, PBActorPose.holds_last(pose.state))
 
 	if not attacker.alive:
 		sprite.modulate = DEAD_COLOR
@@ -371,9 +371,18 @@ static func _pending_cast(attacker: PBAttacker) -> PBSkillCast:
 	return null
 
 
-func _animate(index: int, skin: PBActorSkin, anim: StringName, fit: float) -> void:
+## 播这一段。[param hold_last] 为真时**演完就停在最后一帧**，见
+## [method PBActorPose.holds_last]。
+##
+## 三种情况要分开：换了一段就从头播；同一段还在演就别碰它（每帧调一次
+## `play` 会把它钉死在第一帧，那看起来就是「这个人不会动」）；
+## 同一段已经演完，那要么再来一遍（攻击段每出一手一遍），要么就停在那儿。
+func _animate(
+	index: int, skin: PBActorSkin, anim: StringName, fit: float, hold_last: bool = false
+) -> void:
 	var sprite: AnimatedSprite2D = _sprites[index]
-	if sprite.animation != anim or not sprite.is_playing():
+	var over: bool = not sprite.is_playing()
+	if sprite.animation != anim or (over and not hold_last):
 		sprite.play(anim)
 	sprite.speed_scale = _anim_speed * fit
 	sprite.flip_h = _poses[index].facing == PBActorPose.FACE_LEFT

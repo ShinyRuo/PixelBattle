@@ -66,6 +66,31 @@ var _attack_left: int = 0
 var _move_left: int = 0
 
 
+## 这一段播完之后**停在最后一帧**，还是从头再演一遍。
+##
+## ## 只有倒地那一档停住
+##
+## 别的档都要重演：攻击段每出一手播一遍（而两发之间状态一直是
+## [constant State.ATTACK]，所以只能靠「上一遍演完了」来触发下一遍），
+## 待机与跑动本来就是循环段。
+##
+## **倒地不是**：人死了就躺在那儿，那是一个终态。一遍遍重演的表现是
+## 「尸体在地上抽搐」，而它不报错 —— 白模的倒地段只有一帧，
+## 所以这条从 M6-b 起就错着，直到真素材（倒地段有好几帧）进来才看得见。
+##
+## ## 为什么判据是状态，不是 [SpriteFrames] 的循环标志
+##
+## 那个标志已经填对了（`data/actors/frames/*.tres` 里 `dead` 的 `loop` 是 0），
+## 但它管不到这件事：一段非循环的动画演完之后 [AnimatedSprite2D] 只是
+## **停下**，而 [method AnimatedSprite2D.play] 在「停在最后一帧」时会
+## 从头重来 —— 于是每帧都调一次 `play` 的渲染层把它变回了循环。
+##
+## 敌人那一侧不需要这一条：死掉的敌人整个节点就藏起来了
+## （[method PBEnemyPool.sync_enemies] 那道 `is_active`），压根播不到倒地段。
+static func holds_last(state_now: int) -> bool:
+	return state_now == State.DEAD
+
+
 ## 复位到 [param at]，默认朝 [param face]。上场、开波、换人时调。
 ##
 ## [member _prev_shot] 要一起清掉：不清的话开波那一下

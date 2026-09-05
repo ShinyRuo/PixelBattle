@@ -201,6 +201,80 @@ func test_the_attack_animation_is_squeezed_into_one_attack_interval() -> void:
 	assert_lte(pool._fit(skin, anim, 1), PBAllyPool.FIT_MAX, "也别糊成一片")
 
 
+func test_the_dead_animation_plays_once_and_holds_the_last_frame() -> void:
+	# 玩家报的：人死了之后倒地动画一遍遍重演。
+	#
+	# **根因不在素材的循环标志上** —— `data/actors/frames/*.tres` 里
+	# `dead` 的 `loop` 已经是 0 了。一段非循环动画演完之后
+	# [AnimatedSprite2D] 只是**停下**，而 [method AnimatedSprite2D.play]
+	# 在「停在最后一帧」时会从头重来 —— 于是每帧调一次 `play` 的渲染层
+	# 把它变回了循环。白模的倒地段只有一帧，所以这条从 M6-b 起就错着，
+	# 直到真素材（好几帧的 `dead`）进来才看得见。
+	var pool := PBAllyPool.new()
+	add_child_autofree(pool)
+	var skin := _clip(&"dead", 3)
+	var sprite: AnimatedSprite2D = pool._sprites[0]
+	sprite.sprite_frames = skin.frames
+
+	pool._animate(0, skin, &"dead", 1.0, true)
+	assert_eq(sprite.animation, &"dead", "换到倒地段该播一遍")
+
+	# 演完的自然状态：停在最后一帧、进度满、不再播。`pause` 而不是 `stop` ——
+	# 后者会把位置清回 0，那就不是「演完了」的样子了。
+	sprite.set_frame_and_progress(2, 1.0)
+	sprite.pause()
+	pool._animate(0, skin, &"dead", 1.0, true)
+	assert_eq(sprite.frame, 2, "演完就停在最后一帧，不许从头再来")
+	assert_false(sprite.is_playing(), "而且不该被重新推起来")
+
+
+func test_a_finished_attack_still_replays_for_the_next_shot() -> void:
+	# 上一条不许顺手把这一条弄坏：两发之间状态一直是
+	# [constant PBActorPose.State.ATTACK]，所以下一遍**只能**靠
+	# 「上一遍演完了」来触发 —— 这正是那行 `not is_playing()` 存在的理由。
+	var pool := PBAllyPool.new()
+	add_child_autofree(pool)
+	var skin := _clip(&"attack", 3)
+	var sprite: AnimatedSprite2D = pool._sprites[0]
+	sprite.sprite_frames = skin.frames
+
+	pool._animate(0, skin, &"attack", 1.0, false)
+	sprite.set_frame_and_progress(2, 1.0)
+	sprite.pause()
+	pool._animate(0, skin, &"attack", 1.0, false)
+	assert_eq(sprite.frame, 0, "不停住的那一档要从头再演一遍")
+
+
+func test_only_the_dead_state_holds_its_last_frame() -> void:
+	# 倒地是一个**终态**，别的都不是：待机与跑动本来就循环，
+	# 攻击与施法每触发一次演一遍。
+	assert_true(PBActorPose.holds_last(PBActorPose.State.DEAD), "倒地停住")
+	for state: int in [
+		PBActorPose.State.IDLE,
+		PBActorPose.State.RUN,
+		PBActorPose.State.ATTACK,
+		PBActorPose.State.CAST,
+	]:
+		assert_false(PBActorPose.holds_last(state), "别的档都要接着演")
+
+
+## 一段 [param count] 帧的**非循环**动画，挂在一张空皮上。
+func _clip(anim: StringName, count: int) -> PBActorSkin:
+	var frames := SpriteFrames.new()
+	frames.add_animation(anim)
+	frames.set_animation_loop(anim, false)
+	frames.set_animation_speed(anim, 10.0)
+	for _i: int in count:
+		var image := Image.create_empty(4, 4, false, Image.FORMAT_RGBA8)
+		image.fill(Color.WHITE)
+		frames.add_frame(anim, ImageTexture.create_from_image(image))
+	frames.remove_animation(&"default")
+	var skin := PBActorSkin.new()
+	skin.frames = frames
+	skin.anim_dead = anim
+	return skin
+
+
 ## 一个站在场上、还活着的攻击者。血量不为 0 才画得出来 ——
 ## 0 表示「这不是一个真单位，只是一个标量」，见 [member PBAttacker.max_hp]。
 func _standing() -> PBAttacker:
