@@ -80,8 +80,13 @@ func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector
 		if _shown >= CAPACITY:
 			break
 		var cast: PBSkillCast = attacker.ultimate
-		# 没有落点 = 现在没有待落地的大招（[constant PBSkillCast.NO_SPOT]）。
 		if cast == null or not cast.is_pending() or cast.lands_at <= current_tick:
+			continue
+		# **只有地面档有落点预示**（M7-c）。锁定队友的治疗、不挑目标的自增益
+		# 照样是「一发在路上」（[method PBSkillCast.is_pending]），但它们
+		# 没有落点 —— 不拦的话这里会照着 [constant PBSkillCast.NO_SPOT]
+		# 在场外画一个半径 0 的圈，而且白占一个池子槽位。
+		if cast.skill.target != PBSkill.Target.GROUND:
 			continue
 		# 还剩多少比例的等待时间。落地那一刻是 1，刚下达时接近 0。
 		var total: int = maxi(cast.skill.delay_ticks, 1)

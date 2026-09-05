@@ -15,6 +15,32 @@ extends RefCounted
 ## 混在一起写会让 [PBBattleSim] 的 `step()` 越来越难读。
 
 
+## 这份技能的数据合不合法。返回空串表示没问题，否则是给人看的原因（M7-c）。
+##
+## 三条都是**静默生效**的错，所以必须在装表那一刻拦下来：
+##
+## - **`ALLY` 却打敌人 / `ENEMY` 却打自己人** —— 点谁和打谁在这两档上
+##   不可能是两个方向，写反了不会报错，只会「点了一个队友然后他掉血」
+## - **非 `GROUND` 却配了施法延迟** —— 见下
+##
+## ## 为什么施法延迟只对 `GROUND` 有意义
+##
+## 延迟存在的**全部理由**是 §02 的预判窗口（见 [PBSkill] 顶部），
+## 而锁定单体的技能没有预判可言：目标跟着走，落点也跟着走。
+## 允许非 0 的话，「飞行途中目标死了怎么办」「跑出射程怎么办」
+## 两个问题要现在回答，而它们没有依据 —— 玩家已经拍了「单体技能不要飞行体」。
+static func validate(skill: PBSkill) -> String:
+	if skill == null:
+		return "技能是空的"
+	if skill.target == PBSkill.Target.ALLY and skill.affects != PBSkill.Party.ALLIES:
+		return "target=ALLY 的技能必须 affects=ALLIES —— 点队友却打敌人说不通"
+	if skill.target == PBSkill.Target.ENEMY and skill.affects != PBSkill.Party.ENEMIES:
+		return "target=ENEMY 的技能必须 affects=ENEMIES —— 点敌人却打自己人说不通"
+	if skill.target != PBSkill.Target.GROUND and skill.delay_ticks != 0:
+		return "只有 GROUND 档能配施法延迟 —— 锁定目标的技能没有预判窗口"
+	return ""
+
+
 ## 一发落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
 ## 返回这一下打死了几个 —— 调用方要把它加进 [PBCombatOutcome]。
 ##
@@ -54,6 +80,94 @@ static func land(
 			# 战场之外，拿战场长度封顶会把他们往前拽（见 [member PBEnemy.start_x]）。
 			enemy.distance = minf(enemy.distance + skill.knockback, enemy.start_x)
 	return kills
+
+
+## 落在一个**锁定的己方单位**身上（[constant PBSkill.Target.ALLY]，M7-c）。
+##
+## ## 目标没了就空放，不崩也不改打别人
+##
+## 下达和落地之间隔着一个 tick（下达发生在 [method PBBattleSim._resolve_ultimates]
+## 那一趟的后半，而落地的检查在**下一趟**的开头），那一 tick 里目标可能
+## 被敌人打死。这时候正确的行为是**什么都不做**：
+##
+## - 改打别人 → 玩家点的那个人和实际受益的人不是同一个，而他不会知道
+## - 硬治一具尸体 → [method PBAttacker.heal] 自己拦着（死人回不了血），
+##   但那是它的兜底，不是这里可以不判的理由
+##
+## 「一发打空」和 [PBProjectile] 那条「目标死了子弹就消失，不改打别人」
+## 是同一条规矩。
+static func land_on_ally(
+	cast: PBSkillCast, attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int
+) -> void:
+	if cast.target_slot < 0 or cast.target_slot >= attackers.size():
+		return
+	var target: PBAttacker = attackers[cast.target_slot]
+	if not target.is_targetable():
+		return
+	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick)
+
+
+## 打全场：伤害发给**每一个已出场且还活着的敌人**，不看位置
+## （[constant PBSkill.Target.NONE] + [constant PBSkill.Party.ENEMIES]，M7-c）。
+## 返回打死了几个。
+##
+## 和 [method land] 的区别只有一条：那一个按半径圈人，这一个不圈 ——
+## 所以 [member PBSkill.max_targets] 在这里仍然管用（0 = 不限）。
+##
+## **不挂 [member PBSkill.on_hit]**：那要给 [PBEnemy] 一个效果袋，而那是 M7-d。
+static func land_on_field(
+	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, tick: int
+) -> int:
+	var skill := cast.skill
+	var kills: int = 0
+	var hits: int = 0
+	for i: int in range(front, enemies.size()):
+		if skill.max_targets > 0 and hits >= skill.max_targets:
+			break
+		var enemy: PBEnemy = enemies[i]
+		if not enemy.has_spawned(tick):
+			break
+		if not enemy.alive:
+			continue
+		hits += 1
+		if enemy.take_damage(skill.damage):
+			kills += 1
+	return kills
+
+
+## 下达那一刻挂给施法者自己的效果（[member PBSkill.on_self]，M7-c）。
+static func apply_on_self(
+	attacker: PBAttacker, cast: PBSkillCast, cfg: PBSimConfig, tick: int
+) -> void:
+	_apply_all(attacker, cast.skill.on_self, cast.caster_level, cfg, tick)
+
+
+## 把一串效果挂到一个己方单位身上，数值按 [param level] 现算（决策 7）。
+static func _apply_all(
+	unit: PBAttacker, buffs: Array[PBBuff], level: int, cfg: PBSimConfig, tick: int
+) -> void:
+	for buff: PBBuff in buffs:
+		apply_one(unit, buff, PBBuffRules.resolve(buff, level), cfg, tick)
+
+
+## 把**一份**效果挂到一个己方单位身上。
+##
+## ## 瞬间的那一档不进效果袋
+##
+## §2.3 那条分界线：**瞬间效果改的是「量」（血、蓝），写进字段；
+## 持续效果改的是「率」，只在用的那一刻问一次。** 所以瞬间档在这里当场
+## 结算完就没了，而 [method PBBuffBag.add] 那条路是给有窗口的那两档走的
+## —— 顺带它自己也拦着（`ticks <= 0` 直接返回），瞬间档的窗口正好是 0。
+static func apply_one(
+	unit: PBAttacker, buff: PBBuff, mods: Dictionary, cfg: PBSimConfig, tick: int
+) -> void:
+	if buff == null:
+		return
+	if buff.kind == PBBuff.Kind.INSTANT:
+		unit.heal(float(mods.get(PBBuffRules.HEAL, 0.0)))
+		unit.restore_mana(float(mods.get(PBBuffRules.MANA, 0.0)))
+		return
+	unit.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
 
 
 ## 落地时给全队挂一份短时增伤（§11 二尾、§09 定身档的控制期增伤）。

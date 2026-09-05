@@ -35,7 +35,7 @@ M6 的 a~q（视角改造、动画系统 + 白模帧 + 素材规格、1080p 与�
 降采样面板、**战场 AI 两条真 bug**）也已收口。
 **`assets/` 里现在有三个真素材角色，全部是高清档；其余 27 个仍是代码画的白模。****
 **下一步是 M7 技能与 BUFF 系统**（规格在
-[Docs/技能与BUFF系统.md](Docs/技能与BUFF系统.md)，**a、b 两步已落地**）；
+[Docs/技能与BUFF系统.md](Docs/技能与BUFF系统.md)，**a、b、c 三步已落地**）；
 **数值回归排在它后面**，而它现在有一个头号项 —— 见下面那条警告。
 
 **M7 的骨架是三层**：效果层（`PBBuff` / `PBBuffState` / `PBBuffBag` / `PBBuffRules`，
@@ -586,6 +586,27 @@ vs 两步缩，PSNR 36.6 dB，肉眼无别）—— 第一级只缩了 0.75 倍�
 `battle_sim.gd` 从 969 行落回 919。大招仍由 `PBCombatRules._build_skill`
 （原 `_build_ultimate`）按 `PBSimConfig` 生成，一个数没动 ——
 角色表里的 `skill_ids` 是以后才加的额外内容。
+
+**M7-c 加了两根轴**：`PBSkill.target`（点什么：`NONE` / `ALLY` / `ENEMY` /
+`GROUND`）和 `PBSkill.affects`（落在谁：`ALLIES` / `ENEMIES`）。
+**默认 `GROUND` + `ENEMIES`**，所以既有的每一发大招一个字不用改还是原样。
+新接进 sim 的是 `cast_ultimate_on`（锁定队友，医疗忍术那一档）和
+`cast_ultimate_now`（不用挑目标）；`ENEMY` 档故意没接，没有入口放得出来。
+**自动档只放地面技能** —— `PBAimRules` 答的是「往哪块地放」，
+它不知道该治谁，而 §6 那条「批量扫描不吃技能」本来就是这个意思。
+效果数值**按施法者等级现算不预存**（`PBSkillCast.caster_level` 只记一个 int）：
+预存的话，`apply_to_skill` 那种「建好之后再改技能」的路径不会跟着更新，
+表现是「这个羁绊功能好像没生效」，不报错。
+**`on_hit` 挂给敌人的那两档还没通**（要给 `PBEnemy` 一个效果袋，那是 M7-d），
+在那之前它们只走 `damage`。
+
+> **换哨兵顺带炸出一个真 bug。** 「有没有一发在路上」的判据从 `spot`
+> 换成了 `lands_at`（`NONE` 档既没落点也照样在路上），
+> 而 `PBTelegraphPool` 于是给锁定档的治疗也画了一个落点预示圈 ——
+> 圈心在场外、半径 0，肉眼几乎看不见，但它**白占一个池子槽位**，
+> 而那个池子有上限。现在只画地面档。抓出它的是既有的那条
+> 「没有待落地的大招时什么都不画」：它靠清 `spot` 表达那个前提，
+> 而那句话换哨兵之后不再成立。
 
 **这一步没有 `test_ultimate.gd` 可对**（方案里写的验收文件不存在）：
 大招相关的断言散在十个测试文件里，直接 `PBUltimate.new()` 就地改字段。
@@ -1269,6 +1290,20 @@ Docs/         项目文档
 	  if ($c -eq 0) { "可疑（一行注释都没有）: " + $_.Name }
   }
   ```
+- **嵌套 `enum` 撞上引擎的全局枚举名，报错指的地方和病因对不上。**
+  Godot 有一批全局枚举（`Side`、`Key`、`Error`、`Corner`…），
+  而**类里的嵌套 enum 不会遮住它们**：类型标注 `x: Side` 解析成**全局那个**，
+  而赋值 `Side.ENEMIES` 解析成**你自己那个**，于是报
+
+  ```
+  Parse Error: Cannot assign a value of type "PBSkill.Side" as "Side".
+  ```
+
+  M7-c 实测被它拦下过（`PBSkill.Side` → 改名 `PBSkill.Party`）。
+  两条要记住：**改名比全限定省事**（留着撞名的话，以后每个在这个文件里
+  写 `Side` 的人都会静默拿到引擎那个）；以及**`--import` 那一关看不出来**，
+  它是第 4 关「真跑主场景」才炸的 —— 正是 CLAUDE.md 那句
+  「解析得过但一 `_ready` 就炸」。
 - **`queue_free()` 不是 `free()`。** 节点删除用 `queue_free()`，在帧末安全释放；
   `free()` 立即释放，正在遍历时调用会崩。
 - **`@onready` 变量在 `_ready()` 之前赋值**，别在 `_init()` 里访问它们。

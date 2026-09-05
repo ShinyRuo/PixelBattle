@@ -315,7 +315,7 @@ M3-d 那个全场增伤 `_buff_scale` / `_buff_until` **改成走 bag**（挂在
 id, name_key, icon_key
 anim_key                                  # 对上已有的 PBActorSkin.skill_anims
 target: Target                            # 玩家要点什么
-affects: Side                             # 结算落在哪一边
+affects: Party                            # 结算落在哪一边（不能叫 Side，见下）
 cooldown_seconds, delay_seconds, mp_cost
 radius, max_targets
 power_mult, element_override              # 伤害 = 施法者战力 × power_mult
@@ -328,10 +328,24 @@ on_self: Array[StringName]                # 施法者自己挂哪几个
 # PBSkillCast —— RefCounted，一波一份，战斗结束就扔
 skill: PBSkill
 ready_at: int
-spot: Vector2        # GROUND 档的待落地落点，沿用 NO_SPOT 哨兵
+spot: Vector2        # GROUND 档的待落地落点
 target_slot: int     # ALLY / ENEMY 档锁定的那一个
-lands_at: int
+lands_at: int        # -1 = 手上没有待落地的技能。**这才是「有没有一发在路上」的哨兵**
+caster_level: int    # 只用来算效果数值（决策 7）
 ```
+
+> **哨兵是 `lands_at`，不是 `spot`**（M7-c 落地时改的）。M7-b 之前只有
+> `GROUND` 一种技能，「有落点」和「有一发在路上」永远同时成立，所以拿
+> `NO_SPOT` 当哨兵是够用的。`NONE` 档进来之后那条等价关系断了 ——
+> 它既没有落点也没有锁定谁，**但照样有一发在路上**。
+> 换成 `lands_at` 对 `GROUND` 档是逐位等价的：两者在 `cast` / `land` /
+> `reset` 里从来都是一起设、一起清。
+
+> **`caster_level` 记的是等级，不是算完的数值**（M7-c）。[PBSkill] 建好之后
+> 还会被改（`PBBondFunctionRules.apply_to_skill` 就是这么干的），
+> 预先把效果数值算好存一份的话，后改的那一下不会跟着更新 ——
+> 表现是「这个羁绊功能好像没生效」，不报错。存等级、用的时候现算，
+> 就没有第二份真相。
 
 ### 3.2 目标与影响是**两根轴**，不是一个枚举
 
@@ -617,7 +631,7 @@ src/view/skill_fx_pool.gd     PBSkillFxPool
 | -------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **M7-a** | 效果层四个类；把 M3-d 全场增伤改成走 bag                                   | 既有增伤测试逐位还绿；「持续效果过期后`dps` 逐位等于原值」；「不跑清扫也必须过期」；「同一份 buff 由 1 级和 10 级的人放出来数值不同」；「只写成长不写基数要报错」         |
 | **M7-b** | ✅ `PBUltimate` 拆成 `PBSkill` + `PBSkillCast`；`PBSkillRules` 接结算 | 见 `Docs/开发路线图.md`「M7-b 的验收结果」——原计划的 `test_ultimate.gd` 不存在，实测是散在十个测试文件里的既有断言，逐条核对名字与意图未变 |
-| **M7-c** | 两根轴；`ALLY` / `NONE` 两档接上 sim                                   | 「目标死了 → 空放不崩」；「`target != GROUND` ⇒ `delay == 0`」数据断言                 |
+| **M7-c** | ✅ 两根轴；`ALLY` / `NONE` 两档接上 sim                                 | 见 `Docs/开发路线图.md`「M7-c 的验收结果」——`Side` 撞引擎全局枚举改名 `Party`；哨兵从 `spot` 换到 `lands_at`，顺带炸出落点预示圈的一个真 bug |
 | **M7-d** | 敌人那一侧：`PBEnemy` 挂 bag、`spawn()` 清、全场 × 个体相乘           | 「上一波的减速不许漏进下一波」；「全场定身期间再上个体减速，速度仍是 0」                     |
 | **M7-e** | 操作层：状态机泛化、施法者高亮、候选环、D 线、指令卡两格                   | 「按钮亮 ⇔ 放得出」；推真事件的点击测试（装自己的`SubViewport`，否则先被 GUT 的面板吃掉） |
 | **M7-f** | 表现：血蓝条缩到 76 + 图标条、染色、`PBSkillFxPool`、`skill_anims`     | `test_layout.gd` 全绿（新控件不许出界）                                                    |

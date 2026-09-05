@@ -227,7 +227,10 @@ static func build_attackers(
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)
-		attacker.ultimate = PBSkillCast.new(skill)
+		# 等级跟着进来（决策 7）：技能挂出去的效果按施法者等级缩放，
+		# 而 [PBAttacker] 身上没有也不该有 `level` —— 见
+		# [member PBSkillCast.caster_level]。
+		attacker.ultimate = PBSkillCast.new(skill, unit.level)
 		out[i] = attacker
 
 	var beast_attacker := PBBeastRules.build_ultimate_attacker(

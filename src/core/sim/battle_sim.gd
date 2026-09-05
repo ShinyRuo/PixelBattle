@@ -301,6 +301,11 @@ func _resolve_ultimates() -> void:
 		var cast: PBSkillCast = attacker.ultimate
 		if cast == null or not attacker.alive or not cast.is_ready(_tick):
 			continue
+		# **自动档只会放地面技能**（M7-c）：[PBAimRules] 答的是
+		# 「往哪块地放」，它不知道该治谁、该点谁。锁定目标的那几档因此
+		# 只有手动入口 —— 而 §6 那条「批量扫描不吃技能」本来就是这个意思。
+		if cast.skill.target != PBSkill.Target.GROUND:
+			continue
 		# 第二道门槛（M3.5-d）：冷却转好了还得有蓝。
 		# 这道门槛让六尾的「重置全体 CD」不再是免费的连放。
 		if not attacker.can_pay(cast.skill.mp_cost):
@@ -333,7 +338,40 @@ func _resolve_ultimates() -> void:
 func cast_ultimate(attacker: PBAttacker, spot: Vector2) -> bool:
 	if not can_cast(attacker) or not PBSkillCast.is_spot(spot):
 		return false
-	_order(attacker, spot)
+	var cast: PBSkillCast = attacker.ultimate
+	if cast.skill.target != PBSkill.Target.GROUND:
+		return false
+	cast.cast(spot, _tick)
+	_ordered(attacker, cast)
+	return true
+
+
+## 玩家亲手把一发技能放在**一个队友**身上（[constant PBSkill.Target.ALLY]，M7-c）。
+## 放得出来返回 true。
+##
+## 目标要活着 —— 死人身上放不了。**而下达之后他再死掉是另一回事**：
+## 那一发照样飞完，落地时空放（见 [method PBSkillRules.land_on_ally]）。
+func cast_ultimate_on(attacker: PBAttacker, target: PBAttacker) -> bool:
+	if not can_cast(attacker) or target == null or not target.is_targetable():
+		return false
+	var cast: PBSkillCast = attacker.ultimate
+	if cast.skill.target != PBSkill.Target.ALLY:
+		return false
+	cast.cast_on(target.slot, _tick)
+	_ordered(attacker, cast)
+	return true
+
+
+## 玩家亲手放一发**不需要挑目标**的技能（[constant PBSkill.Target.NONE]，M7-c）。
+## 放得出来返回 true。
+func cast_ultimate_now(attacker: PBAttacker) -> bool:
+	if not can_cast(attacker):
+		return false
+	var cast: PBSkillCast = attacker.ultimate
+	if cast.skill.target != PBSkill.Target.NONE:
+		return false
+	cast.cast_now(_tick)
+	_ordered(attacker, cast)
 	return true
 
 
@@ -345,27 +383,53 @@ func can_cast(attacker: PBAttacker) -> bool:
 	return cast.is_ready(_tick) and attacker.can_pay(cast.skill.mp_cost)
 
 
-## 下达一发：扣蓝、定落点、进冷却。自动与手动共用这一段。
+## 自动档下达一发地面技能。手动那三条各自定完落点/目标之后走
+## [method _ordered]，和这里共用后半段。
+func _order(attacker: PBAttacker, spot: Vector2) -> void:
+	var cast: PBSkillCast = attacker.ultimate
+	cast.cast(spot, _tick)
+	_ordered(attacker, cast)
+
+
+## 下达之后共同要做的三件事：扣蓝、挂自增益、记播报。
 ##
 ## 蓝在**下达**时扣，不是落地时 —— 落地时扣的话，施法延迟那段窗口里
 ## 还能再下达一发（蓝还没扣掉），于是延迟越长反而放得越多，
 ## 和冷却从落地算是同一个道理。
-func _order(attacker: PBAttacker, spot: Vector2) -> void:
-	var cast: PBSkillCast = attacker.ultimate
+##
+## [member PBSkill.on_self] 同理挂在这一刻（M7-c）：人已经把技能交出去了，
+## 自增益却要等落地才生效的话，玩家看到的是「按下去没反应」。
+func _ordered(attacker: PBAttacker, cast: PBSkillCast) -> void:
 	attacker.pay(cast.skill.mp_cost)
-	cast.cast(spot, _tick)
+	PBSkillRules.apply_on_self(attacker, cast, _cfg, _tick)
 	# **播报记在下达这一刻，不是落地那一刻**（M6-j）：玩家点下去就该看见
 	# 回音，而落地还隔着一整段施法延迟（那段延迟正是 §02 要的预判窗口）。
 	if log_to != null:
 		log_to.ultimate(_tick, attacker.slot)
 
 
-## 一发大招落地：圈人、挂效果、位置操纵全部交给 [PBSkillRules]。
+## 一发技能落地：圈人、挂效果、位置操纵全部交给 [PBSkillRules]。
 ## 本类只留三件跟「场」有关的事 —— 减速是场的属性
 ## （见 [member _slow_scale] 顶上的注释）、记账、转入冷却。
+##
+## **落地的形状由 [member PBSkill.target] 决定**（M7-c）：
+## 地面档按半径圈人，锁定档只找那一个，不挑目标的那一档打全场。
+## 全场效果（减速 / 全队增伤 / 重置冷却）**三档共用**，
+## 它们本来就和「打中了谁」无关。
 func _land_skill(cast: PBSkillCast) -> void:
 	var skill := cast.skill
-	_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _tick)
+	match skill.target:
+		PBSkill.Target.ALLY:
+			PBSkillRules.land_on_ally(cast, _attackers, _cfg, _tick)
+		PBSkill.Target.NONE:
+			if skill.affects == PBSkill.Party.ENEMIES:
+				_outcome.kills += PBSkillRules.land_on_field(cast, _enemies, _front, _tick)
+		PBSkill.Target.ENEMY:
+			# 单体点敌 M7-c 还没接（roadmap 那一步只做 ALLY / NONE）——
+			# 也没有任何入口放得出来，所以这里落不到。
+			pass
+		_:
+			_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _tick)
 	if skill.slow_ticks > 0 and skill.slow_scale < 1.0:
 		_slow_scale = skill.slow_scale
 		_slow_until = _tick + skill.slow_ticks

@@ -184,9 +184,31 @@ func test_the_telegraph_only_shows_while_a_strike_is_in_the_air() -> void:
 	pool.sync_pending(squad, 30, FIELD)
 	assert_eq(pool.shown(), 0, "落地那一刻就该收掉")
 
+	# **手上没有一发在路上**。M7-c 起这件事的哨兵是 `lands_at` 不是 `spot`
+	# （见 [method PBSkillCast.is_pending]）—— `NONE` 档既没有落点也照样
+	# 有一发在路上，两者不再是同义词。
+	cast.lands_at = -1
 	cast.spot = PBSkillCast.NO_SPOT
 	pool.sync_pending(squad, 20, FIELD)
 	assert_eq(pool.shown(), 0, "没有待落地的大招时什么都不画")
+
+
+func test_the_telegraph_ignores_a_skill_that_has_no_landing_spot() -> void:
+	# 锁定队友的治疗照样是「一发在路上」，但它没有落点 ——
+	# 不拦的话这里会照着 [constant PBSkillCast.NO_SPOT] 在场外画一个
+	# 半径 0 的圈，而且白占一个池子槽位（池子是有上限的）。
+	var pool := PBTelegraphPool.new()
+	add_child_autofree(pool)
+	var skill := PBSkill.new()
+	skill.target = PBSkill.Target.ALLY
+	skill.affects = PBSkill.Party.ALLIES
+	var cast := PBSkillCast.new(skill)
+	cast.cast_on(1, 0)
+	var attacker := PBAttacker.new()
+	attacker.ultimate = cast
+	assert_true(cast.is_pending(), "前提：它确实有一发在路上")
+	pool.sync_pending([attacker] as Array[PBAttacker], 0, FIELD)
+	assert_eq(pool.shown(), 0, "但没有落点的技能不该画预示圈")
 
 
 func test_the_telegraph_covers_exactly_what_the_strike_will_hit() -> void:

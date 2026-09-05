@@ -50,6 +50,67 @@ extends Resource
 ## 合在一起写会让「按射程选最靠近基地的」和「按密度选一个落点」
 ## 这两套逻辑互相纠缠。
 
+## 玩家要**点什么**（M7-c）。和 [enum Party] 是两根独立的轴，见 [member target]。
+enum Target {
+	NONE,  ## 什么都不用点，按下去就放（自增益、全场打击）
+	ALLY,  ## 等他点一个**己方单位**（医疗忍术）
+	ENEMY,  ## 等他点一个**敌人**（单体爆发、单体控）。**M7-c 还没接进 sim**
+	GROUND,  ## 等他点一块**地**，走落点 + 施法延迟那一套（现在的大招）
+}
+
+## 结算**落在哪一边**（M7-c）。
+enum Party {
+	ALLIES,
+	ENEMIES,
+}
+
+## 玩家要点什么。**默认 [constant Target.GROUND]** —— M7-b 之前的每一发大招
+## 都是「点一块地」，默认取它，既有的技能一个字不用改就还是原来的行为。
+##
+## ## 为什么「点什么」和「落在谁」是两根轴，不是一个枚举
+##
+## 合成一个的话「地面范围治疗」表达不出来，而那是治疗系角色第二个技能的
+## 自然形态。六种组合各有名字：
+##
+## [codeblock]
+## NONE   + ALLIES   自增益，点一下就放
+## NONE   + ENEMIES  全场打击
+## ALLY   + ALLIES   医疗忍术
+## ENEMY  + ENEMIES  单体爆发、单体控
+## GROUND + ENEMIES  现在的大招
+## GROUND + ALLIES   团队治疗圈
+## [/codeblock]
+##
+## **没有 `SELF` 这一档**：自增益就是 `NONE` + [member on_self]。
+## 两种写法表达同一件事就是两把尺子。
+@export var target: Target = Target.GROUND
+
+## 结算落在哪一边。**默认 [constant Party.ENEMIES]**，理由同 [member target]。
+##
+## 两条约束由 [method PBSkillRules.validate] 拦着：
+## `ALLY` 必然 `ALLIES`、`ENEMY` 必然 `ENEMIES` ——
+## 点谁和打谁在这两档上不可能是两个方向。
+@export var affects: Party = Party.ENEMIES
+
+## 命中时挂给**目标**的效果（M7-c）。
+##
+## `ALLY` 档挂给锁定的那一个；`GROUND` / `NONE`+`ENEMIES` 要挂给敌人，
+## 而 [PBEnemy] 的效果袋是 M7-d 的事 —— **在那之前这两档只走
+## [member damage]，不挂 buff**。
+##
+## 存**直接引用**而不是 id 字符串：`.tres` 里 `ext_resource` 指向
+## `data/buffs/*.tres` 就是 Godot 原生的外键，再套一层 id 查表
+## 等于自己发明一遍资源系统。
+@export var on_hit: Array[PBBuff] = []
+
+## **下达那一刻**挂给施法者自己的效果（M7-c）。不问 [member target] 是什么。
+##
+## 在下达时挂而不是落地时：`GROUND` 档那段施法延迟里人已经把技能交出去了，
+## 自增益却要等半秒才生效的话，玩家看到的是「按下去没反应」。
+## 非 `GROUND` 档的延迟恒为 0（[method PBSkillRules.validate] 拦着），
+## 两者因此没有分叉。
+@export var on_self: Array[PBBuff] = []
+
 ## 伤害属性。**§03 铁律：element 挂在伤害事件上，不挂在单位上。**
 ##
 ## 大招是这条铁律第一次真正用上的地方 —— 在此之前一个角色只有一个输出来源，
@@ -184,6 +245,13 @@ extends Resource
 ## 只表现为「悬崖二分跑着跑着，真实队伍的大招变了」。
 func clone() -> PBSkill:
 	var out := PBSkill.new()
+	out.target = target
+	out.affects = affects
+	# 两张效果表**共享同一份引用**，不逐个复制：[PBBuff] 是不可变的定义
+	# （谁都不改它的字段），而 [member damage] 那种会被探测就地改写的标量
+	# 才需要真复制。
+	out.on_hit = on_hit
+	out.on_self = on_self
 	out.element = element
 	out.damage = damage
 	out.radius = radius
