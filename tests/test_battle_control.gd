@@ -85,7 +85,7 @@ func test_a_dead_target_hands_control_back() -> void:
 	var sim := PBBattleSim.new(_wave(9), 0.0, 0.0, _cfg, squad)
 	var named: PBEnemy = sim.enemies()[2]
 	squad[0].forced_target = named.slot
-	named.take_damage(named.max_hp)
+	named.take_damage(named.max_hp, sim.current_tick())
 
 	var before: int = sim.result().kills
 	for _i: int in 20:

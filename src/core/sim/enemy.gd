@@ -88,6 +88,15 @@ var start_x: float = 0.0
 ## view 层靠它把节点和逻辑敌人对上，不用每帧重新匹配。
 var slot: int = 0
 
+## 身上挂着的效果（M7-d）。词汇表见 [PBBuffRules] —— 敌方那三个键
+## （易伤、个体减速、掉血）**不是己方那张表照搬**，理由写在那里。
+##
+## **随敌人一起造，不在战斗中 `.new()`**（§14）。一波 48 个敌人各带 6 个槽位，
+## 那 288 个对象全部分配在开波那一趟，之后只改字段。
+##
+## **[method spawn] 必须清它** —— 见那个函数里的注释。
+var buffs: PBBuffBag = PBBuffBag.new()
+
 
 ## 把这个实例重置成一个刚出生的敌人。对象池复用走这里，不要 `.new()`。
 func spawn(
@@ -105,6 +114,10 @@ func spawn(
 	spawn_tick = at_tick
 	engaged = false
 	next_shot_at = at_tick
+	# **不清的话上一波的减速会漏进这一波**，表现是「后半局的怪好像变慢了」。
+	# 和 [method PBSkillCast.reset] 顶上记着的「上一场剩下的冷却漏进下一场」
+	# 是同一个形状，而它同样不报任何错。
+	buffs.clear()
 
 
 ## 定下这个敌人的攻击方式（M4-c）。[method spawn] 之后调一次。
@@ -168,10 +181,20 @@ func has_spawned(current_tick: int) -> bool:
 ##
 ## 返回值而不是让调用方比较 hp，是为了让「溢出伤害」有个明确的结算点：
 ## 打死之后剩下的伤害要接着打下一个，漏掉这个判断会让高 DPS 白白浪费。
-func take_damage(amount: float) -> bool:
+##
+## ## 易伤在**这里面**乘（M7-d）
+##
+## [param at_tick] 只为这一件事而来：调用方有六处（单体、连续输出、范围、
+## 子弹命中、技能落地、周期载荷），**漏乘一处的表现是「某一种攻击方式
+## 吃不到易伤」**，而那要盯着日志看很久才发现。
+##
+## 它**没有默认值**，是有意的：给一个默认值的话，漏传的调用方会静默拿到
+## 一个所有效果都已过期的 tick —— 也就是「易伤在这条路上不生效」，
+## 而那正是上一段要挡的东西。没有默认值时漏传是一个解析错误。
+func take_damage(amount: float, at_tick: int) -> bool:
 	if not alive:
 		return false
-	hp -= amount
+	hp -= amount * buffs.amount(PBBuffRules.HURT, at_tick)
 	if hp <= 0.0:
 		hp = 0.0
 		alive = false
@@ -179,15 +202,33 @@ func take_damage(amount: float) -> bool:
 	return false
 
 
+## 打死它还要多少**伤害**——不是还剩多少血。易伤已经折算进去。
+##
+## ## 只有溢出那一条路需要它
+##
+## [method PBBattleSim._pour_damage] 打死一个之后要把「花掉的那一份」
+## 从手上的伤害里减掉，接着打下一个。易伤进来之后
+## 「掉了多少血」和「花了多少伤害」不再是同一个数，
+## 而那条路径正是与 [PBCombatRules] 解析式排队模型对拍的锚点 ——
+## 差一点点的表现是「退化路径和解析式对不上」，一条既有测试会红。
+##
+## 没有任何易伤时倍率精确等于 1.0，除法逐位无损。
+func damage_to_kill(at_tick: int) -> float:
+	var mult: float = buffs.amount(PBBuffRules.HURT, at_tick)
+	return hp if mult <= 0.0 else hp / mult
+
+
 ## 前进一个 tick。返回是否在这一 tick 走到了基地。
 ##
-## [param speed_scale] 是场上的减速效果（0 = 定身，1 = 正常）。
+## [param speed_scale] 是**场上**的减速效果（0 = 定身，1 = 正常）。
 ## **它是个参数而不是敌人身上的一个字段**，因为减速是**场的属性**不是
 ## 单位的属性 —— §11 的一尾（全屏减速力场）和五尾（地形阻挡）都作用于整片战场。
 ## 存到每个敌人身上的话，新出场的敌人会漏掉当前正生效的减速，
 ## 而那种漏只表现为「后半波怪走得比前半波快」，不报任何错。
-func advance(speed_scale: float = 1.0) -> bool:
-	distance -= speed * maxf(speed_scale, 0.0)
+##
+## **个体减速是另一层，两者相乘**（M7-d，见 [method _speed_mult]）。
+func advance(speed_scale: float, at_tick: int) -> bool:
+	distance -= speed * _speed_mult(speed_scale, at_tick)
 	if distance <= 0.0:
 		distance = 0.0
 		return true
@@ -206,8 +247,8 @@ func advance(speed_scale: float = 1.0) -> bool:
 ##
 ## 纵轴在这之前只有出生时写过一次（见 [member lane]）——
 ## 敌人第一次会换泳道，正是为了绕到没人的那一侧去够人。
-func march_to(at: Vector2, speed_scale: float = 1.0) -> void:
-	var step: float = speed * maxf(speed_scale, 0.0)
+func march_to(at: Vector2, speed_scale: float, at_tick: int) -> void:
+	var step: float = speed * _speed_mult(speed_scale, at_tick)
 	if step <= 0.0:
 		return
 	var here := pos().move_toward(at, step)
@@ -235,9 +276,9 @@ func march_to(at: Vector2, speed_scale: float = 1.0) -> void:
 ## （[method PBCrowdRules.siege_spot] 里的 `absf(cos)`），从右边走过去
 ## 到不了忍者身后。所以这里该钳的是反过来的那一条 ——
 ## **不许后退** —— 它同时把防挤推出去的那一截拉了回来。
-func siege_to(at: Vector2, speed_scale: float = 1.0) -> void:
+func siege_to(at: Vector2, speed_scale: float, at_tick: int) -> void:
 	var hold: float = distance
-	march_to(at, speed_scale)
+	march_to(at, speed_scale, at_tick)
 	distance = minf(distance, hold)
 
 
@@ -246,3 +287,23 @@ func progress(field_length: float) -> float:
 	if field_length <= 0.0:
 		return 1.0
 	return clampf(1.0 - distance / field_length, 0.0, 1.0)
+
+
+## 这一 tick 它实际按几成速度走。**全场那一份 × 身上这一份**（M7-d）。
+##
+## ## 为什么两份都要留着
+##
+## [param field_scale] 是场的属性（见 [method advance]），
+## [constant PBBuffRules.ENEMY_SPEED_SCALE] 是单位的属性。
+## 把全场那份也搬进袋子的话，减速期间**新出场**的敌人会漏掉它；
+## 反过来只留全场那份的话，「定住这一个」就没有地方表达。
+##
+## 相乘不是取最小：全场定身（0.0）期间再上一个个体减速，速度仍是 0，
+## 而 0.5 × 0.5 是 0.25 —— 一条测试钉着这两句。
+##
+## **走这一条的有三处**（[method advance] / [method march_to]，
+## 而 [method siege_to] 借道后者），全部在类里面，
+## 调用方一处都不乘 —— 理由同 [constant PBBuffRules.HURT]。
+func _speed_mult(field_scale: float, at_tick: int) -> float:
+	var own: float = buffs.amount(PBBuffRules.ENEMY_SPEED_SCALE, at_tick)
+	return maxf(field_scale, 0.0) * maxf(own, 0.0)

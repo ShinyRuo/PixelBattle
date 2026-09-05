@@ -119,7 +119,8 @@ var _max_hold_ticks: int = 0
 ## 「全队增伤」于是变成「给每个人都挂一份」的那种特例，而不是另一套机制。
 ##
 ## 减速留在这里，因为上面那条理由今天仍然成立：**它要作用于还没出场的敌人。**
-## M7-d 给敌人挂个体减速时，两者相乘，而不是把这一份也搬过去。
+## M7-d 给敌人挂了个体减速（[constant PBBuffRules.ENEMY_SPEED_SCALE]），
+## **两者相乘**，而不是把这一份也搬过去 —— 见 [method PBEnemy._speed_mult]。
 var _slow_scale: float = 1.0
 var _slow_until: int = -1
 
@@ -423,13 +424,15 @@ func _land_skill(cast: PBSkillCast) -> void:
 			PBSkillRules.land_on_ally(cast, _attackers, _cfg, _tick)
 		PBSkill.Target.NONE:
 			if skill.affects == PBSkill.Party.ENEMIES:
-				_outcome.kills += PBSkillRules.land_on_field(cast, _enemies, _front, _tick)
+				_outcome.kills += PBSkillRules.land_on_field(
+					cast, _enemies, _front, _cfg, _tick
+				)
 		PBSkill.Target.ENEMY:
 			# 单体点敌 M7-c 还没接（roadmap 那一步只做 ALLY / NONE）——
 			# 也没有任何入口放得出来，所以这里落不到。
 			pass
 		_:
-			_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _tick)
+			_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _cfg, _tick)
 	if skill.slow_ticks > 0 and skill.slow_scale < 1.0:
 		_slow_scale = skill.slow_scale
 		_slow_until = _tick + skill.slow_ticks
@@ -443,28 +446,29 @@ func _speed_scale() -> float:
 	return _slow_scale if _tick <= _slow_until else 1.0
 
 
-## 推进身上挂着的效果一个 tick（M7-a）：周期型该触发的触发，过期的腾出来。
+## 推进两边身上挂着的效果一个 tick（M7-a，敌方那半边是 M7-d）：
+## 周期型该触发的触发，过期的腾出来。
 ##
-## ## 清扫和触发合在一个循环里是安全的
+## **怎么推进在 [PBBuffRules]**，这里只留一件它管不了的事 ——
+## **记账**。周期伤害打死一个敌人要计进 [member PBCombatOutcome.kills]，
+## 而那本账在本类手上；让规则层当场扣血的话，杀敌数就有了第二个来源，
+## 而漏记一处的表现是「波次结算的击杀数对不上」，不报错。
 ##
-## 过期的判据是 [method PBBuffState.is_live] 每次查询时比 tick，
-## **清扫只是回收槽位** —— 漏跑、早跑、晚跑都不可能改变任何结算结果
-## （见 [PBBuffBag] 顶部）。所以它不必单独占一趟遍历。
-##
-## ## 这里只做回复，不做伤害
-##
-## 回血回蓝改的是自己的量，结算完就完了；而**掉血要走
-## [method PBAttacker.take_damage] 那一整套**（阵亡记账、日志、`allies_lost`）。
-## 那条路 M7-d 给敌人接易伤时本来就要重走一遍，两次改同一处不如一次改完。
+## 敌人那一趟从 [member _front] 起扫、碰到没出场的就停 —— 和
+## [method _first_reachable] 同一条：数组按出场顺序排，后面的只会更晚。
 func _advance_buffs() -> void:
 	for attacker: PBAttacker in _attackers:
-		for state: PBBuffState in attacker.buffs.states():
-			if not state.is_due(_tick):
-				continue
-			state.on_fired(_tick)
-			attacker.heal(float(state.mods.get(PBBuffRules.HEAL, 0.0)))
-			attacker.restore_mana(float(state.mods.get(PBBuffRules.MANA, 0.0)))
-		attacker.buffs.sweep(_tick)
+		PBBuffRules.advance_ally(attacker, _tick)
+	for i: int in range(_front, _enemies.size()):
+		var enemy: PBEnemy = _enemies[i]
+		if not enemy.has_spawned(_tick):
+			break
+		if not enemy.alive:
+			continue
+		var harm: float = PBBuffRules.advance_enemy(enemy, _tick)
+		if harm > 0.0 and enemy.take_damage(harm, _tick):
+			_outcome.kills += 1
+	_skip_dead()
 
 
 ## 把这一 tick 的伤害打出去。**每个攻击者各自选目标，互不共享伤害池。**
@@ -513,7 +517,7 @@ func _fly_at_enemy(shot: PBProjectile) -> void:
 	if not shot.fly(enemy.pos()):
 		return
 	_note_hit(shot.source, enemy.slot, shot.damage, false)
-	if enemy.take_damage(shot.damage):
+	if enemy.take_damage(shot.damage, _tick):
 		_outcome.kills += 1
 	shot.retire()
 
@@ -835,7 +839,7 @@ func _strike_single(attacker: PBAttacker) -> bool:
 	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
 	if attacker.shot_speed <= 0.0:
 		_note_hit(attacker.slot, target.slot, damage, false)
-		if target.take_damage(damage):
+		if target.take_damage(damage, _tick):
 			_outcome.kills += 1
 		return true
 	var shot := _free_shot()
@@ -883,10 +887,12 @@ func _pour_damage(attacker: PBAttacker) -> bool:
 			index += 1
 			continue
 		hit = true
-		var before: float = enemy.hp
-		if enemy.take_damage(remaining):
+		# **花掉多少伤害，不是掉了多少血** —— 易伤（M7-d）让两者不再是同一个数，
+		# 而这条退化路径正是解析式排队模型的对拍锚点（见 [method PBEnemy.damage_to_kill]）。
+		var cost: float = enemy.damage_to_kill(_tick)
+		if enemy.take_damage(remaining, _tick):
 			_outcome.kills += 1
-			remaining -= before
+			remaining -= cost
 			index += 1
 		else:
 			remaining = 0.0
@@ -918,7 +924,7 @@ func _strike_area(attacker: PBAttacker) -> bool:
 		if not enemy.alive or not attacker.can_reach(enemy.pos()):
 			continue
 		_note_hit(attacker.slot, enemy.slot, damage, false)
-		if enemy.take_damage(damage):
+		if enemy.take_damage(damage, _tick):
 			_outcome.kills += 1
 		hits += 1
 	return hits > 0
@@ -962,13 +968,14 @@ func _advance_and_leak() -> void:
 				PBCrowdRules.siege_spot(
 					prey.pos, enemy.slot, enemy.reach, _cfg.field_height
 				),
-				speed_scale
+				speed_scale,
+				_tick
 			)
 			continue
 		# 场上一个活人都没有了才走基地。
 		# 这里不用再判 `engaged` —— 没有可咬的人，它这一 tick 就不可能咬着
 		# （[method _enemies_attack] 每 tick 从 false 重算）。
-		if enemy.advance(speed_scale):
+		if enemy.advance(speed_scale, _tick):
 			enemy.alive = false
 			_outcome.leaked += 1
 			_outcome.base_damage += _leak_damage

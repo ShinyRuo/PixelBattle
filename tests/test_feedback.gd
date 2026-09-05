@@ -281,7 +281,7 @@ func test_taking_damage_reaches_the_screen() -> void:
 			victim = enemy
 			break
 	assert_not_null(victim, "开打之后场上该有敌人")
-	victim.take_damage(victim.max_hp * 0.5)
+	victim.take_damage(victim.max_hp * 0.5, root._battle.current_tick())
 	root._feedback()
 	assert_eq(_visible_labels(floats), 1, "挨了半管血该飘出一个数")
 

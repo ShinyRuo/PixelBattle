@@ -15,14 +15,28 @@ extends RefCounted
 ## 因为数据、界面、日志全都正常，只有伤害数字不对。
 ##
 ## 所以键是跟着读点一起进来的：M7-a 只有三个（[constant DAMAGE_SCALE] /
-## [constant HEAL] / [constant MANA]），护盾、易伤、个体减速那几个
-## 在 M7-c / M7-d 连同它们的读点一起加。
+## [constant HEAL] / [constant MANA]），M7-d 连同 [PBEnemy] 的效果袋
+## 一起加了敌方那三个（[constant HURT] / [constant ENEMY_SPEED_SCALE] /
+## [constant HARM]）。护盾那几个还没进来。
+##
+## ## 敌方那张词汇表**不是己方那张照搬**
+##
+## [PBEnemy] 压根没有 `defence` 字段（[method PBEnemy.take_damage] 直接扣血），
+## 也没有蓝、没有射程档 —— 照搬过去的键会是「拼对了却没人读」的那一种，
+## 而那正是上面这条规矩要挡的东西。
 ##
 ## ## 两类键，合并方式不同
 ##
-## **率型**（`*_scale`）无量纲，多份**连乘**，空的时候是 1.0；
-## **量型**（血、蓝、盾）有量纲，多份**累加**，空的时候是 0.0。
+## **率型**（`*_scale`、[constant HURT]）无量纲，多份**连乘**，空的时候是 1.0；
+## **量型**（血、蓝、盾、[constant HARM]）有量纲，多份**累加**，空的时候是 0.0。
 ## 这条区分同时决定了「数值怎么随等级长」，见 [method resolve]。
+##
+## ## 每 tick 推进也在这一层
+##
+## [method advance_ally] / [method advance_enemy] 是「一个单位身上挂着的东西
+## 过了一个 tick」——周期载荷该触发的触发、过期的槽位腾出来。
+## 它和 [PBSkillRules]（一发技能落地时发生什么）、[PBMoveRules]（该往哪儿走）
+## 一样是纯规则：[PBBattleSim] 只留「什么时候调它」。
 
 ## 出手伤害倍率。读点在 [method PBAttacker.strike_for]。
 ##
@@ -37,11 +51,39 @@ const HEAL: StringName = &"heal"
 ## 立刻回蓝。读点在 [method PBAttacker.restore_mana]。
 const MANA: StringName = &"mana"
 
+## 易伤：这个敌人挨的每一下乘多少（M7-d）。
+##
+## **读点在 [method PBEnemy.take_damage] 里面，不在调用方。**
+## 调用方有六处（单体、连续输出、范围、子弹命中、技能落地、周期载荷），
+## 而漏乘一处的表现是「某一种攻击方式吃不到易伤」——
+## 要盯着日志看很久才发现。放进类里就只有一个读点，
+## 和 [method PBAttacker.strike_for] 顶上那条是同一条理由。
+const HURT: StringName = &"hurt"
+
+## 个体减速：这个敌人自己走多快（M7-d）。0 = 定身。
+##
+## **和 [PBBattleSim] 那份「全场减速」是两个东西，两者相乘。**
+## 那一份是**场**的属性（新出场的敌人也吃得到），这一份挂在单位上。
+## 读点在 [method PBEnemy.advance] / [method PBEnemy.march_to] 里面，
+## 理由同 [constant HURT]。
+const ENEMY_SPEED_SCALE: StringName = &"enemy_speed_scale"
+
+## 掉血：中毒、灼烧那一类（M7-d）。读点在 [method advance_enemy] 与
+## [method PBSkillRules.apply_one_enemy]，两条都最终走
+## [method PBEnemy.take_damage] —— 它才是记账（击杀数）的那道门。
+##
+## 己方那一侧**故意没有对应的键**：忍者掉血要走
+## [method PBAttacker.take_damage] 那一整套（阵亡记账、日志、`allies_lost`），
+## 而 v1 没有任何一个技能要给自己人上 DoT。
+const HARM: StringName = &"harm"
+
 ## 全部**已经接上读点**的键。见本类顶部。
-const ALL: Array[StringName] = [DAMAGE_SCALE, HEAL, MANA]
+const ALL: Array[StringName] = [
+	DAMAGE_SCALE, HEAL, MANA, HURT, ENEMY_SPEED_SCALE, HARM
+]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
-const SCALES: Array[StringName] = [DAMAGE_SCALE]
+const SCALES: Array[StringName] = [DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE]
 
 ## 「全队短时增伤」那一份的定义。见 [method team_damage]。
 static var _team_damage: PBBuff = null
@@ -155,3 +197,47 @@ static func validate(buff: PBBuff) -> String:
 ## 而写数据的人写 0.01 秒时想要的是「很短」，不是「没有」。
 static func to_ticks(seconds: float, cfg: PBSimConfig) -> int:
 	return maxi(int(round(seconds * float(cfg.tick_rate))), 1)
+
+
+## 一个己方单位身上的效果过了一个 tick：周期载荷该触发的触发，过期的腾出来。
+##
+## ## 清扫和触发合在一个循环里是安全的
+##
+## 过期的判据是 [method PBBuffState.is_live] **每次查询时比 tick**，
+## [method PBBuffBag.sweep] 只是回收槽位 —— 漏跑、早跑、晚跑都不可能
+## 改变任何结算结果（见 [PBBuffBag] 顶部）。所以它不必单独占一趟遍历。
+##
+## ## 这一支只做回复，不做伤害
+##
+## 回血回蓝改的是自己的量，结算完就完了；而忍者**掉血**要走
+## [method PBAttacker.take_damage] 那一整套（阵亡记账、日志、`allies_lost`），
+## 而 v1 没有任何一个技能要给自己人上 DoT（见 [constant HARM]）。
+static func advance_ally(unit: PBAttacker, at_tick: int) -> void:
+	for state: PBBuffState in unit.buffs.states():
+		if not state.is_due(at_tick):
+			continue
+		state.on_fired(at_tick)
+		unit.heal(float(state.mods.get(HEAL, 0.0)))
+		unit.restore_mana(float(state.mods.get(MANA, 0.0)))
+	unit.buffs.sweep(at_tick)
+
+
+## 一个敌人身上的效果过了一个 tick。返回这一 tick 它**该掉多少血**。
+##
+## ## 为什么返回伤害而不是当场扣掉
+##
+## 扣血会打死人，而「打死了几个」是 [PBCombatOutcome] 的记账，
+## 那份账在 [PBBattleSim] 手上。这里当场扣的话，杀敌数就有了第二个来源 ——
+## 而漏记一处的表现是「波次结算的击杀数对不上」，不报错。
+##
+## 易伤（[constant HURT]）**不在这里乘**：它的读点是
+## [method PBEnemy.take_damage]，调用方一律不乘（见 [constant HURT]）。
+static func advance_enemy(enemy: PBEnemy, at_tick: int) -> float:
+	var harm: float = 0.0
+	for state: PBBuffState in enemy.buffs.states():
+		if not state.is_due(at_tick):
+			continue
+		state.on_fired(at_tick)
+		harm += float(state.mods.get(HARM, 0.0))
+	enemy.buffs.sweep(at_tick)
+	return harm

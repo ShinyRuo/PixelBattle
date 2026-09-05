@@ -174,7 +174,7 @@ func test_a_bullet_dies_with_its_target_instead_of_switching() -> void:
 	assert_eq(_flying(sim), 1, "该有一发正朝队头飞")
 
 	# 队头在子弹落地之前被别的东西打死了（这里直接敲掉，测试才做的事）。
-	first.take_damage(first.max_hp)
+	first.take_damage(first.max_hp, sim.current_tick())
 	sim.step()
 	assert_eq(_flying(sim), 0, "目标没了，这一发就该消失")
 	assert_eq(second.hp, second.max_hp, "而且绝不该转头打第二个")

@@ -48,7 +48,7 @@ static func validate(skill: PBSkill) -> String:
 ## 写在命中数上（§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
 ## 再让它吃溢出的话，一发范围技能在密集波里等于无限伤害。
 static func land(
-	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, tick: int
+	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, cfg: PBSimConfig, tick: int
 ) -> int:
 	var skill := cast.skill
 	var kills: int = 0
@@ -65,7 +65,12 @@ static func land(
 		if enemy.pos().distance_to(cast.spot) > skill.radius:
 			continue
 		hits += 1
-		if enemy.take_damage(skill.damage):
+		if enemy.take_damage(skill.damage, tick):
+			kills += 1
+			continue
+		# **命中之后才挂 [member PBSkill.on_hit]**（M7-d）：给一具尸体
+		# 挂减速没有意义，而且它会让「这一发定住了几个」虚高。
+		if _apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
 			kills += 1
 			continue
 		# 活下来的才挪 —— 挪一个尸体没有意义，而且会让「聚拢值多少」虚高。
@@ -113,10 +118,8 @@ static func land_on_ally(
 ##
 ## 和 [method land] 的区别只有一条：那一个按半径圈人，这一个不圈 ——
 ## 所以 [member PBSkill.max_targets] 在这里仍然管用（0 = 不限）。
-##
-## **不挂 [member PBSkill.on_hit]**：那要给 [PBEnemy] 一个效果袋，而那是 M7-d。
 static func land_on_field(
-	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, tick: int
+	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, cfg: PBSimConfig, tick: int
 ) -> int:
 	var skill := cast.skill
 	var kills: int = 0
@@ -130,7 +133,10 @@ static func land_on_field(
 		if not enemy.alive:
 			continue
 		hits += 1
-		if enemy.take_damage(skill.damage):
+		if enemy.take_damage(skill.damage, tick):
+			kills += 1
+			continue
+		if _apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
 			kills += 1
 	return kills
 
@@ -168,6 +174,39 @@ static func apply_one(
 		unit.restore_mana(float(mods.get(PBBuffRules.MANA, 0.0)))
 		return
 	unit.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
+
+
+## 把一串效果挂到一个**敌人**身上。返回它有没有被这一串里的瞬间伤害打死。
+static func _apply_all_enemy(
+	enemy: PBEnemy, buffs: Array[PBBuff], level: int, cfg: PBSimConfig, tick: int
+) -> bool:
+	for buff: PBBuff in buffs:
+		if apply_one_enemy(enemy, buff, PBBuffRules.resolve(buff, level), cfg, tick):
+			return true
+	return false
+
+
+## 把**一份**效果挂到一个敌人身上（M7-d）。返回这一下有没有把它打死。
+##
+## ## 敌方的词汇表不是己方那张照搬
+##
+## 己方那一档（[method apply_one]）的瞬间效果是回血回蓝，
+## 敌方这一档是[b]掉血[/b]（[constant PBBuffRules.HARM]）——
+## 而掉血必须走 [method PBEnemy.take_damage]，因为「打死了几个」这本账
+## 只有它数得对（易伤也在它里面乘）。所以两档的瞬间分支不可能共用一份实现。
+##
+## 持续那两档倒是完全一样（往袋子里放一份），可 [PBBuffBag] 收的是裸值、
+## 两边的袋子是同一个类 —— 共用的那一半已经共用了。
+static func apply_one_enemy(
+	enemy: PBEnemy, buff: PBBuff, mods: Dictionary, cfg: PBSimConfig, tick: int
+) -> bool:
+	if buff == null:
+		return false
+	if buff.kind == PBBuff.Kind.INSTANT:
+		var harm: float = float(mods.get(PBBuffRules.HARM, 0.0))
+		return harm > 0.0 and enemy.take_damage(harm, tick)
+	enemy.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
+	return false
 
 
 ## 落地时给全队挂一份短时增伤（§11 二尾、§09 定身档的控制期增伤）。
