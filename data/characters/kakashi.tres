@@ -6,7 +6,7 @@
 script = ExtResource("1_char")
 id = &"kakashi"
 name_key = "char.kakashi"
-icon_key = "char.kakashi"
+icon_key = "kakashi"
 element = 2
 rarity = 2
 def_element = 1

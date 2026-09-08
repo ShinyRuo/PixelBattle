@@ -2,16 +2,24 @@ class_name PBUnitTile
 extends Control
 ## 一张卡在编队页上的样子：**一个可拖动、可悬停的小方块**。M3-e。
 ##
-## ## 这是白模图标，不是美术
+## ## 一张卡靠四件事认
 ##
-## 真美术在 M5（§14：白模阶段不动 `assets/`）。在那之前一张卡靠三件事认：
-##
-## 1. **底色 = 属性** —— 与 [constant PBEnemyPool.ELEMENT_COLORS] 同一套色相，
+## 1. **头像** —— `assets/portraits/<icon_key>.png`（M9-g）。**查不到就没有**，
+##    剩下三件照旧顶着用，见下面那段
+## 2. **底色 = 属性** —— 与 [constant PBEnemyPool.ELEMENT_COLORS] 同一套色相，
 ##    所以战场上看到的颜色和编队页上的是同一个
-## 2. **边框 = 稀有度** —— 灰 / 蓝 / 紫 / 金，四档一眼分得开
-## 3. **角标 = 星级** —— 只有升过星才画，没升的不占视觉噪声
+## 3. **边框 = 稀有度** —— 灰 / 蓝 / 紫 / 金，四档一眼分得开
+## 4. **角标 = 星级** —— 只有升过星才画，没升的不占视觉噪声
 ##
-## 换成真图标时改的是本类，其余一行不动 —— 编队页只认 [method set_unit]。
+## ## 头像是垫在底色上的一层，不是替换
+##
+## 属性底色、稀有度描边、克制亮边**三条一个字都没变**：头像盖在底色上面、
+## 压在两个字标下面。三十个角色不可能同时接完素材，而「有头像的走一套画法、
+## 没头像的走另一套」会让那两套慢慢分叉 —— 这条和 [PBActorLibrary]
+## 顶上那句「空 = 白模」是同一个形状。
+##
+## 五处共用这一个类（仓库、任务栏、信息栏、抽卡三选一、拖动的影子），
+## 所以接头像只改本类，其余一行不动。
 ##
 ## ## 拖放走引擎内建的那套，不自己算鼠标
 ##
@@ -80,6 +88,10 @@ const SHAPE_NAMES := {
 
 const TILE_SIZE := Vector2(30.0, 34.0)
 
+## 被这一波克制时头像压暗到什么程度。**和底色那一档的 `darkened(0.5)` 同义** ——
+## 一个作用在颜色上、一个作用在贴图上，说的是同一句「这张卡这一波是废的」。
+const WEAK_DIM := Color(0.5, 0.5, 0.5)
+
 ## 这个格子在本区里的下标。空格子也有下标 —— 拖到空格子上就是「放到这个位置」。
 var slot: int = 0
 
@@ -90,6 +102,11 @@ var unit: PBUnit = null
 
 var _border: Panel
 var _body: ColorRect
+
+## 头像那一层。**没有素材时 `texture` 是 null，它就什么都不画** ——
+## 不需要额外的分支，见类顶部那句「空 = 白模」。
+var _face: TextureRect
+
 var _element: Label
 var _rarity: Label
 var _star: Label
@@ -113,6 +130,7 @@ func _ready() -> void:
 	add_child(_border)
 
 	_body = _add_rect(Vector2(2.0, 2.0), TILE_SIZE - Vector2(4.0, 4.0))
+	_face = _add_face(Vector2(2.0, 2.0), TILE_SIZE - Vector2(4.0, 4.0))
 	_element = _add_label(Vector2(3.0, 0.0), 11)
 	_rarity = _add_label(Vector2(2.0, 17.0), 8)
 	_star = _add_label(Vector2(16.0, 17.0), 8)
@@ -142,6 +160,8 @@ func shrink_to(to: Vector2) -> void:
 	_border.size = to
 	_body.position = Vector2(1.0, 1.0)
 	_body.size = to - Vector2(2.0, 2.0)
+	_face.position = _body.position
+	_face.size = _body.size
 	_element.position = Vector2(2.0, -1.0)
 	_element.size.x = to.x - 3.0
 	_rarity.position = Vector2(1.0, roundf(17.0 * ratio.y))
@@ -159,6 +179,8 @@ func set_unit(card: PBUnit, wave_element: PBElement.Type) -> void:
 		return
 	var rarity := RARITY_COLORS[clampi(int(card.rarity), 0, RARITY_COLORS.size() - 1)]
 	_body.color = PBEnemyPool.ELEMENT_COLORS.get(card.element, Color.WHITE).darkened(0.45)
+	_face.texture = face_of(card)
+	_face.modulate = Color.WHITE
 	_border.modulate = rarity
 	_element.text = ELEMENT_NAMES.get(card.element, "?")
 	_element.modulate = PBEnemyPool.ELEMENT_COLORS.get(card.element, Color.WHITE)
@@ -173,9 +195,21 @@ func set_unit(card: PBUnit, wave_element: PBElement.Type) -> void:
 		PBElement.Relation.COUNTER:
 			_border.modulate = PBSkin.TITLE
 		PBElement.Relation.WEAK:
+			# **头像也要跟着压暗。** 只压底色的话，接了素材之后那块底色
+			# 整个被头像盖住 —— 「这张卡这一波是废的」这条 §03 最值钱的信息
+			# 会在接素材的那一天静默消失，而卡面看起来一切正常。
 			_body.color = _body.color.darkened(0.5)
+			_face.modulate = WEAK_DIM
 		_:
 			pass
+
+
+## 这张卡的头像，没有就 `null`。**空的时候什么都不画**，
+## 底下那三层（属性底色、稀有度描边、克制亮边）照旧顶着用。
+static func face_of(card: PBUnit) -> Texture2D:
+	if card == null or card.character == null:
+		return null
+	return PBPortraitLibrary.portrait_for(card.character.icon_key)
 
 
 ## 变回空位。空位仍然接收拖放（拖到它上面 = 放到这个位置）。
@@ -186,6 +220,7 @@ func clear() -> void:
 	unit = null
 	_border.modulate = PBSkin.EDGE_SOFT
 	_body.color = PBSkin.PANEL_DEEP
+	_face.texture = null
 	_element.text = ""
 	_rarity.text = ""
 	_star.text = ""
@@ -240,6 +275,10 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 
 
 ## 跟着鼠标走的那个影子。引擎会自己摆位置和释放，这里只负责画得像。
+##
+## **它自己重画一份，不走 [method set_unit]** —— 所以每加一层就要在这儿补一层。
+## 漏了的表现是「拖起来的那张卡和格子里的长得不一样」，而它不报错
+## （头像那一层就差点这样：M9-g 加的时候这里原来只画底色和属性字）。
 func _make_preview() -> Control:
 	var ghost := Control.new()
 	ghost.size = TILE_SIZE
@@ -248,6 +287,12 @@ func _make_preview() -> Control:
 	body.color = _body.color
 	body.modulate = Color(1.0, 1.0, 1.0, 0.8)
 	ghost.add_child(body)
+	if _face.texture != null:
+		var face := _add_face(Vector2.ZERO, TILE_SIZE)
+		remove_child(face)
+		face.texture = _face.texture
+		face.modulate = Color(1.0, 1.0, 1.0, 0.8)
+		ghost.add_child(face)
 	var text := Label.new()
 	text.text = _element.text
 	text.position = Vector2(3.0, 1.0)
@@ -264,6 +309,24 @@ func _add_rect(at: Vector2, of_size: Vector2) -> ColorRect:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(rect)
 	return rect
+
+
+## 头像那一层。**贴图是屏幕尺寸的 3 倍，缩小交给 GPU**
+## （见 [method PBPortraitForge.texture_size]），所以：
+##
+## - `EXPAND_IGNORE_SIZE` + `STRETCH_SCALE`：按这一格的大小铺，不按贴图自己的
+## - **线性 + mipmap 过滤**：这是高清档，最近邻会把软边切成锯齿；
+##   而没有 mipmap 的表现是窗口一缩放卡面就闪一层摩尔纹，**静止截图看不出来**
+func _add_face(at: Vector2, of_size: Vector2) -> TextureRect:
+	var face := TextureRect.new()
+	face.position = at
+	face.size = of_size
+	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	face.stretch_mode = TextureRect.STRETCH_SCALE
+	face.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(face)
+	return face
 
 
 func _add_label(at: Vector2, font_size: int) -> Label:
