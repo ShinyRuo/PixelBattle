@@ -48,7 +48,10 @@ func _fighter(at: Vector2, reach: float, bullet: float) -> PBAttacker:
 	out.shot_speed = bullet
 	out.max_hp = 1.0e9
 	out.hp = out.max_hp
-	out.leash = _cfg.unit_leash
+	# **和 [method PBCombatRules.build_attackers] 同一把尺子**（M8-d）：
+	# 直接读 `unit_leash` 的话，「填 0 = 不拴」这条落不到夹具上 ——
+	# 忍者会被拴死在 `home` 一步都挪不了，而那三条测的恰恰是他挪没挪。
+	out.leash = _cfg.leash_distance()
 	out.move_speed = _cfg.field_length / (_cfg.unit_move_seconds * float(_cfg.tick_rate))
 	return out
 
@@ -67,6 +70,28 @@ func _one_enemy(squad: Array[PBAttacker], at: Vector2) -> PBBattleSim:
 	return sim
 
 
+## 把皮带绳拴上。**M8-d 起默认是不拴的**（[member PBSimConfig.unit_leash] = 0，
+## 玩家定的），而下面有一批测的正是**拴着时**的那套规则 ——
+## [PBMoveRules] 那些钳位一行没删，只是默认不生效，所以测它得先自己打开。
+##
+## 必须在 [method _fighter] **之前**调：那个夹具建人的时候就把长度抄走了，
+## 和 [method PBCombatRules.build_attackers] 一样。
+func _leash_on() -> void:
+	_cfg.unit_leash = 0.35
+
+
+func test_the_leash_is_off_by_default() -> void:
+	# M8-d：玩家定的「不需要拴住」。这条钉的是**默认值**本身 ——
+	# 上面那一批显式 [method _leash_on] 的测试全部还绿着，
+	# 所以只有这一条能说出「游戏里实际跑的是哪一档」。
+	assert_eq(_cfg.unit_leash, 0.0, "默认不该拴")
+	assert_gte(
+		_cfg.leash_distance(),
+		_cfg.field_diagonal(),
+		"不拴要落成覆盖全场 —— 落不到的话钳位还在偷偷生效"
+	)
+
+
 # ── 交战中不后退 ────────────────────────────────────────────────
 
 
@@ -74,6 +99,7 @@ func test_nobody_backs_off_while_a_target_is_in_reach() -> void:
 	# **M4-c 修掉的那个 bug。** 敌人越走越近，「压到刚好够得着」那个点
 	# 一路缩回出生站位，于是已经压上去的忍者会往基地方向退 ——
 	# 而他此刻正在开火。
+	_leash_on()
 	var squad: Array[PBAttacker] = [_fighter(Vector2(0.30, 0.10), 0.12, 0.0)]
 	# 先让他压出去一截：把人挪到皮带绳的尽头。
 	squad[0].pos.x = 0.30 + _cfg.unit_leash
@@ -102,6 +128,7 @@ func test_everyone_walks_home_once_the_field_is_clear() -> void:
 func test_melee_closes_in_across_both_axes() -> void:
 	# 「先跑到敌人周围，再攻击」。只在推进轴上挪的话，
 	# 一个隔着几条泳道的目标他永远够不着，而画面上他就站在那儿不动。
+	_leash_on()
 	var squad: Array[PBAttacker] = [_fighter(Vector2(0.30, 0.02), 0.05, 0.0)]
 	var sim := _one_enemy(squad, Vector2(0.34, 0.22))
 	for _i: int in 40:
@@ -134,6 +161,7 @@ func test_ranged_gives_up_its_lane_only_when_x_provably_cannot_reach() -> void:
 	# 敌人改成扑向最近的活忍者之后，整波会聚到前排那一个人身上，于是
 	# 一个站在另一头的远程忍者视野里从头到尾一个敌人都没有 ——
 	# 实测「1 近战 + 3 远程」里最远那个整场只放得出 5 发。
+	_leash_on()
 	var squad: Array[PBAttacker] = [_fighter(Vector2(0.20, 0.02), 0.06, 0.10)]
 	var sim := _one_enemy(squad, Vector2(0.60, 0.22))
 	for _i: int in 40:
@@ -156,6 +184,7 @@ func test_a_parked_shooter_beyond_the_leash_gets_chased_down() -> void:
 	#
 	# 实测（M5-8 之前）：一队全近战对上停在 0.80 放枪的远程敌人 ——
 	# **105 秒、每人打出 6 下、全灭**，屏幕上是四个人站成一排挨枪。
+	_leash_on()
 	var squad: Array[PBAttacker] = [_fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)]
 	var sim := _one_enemy(squad, Vector2(0.30 + _cfg.unit_leash + 0.15, 0.0))
 	var enemy: PBEnemy = sim.enemies()[0]
@@ -195,26 +224,58 @@ func test_walking_up_to_a_target_always_ends_in_range() -> void:
 		)
 
 
-func test_a_shooter_biting_someone_else_never_drags_me_out_of_position() -> void:
-	# **「追着怪物跑」的根因**（M6-q）：松绳的条件原来是「任何一个站定的敌人」，
-	# 于是围着**别人**打的那一群也会把我拽出去 —— 一个人被拽走 →
-	# 敌人跟着停在他的新位置上 → 队友的目标也到了绳外 → 全队塌到同一点。
-	# 实测第 20 波那个近战 210/271 tick 在绳外、离家 0.55，而绳长 0.35。
+func test_going_to_help_a_pinned_teammate_is_capped_not_forbidden() -> void:
+	# **「追着怪物跑」的原始根因**（M6-q）：松绳返回的是战场对角线，也就是
+	# 彻底松开 —— 一个人被拽走 → 敌人跟着停在他的新位置上 → 队友的目标
+	# 也到了绳外 → 全队塌到同一点。实测第 20 波那个近战
+	# 210/271 tick 在绳外、离家 0.55，而绳长 0.35。
+	#
+	# M6-q 为它加了**两样**东西：这道天花板，和一道「咬的不是我就不松绳」。
+	# **M8-c 删掉了后者** —— 它把够不着的近战锁死了（见下一条），
+	# 而拦住塌陷的从来就是天花板。所以这里钉的是「放得出去，但放不远」。
+	_leash_on()
 	var mine := _fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)
-	var mate := _fighter(Vector2(0.30, 0.40), _cfg.reach_melee, 0.0)
-	var squad: Array[PBAttacker] = [mine, mate]
 	# 一个站定的敌人，咬的是队友那一边、离我很远。
 	var foe := PBEnemy.new()
 	foe.distance = 0.90
 	foe.lane = 0.40
 	foe.engaged = true
-	assert_eq(
-		PBMoveRules.leash_for(mine, foe, null, squad, _cfg),
-		mine.leash,
-		"它咬的不是我 —— 绳子一寸都不许放"
+	var rope: float = PBMoveRules.leash_for(mine, foe, null, _cfg)
+	assert_gt(rope, mine.leash, "够不着就该放绳 —— 不放的话同一列里那几个会站到这一波结束")
+	assert_lte(
+		rope,
+		mine.leash + _cfg.enemy_reach_ranged + 1e-9,
+		"而放多长有天花板，那才是「别被拽出阵型」的那道防线"
 	)
-	assert_gt(
-		PBMoveRules.leash_for(mate, foe, null, squad, _cfg), mate.leash, "咬的是他，他才该去"
+
+
+func test_a_melee_a_hair_out_of_range_is_not_locked_out() -> void:
+	# **玩家报的那条**（M8-c）：「近战追着怪跑，后面的忍者站着不打」。
+	#
+	# 敌人咬住同一列里的另一个人，就停在离**那个人** `enemy_reach`（0.02）处，
+	# 也就是离**同列每一个人的家** `leash + reach` 外面一点点 ——
+	# 多出来的正好是两条泳道的纵向差。第二道门槛判「够不着」是对的，
+	# 而 M6-q 那道「咬的不是我就不松绳」不让他过去，于是他贴在绳边
+	# 每 tick 走一步又被钳回来，**整整一波一发不放**。
+	#
+	# 实测（第 15 波）：两个近战出手 **0** 次、**100%** 的 tick 射程内没有敌人，
+	# 而离最近那个敌人只差 **0.003**（射程 0.020，实际 0.023）。
+	# 五个近战三个波次全部落在 ±0.03 —— 几何必然，不是巧合。
+	_leash_on()
+	var mine := _fighter(Vector2(0.30, 0.13), _cfg.reach_melee, 0.0)
+	var foe := PBEnemy.new()
+	# 差 3 毫 —— 就在 `leash + reach` 外面。
+	foe.distance = mine.home.x + mine.leash + mine.reach + 0.003
+	foe.lane = mine.home.y
+	foe.engaged = true
+	var rope: float = PBMoveRules.leash_for(mine, foe, null, _cfg)
+	assert_gt(rope, mine.leash, "差 3 毫也是够不着 —— 锁在这儿就是整波零输出")
+	# **放长了却还够不着等于没放**：绳子要够他走到自己的 `stop_gap` 上。
+	for _i: int in 200:
+		PBMoveRules.close_in(mine, foe, rope)
+	assert_true(
+		mine.can_reach(foe.pos()),
+		"放长之后要真的够得着（还差 %.17f）" % (mine.pos.distance_to(foe.pos()) - mine.reach)
 	)
 
 
@@ -222,16 +283,16 @@ func test_the_released_leash_is_a_spring_not_a_ratchet() -> void:
 	# 放长是为了够到**咬住我的那一个**，不是从此不受约束（M6-q）。
 	# 原来返回的是战场对角线，而判据量的是永不移动的 `home` ——
 	# 于是这一波剩下的时间里绳子再也收不回来。
+	_leash_on()
 	var mine := _fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)
-	var squad: Array[PBAttacker] = [mine]
 	var near := PBEnemy.new()
 	near.distance = 0.30 + mine.leash + 0.05
 	near.engaged = true
 	var far := PBEnemy.new()
 	far.distance = 0.95
 	far.engaged = true
-	var rope_near: float = PBMoveRules.leash_for(mine, near, null, squad, _cfg)
-	var rope_far: float = PBMoveRules.leash_for(mine, far, null, squad, _cfg)
+	var rope_near: float = PBMoveRules.leash_for(mine, near, null, _cfg)
+	var rope_far: float = PBMoveRules.leash_for(mine, far, null, _cfg)
 	assert_gt(rope_near, mine.leash, "咬住我的那个够不着，绳子要放长")
 	assert_lt(rope_near, rope_far, "放多长是按目标算的，不是一个写死的值")
 	assert_lte(
@@ -247,6 +308,11 @@ func test_an_incoming_wave_does_not_pull_anyone_off_their_spot() -> void:
 	# 近战忍者会**冲向出怪点**，把自己送到远离远程队友的地方单挑整波。
 	#
 	# 站定的那个已经不动了，追它是一段有终点的路；迎面走来的那一群不是。
+	#
+	# **这条要显式把绳子拴上**（M8-d）：默认已经是「不拴」了
+	# （[member PBSimConfig.unit_leash] = 0），而这条测的是拴着时的那条规则 ——
+	# 机制还在，只是默认不生效，所以测它就得先把它打开。
+	_leash_on()
 	var squad: Array[PBAttacker] = [_fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)]
 	var sim := _one_enemy(squad, Vector2(1.0, 0.0))
 	sim.enemies()[0].reach = 0.0
@@ -254,6 +320,19 @@ func test_an_incoming_wave_does_not_pull_anyone_off_their_spot() -> void:
 		sim.step()
 	assert_almost_eq(
 		squad[0].pos.x, 0.30 + _cfg.unit_leash, 1e-6, "没站定的敌人拉不动他，绳子到头就是到头"
+	)
+
+
+func test_the_leash_is_long_enough_to_cross_the_middle_line() -> void:
+	# `unit_leash` 的第二条约束（M5-7 定的，M8-c 把它写成断言）：
+	# 玩家点名要能「开打之后越过中线」。摆位被 `deploy_limit_x` 夹着
+	# （准备阶段谁都过不去），所以越线**只可能**发生在战斗中、靠这根绳子。
+	# 前排够不到中线的话，点名一个对面的敌人就成了一条永远走不完的路，
+	# 而屏幕上只表现为「他朝那边走了两步就不动了」。
+	assert_gte(
+		_cfg.column_front + _cfg.leash_distance(),
+		_cfg.deploy_limit_x,
+		"前排的绳子到头还过不了中线 —— 点名越线就成了做不到的事"
 	)
 
 
@@ -266,6 +345,16 @@ func test_a_melee_ninja_can_reach_whatever_stops_in_front_of_him() -> void:
 	# 现象是「他明明贴着敌人」而伤害数字一个都不飘，攻速、装备、羁绊
 	# 全部照常显示在信息栏上，测试也全绿 —— 两边不共用一把尺子就会这样。
 	assert_lte(_cfg.enemy_reach, _cfg.reach_melee, "敌人的近战射程不能比忍者的长")
+	# **同一条教训的第二处**（M8-c）：远程敌人停在离最靠前那个忍者
+	# `enemy_reach_ranged` 处，而近战只能走 `unit_leash` 再加自己的射程。
+	# M5-7 按当时的 0.30 定了 0.35 的绳子，M5-8 把它降到 0.15 却没回头看这个数
+	# —— 于是绳子白长了一截，而长出来的那截把阵型拉散、开始漏怪
+	# （实测 20 波：0.35 漏 25 只，0.22 漏 0）。
+	assert_gte(
+		_cfg.leash_distance() + _cfg.reach_melee,
+		_cfg.enemy_reach_ranged,
+		"绳子加射程够不到停下来的远程敌人 —— 一队全近战会站着被点名到死"
+	)
 	_cfg.enemy_ranged_share = 0.0
 	_cfg.field_height = 0.0
 	var squad: Array[PBAttacker] = [_fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)]

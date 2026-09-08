@@ -23,6 +23,12 @@ func before_each() -> void:
 	# 压平战场：本文件量的是节奏和弹道，纵向一条都不涉及（见 `test_field_2d.gd`）。
 	_cfg.field_height = 0.0
 	_cfg.spawn_window = 0.0
+	# **关掉起手**（M9-e）。这个文件量的是一发的**形状**：一发是一坨不是涓流、
+	# 一发只打死一个、子弹要飞一段才见血 —— 全都和「第一发落在第几 tick」无关。
+	# 而起手把每一发整体推后 `windup_ticks`，于是每一句「跑 N tick 之后」
+	# 都要跟着挪，那样改出来的断言测的就不再是原来那件事了。
+	# 出手时刻本身由 `test_actor_pose.gd` 那两条钉着。
+	_cfg.attack_hit_frame = 1
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = 20260830
 

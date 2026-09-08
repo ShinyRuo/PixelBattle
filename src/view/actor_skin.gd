@@ -140,7 +140,6 @@ enum Facing { RIGHT, LEFT }
 ## 同屏站在一起，两边不一样高的表现是「这个人怎么比别人矮一截」。
 @export var height_px: float = 41.0
 
-
 ## [param state] 走 [enum PBActorPose.State]。返回一个 [member frames] 里
 ## **确实存在**的动画名 —— 查不到就一路退回待机，最后退回第一段。
 func anim_for(state: int) -> StringName:
@@ -155,6 +154,40 @@ func anim_for(state: int) -> StringName:
 		PBActorPose.State.DEAD:
 			wanted = anim_dead
 	return resolve(wanted)
+
+
+## 把一段**非循环**动画用最后一帧补到 [param count] 帧。M9-e。
+##
+## ## 为什么要补
+##
+## 出手落在第 [member PBSimConfig.attack_hit_frame] 帧，而整段被压进一个
+## 攻击间隔里（[method PBAllyPool._fit]）—— 也就是说「第几帧」这句话
+## **只有在每一段都是同样多帧的时候才是同一个意思**。
+##
+## 库里的素材是人手挑的，3 到 6 帧都有。一段 4 帧的挥击摊在同一个间隔上，
+## 出手那一刻落在它的第 3 帧 —— 手还在挥出去的路上，子弹已经飞了。
+##
+## 补**最后一帧**是短素材唯一不改动已有姿势的补法：等于把收招停久一点，
+## 前面那几帧的时序一格都不挪。
+##
+## ## 只补非循环段
+##
+## 循环段（待机、跑动）补上去的表现是「跑两步顿一下」——
+## 多出来的那几帧会在循环的接缝上停住，而它不报错。
+##
+## **补过一次就不再补**：资源是缓存的，[method PBActorLibrary.reload]
+## 拿回来的是同一个实例，不挡住的话每重载一次就长 2 帧。
+func hold_last_to(anim: StringName, count: int) -> void:
+	if frames == null or not frames.has_animation(anim):
+		return
+	if frames.get_animation_loop(anim):
+		return
+	var have: int = frames.get_frame_count(anim)
+	if have <= 0 or have >= count:
+		return
+	var last: Texture2D = frames.get_frame_texture(anim, have - 1)
+	for _i: int in count - have:
+		frames.add_frame(anim, last)
 
 
 ## 某个忍术的动画名。表里没有就退回攻击段。

@@ -8,7 +8,8 @@ extends GutTest
 ## 只有在游戏里盯着一个 41 像素高的小人才看得出来。
 ##
 ## `tests/test_actor_data.gd` 守的是**成品**（目录里那几张 png 对不对），
-## 这里守的是**做成品的那台机器**。
+## 这里守的是**做成品的那台机器**，
+## 而 `tests/test_forge_panel.gd` 守的是**机器前面那块操作台**（M8-g 拆出去的）。
 
 const ROOT := "user://forge_test"
 
@@ -201,6 +202,86 @@ func test_composing_seats_the_feet_on_the_bottom_edge() -> void:
 	assert_almost_eq(float(used.size.y), float(_forge.texture_height()), 2.0, "身高要缩到目标值")
 
 
+func test_a_source_frame_that_is_not_mid_sized_keeps_its_feet() -> void:
+	# **图集那条路（M8-f）切出来的格子各有各的大小。** `compose` 里那次
+	# `blit_rect` 原来按 [constant PBActorForge.MID]（960×540）写死裁 ——
+	# 比它高的帧下半截会被直接丢掉，也就是**脚没了**，
+	# 而画布、对齐、坐标全部看起来完全正确。
+	var dir: String = "%s/tallframe" % ROOT
+	DirAccess.make_dir_recursive_absolute(dir)
+	# 一张比 MID 高得多的窄图，人贴着底边站着。
+	var source := Image.create_empty(200, 900, false, Image.FORMAT_RGBA8)
+	source.fill(Color(0.0, 0.0, 0.0, 0.0))
+	source.fill_rect(Rect2i(80, 100, 40, 800), Color(0.8, 0.5, 0.3, 1.0))
+	source.save_png("%s/001.png" % dir)
+
+	var shots := _forge.measure(dir)
+	assert_eq(shots.size(), 1, "量得到那一帧")
+	var scale_of := _forge.scales({"idle": shots, "run": shots, "attack": shots})
+	_forge.fit_canvas({"idle": shots}, scale_of, {"idle": [0] as Array[int]})
+	var image := _forge.compose(shots[0], float(scale_of["idle"]))
+	var used := image.get_used_rect()
+	assert_gt(used.size.y, 0, "人得还在，别被裁没了")
+	assert_eq(used.end.y, image.get_height(), "脚必须还踩在画布底边上")
+	assert_almost_eq(
+		float(used.size.y), float(_forge.texture_height()), 2.0, "身高该缩到目标值，说明整个人都在"
+	)
+
+
+func test_measuring_one_frame_matches_measuring_the_whole_take() -> void:
+	# 擦除那条路（M6-r）擦完只重量手上这一张 —— 97 张全扫一遍在编辑器里
+	# 就是「松开鼠标卡半秒」。两条路因此必须同源，否则「预览里量的」
+	# 和「导出时量的」会分叉，**而预览正是这几个数唯一被看见的地方**。
+	var dir := _fake_take("%s/idle" % ROOT, 3, Rect2i(460, 100, 40, 360))
+	var shots := _forge.measure(dir)
+	assert_eq(shots.size(), 3, "三帧都要量到")
+	for shot: Dictionary in shots:
+		var one := _forge.measure_one(shot["path"])
+		assert_eq(one["used"], shot["used"], "包围盒该一样")
+		assert_eq(one["feet_x"], shot["feet_x"], "脚底中点该一样")
+		assert_eq(one["mask"], shot["mask"], "剪影该一样")
+
+
+func test_a_manual_nudge_moves_the_body_by_exactly_that_many_pixels() -> void:
+	# 手动锚点（M6-r）的单位是**成品像素** —— 用中间帧像素的话，
+	# 按一下方向键屏幕上可能一动不动，表现是「这个按钮是坏的吧」。
+	#
+	# **零偏移必须逐位等于不传**：一个偏移都没调过的角色，出来的帧和
+	# M6-o 那一版一字不差 —— 那是这个参数敢加在这条路上的全部理由
+	# （同 M3.5-f 装备那条「空着 = 一字不差」）。
+	var dir := _fake_take("%s/idle" % ROOT, 3, Rect2i(460, 100, 40, 360))
+	var shots := _forge.measure(dir)
+	var scale_of := _forge.scales({"idle": shots, "run": shots, "attack": shots})
+	_forge.fit_canvas({"idle": shots}, scale_of, {"idle": [0] as Array[int]})
+	var scale: float = float(scale_of["idle"])
+
+	var plain := _forge.compose(shots[0], scale)
+	assert_eq(
+		_forge.compose(shots[0], scale, Vector2i.ZERO).get_data(),
+		plain.get_data(),
+		"零偏移必须和不传逐位相同"
+	)
+	var moved := _forge.compose(shots[0], scale, Vector2i(3, -2))
+	assert_eq(
+		moved.get_used_rect().position - plain.get_used_rect().position,
+		Vector2i(3, -2),
+		"偏移几格，人就该挪几格"
+	)
+
+
+func test_re_extracting_a_take_also_drops_the_erase_backups() -> void:
+	# 备份目录（[constant PBFrameTouch.ORIG_DIR]）跟着中间帧一起活。
+	# 留着上一条视频那一份的话，「还原这一帧」会还原成另一个角色的一帧 ——
+	# 而中间帧尺寸恒为 [constant PBActorForge.MID]，所以**它不报错**。
+	var dir := _fake_take("%s/idle" % ROOT, 2, Rect2i(460, 100, 40, 360))
+	var touch := PBFrameTouch.new()
+	assert_eq(touch.open("%s/000.png" % dir, []), "", "先擦一帧，好让备份建起来")
+	var backup: String = PBFrameTouch.backup_of("%s/000.png" % dir)
+	assert_true(FileAccess.file_exists(backup), "备份该在")
+	_forge.wipe_frames(dir)
+	assert_false(FileAccess.file_exists(backup), "重抽帧要把上一条的备份一起清掉")
+
+
 func test_saving_a_shorter_take_wipes_the_longer_one() -> void:
 	# 这次挑 2 帧、上次挑 3 帧的话，多出来的 `idle_2.png` 会留在原地 ——
 	# 而 [method PBActorForge.link] 是**一直数到断号为止**的，
@@ -219,64 +300,32 @@ func test_saving_a_shorter_take_wipes_the_longer_one() -> void:
 	assert_eq(left.size(), 2, "第三帧该被清掉，留着它会跟着进游戏：%s" % str(left))
 
 
-func test_the_panel_builds_and_starts_empty() -> void:
-	# 这块面板只在**编辑器**里露脸，而编辑器里出的错很容易被当成
-	# 「插件没装好」放过去。这条在游戏进程里把它建一遍 ——
-	# 少一个控件、少一个 `connect`，这里就炸。
-	var panel := PBActorForgePanel.new()
-	add_child_autofree(panel)
-	await wait_process_frames(1)
-	assert_eq(panel._picks.size(), PBActorForge.anim_names().size(), "四段一开始各挂一份空名单")
-	assert_true(PBActorForge.anim_names().has(panel._anim()), "下拉框选中的得是个真段名")
-	assert_true(panel._picked().is_empty(), "一开始什么都没挑")
-	assert_true(panel._mid_dir().begins_with(PBActorForgePanel.MID_ROOT), "中间帧目录要在 build 下")
-	# **高清档不再是一个开关**（M6-n）—— 面板不问，流水线默认就是它。
-	# 忘了这条的表现是出一套 60 像素的像素画素材，而它不报错。
-	assert_eq(panel._forge.scale_up, PBActorForge.HD_FACTOR, "面板该默认走高清档")
+func test_a_crouched_take_borrows_idles_scale_when_asked() -> void:
+	# **玩家实际踩到的那条**（M8-g）：按图集切的时候，`run` 那张六格全是弓着腰的
+	# 跑姿，最高的一格也只有站姿的七成（实测 615 vs 880）。逐段归一化把那 615
+	# 当成了身高，跑动的人因此被放大四成 —— 而每一帧看起来都很正常，
+	# 只是他一跑起来就变大只。
+	var tall := _fake_take("%s/idle" % ROOT, 3, Rect2i(460, 100, 40, 360))
+	var low := _fake_take("%s/run" % ROOT, 3, Rect2i(460, 240, 40, 220))
+	var takes := {"idle": _forge.measure(tall), "run": _forge.measure(low)}
+
+	var apart := _forge.scales(takes)
+	assert_gt(float(apart["run"]), float(apart["idle"]) * 1.3, "逐段归一化会把弓着腰那一段放大")
+
+	var shared := _forge.scales(takes, true)
+	assert_eq(float(shared["run"]), float(shared["idle"]), "借了之后两段的比必须逐位相同")
+	assert_eq(float(shared["idle"]), float(apart["idle"]), "idle 自己那一份不受影响")
+	assert_eq(float(shared["dead"]), float(shared["idle"]), "dead 本来就借 idle 的")
 
 
-func test_both_export_buttons_write_frames_the_same_way() -> void:
-	# **两个导出按钮（M6-o）必须共用一份 compose+写盘。** 各写一份的话
-	# 「①出的帧和②出的帧差一像素」迟早发生，而它不报错 ——
-	# 表现是重导过的那一段比别的段高矮一点点。
-	#
-	# 这里直接拿面板那个共用函数写两遍，比对逐字节。
-	var panel := PBActorForgePanel.new()
-	add_child_autofree(panel)
-	await wait_process_frames(1)
-	var dir := _fake_take("%s/idle" % ROOT, 3, Rect2i(460, 100, 40, 360))
-	var shots := panel._forge.measure(dir)
-	panel._forge.assets_dir = "%s/assets" % ROOT
-	panel._forge.data_dir = "%s/data" % ROOT
-	var scale: float = float(panel._forge.scales({"idle": shots})["idle"])
-	panel._forge.fit_canvas({"idle": shots}, {"idle": scale}, {"idle": [0] as Array[int]})
-
-	assert_eq(panel._write_take("a", "idle", shots, [0], scale), "", "第一次写盘")
-	assert_eq(panel._write_take("b", "idle", shots, [0], scale), "", "第二次写盘")
-	var one := FileAccess.get_file_as_bytes("%s/assets/a/idle_0.png" % ROOT)
-	var two := FileAccess.get_file_as_bytes("%s/assets/b/idle_0.png" % ROOT)
-	assert_gt(one.size(), 0, "得真写出来了才谈得上比对")
-	assert_eq(one, two, "同一段同一帧，两条路出的图必须逐字节相同")
-
-
-func test_the_plugin_points_at_a_panel_that_exists() -> void:
-	# **插件的外壳在 `addons/`，而那一档 `check.ps1` 不 lint 也不测**
-	# （见 CLAUDE.md 的目录约定）。所以路径写错了没有任何一关拦得住 ——
-	# 表现是编辑器启动时弹一句红字，而人一般不看那儿。
-	var cfg := ConfigFile.new()
-	assert_eq(cfg.load("res://addons/actor_forge/plugin.cfg"), OK, "plugin.cfg 要读得进来")
-	var script: String = "res://addons/actor_forge/%s" % cfg.get_value("plugin", "script", "")
-	assert_true(FileAccess.file_exists(script), "plugin.cfg 指的脚本不存在：%s" % script)
-	var shell := FileAccess.get_file_as_string(script)
-	assert_true(
-		shell.contains("res://src/tools/actor_forge_panel.gd"),
-		"外壳该 preload src/tools 里那块面板 —— 逻辑不放 addons"
-	)
-	var project := FileAccess.get_file_as_string("res://project.godot")
-	assert_true(
-		project.contains("res://addons/actor_forge/plugin.cfg"),
-		"project.godot 里没启用这个插件，编辑器底栏不会出现那个按钮"
-	)
+func test_borrowing_needs_an_idle_to_borrow_from() -> void:
+	# 没有 `idle` 还照借的话，那个借来的比会停在 1.0 —— 也就是「一个像素都不缩」，
+	# 人以中间帧的原始尺寸怼进画布。**悄悄退回逐段更糟**：那一段会不声不响地
+	# 大四成，而屏幕上没有任何一句话说过这件事。
+	var low := _fake_take("%s/run" % ROOT, 3, Rect2i(460, 240, 40, 220))
+	var only := {"run": _forge.measure(low)}
+	assert_true(_forge.scales(only, true).is_empty(), "借不到就该返回空字典")
+	assert_gt(float(_forge.scales(only).get("run", 0.0)), 0.0, "不借的那一路照旧算得出")
 
 
 func test_the_auto_picker_survives_a_very_short_clip() -> void:

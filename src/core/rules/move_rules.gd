@@ -34,20 +34,17 @@ extends RefCounted
 ## 对上停在 0.80 放枪的远程敌人，**105 秒、每人打出 6 下、全灭** ——
 ## 屏幕上是四个忍者站成一排挨枪，一动不动。
 ##
-## ## 三道门槛，每一道挡的都是一种「被拽出阵型」
+## ## 两道门槛加一道天花板
 ##
 ## **点名不松绳。** [PBBattleSim] 那条注释从 M4-e 起就写着「皮带绳照旧拴着，
 ## 所以他不会横穿半个战场」，而代码一直会松开 —— 于是点一个正在别处挨打的
 ## 敌人，等于把这个忍者从阵型里拔出去（M6-q 补的）。
 ##
-## **咬的不是我就不松绳**（M6-q）。判据走 [method PBTargetRules.nearest_ally]，
-## 和敌人自己挑人是同一个函数 —— 抄一份的话「谁该去救」会有两个答案。
-## 在它之前的条件是「任何一个站定的敌人」，于是围着**别人**打的那一群也会
-## 把我拽过去：一个人被拽出去 → 敌人跟着停在他的新位置上 → 队友的目标
-## 也到了绳外 → 全队一个接一个塌到同一点。实测第 20 波那个近战
-## **210/271 tick 在绳外、离家 0.55，而绳长 0.35**。
+## **够得着就不用放。** 判据是 `leash + reach`：绳子拴的是脚，而打人用的是
+## 射程，两者加起来才是「我守得住多大一片」。[method PBBattleSim._nearest_enemy]
+## 挑目标时用的是同一个数 —— 那边先在这片里挑，挑不到才退回全场最近。
 ##
-## **放长到刚好够到这一个，还要压一道绝对天花板**（M6-q）。原来返回的是
+## **放长到刚好够到这一个，再压一道绝对天花板**（M6-q）。原来返回的是
 ## [method PBSimConfig.field_diagonal]，也就是彻底松开 —— 那是个**棘轮**：
 ## 判据量的是 `home` 而 `home` 不动，所以这一波剩下的时间里绳子再也收不回来。
 ## 现在它是根**弹簧**：目标在哪儿就放到哪儿，目标死了或者下一个还在走
@@ -58,20 +55,34 @@ extends RefCounted
 ## 最远能停在哪」= 绳长 + 它的射程：够得着任何一个**冲我来的**，
 ## 但绝不跟着战线往外飘。
 ##
+## ## 曾经还有第三道，而它自己造了一条 bug（M8-c 删）
+##
+## M6-q 为「追着怪物跑」一口气加了两样东西：上面那道天花板，和一道
+## **「咬的不是我就不松绳」**（走 [method PBTargetRules.nearest_ally]）。
+## 后者把**够不着的近战永久锁死**了：
+##
+## 敌人咬住同一列里的另一个人，就停在离**那个人** `enemy_reach`（0.02）处，
+## 也就是离**同列每一个人的家** `leash + reach` 外面一点点 —— 多出来的
+## 正好是两条泳道的纵向差。第二道门槛判「够不着」是对的，第三道却不让他过去，
+## 于是他贴在绳边每 tick 走一步又被钳回来，**整波一发不放**。
+##
+## 实测（第 15 波，3 近战）：两个近战**出手 0 次、100% 的 tick 射程内没有
+## 敌人**，而离最近那个敌人只差 **0.003**（射程 0.020，实际 0.023）。
+## 五个近战三个波次全部落在 ±0.03 —— 这是几何必然，不是巧合。
+##
+## **拦住塌陷的是天花板，它一个就够。** 去掉第三道之后实测离家最远 0.411
+## （天花板 0.5 没顶到），那两个近战各打出 3 手，而**远程一位数都没动** ——
+## 远程的 `reach` 是 0.30，第二道门槛就返回了，根本走不到这里。
+## 也就是说第三道保护的对象用不到它，被它锁死的恰恰是唯一需要它的人。
+##
 ## **退回去不会把敌人晾在原地**：[member PBEnemy.engaged] 每 tick 重算，
 ## 够不着我了它就继续走过来。
 static func leash_for(
-	attacker: PBAttacker,
-	target: PBEnemy,
-	named: PBEnemy,
-	squad: Array[PBAttacker],
-	cfg: PBSimConfig
+	attacker: PBAttacker, target: PBEnemy, named: PBEnemy, cfg: PBSimConfig
 ) -> float:
 	if not target.engaged or named == target:
 		return attacker.leash
 	if attacker.home.distance_to(target.pos()) <= attacker.leash + attacker.reach:
-		return attacker.leash
-	if PBTargetRules.nearest_ally(squad, target) != attacker:
 		return attacker.leash
 	var ceiling: float = attacker.leash + cfg.enemy_reach_ranged
 	var want: float = attacker.home.distance_to(target.pos()) + attacker.stop_gap()

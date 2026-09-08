@@ -156,7 +156,7 @@ func _init(
 		var solo: Array[PBAttacker] = [PBAttacker.whole_field(dps, cfg.field_diagonal())]
 		_attackers = solo
 	for attacker: PBAttacker in _attackers:
-		attacker.prime(cfg.tick_rate)
+		attacker.prime(cfg.tick_rate, cfg)
 		# 开波满血（§03A）。和大招的冷却一样，攻击者对象会跨波、跨探测复用，
 		# 不重置的话上一场的残血会漏进这一场，表现为「同一支队伍越探越弱」。
 		attacker.revive()
@@ -263,35 +263,10 @@ func active_enemies() -> Array[PBEnemy]:
 	return out
 
 
-## 一次性把整波敌人建好，出场时刻算在这里。
-##
-## 全部预分配、之后只改字段不再 `.new()` —— §14 对 sim 层的要求。
+## 一次性把整波敌人建好。**规则在 [PBSpawnRules]**（M9-a 拆出去的）——
+## 这里只负责把结果记进 [member _enemies]。
 func _spawn_all(wave: PBWave, cfg: PBSimConfig) -> void:
-	_enemies.resize(wave.count)
-	var window_ticks: float = cfg.spawn_window * float(cfg.tick_rate)
-	# 出手间隔与一发的伤害：和己方同一条换算（[method PBAttacker.prime]）——
-	# 由间隔反推一发打多少，平均输出因此分毫不差。
-	var interval: int = maxi(
-		int(round(float(cfg.tick_rate) / maxf(cfg.enemy_attack_speed, 0.001))), 1
-	)
-	var per_shot: float = (
-		wave.atk_each * cfg.enemy_attack_speed * float(interval) / float(cfg.tick_rate)
-	)
-	for i: int in wave.count:
-		var enemy := PBEnemy.new()
-		enemy.slot = i
-		var at_tick: int = 0
-		if wave.count > 1:
-			at_tick = int(round(window_ticks * float(i) / float(wave.count - 1)))
-		# 出生在方阵里（M4-d）：第一列在战场边缘，后面几列排在战场之外。
-		enemy.spawn(wave, _enemy_speed, cfg.enemy_start_x(i), at_tick, cfg.enemy_lane(i))
-		# 远近两种打法（M4-c）。谁是远程按槽位定死，不掷骰 ——
-		# 理由见 [member PBSimConfig.enemy_ranged_share]。
-		if cfg.enemy_is_ranged(i):
-			enemy.arm(cfg.enemy_reach_ranged, interval, per_shot, _shot_speed)
-		else:
-			enemy.arm(cfg.enemy_reach, interval, per_shot, 0.0)
-		_enemies[i] = enemy
+	PBSpawnRules.fill(_enemies, wave, cfg, _enemy_speed, _shot_speed)
 
 
 ## 大招：先结算落地的，再下达新的。**顺序不能反。**
@@ -532,6 +507,13 @@ func _deal_damage() -> void:
 		# 所以它每 tick 都过得了这道门，行为和离散化之前一模一样。
 		if not attacker.alive or not attacker.ready_to_fire(_tick):
 			continue
+		# **抬手**（M9-e）：冷却转好之后先起手，[member PBAttacker.windup_ticks]
+		# 之后才结算。**要先确认射程内真有人** —— 对着空气抬手的话，
+		# 抬完那一刻敌人正好走进来，伤害就会在没有起手的情况下落地，
+		# 而那正是下面「打空了不进冷却」这条路留下的洞：
+		# 射程内没人时冷却照转，敌人一踏进射程就当 tick 开火。
+		if _first_reachable(attacker) != null and attacker.begin_swing(_tick):
+			continue
 		var fired: bool = (
 			_strike_area(attacker)
 			if attacker.shape == PBAttacker.Shape.AOE
@@ -541,6 +523,10 @@ func _deal_damage() -> void:
 		# 吃掉一个间隔，等敌人走进来时他还得再等 —— 表现是「远程有时候发呆」。
 		if fired:
 			attacker.on_fired(_tick)
+		else:
+			# 抬着手却打空了（目标死了、走了）—— 手放下，下次重新抬。
+			# 不放的话下一个走进射程的敌人会挨一发没有起手的伤害。
+			attacker.swinging = false
 	_skip_dead()
 
 
@@ -597,7 +583,7 @@ func _move_attackers() -> void:
 		if attacker.can_reach(target.pos()):
 			continue
 		var leash: float = PBMoveRules.leash_for(
-			attacker, target, _named_target(attacker), _attackers, _cfg
+			attacker, target, _named_target(attacker), _cfg
 		)
 		if attacker.shot_speed > 0.0:
 			PBMoveRules.press_forward(attacker, target, leash)
@@ -620,11 +606,20 @@ func _move_attackers() -> void:
 ## ## 为什么「守得住的那个」优先（M6-q）
 ##
 ## 挑全场最近的那个，会挑中一个**站在皮带绳外面**的敌人 —— 而
-## [method _leash_for] 恰恰在「目标站定了且绳子够不着」时**整根松开**。
-## 那一松是个棘轮：判据量的是 `home`，而 `home` 不动，所以这一波剩下的
-## 时间里绳子再也收不回来；那个敌人死了之后他就地再挑一个，同样在绳外，
-## 于是继续放开。实测第 20 波那个近战 **210/271 tick 在绳外，离家 0.55
-## 而绳长 0.35** —— 屏幕上就是「追着怪一路跑出去」。
+## [method PBMoveRules.leash_for] 那时就会把绳子放长。M6-q 之前那一松是
+## **整根松开**，判据量的又是永不移动的 `home`，于是这一波剩下的时间里
+## 再也收不回来；那个敌人死了之后他就地再挑一个，同样在绳外，于是继续放开。
+## 实测第 20 波那个近战 **210/271 tick 在绳外，离家 0.55 而绳长 0.35** ——
+## 屏幕上就是「追着怪一路跑出去」。
+##
+## 放长现在压着一道天花板（M6-q），所以这条优先级的理由变得更直白：
+## **自己那一格里还有活可干，就先干自己的**，别跑去帮别人 ——
+## 而那也正是 §02 的射程梯度想要的站位。
+##
+## **这里的 `leash + reach` 必须和 [method PBMoveRules.leash_for] 第二道门槛
+## 是同一个数**：那边用它判「够不着才放绳」，这边用它判「这算不算我的活」。
+## 两处分叉的话，会出现「挑中了一个我认定守不住的目标，绳子却不肯为它放长」——
+## 也就是 M8-c 那条 bug 的形状（贴在绳边，整波一发不放）。
 ##
 ## 所以先在**自己守得住的范围**（`home` 半径 `leash + reach`）里挑，
 ## 挑不到才退回全场最近的。退回那一档正是 M5-8 那个死局
@@ -785,6 +780,9 @@ func _enemies_attack() -> void:
 		# 两次出手之间一步一步往前挪，而墙就会漏。
 		enemy.engaged = true
 		if not enemy.ready_to_fire(_tick):
+			continue
+		# 抬手，同己方那一支 —— 这里目标已经找到了，不用再问一遍。
+		if enemy.begin_swing(_tick):
 			continue
 		enemy.on_fired(_tick)
 		# 远程的那一份走弹道（M4-c），减伤与克制在命中时才折算。

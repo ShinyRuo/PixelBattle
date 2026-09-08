@@ -8,6 +8,23 @@ extends RefCounted
 ## 48 单位 × 20 tick/s 的规模下这笔开销很实在。
 ## 复用的入口是 [method spawn]，它把所有字段重置成出生状态。
 
+## 这只怪是哪一档。M9-a。
+##
+## ## 它为什么是一个字段，而不是回头去问波次
+##
+## 屏幕上要给 30 种怪各挂一张皮（6 属性 × 5 形态），而渲染层拿到的只有
+## [method PBBattleSim.enemies] 那个数组 —— 回头去问 [PBWave] 的话，
+## 「这只怪是什么」就有了两个来源，而两处对不上的表现是
+## **精英波里混进一只小怪的图**，不报错。
+##
+## **纯元数据：任何规则都不读它。** 配平因此一个数都不动
+## （血量、数量、伤害仍然全部来自 [PBWave]）。
+enum Rank {
+	MINION,  ## 小怪 —— 常规波与潮水波
+	ELITE,  ## 精英波
+	BOSS,  ## BOSS 波与超级 BOSS 波
+}
+
 ## 还活着（没被打死、也没走到基地）。
 var alive: bool = false
 
@@ -17,6 +34,23 @@ var max_hp: float = 0.0
 ## 本波的属性。同一波内所有敌人属性相同（§04），存在个体上是为了
 ## 将来的「混合属性波」（§04 的 50 波后机制）不用改结构。
 var element: PBElement.Type = PBElement.Type.FIRE
+
+## 这只怪的档次，见 [enum Rank]。[method spawn] 从波型推出来。
+var rank: Rank = Rank.MINION
+
+## **正在起手**，理由同 [member PBAttacker.swinging]。
+var swinging: bool = false
+
+## 起手要几 tick —— 从抬手到伤害落地。[method arm] 按
+## [method PBSimConfig.windup_ticks] 填，理由同 [member PBAttacker.windup_ticks]。
+var windup_ticks: int = 0
+
+## 远程还是近战。**存下来，不从 [member reach] 反推** —— 反推就是第二把尺子：
+## 「射程正好等于远程那个数」和「它是一只远程怪」是两句话，
+## 哪天两个射程配成一样，屏幕上就会出现一只近战怪举着法杖。
+##
+## 和 [member rank] 一样是纯元数据，规则一处都不读。
+var ranged: bool = false
 
 ## 攻击力。两处用得上：漏进基地时扣多少血，以及**打己方单位时打多少**。
 ##
@@ -106,6 +140,7 @@ func spawn(
 	max_hp = wave.hp_each
 	hp = max_hp
 	element = wave.element
+	rank = rank_of(wave)
 	atk = wave.atk_each
 	distance = at_x
 	start_x = at_x
@@ -113,6 +148,7 @@ func spawn(
 	speed = enemy_speed
 	spawn_tick = at_tick
 	engaged = false
+	swinging = false
 	next_shot_at = at_tick
 	# **不清的话上一波的减速会漏进这一波**，表现是「后半局的怪好像变慢了」。
 	# 和 [method PBSkillCast.reset] 顶上记着的「上一场剩下的冷却漏进下一场」
@@ -128,11 +164,33 @@ func spawn(
 ## 打多远、隔多久、一次多少、发不发子弹。捆在一起传的话，
 ## 调用方每次都要把「近战怎么配、远程怎么配」重写一遍，
 ## 而那份配置只该有一处（[method PBSimConfig.enemy_is_ranged]）。
-func arm(at_reach: float, interval: int, per_shot: float, bullet_speed: float) -> void:
+func arm(
+	at_reach: float,
+	interval: int,
+	per_shot: float,
+	bullet_speed: float,
+	is_ranged: bool = false,
+	windup: int = 0
+) -> void:
 	reach = at_reach
 	attack_interval = maxi(interval, 1)
 	damage_per_shot = per_shot
 	shot_speed = bullet_speed
+	ranged = is_ranged
+	windup_ticks = clampi(windup, 0, maxi(attack_interval - 1, 0))
+	swinging = false
+
+
+## 波型 → 档次。**潮水波也是小怪、超级 BOSS 也是 BOSS** ——
+## 这两条合并是有意的：屏幕上要分的是「长什么样」，而潮水波的怪和常规波的怪
+## 是同一种东西（只是更多更薄），超级 BOSS 和 BOSS 也是。
+##
+## 「是不是 BOSS」走 [method PBWave.is_boss]，不另判一遍：那句话已经有主了，
+## 抄一份出来的话，哪天加一档 BOSS 波型，两处就会对同一波说两种话。
+static func rank_of(wave: PBWave) -> Rank:
+	if wave.is_boss():
+		return Rank.BOSS
+	return Rank.ELITE if wave.shape == PBWave.Shape.ELITE else Rank.MINION
 
 
 ## 这一 tick 出不出得了手。
@@ -140,9 +198,20 @@ func ready_to_fire(current_tick: int) -> bool:
 	return alive and current_tick >= next_shot_at
 
 
-## 出了一手，转入下一次的间隔。
+## 出了一手，转入下一次的间隔。**减掉起手那一段**，理由同
+## [method PBAttacker.on_fired]。
 func on_fired(current_tick: int) -> void:
-	next_shot_at = current_tick + attack_interval
+	swinging = false
+	next_shot_at = current_tick + maxi(attack_interval - windup_ticks, 1)
+
+
+## 抬手，同 [method PBAttacker.begin_swing]。
+func begin_swing(current_tick: int) -> bool:
+	if windup_ticks <= 0 or swinging:
+		return false
+	swinging = true
+	next_shot_at = current_tick + windup_ticks
+	return true
 
 
 ## 战场坐标。x 是离基地多远，y 是泳道。

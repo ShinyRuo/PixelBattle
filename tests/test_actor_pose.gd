@@ -19,10 +19,87 @@ func test_a_shot_puts_him_into_the_attack_pose() -> void:
 	# 出手在 sim 里没有事件，但「下一发挪后了」这件事只有出手才做得到。
 	var pose := PBActorPose.new()
 	pose.reset(Vector2(0.3, 0.2), PBActorPose.FACE_RIGHT)
-	pose.update(Vector2(0.3, 0.2), true, 20, false, NAN, HOLD)
+	pose.update(Vector2(0.3, 0.2), true, 20, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.IDLE, "站着没动就是待机")
-	pose.update(Vector2(0.3, 0.2), true, 24, false, NAN, HOLD)
+	pose.update(Vector2(0.3, 0.2), true, 24, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.ATTACK, "`next_shot_at` 变大就是刚出了一手")
+
+
+func test_the_swing_is_what_the_sim_says_it_is() -> void:
+	# **玩家报的那一条**（M9-e）：「子弹在攻击动作开始的时候就射出去了」。
+	#
+	# 起手是 sim 那边的一个状态（[member PBAttacker.swinging]）：冷却转好
+	# **而且射程内有人**才抬手。这边照着它起跑 —— 不自己拿 `next_shot_at`
+	# 反推，因为起手占半个间隔时，「离下一发还有多远」在收招期间和起手期间
+	# 是同一个数，两段分不开。
+	var pose := PBActorPose.new()
+	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
+	pose.update(Vector2.ZERO, true, 20, false, NAN, HOLD, true, false, 6)
+	assert_eq(pose.state, PBActorPose.State.IDLE, "还没抬手就该站着")
+	pose.update(Vector2.ZERO, true, 20, false, NAN, HOLD, true, true, 6)
+	assert_eq(pose.state, PBActorPose.State.ATTACK, "抬手了就进攻击段")
+
+
+func test_a_new_swing_says_so_exactly_once() -> void:
+	# **上升沿**。[method AnimatedSprite2D.play] 对已经在播的同一段什么都不做，
+	# 所以池子要靠这个信号把动画拨回第 0 帧；而它持续为真的话每帧都拨，
+	# 人就永远停在起手那一格上。
+	var pose := PBActorPose.new()
+	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
+	pose.update(Vector2.ZERO, true, 20, false, NAN, HOLD, true, false, 6)
+	assert_false(pose.swing_began, "还没抬手")
+	pose.update(Vector2.ZERO, true, 20, false, NAN, HOLD, true, true, 6)
+	assert_true(pose.swing_began, "抬手这一帧要把动画拨回第 0 帧")
+	pose.update(Vector2.ZERO, true, 20, false, NAN, HOLD, true, true, 6)
+	assert_false(pose.swing_began, "起手期里只报一次")
+	# 出手 → 收招 → 下一次抬手，要再报一次。
+	pose.update(Vector2.ZERO, true, 32, false, NAN, HOLD, true, false, 6)
+	assert_false(pose.swing_began, "收招期间不报")
+	pose.update(Vector2.ZERO, true, 32, false, NAN, HOLD, true, true, 6)
+	assert_true(pose.swing_began, "下一轮抬手要再报一次")
+
+
+func test_without_a_windup_it_behaves_exactly_as_before() -> void:
+	# **两个参数都不给就是 M9-e 之前的样子。** 默认值就是「不抬手、起手 0 帧」，
+	# 所以没跟上的调用方行为一字不差 —— 那是它们敢加进这个热路径的全部理由。
+	var pose := PBActorPose.new()
+	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
+	pose.update(Vector2.ZERO, true, 20, false, NAN, HOLD, true)
+	assert_eq(pose.state, PBActorPose.State.IDLE, "没抬手就不该进攻击段")
+	pose.update(Vector2.ZERO, true, 24, false, NAN, HOLD, true)
+	assert_eq(pose.state, PBActorPose.State.ATTACK, "照旧是出手了才播")
+
+
+func test_the_windup_is_taken_out_of_the_recovery_not_added_to_it() -> void:
+	# 出手之后剩下的是**收招**，长度得减掉起手那一段。不减的话每一手都占满
+	# 一整个间隔再加上起手，两手之间的攻击段首尾相接 —— 人再也回不到待机。
+	var hold: int = 20
+	var windup: int = 6
+	var pose := PBActorPose.new()
+	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
+	pose.update(Vector2.ZERO, true, 20, false, NAN, hold, true, true, windup)
+	pose.update(Vector2.ZERO, true, 24, false, NAN, hold, true, false, windup)
+	assert_eq(pose.state, PBActorPose.State.ATTACK, "刚出手，在收招")
+	for _i: int in hold - windup:
+		pose.update(Vector2.ZERO, true, 24, false, NAN, hold, true, false, windup)
+	assert_eq(pose.state, PBActorPose.State.IDLE, "收招演完要回到待机")
+
+
+func test_the_windup_comes_from_the_sim_not_from_the_animation() -> void:
+	# 出手落在第几帧只有一处说了算（[member PBSimConfig.attack_hit_frame]）。
+	assert_eq(PBActorPose.windup_frames(6, 3.0), 18, "6 tick 的起手 = 18 个渲染帧")
+	assert_eq(PBActorPose.windup_frames(0, 3.0), 0, "不起手就是 0")
+
+
+func test_the_hit_frame_decides_how_long_the_windup_is() -> void:
+	# 第 4 帧（共 6 帧）出手 = 前 3 帧是起手，也就是间隔的一半。
+	var cfg := PBSimConfig.new()
+	assert_eq(cfg.attack_hit_frame, 4, "默认第 4 帧出手（玩家定的）")
+	assert_eq(cfg.anim_frames, 6, "四段都是 6 帧")
+	assert_eq(cfg.windup_ticks(12), 6, "12 tick 的间隔，前 3/6 是起手")
+	assert_eq(cfg.windup_ticks(1), 0, "间隔只有 1 tick 时没有起手可留")
+	cfg.attack_hit_frame = 6
+	assert_lt(cfg.windup_ticks(4), 4, "起手不许占满一整个间隔")
 
 
 func test_the_attack_pose_lasts_a_few_frames() -> void:
@@ -30,13 +107,51 @@ func test_the_attack_pose_lasts_a_few_frames() -> void:
 	# 一次挥击只会显示一帧 —— 玩家看到的是一次闪烁，不是一个动作。
 	var pose := PBActorPose.new()
 	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
-	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD)
-	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD)
+	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD, true)
+	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD, true)
 	for i: int in HOLD - 1:
-		pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD)
+		pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD, true)
 		assert_eq(pose.state, PBActorPose.State.ATTACK, "第 %d 帧还该在挥" % i)
-	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD)
+	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.IDLE, "播完就该回到待机")
+
+
+func test_running_to_the_next_target_stops_the_attack_animation() -> void:
+	# **玩家报的那条**（M8-e）：「攻击的单位死后切换到下一个目标，
+	# 会一边播攻击动画一边移动」。
+	#
+	# 根因不在 sim —— 那边攻击和移动本来就互斥（[method PBBattleSim._move_attackers]
+	# 里「够得着就 `continue`」）。是**渲染层把攻击段拉长到占满一整个攻击间隔**
+	# （[method PBAllyPool._hold_frames]，那是有意的），于是「刚出过一手」
+	# 一直挂到下一手，而这中间目标死了、下一个够不着、人已经跑起来了。
+	#
+	# 实测（20 波）：56% 的 tick 在播攻击段，其中 13% 人在挪，
+	# 那 13% 里 74% 是真在走路。
+	var pose := PBActorPose.new()
+	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
+	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD, true)
+	# 出一手 —— 攻击段开始，而它要占满一整个间隔。
+	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD, true)
+	assert_eq(pose.state, PBActorPose.State.ATTACK, "刚出手就该在挥")
+	# 目标死了，下一个够不着，于是开始跑 —— 攻击段还剩一大截没播完。
+	pose.update(Vector2(0.01, 0.0), true, 4, false, NAN, HOLD, false)
+	assert_eq(pose.state, PBActorPose.State.RUN, "跑起来就不该还在挥手")
+	# 跑到位、够得着了，攻击段接着算数（倒计时没被清掉）。
+	pose.update(Vector2(0.01, 0.0), true, 4, false, NAN, HOLD, true)
+	assert_eq(pose.state, PBActorPose.State.ATTACK, "够得着了就该接着挥")
+
+
+func test_a_shooter_standing_still_out_of_range_does_not_swing() -> void:
+	# 够不着的时候**站着**也不该挥手 —— 判据是「够不够得着」，不是「挪没挪」。
+	# 拿挪没挪当判据的话，一个被绳子夹住、原地贴着敌人边缘的人会一直挥空，
+	# 而 M8-c 那条 bug 里的近战正是整波卡在这个位置上。
+	var pose := PBActorPose.new()
+	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
+	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD, true)
+	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD, true)
+	assert_eq(pose.state, PBActorPose.State.ATTACK, "先挥起来")
+	pose.update(Vector2.ZERO, true, 4, false, NAN, HOLD, false)
+	assert_eq(pose.state, PBActorPose.State.IDLE, "够不着又没在挪，就是站着发呆")
 
 
 func test_moving_holds_the_run_pose_across_the_gap_between_ticks() -> void:
@@ -44,14 +159,14 @@ func test_moving_holds_the_run_pose_across_the_gap_between_ticks() -> void:
 	# 1 帧 run、2 帧 idle 地闪 —— 而两边的坐标都完全正确。
 	var pose := PBActorPose.new()
 	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
-	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD)
-	pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD)
+	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD, true)
+	pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.RUN, "位置变了就是在跑")
-	pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD)
-	pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD)
+	pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD, true)
+	pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.RUN, "隔着一个 tick 的空档还该在跑")
 	for _i: int in PBActorPose.MOVE_HOLD:
-		pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD)
+		pose.update(Vector2(0.01, 0.0), true, 0, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.IDLE, "真站定了才回待机")
 
 
@@ -60,8 +175,8 @@ func test_being_dead_beats_everything_else() -> void:
 	# 会保持施法姿势站到这一波结束。
 	var pose := PBActorPose.new()
 	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
-	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD)
-	pose.update(Vector2(0.02, 0.0), false, 8, true, NAN, HOLD)
+	pose.update(Vector2.ZERO, true, 0, false, NAN, HOLD, true)
+	pose.update(Vector2(0.02, 0.0), false, 8, true, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.DEAD, "死了就是倒地，不管手上在干什么")
 
 
@@ -71,13 +186,13 @@ func test_he_looks_at_his_target_and_falls_back_to_where_he_is_headed() -> void:
 	# 那一瞬间「唰」地转回去。
 	var pose := PBActorPose.new()
 	pose.reset(Vector2(0.5, 0.2), PBActorPose.FACE_RIGHT)
-	pose.update(Vector2(0.5, 0.2), true, 0, false, 0.1, HOLD)
+	pose.update(Vector2(0.5, 0.2), true, 0, false, 0.1, HOLD, true)
 	assert_eq(pose.facing, PBActorPose.FACE_LEFT, "目标在左边就该转过去")
-	pose.update(Vector2(0.4, 0.2), true, 0, false, NAN, HOLD)
+	pose.update(Vector2(0.4, 0.2), true, 0, false, NAN, HOLD, true)
 	assert_eq(pose.facing, PBActorPose.FACE_LEFT, "没目标时看走向，他正往左走")
-	pose.update(Vector2(0.4, 0.2), true, 0, false, NAN, HOLD)
+	pose.update(Vector2(0.4, 0.2), true, 0, false, NAN, HOLD, true)
 	assert_eq(pose.facing, PBActorPose.FACE_LEFT, "站定了就保持，不许自己转回去")
-	pose.update(Vector2(0.45, 0.2), true, 0, false, NAN, HOLD)
+	pose.update(Vector2(0.45, 0.2), true, 0, false, NAN, HOLD, true)
 	assert_eq(pose.facing, PBActorPose.FACE_RIGHT, "被击退往右挪就该转过来")
 
 
@@ -87,74 +202,8 @@ func test_the_first_frame_is_not_a_shot() -> void:
 	# 不挡住的话每一波的第一帧全队都在挥空。
 	var pose := PBActorPose.new()
 	pose.reset(Vector2.ZERO, PBActorPose.FACE_RIGHT)
-	pose.update(Vector2.ZERO, true, 999, false, NAN, HOLD)
+	pose.update(Vector2.ZERO, true, 999, false, NAN, HOLD, true)
 	assert_eq(pose.state, PBActorPose.State.IDLE, "第一帧不该算成一次出手")
-
-
-func test_the_white_model_has_every_animation_the_states_ask_for() -> void:
-	# **这条测的是「链路今天就是通的」。** `assets/` 一张图都没有，
-	# 走的全是白模那一条；缺一段的表现是
-	# [method AnimatedSprite2D.play] 静默不播 —— 人卡在上一帧，不报错。
-	var skin := PBWhiteModel.ally()
-	for state: int in PBActorPose.State.values():
-		var anim: StringName = skin.anim_for(state)
-		assert_true(skin.has(anim), "第 %d 档拿到的 `%s` 得真的存在" % [state, anim])
-	assert_true(skin.tint_by_element, "白模只有一个形状，五系全靠染色分")
-
-
-func test_a_missing_animation_falls_back_instead_of_freezing() -> void:
-	# 敌人的白模没有倒地段和施法段（它们用不上），所以这两档必须退回待机。
-	var skin := PBWhiteModel.enemy(5)
-	assert_false(skin.has(&"dead"), "敌人白模本来就没画倒地那一段")
-	assert_eq(skin.anim_for(PBActorPose.State.DEAD), skin.anim_idle, "查不到就退回待机")
-	assert_eq(skin.resolve(&"根本没有这一段"), skin.anim_idle, "兜底那一层必须在")
-
-
-func test_the_foot_sits_on_the_bottom_middle_of_the_canvas() -> void:
-	# **整份素材规格里最要紧的一个数。** 脚底记错一格，这个人和别人的
-	# 前后关系就错一格，而所有坐标看起来都完全正确（M6-a 那条 y 排序）。
-	for skin: PBActorSkin in [PBWhiteModel.ally(), PBWhiteModel.enemy(3)]:
-		var canvas := skin.canvas_size()
-		assert_gt(canvas.x, 0.0, "画布尺寸得读得出来，读不出来锚点就是错的")
-		assert_eq(skin.anchor(), Vector2(canvas.x * 0.5, canvas.y), "默认锚是底边中点")
-		assert_eq(skin.draw_offset(), -skin.anchor(), "偏移把脚底挪到原点上")
-
-
-func test_the_foot_stays_on_the_ground_after_scaling_up() -> void:
-	# **偏移和放大不能各乘一遍。** [member Sprite2D.offset] 是在节点缩放
-	# **之前**作用的，而放大走 [member Node2D.scale] —— 两处都乘
-	# [member PBActorSkin.pixel_scale] 等于把偏移平方，人浮在地面上方
-	# 一整个身高。`pixel_scale` 恒为 1 时看不出来（1 的平方还是 1），
-	# 而白模正好是 1，所以这条要等真素材填 2 的那天才发作，**且不报错**。
-	var skin := PBWhiteModel.ally()
-	skin = skin.duplicate() as PBActorSkin
-	skin.pixel_scale = 3.0
-	var sprite := AnimatedSprite2D.new()
-	sprite.centered = false
-	sprite.sprite_frames = skin.frames
-	sprite.offset = skin.draw_offset()
-	sprite.scale = Vector2.ONE * skin.pixel_scale
-	add_child_autofree(sprite)
-	# 画布底边中点（也就是脚底那一点）必须正好落在节点原点上。
-	#
-	# **要连 [member Sprite2D.offset] 一起算。** 它是绘制属性、不进节点变换，
-	# 所以 `get_global_transform()` 里没有它 —— 只拿变换乘画布坐标的话，
-	# 量到的是「没有偏移时脚底在哪」，这条断言会永远为假。
-	var canvas := skin.canvas_size()
-	var foot: Vector2 = sprite.transform * (sprite.offset + Vector2(canvas.x * 0.5, canvas.y))
-	assert_almost_eq(foot.x, 0.0, 0.001, "放大之后脚底横向跑偏了")
-	assert_almost_eq(foot.y, 0.0, 0.001, "放大之后人浮在地面上方了")
-
-
-func test_every_frame_in_a_skin_is_the_same_size() -> void:
-	# [method PBActorSkin.canvas_size] 只读第一帧。尺寸不齐的话
-	# 脚底锚对得上第一帧、对不上其余帧 —— 人会在动画里上下跳。
-	var skin := PBWhiteModel.ally()
-	var want := skin.canvas_size()
-	for anim: String in skin.frames.get_animation_names():
-		for i: int in skin.frames.get_frame_count(anim):
-			var texture: Texture2D = skin.frames.get_frame_texture(anim, i)
-			assert_eq(texture.get_size(), want, "`%s` 第 %d 帧尺寸不一样" % [anim, i])
 
 
 func test_pausing_and_speeding_up_reach_the_animation_too() -> void:

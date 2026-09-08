@@ -423,6 +423,29 @@ var enemy_reach: float = 0.02
 ##
 ## ## 它必须**明显短于** [member reach_ranged]，0.30 == 0.30 是个死局
 ##
+## 一段动画有几帧。四段（idle / run / attack / dead）都是这个数 ——
+## 出图那一侧是六格图集，正好一格一帧。
+##
+## 它在 sim 里的唯一用处是把「第几帧出手」换成「第几 tick 出手」
+## （[method windup_ticks]）—— **不是** 让 sim 去读 [SpriteFrames]，
+## 那边是渲染层的东西，core 碰不到（铁律 1）。
+var anim_frames: int = 6
+
+## 出手落在攻击动画的**第几帧**（1 起）。玩家定的：远程忍者在这一帧
+## 打出子弹，近战忍者在这一帧结算伤害。
+##
+## ## 它改的是出手那一 tick，不是画面
+##
+## 填 1 就是「一冷却好就出手」，也就是 M9-e 之前的样子 —— 那时攻击动画
+## 是**出手之后**才开始播的，所以子弹在动画第一帧就出膛，画面上是凭空射出来。
+##
+## 填 4 之后，冷却好的那一刻只是**起手**，伤害/子弹要等到第 4 帧才落地。
+## 渲染层因此拿得到一段真正的前摇（[method windup_ticks]）。
+##
+## **这会改配平**（每一发都比原来晚 [method windup_ticks] 个 tick 落地，
+## 每一波的第一发尤其明显）—— 玩家定的：先不管数值。
+var attack_hit_frame: int = 4
+
 ## 敌人停在「离**最靠前**的那个忍者 `enemy_reach_ranged`」处，
 ## 而远程忍者站在中排 —— 比前排还靠后 [member column_front] − [member column_mid]
 ## （0.10）。两边射程一样长的话，**远程忍者恒定差这 0.10 够不着**，
@@ -455,28 +478,62 @@ var enemy_ranged_share: float = 0.3
 var unit_move_seconds: float = 6.0
 
 ## 己方单位最多离开自己的站位多远（[member PBAttacker.leash]）。
+## **0 = 不拴**，落成覆盖全场（见 [method leash_distance]）—— 现在就是这一档。
 ##
-## **这个数守着 §02 的射程梯度。** 放大到接近 `field_length` 就等于
-## 「自由跑向敌人」—— 所有人挤到最前面接敌，战斗退回 M3-a 之前的单点集火。
+## ## M8-d 把它松开了（玩家定的：「不需要拴住，去掉这根狗链子」）
 ##
-## ## 0.10 → 0.35 是 M5-7 的连带改动，不是配平微调
+## 拴着的那套说法是「守住 §02 的射程梯度」：放开就等于自由跑向敌人，
+## 所有人挤到最前面接敌，战斗退回 M3-a 之前的单点集火。
 ##
-## 两件事同时逼它变大：
+## **实测把这条否掉了**（20 波同种子，`build/probe_reach.gd`）：
 ##
-## 1. **近战改成贴身**（[member reach_melee] 0.12 → 0.02）。远程敌人停在
-##    自己的 0.30 上放枪，近战要走 0.28 才够得着 —— 皮带绳 0.10 拴着的话
-##    他**永远打不到远程敌人**，一队全近战会站在原地被点名到死
-## 2. **玩家点名要求「开打后能越过中线」**。中线是 `deploy_limit_x`（0.5），
-##    而前排的站位是 `column_front`（0.30）—— 0.10 的绳子最远只到 0.40，
-##    也就是**结构上不可能越线**
+## [codeblock]
+## leash   单波tick  近战出手  整波零输出  射程内无敌人  最远离家  漏怪
+## 0.35       120      2.4        7          80%        0.500     25
+## 0.60       110      2.9        5          68%        0.600     25
+## 1.00       110      2.9        5          68%        0.616     25
+## 2.00       110      2.9        5          68%        0.616     25
+## [/codeblock]
 ##
-## 0.35 让前排够到 0.65（越线），后排够到 0.45（不越线）——
-## 「谁会冲出去」仍然是站位的派生量，只是尺度放大了。
-## 梯度本身换了来源：敌人现在会主动扑向最近的活忍者
-## （[method PBBattleSim._advance_and_leak]），分批靠前排先接触。
+## 三件事：
 ##
-## **这一下明显改了配平**，归数值回归。
-var unit_leash: float = 0.35
+## - **漏怪一只没多。** 拴着的理由是「忍者是一堵墙」，而那堵墙 M5-7 起
+##   就不是靠站位挡的了 —— 敌人会**主动扑向最近的活忍者**
+##   （[method PBBattleSim._advance_and_leak]），压根不绕。
+##   墙的执行者早就换人了，链子留着只是没人回头看。
+## - **0.60 以上完全饱和。** 忍者最远也只跑到离家 0.616，
+##   再长的链子一寸都用不上 —— 因为敌人就在那儿，走到了就停。
+##   所以「不拴」和「拴 0.6」是同一件事，不存在「放开就跑没影」。
+## - **松开之后近战反而更能打**（出手 2.4 → 2.9，整波零输出 7 → 5）：
+##   链子短的时候他被卡在够不着的地方干瞪眼，那正是 M8-c 那条 bug 的
+##   同一个根源。
+##
+## ## 代价：慢档多红一条，归数值回归
+##
+## `test_balance_scan.gd` 那条「装备算不算金币坑」**从绿变红**
+## （整局买到的配件数 2.8，要 > 5），慢档红 2 → 3。
+##
+## 但同一次扫描里另外两个数是**变好**的：`rational` 流派多撑了 4 波
+## （102 → 106），上经济位那条 194 → 198。三个数不同向，说明松绳动的
+## 不是某一个环节，而是整条「输出 → 金币 → 装备」的链子 ——
+## 那正是数值回归要一起扫的东西，别为了这一条把链子拴回去。
+##
+## 拴 0.22 那一档更差（配件 0.4、`rational` 掉到 89 波），
+## 所以「短链子」不是这条红的解。
+##
+## ## 字段留着，因为一个数就能收回来
+##
+## 和 [member PBStrategy.field_policy] 同一条：机制还在（[PBMoveRules] 那套
+## 钳位一行没删），只是默认值让它不生效。填回一个正数就恢复原样，
+## 而 `tests/test_unit_ai.gd` 里那几条仍然显式设着值在测它。
+##
+## ## 填了正数的话，两条约束还钉着（`tests/test_unit_ai.gd`）
+##
+## 1. **够得着停下来的远程敌人**：`leash_distance() + reach_melee ≥
+##    enemy_reach_ranged`。不满足的话一队全近战会站在原地被点名到死（M5-7 实测）。
+## 2. **玩家点名要能「开打后越过中线」**：`column_front + leash_distance() ≥
+##    deploy_limit_x`。
+var unit_leash: float = 0.0
 
 ## 两个单位之间至少留多远。**两边共用一个数** —— 己方和敌人挤在一起时，
 ## 玩家看到的是同一件事，没有理由分两档。
@@ -819,6 +876,29 @@ func field_diagonal() -> float:
 	return Vector2(field_length + staging, field_height).length()
 
 
+## 这一局的皮带绳实际有多长。**[member unit_leash] 填 0 就是「不拴」**，
+## 在这里落成覆盖全场的 [method field_diagonal]（M8-d，玩家定的）。
+##
+## ## 为什么是 0 而不是一个大数
+##
+## 「不拴」是一个**状态**，不是一个刻度上的极端值。写成 `99.0` 的话，
+## 读表的人分不出「作者要放开」和「作者拍了个大数」——
+## 而 [PBRunState] 那几个字段（`formation` 空 = 自动站位、`lineup` 空 =
+## 自动排）早就是这个约定了。
+##
+## ## 为什么落成 `field_diagonal` 而不是在钳位那边加分支
+##
+## [PBMoveRules] 里有三处读这个长度（[method PBMoveRules.leash_for] 的两道
+## 门槛、[method PBMoveRules.close_in] 的钳位、[method PBMoveRules.press_forward]
+## 的上限），[method PBBattleSim._nearest_enemy] 还有第四处（`leash + reach`
+## 那个「守得住的范围」）。四处各加一个「没拴就跳过」的分支，就是四个
+## 能各自写错的地方 —— 而写错的表现是「有时候他还是被拽回去」。
+##
+## 落成一个够大的距离之后，那四处的算术**恒真且一字不改**。
+func leash_distance() -> float:
+	return unit_leash if unit_leash > 0.0 else field_diagonal()
+
+
 ## 第 [param slot] 个敌人出生在哪条泳道上。
 ##
 ## **不掷骰** —— 同一个种子的两次回放必须长得一样（§13 的战报回放）。
@@ -842,6 +922,19 @@ func enemy_start_x(slot: int) -> float:
 
 ## 第 [param slot] 个敌人是不是远程（§02，M4-c）。
 ##
+## 起手要几 tick。一段动画摊在一个攻击间隔上，出手前那几帧就是这么多。
+##
+## **钳在 `interval - 1` 以内**：等于间隔的话，起手还没演完下一发就该出了，
+## 而那时 `next_shot_at` 会追不上自己 —— 表现是这个人再也打不出第二发。
+func windup_ticks(interval_ticks: int) -> int:
+	var frames: int = maxi(anim_frames, 1)
+	var hit: int = clampi(attack_hit_frame, 1, frames)
+	var interval: int = maxi(interval_ticks, 1)
+	return clampi(
+		roundi(float(interval) * float(hit - 1) / float(frames)), 0, maxi(interval - 1, 0)
+	)
+
+
 ## 每十个里固定前几个是远程，理由见 [member enemy_ranged_share]。
 ## 取模而不是比例乘法，是为了让**任何波次数量**下的比例都稳定 ——
 ## 按 `slot < count × share` 分的话，潮水波的远程全挤在队头，

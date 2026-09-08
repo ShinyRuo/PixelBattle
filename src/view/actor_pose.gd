@@ -60,6 +60,20 @@ var state: int = State.IDLE
 ## 忍者站在 x 小的那一侧、敌人从 x 大的那一侧来，所以两边的默认朝向相反。
 var facing: int = FACE_RIGHT
 
+## **这一帧是一次新挥击的起点**（M9-e）。池子看见它就把动画拨回第 0 帧。
+##
+## ## 为什么非要有这么一个信号
+##
+## [method AnimatedSprite2D.play] 对**已经在播的同一段**什么都不做，
+## 而攻击状态在交战期间是连着的（起手 + 收招正好铺满一个攻击间隔）——
+## 于是动画只在「上一遍演完了」时重来，也就是**按它自己的周期自由循环，
+## 和出手那一 tick 没有任何同步关系**。
+##
+## 两个周期长度相同（都等于攻击间隔），所以相位一旦对不上就**永远对不上**，
+## 而画面上看起来只是「子弹在动作开头就射出去了」——正是玩家报的那一条。
+var swing_began: bool = false
+
+var _was_winding: bool = false
 var _prev_pos: Vector2 = Vector2.INF
 var _prev_shot: int = -1
 var _attack_left: int = 0
@@ -91,6 +105,18 @@ static func holds_last(state_now: int) -> bool:
 	return state_now == State.DEAD
 
 
+## 起手占几**渲染帧**。M9-e。
+##
+## [param windup_ticks] 是 sim 那边的起手长度（[member PBAttacker.windup_ticks]），
+## [param per_tick] 是一 tick 摊几个渲染帧。
+##
+## **这个数来自 sim，不是从动画量出来的。** 出手落在第几帧是
+## [member PBSimConfig.attack_hit_frame] 一处说了算 —— 渲染层再量一遍的话
+## 就是第二把尺子，而两边差几帧的表现是「子弹比挥手早半拍」。
+static func windup_frames(windup_ticks: int, per_tick: float) -> int:
+	return maxi(roundi(float(windup_ticks) * maxf(per_tick, 0.0001)), 0)
+
+
 ## 复位到 [param at]，默认朝 [param face]。上场、开波、换人时调。
 ##
 ## [member _prev_shot] 要一起清掉：不清的话开波那一下
@@ -102,6 +128,8 @@ func reset(at: Vector2, face: int) -> void:
 	_prev_shot = -1
 	_attack_left = 0
 	_move_left = 0
+	_was_winding = false
+	swing_began = false
 
 
 ## 推进一帧。
@@ -112,8 +140,58 @@ func reset(at: Vector2, face: int) -> void:
 ## 表示「没有目标，照移动方向看」，站着不动时保持原朝向。
 ## [param attack_hold] 是攻击动画该占几帧，由攻击间隔换算（见
 ## [method PBAllyPool._hold_frames]）。
+##
+## ## [param in_range]：他这一刻够不够得着（M8-e）
+##
+## **没有默认值是故意的。** 漏传的表现正是这条参数要修的那个 bug ——
+## 一边挥手一边滑行，而它不报错（同 [method PBEnemy.take_damage] 的 tick）。
+##
+## ## 为什么需要它
+##
+## [param attack_hold] 是**一整个攻击间隔**（那是有意的：攻速 0.85 和 4 差
+## 五倍，写死时长两头都不对）。于是「刚出过一手」这个状态一直挂到下一手，
+## 而 sim 在这段时间里完全可能已经让他跑起来了 —— 目标死了、切到下一个、
+## 那个够不着，[method PBBattleSim._move_attackers] 就开始挪他。
+##
+## 画面上是**挥着手滑行**。实测（20 波）：56% 的 tick 在播攻击段，
+## 其中 13% 人在挪，而那 13% 里 **74% 是真在走路**（位移 ≥ 半步），
+## 不是防挤推的抖动。
+##
+## ## 为什么判据是「够不够得着」，不是「挪没挪」
+##
+## 挪没挪要拿位移大小去猜，而防挤一 tick 能推 0.006、真走路一 tick 是
+## 0.0083 —— **两个数分不开**，阈值取在哪都会错一边：高了滑行照旧，
+## 低了站着打的人被防挤推一下就闪出一段跑步动画。
+##
+## 而 sim 早就算过这件事了：[method PBBattleSim._move_attackers] 里
+## 「够得着就 `continue`」那一句就是「他在打还是在走」的**真相**。
+## 渲染层直接问那个结论，两边因此不可能分叉。
+## 己方传 `can_reach(aim_at)`（见 [method PBAllyPool._in_range]），
+## 敌人传 [member PBEnemy.engaged] —— 那是敌人那一侧的同一句话。
+##
+## ## [param swinging] / [param windup]：起手（M9-e）
+##
+## 起手是 sim 那边的一个**状态**：冷却转好 + 射程内有人 → 抬手，
+## [member PBAttacker.windup_ticks] 之后伤害才落地。这边照着它起跑，
+## 命中那一帧因此正好落在出手的 tick 上。
+##
+## [param swinging] 直接读 sim 的 [member PBAttacker.swinging] ——
+## **不在这边拿 `next_shot_at` 反推**。反推的那一版错在：起手占了半个间隔时，
+## 「离下一发还有多远」在收招期间和起手期间是同一个数，两段分不开，
+## 于是动画再也没有重新起跑的时刻。
+##
+## [param windup] 是起手占几帧（[method windup_frames]），只用来算收招还剩多长。
+## [param swinging] 给 false、[param windup] 给 0 就退回 M9-e 之前的样子。
 func update(
-	at: Vector2, alive: bool, shot_at: int, casting: bool, look_at: float, attack_hold: int
+	at: Vector2,
+	alive: bool,
+	shot_at: int,
+	casting: bool,
+	look_at: float,
+	attack_hold: int,
+	in_range: bool,
+	swinging: bool = false,
+	windup: int = 0
 ) -> void:
 	if _prev_pos == Vector2.INF:
 		_prev_pos = at
@@ -126,9 +204,19 @@ func update(
 	elif _move_left > 0:
 		_move_left -= 1
 
+	# **上升沿：抬手那一帧。** sim 那边冷却转好 + 射程内有人就抬手
+	# （[method PBAttacker.begin_swing]），这边照着它起跑。
+	# 持续为真的话每帧都会把动画拨回第 0 帧，持续为真的话每帧都会把动画拨回第 0 帧，
+	# 人就永远停在起手那一格上。
+	swing_began = swinging and not _was_winding
+	_was_winding = swinging
+
 	# 第一帧不算出手：那时手上还没有「上一次是第几 tick」这个参照。
 	if _prev_shot >= 0 and shot_at > _prev_shot:
-		_attack_left = maxi(attack_hold, 1)
+		# 出手了，剩下的是收招。**减掉起手那一段** —— 不减的话每一手都会
+		# 占满一整个间隔再加上起手，两手之间的攻击段首尾相接，
+		# 人从此再也回不到待机。
+		_attack_left = maxi(attack_hold - windup, 1)
 	elif _attack_left > 0:
 		_attack_left -= 1
 	_prev_shot = shot_at
@@ -141,7 +229,10 @@ func update(
 		_move_left = 0
 	elif casting:
 		state = State.CAST
-	elif _attack_left > 0:
+	elif (swinging or _attack_left > 0) and in_range:
+		# **够不着就不算在打**（M8-e）—— 见 [param in_range] 那段。
+		# 倒计时**不清零**：他跑到位之后要么立刻出新的一手（那会重置它），
+		# 要么还没到，而中途清掉只会让「打—跑—打」多一次无谓的状态跳变。
 		state = State.ATTACK
 	elif _move_left > 0:
 		state = State.RUN

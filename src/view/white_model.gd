@@ -138,7 +138,18 @@ static func ally() -> PBActorSkin:
 		&"attack",
 		FPS_ATTACK,
 		false,
-		[_ally_frame(1, -2, 2), _ally_frame(0, 2, 11), _ally_frame(0, 1, 6)]
+		# **六帧，伸得最远那一帧排在第 4 格**（M9-e）：出手落在
+		# [member PBSimConfig.attack_hit_frame]，前三帧是起手、后两帧是收招。
+		# 白模是代码画的，所以直接画到 6 帧 —— 不靠
+		# [method PBActorSkin.hold_last_to] 补，那条是给人手挑的素材兜底的。
+		[
+			_ally_frame(1, -2, 2),
+			_ally_frame(1, -1, 3),
+			_ally_frame(0, 0, 5),
+			_ally_frame(0, 2, 11),
+			_ally_frame(0, 1, 7),
+			_ally_frame(0, 1, 4),
+		]
 	)
 	_add(frames, &"cast", FPS_IDLE, true, [_ally_frame(3, 0, 4), _ally_frame(4, 0, 4)])
 	_add(frames, &"dead", FPS_IDLE, false, [_ally_dead()])
@@ -147,18 +158,36 @@ static func ally() -> PBActorSkin:
 	return _ally
 
 
-## 某一系敌人的白模。[param sides] 走 [constant PBEnemyPool.ELEMENT_SIDES]。
-static func enemy(sides: int) -> PBActorSkin:
-	var key: int = maxi(sides, 3)
+## 某一系、某一档敌人的白模。[param sides] 走 [constant PBEnemyPool.ELEMENT_SIDES]，
+## [param bulk] 走 [constant PBEnemyPool.RANK_BULK]（M9-c）。
+##
+## ## 为什么白模也要按档次分大小
+##
+## 30 种真素材要一张张接进来，而在那之前**屏幕上必须已经分得出档次** ——
+## 否则「这一波是精英波」这件事今天没有任何一处看得见，
+## 接素材时也就没有东西可以对照着验。
+##
+## 大小是这里唯一能表达档次的东西：形状那一维已经被属性占满了
+## （[constant PBEnemyPool.ELEMENT_SIDES]，§02 要求去色后仍能凭剪影分五系），
+## 再拿它区分档次就会和属性撞车。
+static func enemy(sides: int, bulk: float = 1.0) -> PBActorSkin:
+	# **画布尺寸进缓存键。** 只用 `sides` 的话，先取到的那一档会把后面
+	# 全部档次都变成它自己的大小 —— 而每一帧看起来都完全正常。
+	var key := Vector2i(maxi(sides, 3), maxi(roundi(bulk * 100.0), 1))
 	if _enemies.has(key):
 		return _enemies[key]
+	var span: int = maxi(roundi(float(ENEMY_CANVAS) * bulk), ENEMY_CANVAS)
+	# 画布必须是偶数：脚坐在底边**中点**上，奇数宽的话中点落在半个像素上，
+	# 而人会永远偏半格（同 [method PBActorForge.fit_canvas] 最后那一步）。
+	span += span % 2
+	var radius: float = ENEMY_RADIUS * bulk
 	var frames := SpriteFrames.new()
 	_add(
 		frames,
 		&"idle",
 		FPS_IDLE,
 		true,
-		[_enemy_frame(key, 0, 1.0), _enemy_frame(key, 1, 0.96)]
+		[_enemy_frame(key.x, span, radius, 0, 1.0), _enemy_frame(key.x, span, radius, 1, 0.96)]
 	)
 	_add(
 		frames,
@@ -166,10 +195,10 @@ static func enemy(sides: int) -> PBActorSkin:
 		FPS_RUN,
 		true,
 		[
-			_enemy_frame(key, 0, 1.0),
-			_enemy_frame(key, 2, 0.94),
-			_enemy_frame(key, 0, 1.0),
-			_enemy_frame(key, 2, 1.06),
+			_enemy_frame(key.x, span, radius, 0, 1.0),
+			_enemy_frame(key.x, span, radius, 2, 0.94),
+			_enemy_frame(key.x, span, radius, 0, 1.0),
+			_enemy_frame(key.x, span, radius, 2, 1.06),
 		]
 	)
 	_add(
@@ -177,11 +206,36 @@ static func enemy(sides: int) -> PBActorSkin:
 		&"attack",
 		FPS_ATTACK,
 		false,
-		[_enemy_frame(key, 1, 0.88), _enemy_frame(key, 0, 1.22), _enemy_frame(key, 0, 1.0)]
+		# **六帧，扑得最开那一帧排在第 4 格**（M9-e），同己方那一段。
+		[
+			_enemy_frame(key.x, span, radius, 1, 0.86),
+			_enemy_frame(key.x, span, radius, 1, 0.92),
+			_enemy_frame(key.x, span, radius, 0, 1.02),
+			_enemy_frame(key.x, span, radius, 0, 1.22),
+			_enemy_frame(key.x, span, radius, 0, 1.08),
+			_enemy_frame(key.x, span, radius, 0, 1.0),
+		]
+	)
+	# **倒地那一段以前根本不存在**（M9-b 补的）：敌人一死节点当帧就藏了，
+	# 所以没有东西可播。现在死亡要演完才消失，缺这一段的表现是
+	# 「怪死了之后原地站着不动几帧再凭空消失」——
+	# [method PBActorSkin.anim_for] 会退回 `idle`，而那不报错。
+	#
+	# 三帧越压越扁、最后一帧不循环停住（[method PBActorPose.holds_last]）。
+	_add(
+		frames,
+		&"dead",
+		FPS_ATTACK,
+		false,
+		[
+			_enemy_frame(key.x, span, radius, 0, 0.86, 1.35),
+			_enemy_frame(key.x, span, radius, 0, 0.62, 1.9),
+			_enemy_frame(key.x, span, radius, 0, 0.42, 2.4),
+		]
 	)
 	frames.remove_animation(&"default")
 	# 高度按多边形的上沿算，血条那套敌人用不上，但落点预示与选中框要用。
-	var skin := _skin(&"_white_enemy_%d" % key, frames, ENEMY_RADIUS * 2.0 + 1.0)
+	var skin := _skin(&"_white_enemy_%d_%d" % [key.x, key.y], frames, radius * 2.0 + 1.0)
 	_enemies[key] = skin
 	return skin
 
@@ -304,17 +358,23 @@ static func _s(value: int) -> int:
 
 
 ## 一帧敌人白模：一个 [param sides] 边形，抬 [param lift]、缩放 [param scale]。
-static func _enemy_frame(sides: int, lift: int, scale: float) -> Image:
-	var image := _blank(ENEMY_CANVAS)
-	var radius: float = ENEMY_RADIUS * scale
-	var centre := Vector2(ENEMY_CANVAS * 0.5, float(ENEMY_CANVAS) - 1.0 - radius - float(lift))
+##
+## [param squash] 是纵向压扁的倍数（倒地那一段用）—— 横着摊开、贴着底边，
+## 而**不是**整体缩小：缩小看起来像「走远了」，压扁才像「倒下了」。
+static func _enemy_frame(
+	sides: int, span: int, radius: float, lift: int, scale: float, squash: float = 1.0
+) -> Image:
+	var image := _blank(span)
+	var rx: float = radius * scale * squash
+	var ry: float = radius * scale / maxf(squash, 0.0001)
+	var centre := Vector2(span * 0.5, float(span) - 1.0 - ry - float(lift))
 	var shape := PackedVector2Array()
 	for i: int in sides:
 		# -PI/2 让第一个顶点朝上，和 [method PBEnemyPool._shape_for] 同一条规矩。
 		var angle: float = -PI / 2.0 + TAU * float(i) / float(sides)
-		shape.append(centre + Vector2(cos(angle), sin(angle)) * radius)
-	for y: int in ENEMY_CANVAS:
-		for x: int in ENEMY_CANVAS:
+		shape.append(centre + Vector2(cos(angle) * rx, sin(angle) * ry))
+	for y: int in span:
+		for x: int in span:
 			if Geometry2D.is_point_in_polygon(Vector2(x + 0.5, y + 0.5), shape):
 				image.set_pixel(x, y, Color.WHITE)
 	_shade(image)

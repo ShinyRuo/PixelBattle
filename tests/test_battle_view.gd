@@ -166,25 +166,36 @@ func test_wave_preview_has_no_side_effects() -> void:
 
 
 func test_coverage_counts_what_the_roster_can_counter() -> void:
-	# §03：「当前阵容对下一波的克制覆盖：2/5，风系空缺」
+	# §03：「当前阵容对下一波的克制覆盖：2/6，风系空缺」
+	#
+	# **数的是一个完整轮转周期里有几波你没有克星**，所以 M9-f 把物理加进轮转
+	# 之后每个数都多 1 —— 物理波的克星是物理系自己（[method PBElement.counter_of]
+	# 的兜底分支），空卡池连它也没有。
 	var cfg := PBSimConfig.new()
 	var state := PBRunState.new()
-	assert_eq(state.missing_counters().size(), 5, "空卡池应该五系全缺")
+	var cycle: int = PBWaveRules.WAVE_ELEMENTS.size()
+	assert_eq(state.missing_counters().size(), cycle, "空卡池应该整个周期全缺")
 
 	# 火克风，所以持有火系就能覆盖「风」那一波。
 	state.add_unit(PBUnit.of(cfg, PBElement.Type.FIRE, PBUnit.Rarity.R))
-	assert_eq(state.missing_counters().size(), 4, "有火系之后应该只缺四系")
+	assert_eq(state.missing_counters().size(), cycle - 1, "有火系之后应该少缺一波")
 	assert_true(state.can_counter(PBElement.Type.WIND), "火克风")
 	assert_false(state.can_counter(PBElement.Type.FIRE), "火不克火")
 
 	for element: int in PBElement.RING:
 		state.add_unit(PBUnit.of(cfg, element as PBElement.Type, PBUnit.Rarity.R))
-	assert_eq(state.missing_counters().size(), 0, "五系齐了应该零空缺")
+	assert_eq(state.missing_counters().size(), 1, "五系齐了只该剩物理波没人对付")
+
+	state.add_unit(PBUnit.of(cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.R))
+	assert_eq(state.missing_counters().size(), 0, "补上物理系之后才是零空缺")
 
 
-func test_physical_units_never_count_as_coverage() -> void:
-	# 物理不参与克制环（§03），堆再多也覆盖不了任何一系。
+func test_physical_units_only_cover_the_physical_wave() -> void:
+	# 物理不参与克制环（§03），堆再多也覆盖不了**五系中的任何一系**。
 	# 这正是「纯物理阵容极限波次 < 五系的 70%」那条验收的由来。
+	#
+	# **它覆盖得了物理波**（M9-f）：那一波的克星就是物理自己，
+	# 而这是物理系在整个轮转里唯一有优势的一格。
 	var cfg := PBSimConfig.new()
 	var state := PBRunState.new()
 	for variant: int in 2:
@@ -192,7 +203,8 @@ func test_physical_units_never_count_as_coverage() -> void:
 			state.add_unit(
 				PBUnit.of(cfg, PBElement.Type.PHYSICAL, rarity as PBUnit.Rarity, variant)
 			)
-	assert_eq(state.missing_counters().size(), 5, "纯物理卡池应该五系全缺")
+	assert_eq(state.missing_counters().size(), PBElement.RING.size(), "纯物理卡池应该五系全缺")
+	assert_true(state.can_counter(PBElement.Type.PHYSICAL), "物理卡池对付得了物理波")
 
 
 func test_same_seed_reproduces_the_same_wave() -> void:

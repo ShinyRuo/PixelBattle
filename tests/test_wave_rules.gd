@@ -1,9 +1,12 @@
 extends GutTest
 ## [PBWaveRules] 的波次生成测试。对应施工策划案 §04。
 
-## §04 的轮转表原样搬过来：波次 mod 5 → 敌方属性 / 需要的输出 / 废掉的输出。
+## §04 的轮转表原样搬过来：波次 mod 6 → 敌方属性 / 需要的输出 / 废掉的输出。
 ## 三列一起验的理由：属性轮转、克星查询、被克判定是三段独立代码，
 ## 单验任何一段都可能「自洽地全错」。用策划案的表当外部真值才拦得住。
+##
+## **物理那一行只有两列**（M9-f）：它不废掉任何一系，见
+## [method test_the_physical_wave_has_no_counter_and_wastes_nobody]。
 const ROTATION := [
 	{
 		"mod": 1,
@@ -30,10 +33,17 @@ const ROTATION := [
 		"dead": PBElement.Type.WATER
 	},
 	{
-		"mod": 0,
+		"mod": 5,
 		"enemy": PBElement.Type.WIND,
 		"want": PBElement.Type.FIRE,
 		"dead": PBElement.Type.THUNDER
+	},
+	# 物理波：没有克星（[method PBElement.counter_of] 的兜底分支答它自己），
+	# 也不废掉任何一系 —— 所以这一行没有 `dead`。
+	{
+		"mod": 0,
+		"enemy": PBElement.Type.PHYSICAL,
+		"want": PBElement.Type.PHYSICAL,
 	},
 ]
 
@@ -49,12 +59,18 @@ func before_each() -> void:
 
 func test_wave_element_rotation_matches_spec_table() -> void:
 	# 连查 3 个周期，确保轮转真的在循环而不是只对了第一圈。
-	for wave: int in range(1, 16):
-		var row: Dictionary = ROTATION[(wave - 1) % 5]
+	# **按数组长度取模，不写死** —— M9-f 把周期从 5 改成了 6，
+	# 写死的那一版会在物理进来的那天整体错位一格。
+	var cycle: int = PBWaveRules.WAVE_ELEMENTS.size()
+	assert_eq(ROTATION.size(), cycle, "轮转表和 WAVE_ELEMENTS 的长度必须一致")
+	for wave: int in range(1, cycle * 3 + 1):
+		var row: Dictionary = ROTATION[(wave - 1) % cycle]
 		assert_eq(
 			PBWaveRules.element_of(wave), row["enemy"], "第 %d 波敌方属性应为 %s" % [wave, row["mod"]]
 		)
 		assert_eq(PBWaveRules.counter_element_of(wave), row["want"], "第 %d 波需要的输出属性对不上" % wave)
+		if not row.has("dead"):
+			continue
 		assert_eq(
 			PBElement.relation(row["dead"], row["enemy"]),
 			PBElement.Relation.WEAK,
@@ -62,13 +78,42 @@ func test_wave_element_rotation_matches_spec_table() -> void:
 		)
 
 
+## 物理波是克制系统的空档（M9-f，玩家定的）。
+##
+## 单独一条而不是塞进上面那张表：表里第三列问的是「哪一系被废掉」，
+## 而物理波的答案是**一个都没有** —— 那不是表里的一个值，是这一行没有那一列。
+func test_the_physical_wave_has_no_counter_and_wastes_nobody() -> void:
+	assert_true(
+		PBWaveRules.WAVE_ELEMENTS.has(int(PBElement.Type.PHYSICAL)), "物理应该在轮转里（M9-f）"
+	)
+	for attacker: int in PBElement.RING:
+		assert_eq(
+			PBElement.relation(attacker as PBElement.Type, PBElement.Type.PHYSICAL),
+			PBElement.Relation.NEUTRAL,
+			"物理波不该克制也不该被克制任何一系"
+		)
+	assert_eq(
+		PBElement.relation(PBElement.Type.PHYSICAL, PBElement.Type.PHYSICAL),
+		PBElement.Relation.PHYSICAL,
+		"物理忍者打物理波仍然走物理那一档 —— 那是他在这一波唯一的优势"
+	)
+
+
 func test_full_five_element_coverage_needed_per_cycle() -> void:
-	# §04 的核心主张：每 5 波要求的输出属性恰好覆盖全部五系，
-	# 所以玩家不可能靠单系阵容混过一个完整周期。
+	# §04 的核心主张：一个完整周期要求的输出属性恰好覆盖全部五系，
+	# 所以玩家不可能靠单系阵容混过一个周期。
+	#
+	# **M9-f 之后周期是 6 波，多出来的那一格是物理**（物理波的「克星」是物理
+	# 自己）—— 所以这里断言的是「五系一个不少，外加物理那一格」，
+	# 而不是把答案数改成 6 就算完：只数个数的话，某一系掉出轮转
+	# 而物理重复两次也照样是 6。
 	var needed := {}
-	for wave: int in range(1, 6):
+	for wave: int in range(1, PBWaveRules.WAVE_ELEMENTS.size() + 1):
 		needed[PBWaveRules.counter_element_of(wave)] = true
-	assert_eq(needed.size(), 5, "一个 5 波周期应要求全部五系输出，否则阵容会固化")
+	for element: int in PBElement.RING:
+		assert_true(needed.has(element), "一个周期应要求全部五系输出，否则阵容会固化")
+	assert_true(needed.has(int(PBElement.Type.PHYSICAL)), "物理波要求的是物理系输出")
+	assert_eq(needed.size(), PBElement.RING.size() + 1, "一个周期要求的输出属性应恰好是五系 + 物理")
 
 
 func test_growth_scale_starts_at_one_and_compounds() -> void:

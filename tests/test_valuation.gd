@@ -42,6 +42,22 @@ func _shuffled(units: Array[PBUnit], rng: RandomNumberGenerator) -> Array[PBUnit
 	return out
 
 
+## 「另一种排法没有赢」—— 允许最后几位的误差。
+##
+## ## 为什么不能用严格的 `>=`（M9-f 撞上的）
+##
+## 物理波（M9-f 加进轮转的那一格）上**没有任何一系被克制**，于是
+## 「按有效战力排」和「按裸战力排」选出的是**同一批人**，只是顺序不同 ——
+## 而浮点求和的顺序会改变最后几位（实测差 −4.5e-13）。
+## 严格 `>=` 在那一波量的是加法结合律，不是这条测试要守的结论。
+##
+## 容差取相对值而不是一个绝对数：这些 DPS 在几千的量级，
+## 而卡池一变就是另一个量级，写死的 `1e-9` 迟早在某个量级下变成
+## 「什么都拦不住」或者「一直红」。
+func _not_beaten(best: float, other: float, message: String) -> void:
+	assert_gte(best, other - 1e-9 * maxf(absf(best), 1.0), message)
+
+
 func test_picking_by_effective_power_is_strictly_optimal() -> void:
 	# **这条是「阵容面板只展示、不让玩家自由选人」那个决定的依据。**
 	#
@@ -70,16 +86,16 @@ func test_picking_by_effective_power_is_strictly_optimal() -> void:
 		)
 
 		var by_raw := PBValuation.deployed_by_raw_power(state, _cfg)
-		assert_gte(best, PBValuation.dps_of(by_raw, element, state, _cfg), "按裸战力排不该更强")
+		_not_beaten(best, PBValuation.dps_of(by_raw, element, state, _cfg), "按裸战力排不该更强")
 
 		var reversed: Array[PBUnit] = state.field_units(_cfg)
 		reversed.reverse()
 		var tail := reversed.slice(0, slots)
-		assert_gte(best, PBValuation.dps_of(tail, element, state, _cfg), "倒序排不该更强")
+		_not_beaten(best, PBValuation.dps_of(tail, element, state, _cfg), "倒序排不该更强")
 
 		for _try: int in 5:
 			var sample := _shuffled(state.field_units(_cfg), rng).slice(0, slots)
-			assert_gte(best, PBValuation.dps_of(sample, element, state, _cfg), "随便排不该更强")
+			_not_beaten(best, PBValuation.dps_of(sample, element, state, _cfg), "随便排不该更强")
 
 
 func test_rotation_is_worth_more_when_the_roster_covers_the_counter() -> void:

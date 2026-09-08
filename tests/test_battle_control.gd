@@ -23,6 +23,12 @@ func before_each() -> void:
 	_cfg = PBSimConfig.new()
 	_cfg.field_height = 0.0
 	_cfg.spawn_window = 0.0
+	# **关掉起手**（M9-e），同 `test_projectile.gd` 那一条。这个文件量的是
+	# 「**谁**挨打」—— 点名的那个优先、够不着就自动接管。而起手把每一发
+	# 推后半个攻击间隔，于是「跑 N tick 之后他该掉血了」全部要跟着挪，
+	# 那样改出来的断言测的就不再是点名这件事了。
+	# 出手时刻本身由 `test_actor_pose.gd` 那几条钉着。
+	_cfg.attack_hit_frame = 1
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = FIXED_SEED
 

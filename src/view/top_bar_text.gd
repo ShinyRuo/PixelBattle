@@ -85,12 +85,15 @@ static func preview(
 	var keys: String = KEYS_BATTLE % ("开" if auto_play else "关")
 	if preparing and not auto_play:
 		keys = KEYS_PREPARE
+	# **分母也要问那个数组。** 分子是算出来的、分母写死 5 的话就是两把尺子 ——
+	# M9-f 把物理加进轮转之后，那一版会显示「克制覆盖 6/5」。
 	return (
-		"下一波：%s %s　　克制覆盖 %d/5（%s）　　%s"
+		"下一波：%s %s　　克制覆盖 %d/%d（%s）　　%s"
 		% [
 			PBUnitTile.ELEMENT_NAMES.get(next.element, "?"),
 			PBUnitTile.SHAPE_NAMES.get(next.shape, "?"),
 			covered,
+			PBWaveRules.WAVE_ELEMENTS.size(),
 			_gap(missing),
 			keys,
 		]

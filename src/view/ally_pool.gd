@@ -178,7 +178,15 @@ func sync_allies(
 			continue
 		var at := PBLayout.to_screen(attacker.pos, field)
 		var unit: PBUnit = units[attacker.slot] if attacker.slot < units.size() else null
-		_place(shown, at, attacker, unit, _look_x(attacker, enemies), current_tick)
+		_place(
+			shown,
+			at,
+			attacker,
+			unit,
+			_look_x(attacker, enemies),
+			current_tick,
+			_in_range(attacker, enemies)
+		)
 		# 死人不留影子 —— 人已经躺下了，一个还站在地上的影子会让人
 		# 以为他还在那儿挡着。
 		if attacker.alive:
@@ -281,7 +289,8 @@ func _place(
 	attacker: PBAttacker,
 	unit: PBUnit,
 	look_x: float,
-	current_tick: int
+	current_tick: int,
+	in_range: bool
 ) -> void:
 	_anchors[index].position = at
 	var skin := _dress(index, unit)
@@ -293,7 +302,17 @@ func _place(
 	var cast := _pending_cast(attacker)
 	var hold: int = _hold_frames(attacker.attack_interval())
 	var pose: PBActorPose = _poses[index]
-	pose.update(attacker.pos, attacker.alive, attacker.next_shot_at, cast != null, look_x, hold)
+	pose.update(
+		attacker.pos,
+		attacker.alive,
+		attacker.next_shot_at,
+		cast != null,
+		look_x,
+		hold,
+		in_range,
+		attacker.swinging,
+		PBActorPose.windup_frames(attacker.windup_ticks, _frames_per_tick)
+	)
 
 	var fit: float = 1.0
 	var anim: StringName = skin.anim_for(pose.state)
@@ -304,7 +323,7 @@ func _place(
 		# M6-b 就建好了，但在 [member PBSkill.id] 之前**没有键可查** ——
 		# §09 的功能档与 §11 的尾兽大招共用一套实现，区别只在这张表里。
 		anim = skin.skill_anim(cast.skill.id)
-	_animate(index, skin, anim, fit, PBActorPose.holds_last(pose.state))
+	_animate(index, skin, anim, fit, PBActorPose.holds_last(pose.state), pose.swing_began)
 
 	if not attacker.alive:
 		sprite.modulate = DEAD_COLOR
@@ -333,6 +352,19 @@ func _place(
 ## **终点直接读 sim 算好的那一个，不在这里重算** —— 和 [PBAimLines]
 ## 那条绿线同一个理由：点名、射程、出场时刻、死活四个条件漏抄一个，
 ## 人就背对着他正在打的敌人，而且不报错。
+## 他这一刻够不够得着他要打的那个（[member PBAttacker.aim_at]）。
+##
+## **这是「在打还是在走」的判据**，见 [method PBActorPose.update] 的
+## `in_range` 那段。读的是 sim 已经算好的结论，不在渲染层拿位移大小去猜 ——
+## 猜的话防挤的抖动（一 tick 0.006）和真走路（0.0083）分不开。
+##
+## 没有目标就是「够不着」：那时他要么在往前压、要么在回家，两样都不是打。
+func _in_range(attacker: PBAttacker, enemies: Array[PBEnemy]) -> bool:
+	if attacker.aim_at < 0 or attacker.aim_at >= enemies.size():
+		return false
+	return attacker.can_reach(enemies[attacker.aim_at].pos())
+
+
 func _look_x(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
 	if attacker.aim_at < 0 or attacker.aim_at >= enemies.size():
 		return NAN
@@ -378,12 +410,22 @@ static func _pending_cast(attacker: PBAttacker) -> PBSkillCast:
 ## `play` 会把它钉死在第一帧，那看起来就是「这个人不会动」）；
 ## 同一段已经演完，那要么再来一遍（攻击段每出一手一遍），要么就停在那儿。
 func _animate(
-	index: int, skin: PBActorSkin, anim: StringName, fit: float, hold_last: bool = false
+	index: int,
+	skin: PBActorSkin,
+	anim: StringName,
+	fit: float,
+	hold_last: bool = false,
+	restart: bool = false
 ) -> void:
 	var sprite: AnimatedSprite2D = _sprites[index]
 	var over: bool = not sprite.is_playing()
 	if sprite.animation != anim or (over and not hold_last):
 		sprite.play(anim)
+	# **一次新挥击从第 0 帧起跑**（M9-e，见 [member PBActorPose.swing_began]）。
+	# 光调 `play` 没用：它对已经在播的同一段什么都不做，而攻击状态在交战期间
+	# 是连着的 —— 不拨回去的话动画按自己的周期自由循环，出手落在第几帧全看运气。
+	if restart and sprite.animation == anim:
+		sprite.set_frame_and_progress(0, 0.0)
 	sprite.speed_scale = _anim_speed * fit
 	sprite.flip_h = _poses[index].facing == PBActorPose.FACE_LEFT
 	if skin.source_faces == PBActorSkin.Facing.LEFT:

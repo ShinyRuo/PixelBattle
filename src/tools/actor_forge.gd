@@ -99,10 +99,13 @@ const TRIM: int = 8
 
 ## 五段的播放参数。`want` 是自动挑要几帧，`pick` 是挑帧策略，见 [method select]。
 const ANIMS: Array = [
-	{"name": &"idle", "fps": 4.0, "loop": true, "want": 2, "pick": "breath"},
-	{"name": &"run", "fps": 10.0, "loop": true, "want": 4, "pick": "cycle"},
-	{"name": &"attack", "fps": 12.0, "loop": false, "want": 3, "pick": "reach"},
-	{"name": &"dead", "fps": 4.0, "loop": false, "want": 1, "pick": "settle"},
+	# **四段都是 6 帧**（M9-e，玩家定的）。出图那一侧是六格图集，正好一格一帧；
+	# 而攻击段尤其不能少：出手落在第 [member PBSimConfig.attack_hit_frame] 帧，
+	# 只导 3 帧的话那一帧根本不存在。
+	{"name": &"idle", "fps": 4.0, "loop": true, "want": 6, "pick": "breath"},
+	{"name": &"run", "fps": 10.0, "loop": true, "want": 6, "pick": "cycle"},
+	{"name": &"attack", "fps": 12.0, "loop": false, "want": 6, "pick": "reach"},
+	{"name": &"dead", "fps": 4.0, "loop": false, "want": 6, "pick": "settle"},
 ]
 
 ## 剪影比对用的小掩码尺寸。按包围盒归一化之后再缩到这么大，
@@ -177,7 +180,7 @@ func extract(video: String, out_dir: String) -> String:
 		return "找不到 ffmpeg。装一个：winget install Gyan.FFmpeg（装完新开一个终端）"
 	if not FileAccess.file_exists(video):
 		return "找不到视频：%s" % video
-	_wipe(out_dir)
+	wipe_frames(out_dir)
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var args: PackedStringArray = [
 		"-v", "error", "-y", "-i", ProjectSettings.globalize_path(video),
@@ -209,32 +212,66 @@ func measure(dir_path: String) -> Array:
 	for file_name: String in names:
 		if not file_name.ends_with(".png"):
 			continue
-		var path: String = "%s/%s" % [dir_path, file_name]
-		var image := Image.load_from_file(path)
-		if image == null:
-			continue
-		var used := image.get_used_rect()
-		if used.size.x <= 0 or used.size.y <= 0:
-			continue
-		out.append(
-			{
-				"path": path,
-				"used": used,
-				"feet_x": _feet_x(image, used),
-				"mask": _mask(image, used),
-			}
-		)
+		var shot := measure_one("%s/%s" % [dir_path, file_name])
+		if not shot.is_empty():
+			out.append(shot)
 	return out
 
 
-## 每一段各自的缩放比。
+## 量一帧。量不出来（读不进、整张全透明）时返回空字典。
 ##
-## **逐段归一化，不是全套用同一个比。** AI 视频每一条里人物大小都不完全一样，
+## **抽出来是为了擦除那条路**（[PBFrameTouch]）：橡皮擦掉地面阴影之后
+## `used` 和 `feet_x` 都变了，而重新扫一遍 97 张图只为了更新手上这一张，
+## 在编辑器里就是「点一下卡半秒」。
+##
+## [method measure] 必须走这一份 —— 各写一份的话「预览里量的」和
+## 「导出时量的」迟早分叉，而那正是这几个数唯一能被看见的地方。
+func measure_one(path: String) -> Dictionary:
+	var image := Image.load_from_file(path)
+	if image == null:
+		return {}
+	var used := image.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return {}
+	return {
+		"path": path,
+		# 这一帧整张画布多大。**不等于 [code]used[/code]** —— 视频路线上它恒是
+		# [constant MID]，而图集路线上每一格是切出来多大就多大（M8-g）。
+		# 预览拿它当固定的缩放基准，见 [method PBForgeCanvas.fit_to]。
+		"size": image.get_size(),
+		"used": used,
+		"feet_x": _feet_x(image, used),
+		"mask": _mask(image, used),
+	}
+
+
+## 每一段的缩放比。
+##
+## **默认逐段归一化**（视频路线）：AI 视频每一条里人物大小都不完全一样，
 ## 用同一个比的话玩家会看到「他一跑起来就长高两像素」——
 ## 而那比「跑动和待机的身高差一点」难看得多。
 ##
-## `dead` 借用 `idle` 的比：人躺着，包围盒高度不是身高。
-func scales(takes: Dictionary) -> Dictionary:
+## `dead` 永远借用 `idle` 的比：人躺着，包围盒高度不是身高。
+##
+## ## [param share_idle]：四段全部借 `idle` 的（图集路线，M8-g）
+##
+## 逐段归一化成立的前提是**这一段里总得有一帧人是站直的** ——
+## [method _reference_height] 量的是包围盒高度，而它只有在人站直时才等于身高。
+## 97 帧的跑动视频里有那么一帧（迈步中间那个直立的瞬间正好落在
+## [constant REF_PERCENTILE] 上），**6 格的跑动图集里没有**：六格全是同一种弓腰姿势，
+## 取最大值也还是弓着的。
+##
+## 实测卡卡西那四张（2048 尺度）：站姿 880，而 `run` 那张最高的一格只有 615。
+## 照自己量的话跑动的他被放大 **43%** —— 而每一帧看起来都很正常，
+## 只是他一跑起来就变大只。
+##
+## 图集那条路因此全部借 `idle`：四张图是同一次生成、同一张参考图，
+## 之间的大小本来就一致（实测跨图集漂移 ±6%，而这里差的是 43%）。
+##
+## **借不到就返回空字典**（[param takes] 里没有 `idle`）：调用方那句
+## `.get(anim, 0.0)` 会拿到 0，而「返回 0 = 说过话了、别往下走」这条路已经在了。
+## 悄悄退回逐段的话，`run` 那一段会不声不响地大四成。
+func scales(takes: Dictionary, share_idle: bool = false) -> Dictionary:
 	var out: Dictionary = {}
 	var idle_scale: float = 1.0
 	for spec: Dictionary in ANIMS:
@@ -248,6 +285,11 @@ func scales(takes: Dictionary) -> Dictionary:
 			idle_scale = scale
 			measured_height = reference * scale
 	out["dead"] = idle_scale
+	if share_idle:
+		if not takes.has("idle"):
+			return {}
+		for anim: String in out:
+			out[anim] = idle_scale
 	return out
 
 
@@ -299,7 +341,16 @@ func fit_canvas(takes: Dictionary, scale_of: Dictionary, chosen: Dictionary) -> 
 ## 最底那排鞋底只有薄薄一条，面积平均之后 alpha 掉到 [constant ALPHA_CUT]
 ## 以下，整排被切掉了，**而所有数字看起来都完全正确**
 ## （实测：预览台上画布框贴着地面线，人却悬空）。
-func compose(shot: Dictionary, scale: float) -> Image:
+##
+## ## 手动偏移（[param nudge]）
+##
+## 单位是**成品像素**，含义是「把人在画布里再挪这么多」（正 x 往右、正 y 往下）。
+## 自动量出来的脚底中点只对「两只脚并拢站着」最准，跑动那几帧一前一后
+## 会左右晃一两格 —— 那一两格靠这个补。
+##
+## **不用中间帧像素**：那边一格到了成品上不足半格，按一下方向键屏幕上
+## 可能一动不动，表现是「这个按钮好像是坏的」。
+func compose(shot: Dictionary, scale: float, nudge := Vector2i.ZERO) -> Image:
 	var factor: float = 1.0 / maxf(scale, 0.0001)
 	var work := Vector2i(
 		maxi(roundi(float(canvas.x) * factor), 1), maxi(roundi(float(canvas.y) * factor), 1)
@@ -311,11 +362,17 @@ func compose(shot: Dictionary, scale: float) -> Image:
 	var source := Image.load_from_file(shot["path"])
 	if source == null:
 		return image
-	image.blit_rect(source, Rect2i(Vector2i.ZERO, MID), at)
+	# **按源帧自己的尺寸取，不是按 [constant MID]**（M8-f）。
+	# 那个常量是**视频**那条路中间帧的尺寸（960×540），而图集切出来的格子
+	# 各有各的大小 —— 照 MID 裁的话，比它高的那些帧下半截会被直接丢掉，
+	# 也就是**脚没了**，而画布、对齐、坐标全部看起来完全正确。
+	#
+	# 对视频那条路这一句**逐位等价**：那边的源帧本来就正好是 MID。
+	image.blit_rect(source, Rect2i(Vector2i.ZERO, source.get_size()), at)
 	# 缩放仍在**预乘**空间里做，见类顶部那段。
 	image.resize(canvas.x, canvas.y, Image.INTERPOLATE_LANCZOS)
 	_unpremultiply(image)
-	image = _seat(image)
+	image = _seat(image, nudge)
 	_rim(image)
 	return image
 
@@ -333,7 +390,7 @@ func select(shots: Array, how: String, want: int) -> Array[int]:
 		"reach":
 			return _pick_reach(shots, want)
 		"settle":
-			return _pick_settle(shots)
+			return _pick_settle(shots, want)
 		_:
 			return _pick_breath(shots, want)
 
@@ -531,12 +588,16 @@ func _reference_height(shots: Array) -> float:
 ##
 ## 纵向按最下面那排实心像素，横向按脚底那一截的中点（不是整个包围盒的中点，
 ## 理由同 [method _feet_x]）。
-func _seat(image: Image) -> Image:
+##
+## [param nudge] 是手动偏移，见 [method compose]。**加在这一句 `move` 上**，
+## 而不是事后再平移一次：事后平移要么多裱一张图，要么把已经坐好的脚
+## 又量一遍 —— 两条都会在「正好压着边界」的那些帧上和这里差一格。
+func _seat(image: Image, nudge := Vector2i.ZERO) -> Image:
 	var used := image.get_used_rect()
 	if used.size.x <= 0 or used.size.y <= 0:
 		return image
 	var feet: float = _feet_x(image, used)
-	var move := Vector2i(roundi(float(canvas.x) * 0.5 - feet), canvas.y - used.end.y)
+	var move := Vector2i(roundi(float(canvas.x) * 0.5 - feet), canvas.y - used.end.y) + nudge
 	if move == Vector2i.ZERO:
 		return image
 	var seated := Image.create_empty(canvas.x, canvas.y, false, Image.FORMAT_RGBA8)
@@ -652,10 +713,23 @@ func _pick_cycle(shots: Array, want: int) -> Array[int]:
 	return out
 
 
-## 攻击：**手伸得最远那一帧当第 0 帧**。
+## 攻击：**手伸得最远那一帧排在第 [member PBSimConfig.attack_hit_frame] 格**
+## （M9-e 反过来的），前面留出起手。
 ##
-## 规格里这是硬要求（第 8 节）—— 起手动作占了前两帧的话，游戏里的伤害
-## 结算比画面早半拍，玩家看到的是「先掉血、后挥手」。
+## ## 这条规矩 M9-e 之前是反的
+##
+## 原来是「最远那一帧当第 0 帧」，理由写在规格第 8 节：起手占了前两帧的话，
+## 伤害结算比画面早半拍，玩家看到的是「先掉血、后挥手」。
+##
+## **那个理由只在「出手了才开始播」的前提下成立。** M9-e 之后 sim 那边
+## 真的有了起手（[member PBAttacker.windup_ticks]）：冷却好只是抬手，
+## 伤害要等到第 4 帧才落地。于是前提没了 —— 而把起手全扔掉的代价一直都在：
+## 子弹在动画第一帧出膛，画面上是凭空射出来的。
+##
+## **第几格出手向 [PBSimConfig] 要，不在这里再写一个数** ——
+## 两处各填一个的话，挑帧挑中的那一格和 sim 出手的那一 tick 会对不上，
+## 而画面上一切正常。
+##
 ## 「伸得最远」量的是从脚底中点往右到剪影右沿有多远，所以抬腿不算数。
 func _pick_reach(shots: Array, want: int) -> Array[int]:
 	var hit: int = mini(TRIM, shots.size() - 1)
@@ -666,20 +740,35 @@ func _pick_reach(shots: Array, want: int) -> Array[int]:
 		if reach > far:
 			far = reach
 			hit = i
+	# 把命中帧放到第 `at` 格上，前面留起手、后面留收招。
+	# **够不着开头就往后顺** —— 源片头不够长时宁可少留几帧起手，
+	# 也不能把命中帧挤出去（它是这一段的全部意义）。
+	var at: int = clampi(PBSimConfig.new().attack_hit_frame - 1, 0, maxi(want - 1, 0))
+	var step: int = 3
+	var start: int = maxi(hit - at * step, 0)
 	var out: Array[int] = []
 	for i: int in want:
-		out.append(mini(hit + i * 3, shots.size() - 1))
+		out.append(mini(start + i * step, shots.size() - 1))
+	if not out.has(hit):
+		out[mini(at, out.size() - 1)] = hit
 	return out
 
 
-## 倒地：躺稳之后随便一帧。取最后二十帧里包围盒最矮的那个 ——
-## 人趴下去了，「最矮」就是「躺平了」。
-func _pick_settle(shots: Array) -> Array[int]:
+## 倒地：**以躺稳那一帧结尾**，前面留出倒下的过程（M9-e 起要 6 帧）。
+##
+## 「躺稳」取最后二十帧里包围盒最矮的那个 —— 人趴下去了，「最矮」就是「躺平了」。
+## 只挑那一帧的话（M9-e 之前）倒地段只有一帧，屏幕上是「站着的人瞬间变成一具尸体」。
+func _pick_settle(shots: Array, want: int = 1) -> Array[int]:
 	var best: int = shots.size() - 1
 	for i: int in range(maxi(shots.size() - 20, 0), shots.size()):
 		if (shots[i]["used"] as Rect2i).size.y < (shots[best]["used"] as Rect2i).size.y:
 			best = i
-	var out: Array[int] = [best]
+	var step: int = 2
+	var start: int = maxi(best - (want - 1) * step, 0)
+	var out: Array[int] = []
+	for i: int in want:
+		out.append(clampi(start + i * step, 0, shots.size() - 1))
+	out[out.size() - 1] = best
 	return out
 
 
@@ -729,10 +818,17 @@ func _want_mipmaps(key: String) -> void:
 
 
 ## 清空一个目录里的 png。**不删目录本身** —— 编辑器可能正盯着它。
-func _wipe(dir_path: String) -> void:
+##
+## **子目录要连着清掉**：[PBFrameTouch] 把原帧备份在 `orig/` 里，
+## 留着上一条视频那一份的话，「还原这一帧」会还原成另一个角色的一帧 ——
+## 尺寸对得上（中间帧恒为 [constant MID]），所以它**不报错**。
+func wipe_frames(dir_path: String) -> void:
 	var dir := DirAccess.open(dir_path)
 	if dir == null:
 		return
+	for sub: String in dir.get_directories():
+		wipe_frames("%s/%s" % [dir_path, sub])
+		dir.remove(sub)
 	for file_name: String in dir.get_files():
 		if file_name.ends_with(".png"):
 			dir.remove(file_name)

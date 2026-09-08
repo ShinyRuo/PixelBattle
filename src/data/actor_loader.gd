@@ -52,6 +52,11 @@ static func load_from(dir_path: String) -> Dictionary:
 		return out
 	var names := dir.get_files()
 	names.sort()
+	# **攻击段一律补到 6 帧**（M9-e），见 [method PBActorSkin.hold_last_to]。
+	# 在这儿补而不是在流水线里补：库里 27 个角色是按老规矩导的（3~6 帧不等），
+	# 而「第 4 帧出手」只有在每一段帧数相同时才是同一句话。
+	# 改盘上的素材要人手重导 27 遍，载入时补一下不用动任何一张图。
+	var want: int = PBSimConfig.new().anim_frames
 	for file_name: String in names:
 		if not file_name.ends_with(".tres"):
 			continue
@@ -63,5 +68,6 @@ static func load_from(dir_path: String) -> Dictionary:
 		var key: StringName = skin.key
 		if key == &"":
 			key = StringName(file_name.get_basename())
+		skin.hold_last_to(skin.anim_attack, want)
 		out[key] = skin
 	return out

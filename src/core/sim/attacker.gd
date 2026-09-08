@@ -165,6 +165,27 @@ var shot_speed: float = 0.0
 ## 第几 tick 起可以出下一手。和 [member PBSkillCast.ready_at] 同一套写法。
 var next_shot_at: int = 0
 
+## **正在起手**：手已经抬起来了，伤害还没落地。M9-e。
+##
+## ## 为什么它必须是一个状态，不能只把出手时刻整体推后
+##
+## 「打空了不进冷却」（[method PBBattleSim._deal_damage]）意味着射程内没人时
+## 冷却照转、`next_shot_at` 停在过去 —— 于是敌人一踏进射程，
+## `ready_to_fire` 当场为真、**当 tick 就开火**，根本没有起手的余地。
+## 把出手时刻整体推后只对第 2 发之后有用，而玩家看的正是第 1 发。
+##
+## 所以抬手是一件**要先发生**的事：冷却转好 + 射程内有人 → 抬手，
+## [member windup_ticks] 之后才结算。渲染层直接读它决定攻击段什么时候起跑。
+var swinging: bool = false
+
+## 起手要几 tick —— 从抬手到伤害落地。[method prime] 按
+## [method PBSimConfig.windup_ticks] 填。
+##
+## **渲染层读它来决定攻击段什么时候起跑**（`next_shot_at - windup_ticks`），
+## 所以它必须是 sim 这边的数：各算各的话，画面上的命中帧和真正出手的那一 tick
+## 会差几帧，而那正是这一步要修的东西。
+var windup_ticks: int = 0
+
 ## 玩家在战斗中点名要打的敌人下标。**-1 表示照常自动选目标**（§02，M4-e）。
 ##
 ## ## 为什么点名只是一个偏好，不是一条命令
@@ -320,6 +341,8 @@ func revive() -> void:
 	# 每隔一个间隔叠成一道，画面上像一发；错开之后才看得出是一队人在射击。
 	# 用槽位而不是掷骰 —— 同一个种子的两次回放必须长得一样（§13）。
 	next_shot_at = posmod(slot, _interval_ticks)
+	# 起手是一个状态，开波要清 —— 上一波抬到一半的手不该带进这一波。
+	swinging = false
 	# 点名是一波一份（见 [member forced_target]）。
 	forced_target = -1
 	aim_at = -1
@@ -383,13 +406,17 @@ func ultimate_damage() -> float:
 ## **一发的伤害由间隔反推，不是 `dps ÷ 攻速`。** 间隔取整之后两者会差一点点，
 ## 而按间隔算的那份能保证**平均 DPS 分毫不差** —— 那是离散化敢做的前提：
 ## 它改的是节奏，不是总量。
-func prime(tick_rate: int) -> void:
+## [param cfg] 只用来问一件事：起手几 tick（[method PBSimConfig.windup_ticks]）。
+## **必须在这里问，不能由调用方先算好** —— 那个数依赖 `_interval_ticks`，
+## 而它正是这个函数算出来的。给 null 就是不起手，也就是 M9-e 之前的样子。
+func prime(tick_rate: int, cfg: PBSimConfig = null) -> void:
 	var rate: int = maxi(tick_rate, 1)
 	# 攻速为 0 = 连续输出那条退化路径，间隔就是 1 tick（见 [member attack_speed]）。
 	_interval_ticks = 1
 	if attack_speed > 0.0:
 		_interval_ticks = maxi(int(round(float(rate) / attack_speed)), 1)
 	_damage_per_shot = maxf(dps, 0.0) * float(_interval_ticks) / float(rate)
+	windup_ticks = cfg.windup_ticks(_interval_ticks) if cfg != null else 0
 
 
 ## 一发打多少，**不算身上挂着的效果**。想要真伤害走 [method strike_for]。
@@ -441,8 +468,25 @@ func ready_to_fire(tick: int) -> bool:
 
 
 ## 出了一手，转入下一次的间隔。
+##
+## **下一次「抬手」排在 `interval - windup` 之后**（M9-e），而不是 `interval` ——
+## 抬手之后还要再等 [member windup_ticks] 才落地，两段加起来正好是一个间隔。
+## 直接排 `interval` 的话每一发之间会多出一个起手，攻速凭空慢下来。
 func on_fired(tick: int) -> void:
-	next_shot_at = tick + _interval_ticks
+	swinging = false
+	next_shot_at = tick + maxi(_interval_ticks - windup_ticks, 1)
+
+
+## 抬手。返回 true = **这一 tick 只是抬手，别结算**。
+##
+## 调用方必须先确认射程内真有人（见 [member swinging]）——
+## 对着空气抬手的话，抬完那一刻敌人正好走进来，伤害就会在没有起手的情况下落地。
+func begin_swing(tick: int) -> bool:
+	if windup_ticks <= 0 or swinging:
+		return false
+	swinging = true
+	next_shot_at = tick + windup_ticks
+	return true
 
 
 ## 这个点上的敌人打不打得到。[param at] 走 [method PBEnemy.pos]。

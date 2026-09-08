@@ -199,10 +199,11 @@ static func build_attackers(
 		# 纵向是渲染层自己编的。默认均分，M4-f 之后由玩家拖动决定。
 		attacker.pos = Vector2(cfg.reach_column(tier), cfg.ally_lane(i, deployed.size()))
 		# 跑动（M3.5-c）：站位从「站在哪一列」变成「从哪一列出发」。
-		# 皮带绳把前压拴在自己那一列附近 —— 放开的话所有人挤到最前面接敌，
-		# §02 的射程梯度（「场上稳定有人」的唯一来源）就没了。
+		# 皮带绳把前压拴在自己那一列附近。**M8-d 起默认不拴**（玩家定的）——
+		# 「放开就会挤到最前面接敌」那条说法实测不成立：忍者最远也只跑到
+		# 离家 0.616，而漏怪一只没多，见 [member PBSimConfig.unit_leash]。
 		attacker.home = attacker.pos
-		attacker.leash = cfg.unit_leash
+		attacker.leash = cfg.leash_distance()
 		attacker.move_speed = cfg.field_length / maxf(
 			cfg.unit_move_seconds * float(cfg.tick_rate), 1.0
 		)

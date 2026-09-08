@@ -331,7 +331,7 @@ func _screen_of(slot: int, ally: bool, battle: PBBattleSim, field: Vector2) -> V
 ## [param slot] 那个单位的形象。查不到返回 null（调用方退回默认偏移）。
 ##
 ## 己方走 [member PBCharacter.actor_key]，敌人走
-## [constant PBEnemyPool.SKIN_KEYS] —— **两条路都和画那个人的池子读同一个键**，
+## [method PBEnemyPool.skin_key] —— **两条路都和画那个人的池子读同一个键**，
 ## 各查各的话「子弹从胸口出、人却是另一张皮」迟早发生。
 func _actor_skin(
 	slot: int, ally: bool, battle: PBBattleSim, deployed: Array[PBUnit]
@@ -345,7 +345,10 @@ func _actor_skin(
 	var enemies := battle.enemies()
 	if slot >= enemies.size():
 		return null
-	return PBActorLibrary.skin_for(PBEnemyPool.SKIN_KEYS.get(enemies[slot].element, &""))
+	var enemy: PBEnemy = enemies[slot]
+	return PBActorLibrary.skin_for(
+		PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged)
+	)
 
 
 ## 这个人的普攻子弹长什么样。没有皮、或者皮上没填就退回白模。
