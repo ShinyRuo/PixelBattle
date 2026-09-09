@@ -111,7 +111,7 @@ static func def_reduction_bonus(beast: PBBeast, level: int, cfg: PBSimConfig) ->
 ## 按半径圈人、按 [PBAimRules] 挑地方。**唯一的区别是它没有普攻。**
 ##
 ## 而「没有普攻」在 [PBAttacker] 里已经是可表达的 —— `dps = 0`，
-## 每 tick 打 0 点伤害，[method PBBattleSim._strike_single] 直接空转返回。
+## 每 tick 打 0 点伤害，[method PBStrikeRules._strike_single] 直接空转返回。
 ## 单开一个类型的话，落点选择、施法延迟、冷却结算都要抄第二份，
 ## 而 §09 的功能档落地时还要抄第三份 —— 三份的落点判定迟早对不上，
 ## 且对不上的表现是「大招偶尔打空」，从现象反推极难。

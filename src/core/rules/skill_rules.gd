@@ -128,7 +128,7 @@ static func apply_hit_ally(
 ## 一发落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
 ## 返回这一下打死了几个 —— 调用方要把它加进 [PBCombatOutcome]。
 ##
-## 和 [method PBBattleSim._strike_area] 一样**不结算溢出** —— 技能的价值
+## 和 [method PBStrikeRules._strike_area] 一样**不结算溢出** —— 技能的价值
 ## 写在命中数上（§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
 ## 再让它吃溢出的话，一发范围技能在密集波里等于无限伤害。
 static func land(

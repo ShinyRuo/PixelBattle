@@ -9,5 +9,5 @@ name_key = "bond.hyuga_pair"
 member_ids = Array[StringName]([&"neji_hyuga", &"hinata"])
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
-tier_function_keys = Array[StringName]([&""])
-tier_function_carriers = Array[StringName]([&""])
+tier_function_keys = Array[StringName]([&"heavy_hit"])
+tier_function_carriers = Array[StringName]([&"neji_hyuga"])

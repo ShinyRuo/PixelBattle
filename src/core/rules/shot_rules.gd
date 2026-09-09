@@ -42,7 +42,7 @@ static func advance(
 		if shot.at_ally:
 			_hit_ally(shot, attackers, cfg, tick, book, out)
 		else:
-			_hit_enemy(shot, enemies, cfg, tick, book, out)
+			_hit_enemy(shot, enemies, attackers, cfg, tick, book, out)
 
 
 ## 找一发空子弹。池子满了返回 null —— 那时**这一发就没了**，
@@ -65,9 +65,14 @@ static func free_shot(shots: Array[PBProjectile]) -> PBProjectile:
 ##
 ## 命中之后才挂效果（同 [method PBSkillRules.land]）：给一具尸体挂减速
 ## 没有意义，而且会让「这一发定住了几个」虚高。
+## **落地那一下走 [method PBStrikeRules.land]**（M10-d）：记播报、扣血、
+## 记杀敌数、跑命中触发四件事因此和近战、范围那两条路**共用一份实现**。
+## 各写一遍的话，「远程角色的羁绊触发不了」是一条要盯着数字看很久才发现的 bug，
+## 而 §7 的 B15 神赐予的伤痛，载体恰恰是个远程。
 static func _hit_enemy(
 	shot: PBProjectile,
 	enemies: Array[PBEnemy],
+	attackers: Array[PBAttacker],
 	cfg: PBSimConfig,
 	tick: int,
 	book: PBBattleLog,
@@ -79,13 +84,24 @@ static func _hit_enemy(
 		return
 	if not shot.fly(enemy.pos()):
 		return
-	if book != null:
-		# 暴击标记是**出膛那一刻**掷好背过来的，见 [member PBProjectile.crit]。
-		book.hit(tick, shot.source, enemy.slot, shot.damage, false, shot.crit)
-	if enemy.take_damage(shot.damage, tick):
-		out.kills += 1
-	elif shot.skill != null and PBSkillRules.apply_hit(enemy, shot.skill, shot.level, cfg, tick):
-		out.kills += 1
+	# 暴击标记是**出膛那一刻**掷好背过来的，见 [member PBProjectile.crit]。
+	# 技能弹没有出手的人可查（施法者可能已经死了）—— 那时 `land` 只结算伤害。
+	var alive_before: bool = enemy.alive
+	PBStrikeRules.land(
+		PBStrikeRules.by_slot(attackers, shot.source),
+		enemy,
+		shot.damage,
+		shot.crit,
+		enemies,
+		cfg,
+		tick,
+		book,
+		out
+	)
+	# 技能载荷那一档：**只在这一下没把人打死时才挂**（给尸体挂减速没有意义）。
+	if alive_before and enemy.alive and shot.skill != null:
+		if PBSkillRules.apply_hit(enemy, shot.skill, shot.level, cfg, tick):
+			out.kills += 1
 	shot.retire()
 
 

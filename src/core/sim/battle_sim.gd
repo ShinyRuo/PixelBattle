@@ -487,7 +487,7 @@ func _speed_scale() -> float:
 ## 而漏记一处的表现是「波次结算的击杀数对不上」，不报错。
 ##
 ## 敌人那一趟从 [member _front] 起扫、碰到没出场的就停 —— 和
-## [method _first_reachable] 同一条：数组按出场顺序排，后面的只会更晚。
+## [method PBStrikeRules.first_reachable] 同一条：数组按出场顺序排，后面的只会更晚。
 func _advance_buffs() -> void:
 	for attacker: PBAttacker in _attackers:
 		PBBuffRules.advance_ally(attacker, _tick)
@@ -503,38 +503,12 @@ func _advance_buffs() -> void:
 	_skip_dead()
 
 
-## 把这一 tick 的伤害打出去。**每个攻击者各自选目标，互不共享伤害池。**
-##
-## 「不共享」是这次改造的全部意义所在：整队一个池子就是单服务台排队，
-## 而单服务台没有中间态。各打各的之后，射程外的敌人对某个攻击者不存在，
-## 于是同一波敌人会被分批处理，战场上才可能长期有人。
+## 把这一 tick 的伤害打出去。规则整个在 [PBStrikeRules]（M10-d 拆出去的）——
+## 这里只留「什么时候调它」和游标维护，同 [method _advance_shots]。
 func _deal_damage() -> void:
-	for attacker: PBAttacker in _attackers:
-		# 死人不输出。M3.5-b 之前这一行不存在，因为没有人会死。
-		# 冷却没转好也不出手（M4-b）—— 连续输出那条退化路径间隔是 1 tick，
-		# 所以它每 tick 都过得了这道门，行为和离散化之前一模一样。
-		if not attacker.alive or not attacker.ready_to_fire(_tick):
-			continue
-		# **抬手**（M9-e）：冷却转好之后先起手，[member PBAttacker.windup_ticks]
-		# 之后才结算。**要先确认射程内真有人** —— 对着空气抬手的话，
-		# 抬完那一刻敌人正好走进来，伤害就会在没有起手的情况下落地，
-		# 而那正是下面「打空了不进冷却」这条路留下的洞：
-		# 射程内没人时冷却照转，敌人一踏进射程就当 tick 开火。
-		if _first_reachable(attacker) != null and attacker.begin_swing(_tick):
-			continue
-		var fired: bool = (
-			_strike_area(attacker)
-			if attacker.shape == PBAttacker.Shape.AOE
-			else _strike_single(attacker)
-		)
-		# **打空了不进冷却。** 进的话，射程内暂时没人的那几 tick 会白白
-		# 吃掉一个间隔，等敌人走进来时他还得再等 —— 表现是「远程有时候发呆」。
-		if fired:
-			attacker.on_fired(_tick)
-		else:
-			# 抬着手却打空了（目标死了、走了）—— 手放下，下次重新抬。
-			# 不放的话下一个走进射程的敌人会挨一发没有起手的伤害。
-			attacker.swinging = false
+	PBStrikeRules.deal(
+		_attackers, _enemies, _shots, _front, _cfg, _tick, _crit_rng, log_to, _outcome
+	)
 	_skip_dead()
 
 
@@ -667,24 +641,21 @@ func _nearest_enemy(attacker: PBAttacker) -> PBEnemy:
 
 ## 玩家点名的那个敌人，**这一 tick 还算不算数**（活着、已出场）。不算就 null。
 ##
-## 三处读它：走位（[method _nearest_enemy]）、开火（[method _first_reachable]）、
+## 三处读它：走位（[method _nearest_enemy]）、开火（[method PBStrikeRules.first_reachable]）、
 ## 画线（[method _aim_targets]）。抄成三份的话「点名什么时候失效」会有三个答案，
 ## 而分叉的表现是**线、脚、枪各指一个人**。
 func _named_target(attacker: PBAttacker) -> PBEnemy:
-	if attacker.forced_target < 0 or attacker.forced_target >= _enemies.size():
-		return null
-	var named: PBEnemy = _enemies[attacker.forced_target]
-	return named if named.alive and named.has_spawned(_tick) else null
+	return PBStrikeRules.named_target(attacker, _enemies, _tick)
 
 
 ## 每人这一 tick 的攻击目标（M5-12），存进 [member PBAttacker.aim_at]。
 ##
 ## 三档取第一个有的：**有效点名 → 射程内最靠近基地的 → 全场最近的**。
-## 后两档正是 [method _first_reachable] 与 [method _nearest_enemy] 的自动部分；
+## 后两档正是 [method PBStrikeRules.first_reachable] 与 [method _nearest_enemy] 的自动部分；
 ## 第一档**不问射程** —— 玩家点了一个还没走到的人，意思是「去打他」，
 ## 而 [method _move_attackers] 也确实会朝他走。
 ##
-## **它不决定伤害打给谁**：开火仍走 [method _first_reachable]，
+## **它不决定伤害打给谁**：开火仍走 [method PBStrikeRules.first_reachable]，
 ## 点名够不着时自动规则接管照旧（见 [member PBAttacker.forced_target]）。
 ## 所以两个答案可以不同 —— 那时画面上是「线指着他要去打的那个，
 ## 手上打着路过的那个」，而那是实情。
@@ -701,7 +672,7 @@ func _aim_one(attacker: PBAttacker) -> void:
 	if attacker.alive:
 		mark = _named_target(attacker)
 		if mark == null:
-			mark = _first_reachable(attacker)
+			mark = PBStrikeRules.first_reachable(attacker, _enemies, _front, _tick)
 		if mark == null:
 			mark = _nearest_enemy(attacker)
 	attacker.aim_at = -1 if mark == null else mark.slot
@@ -814,128 +785,6 @@ func _enemies_attack() -> void:
 		if target.take_damage(damage):
 			_outcome.allies_lost += 1
 			_note_down(target.slot)
-
-
-## 单体攻击：打射程内最接近基地的那个。**打不到人返回 false。**
-##
-## ## 两条路：一发子弹，还是一股连续伤害
-##
-## [member PBAttacker.attack_speed] 大于 0 时这是**一次离散出手**：
-## 一发打一个，远程放子弹（飞几 tick 才结算），近战当场见血。
-## **不结算溢出** —— 一发打死了目标，多出来的伤害没有地方去，
-## 那是「命中才结算」的代价，见 [PBProjectile] 顶部。
-##
-## 攻速为 0 时走的是 M3-a 之前那条**连续输出**的退化路径
-## （[method PBAttacker.whole_field]），它必须与 [PBCombatRules] 的解析式
-## 排队模型逐字段一致，而那个模型的前提之一就是**溢出无损转移**。
-## 所以溢出那一段留着，只在这一档下走。
-func _strike_single(attacker: PBAttacker) -> bool:
-	if attacker.attack_speed <= 0.0:
-		return _pour_damage(attacker)
-	var target := _first_reachable(attacker)
-	if target == null:
-		return false
-	# 暴击的**唯一掷点**（M10-c）。近战与子弹都走它，见 [PBCritRules]。
-	var swing: Dictionary = PBCritRules.strike(attacker, _tick, _crit_rng)
-	var damage: float = swing[PBCritRules.DAMAGE]
-	var crit: bool = swing[PBCritRules.CRIT]
-	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
-	if attacker.shot_speed <= 0.0:
-		_note_hit(attacker.slot, target.slot, damage, false, crit)
-		if target.take_damage(damage, _tick):
-			_outcome.kills += 1
-		return true
-	var shot := PBShotRules.free_shot(_shots)
-	if shot == null:
-		return false
-	shot.launch(
-		attacker.pos, target.slot, damage, attacker.shot_speed,
-		false, PBElement.Type.PHYSICAL, attacker.slot, null, 1, crit
-	)
-	return true
-
-
-## 射程内最接近基地的那个活敌人。没有就返回 null。
-##
-## **玩家点名的那个优先**（§02，M4-e）—— 但只在他还活着且够得着的时候。
-## 够不着就照常自动选，不是站着不打：「我点了他，结果这个忍者整场发呆」
-## 是玩家最不能接受的一种听话，理由见 [member PBAttacker.forced_target]。
-func _first_reachable(attacker: PBAttacker) -> PBEnemy:
-	var named := _named_target(attacker)
-	if named != null and attacker.can_reach(named.pos()):
-		return named
-	for i: int in range(_front, _enemies.size()):
-		var enemy: PBEnemy = _enemies[i]
-		if not enemy.has_spawned(_tick):
-			# 后面的出场更晚，这一 tick 不会再有可打的目标了。
-			break
-		if enemy.alive and attacker.can_reach(enemy.pos()):
-			return enemy
-	return null
-
-
-## 连续输出那条退化路径：一股伤害顺着队列往下浇，打死了溢出接着打下一个。
-##
-## 溢出必须结算：高 DPS 一 tick 能打死好几个，漏掉溢出会让战斗时长
-## 被系统性拉长 —— 而这条路径存在的全部理由就是与解析式排队模型对拍。
-func _pour_damage(attacker: PBAttacker) -> bool:
-	# 也走掷点（一把尺子），但这条路上的是 [method PBAttacker.whole_field]
-	# 造的退化标量，暴击率恒为 0 —— 于是一次骰子都不掷，解析式对拍逐位相同。
-	var remaining: float = PBCritRules.strike(attacker, _tick, _crit_rng)[PBCritRules.DAMAGE]
-	var hit: bool = false
-	var index: int = _front
-	while remaining > 0.0 and index < _enemies.size():
-		var enemy: PBEnemy = _enemies[index]
-		if not enemy.has_spawned(_tick):
-			break
-		if not enemy.alive or not attacker.can_reach(enemy.pos()):
-			index += 1
-			continue
-		hit = true
-		# **花掉多少伤害，不是掉了多少血** —— 易伤（M7-d）让两者不再是同一个数，
-		# 而这条退化路径正是解析式排队模型的对拍锚点（见 [method PBEnemy.damage_to_kill]）。
-		var cost: float = enemy.damage_to_kill(_tick)
-		if enemy.take_damage(remaining, _tick):
-			_outcome.kills += 1
-			remaining -= cost
-			index += 1
-		else:
-			remaining = 0.0
-	return hit
-
-
-## 范围攻击：对射程内最靠近基地的若干个目标**各打一份完整伤害**。
-## **一个都够不着时返回 false。**
-##
-## 不结算溢出，是与单体型的实质区别：AOE 的价值写在命中数上
-## （§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
-## 再让它吃溢出的话，一个 AOE 攻击者在密集波里等于无限伤害。
-##
-## **范围型不发子弹**（M4-b）：一发子弹只追一个目标，而这里要同时打几个。
-## 要给它一个飞行中的形态，得先回答「范围伤害在半空中是什么形状」——
-## 那和大招的落点是同一个问题，而大招已经有一整套答案（[PBSkill]）。
-## 在角色表真的需要「会飞的范围普攻」之前，多一套实现只会多一处分叉。
-func _strike_area(attacker: PBAttacker) -> bool:
-	# **一次出手掷一次**，命中的几个共用它 —— 逐个目标掷的话，
-	# 一发范围攻击会同时飘出黄的和白的数字，而那本来就是同一下。
-	var swing: Dictionary = PBCritRules.strike(attacker, _tick, _crit_rng)
-	var damage: float = swing[PBCritRules.DAMAGE]
-	if damage <= 0.0:
-		return false
-	var hits: int = 0
-	var index: int = _front
-	while hits < attacker.max_targets and index < _enemies.size():
-		var enemy: PBEnemy = _enemies[index]
-		if not enemy.has_spawned(_tick):
-			break
-		index += 1
-		if not enemy.alive or not attacker.can_reach(enemy.pos()):
-			continue
-		_note_hit(attacker.slot, enemy.slot, damage, false, swing[PBCritRules.CRIT])
-		if enemy.take_damage(damage, _tick):
-			_outcome.kills += 1
-		hits += 1
-	return hits > 0
 
 
 ## 全体前进。**场上还有活忍者就扑向最近的那个，全死光了才走基地。**

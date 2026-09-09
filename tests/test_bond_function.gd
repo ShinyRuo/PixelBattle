@@ -31,7 +31,7 @@ func before_each() -> void:
 # ── 数据层 ────────────────────────────────────────────────────
 
 
-func test_exactly_eight_bonds_carry_a_function_and_no_two_share_a_skill_one() -> void:
+func test_exactly_twelve_bonds_carry_a_function_and_no_two_share_a_skill_one() -> void:
 	# §09 的硬性规范：**羁绊的最高档要解锁一个机制**，不能只是更大的百分比。
 	#
 	# ## M10-b 之前这条断的是「每一组都要有功能」
@@ -39,7 +39,8 @@ func test_exactly_eight_bonds_carry_a_function_and_no_two_share_a_skill_one() ->
 	# 那时命名羁绊只有 5 组、功能也正好 5 个，两句话是一回事。
 	# 名册换成原版的 23 组之后它们分家了：M3-f 那 5 个功能键
 	# （聚拢 / 吸附 / 定身 / 减速 / 金币）是**一套完整的词汇表**，
-	# 不是「五组各拿一个」的巧合。M10-c 的暴击又加了 2 个键、3 组羁绊。
+	# 不是「五组各拿一个」的巧合。M10-c 的暴击又加了 2 个键、3 组羁绊，
+	# M10-d 的触发型再加 4 个键、4 组。
 	#
 	# ## 「不许共用」只对**落在大招上**的键成立
 	#
@@ -48,8 +49,12 @@ func test_exactly_eight_bonds_carry_a_function_and_no_two_share_a_skill_one() ->
 	# 兄弟的爱恨和幕后黑手各带一份暴击率是设计上说得通的
 	# （见 [method PBBondFunctionRules.landing_of]）。
 	#
-	# 所以守两件事：**恰好 8 组带功能**（多出来的说明有人给新羁绊硬套了
+	# 所以守两件事：**恰好 12 组带功能**（多出来的说明有人给新羁绊硬套了
 	# 一个不对的键），以及**落在大招上的键不许共用**。
+	#
+	# > **剩下 11 组是空着的，而那不是「还没写」。** 它们的机制是
+	# > 「强化某个角色的某个技能」，而 49 个角色里配了技能的是 2 个 ——
+	# > 前置是角色技能表，不是这张表。见《开发路线图》M10-d 那一节。
 	var seen: Array[StringName] = []
 	var total: int = 0
 	for bond: PBBond in _cfg.bonds.all():
@@ -61,7 +66,7 @@ func test_exactly_eight_bonds_carry_a_function_and_no_two_share_a_skill_one() ->
 			continue
 		assert_false(seen.has(key), "大招档的功能键 %s 被两组羁绊共用了" % key)
 		seen.append(key)
-	assert_eq(total, 8, "M3-f 的 5 组加 M10-c 的 3 组暴击羁绊")
+	assert_eq(total, 12, "M3-f 的 5 组 + M10-c 的 3 组暴击 + M10-d 的 4 组触发型")
 
 
 func test_the_crit_auras_reach_every_attacker_not_just_the_carrier() -> void:

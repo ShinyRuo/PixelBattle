@@ -223,8 +223,11 @@ static func build_attackers(
 		)
 		var skill := _build_skill(unit, wave_element, mult, i < gather_count, cfg)
 		# 羁绊功能档（§09，M3-f）：这个人是不是某组凑满了的羁绊的载体。
+		# 两个落点各管一半（M10-d）：装在大招上的，和装在他本人身上的 ——
+		# **后者必须在这个循环里面**，因为只有这里知道这个攻击者是哪个角色。
 		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
-			PBBondFunctionRules.apply_to_skill(skill, key, cfg)
+			if not PBBondFunctionRules.apply_to_skill(skill, key, cfg):
+				PBBondFunctionRules.apply_to_carrier(attacker, key)
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)

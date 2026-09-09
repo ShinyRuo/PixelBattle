@@ -30,7 +30,7 @@ func _wave(index: int) -> PBWave:
 	return PBWaveRules.build(index, _cfg, _rng)
 
 
-## **攻速必须给一个真值。** 攻速为 0 走的是 [method PBBattleSim._pour_damage]
+## **攻速必须给一个真值。** 攻速为 0 走的是 [method PBStrikeRules._pour_damage]
 ## 那条连续输出的退化路径（M3-a 的对拍锚点），它每 tick 浇一次伤害 ——
 ## 播报不接在那一条上，接了就是每 tick 一行。真角色表里没有攻速为 0 的人
 ## （[method PBCombatRules.build_attackers] 从属性算），所以那条路上游戏里走不到。

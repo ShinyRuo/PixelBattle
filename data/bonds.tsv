@@ -12,7 +12,7 @@
 # 之后，猪鹿蝶（3 人）是 0.28、凯班（4 人）是 0.42。所以这次重铺**那两组的
 # 数字一个不动**，新加的 18 组落在同一条线上。
 #
-# ## 功能键现在 8 组有
+# ## 功能键现在 12 组有
 #
 # M3-f 的规矩：**一组羁绊只出一个载体**，而且**兜底档一个都不给**。
 # 那 5 组（第七班 / 凯班 / 猪鹿蝶 / 砂忍三巨头 / 木叶三忍）的键和载体
@@ -23,9 +23,21 @@
 # （[enum PBBondFunctionRules.Landing] 的 TEAM 档），所以前两组
 # 共用 `crit_chance` 是可以的 —— 光环加法叠加，而一个大招只有一份。
 #
-# 幕后黑手那半句「暴击时召唤白绝」和绝牛雷犁热刀的「命中后短时提暴击」
-# 都要一套「触发」机制，词汇表里今天一个都没有，归 M10-d。
-# 另外 15 组的机制同理。
+# M10-d 又接上 4 组**触发型**：绝牛雷犁热刀（命中后提暴击）、
+# 神赐予的伤痛（普攻带溅射）、日向兄妹（打高血量敌人多打一笔）、
+# 不死二人组（阵亡重生一次）。这四个是 `Landing.CARRIER` ——
+# **只发给载体本人**，所以「一组羁绊只出一个载体」比大招那一档贴得更紧。
+#
+# ## 剩下 11 组做不了，而原因不在这张表
+#
+# 它们的机制是「强化某个角色的某个技能」（豪火球附带天照、月读控两个目标、
+# 水阵壁延长、傀儡继承装备……），而 49 个角色里配了技能的是 2 个。
+# **卡的不是缺一个键，是被强化的对象根本不存在** —— 前置是角色技能表。
+# 幕后黑手那半句「暴击时召唤白绝」另算：召唤物是玩家定的单独一步。
+#
+# 另有两组要**主动不给**：木叶十二小强和咒印众的前半句都是「全队属性提升」，
+# 那和上面那条 `tier_power` 是同一个杠杆，再给一遍就是把
+# §09「不能只是更大的百分比」写反。
 #
 # ## ⚠ 木叶十二小强的满档是 10 不是 12
 #
@@ -36,20 +48,20 @@
 
 # 键	显示名	满档	功能键	载体	成员
 haku_and_zabuza	随雪而逝	2			haku,zabuza
-immortal_pair	不死二人组	2			kakuzu,hidan
+immortal_pair	不死二人组	2	revive	hidan	kakuzu,hidan
 akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu
 kai_squad	凯班	4	gather	rock_lee	might_guy,rock_lee,tenten,neji_hyuga
-hyuga_pair	日向兄妹	2			neji_hyuga,hinata
+hyuga_pair	日向兄妹	2	heavy_hit	neji_hyuga	neji_hyuga,hinata
 sand_siblings	砂忍三巨头	3	slow_field	gaara	gaara,temari,kankuro
 earth_curse	地之咒印	2			kimimaro,orochimaru
 my_cage	吾之牢笼	2			kimimaro,jugo
 five_kage	五影齐聚	5			tsunade,gaara,mei,raikage,onoki
-lightning_blades	绝牛雷犁热刀	2			raikage,killer_bee
+lightning_blades	绝牛雷犁热刀	2	crit_on_hit	raikage	raikage,killer_bee
 hokage_line	历代火影	4			hashirama,tobirama,hiruzen,minato
 senju_brothers	千手兄弟	2			hashirama,tobirama
 brothers_bond	兄弟的爱恨	2	crit_chance	itachi	itachi,sasuke
 vermilion_pair	朱雀与南斗	2			itachi,kisame
-divine_wound	神赐予的伤痛	2			konan,tendo
+divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo
 masterminds	幕后黑手	5	crit_chance	madara	madara,obito,kabuto,tendo,zetsu
 team_seven	第七班	4	pull	kakashi	naruto,sasuke,sakura,kakashi
 ino_shika_cho	猪鹿蝶	3	root	shikamaru	shikamaru,choji,ino

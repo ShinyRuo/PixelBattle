@@ -50,6 +50,13 @@ enum Shape {
 ## 当时只改了敌人那半边 —— 又一次「同一件事两把尺子」。
 const STOP_RING: float = 0.9
 
+## 重生之后剩几成血（[member revives]，M10-d）。§7 的原话是
+## 「重生保留部分血量」，没有数字。
+##
+## 满血复活的话这一组羁绊等于「多一条命」，那比 §09 任何一个功能都值钱；
+## 而太低（比如一成）会让他在同一 tick 被下一发打死，玩家看不见发生过什么。
+const REVIVE_FRACTION: float = 0.4
+
 ## 每秒伤害。属性克制、攻击科技、羁绊、装备**全部已经乘进来了** ——
 ## 战斗层不认识那些系统，它只认这个数。
 var dps: float = 0.0
@@ -157,6 +164,41 @@ var crit_chance: float = 0.0
 ## **整波常驻**的暴击伤害加成，「额外多打几成」（M10-c）。理由同
 ## [member crit_chance]，中性值是 0.0 不是 1.0。
 var crit_bonus: float = 0.0
+
+# ── 触发型羁绊（§7 的 B02 / B05 / B10 / B15，M10-d）──────────
+#
+# 这四个和上面那两个暴击字段是同一档：开波就乘死、整波不变。
+# 差别只在**发给谁** —— 暴击那两个是全队光环，这四个只发给**载体本人**
+# （[constant PBBondFunctionRules.Landing.CARRIER]）。
+# 「一组羁绊只出一个载体」那条 M3-f 的规矩因此原样成立。
+#
+# 全部默认 0 = 什么都不发生，所以没有任何羁绊配它们时**一位都不动**。
+
+## 命中之后给自己挂多久的暴击率加成（B10 绝牛雷犁热刀）。0 = 不挂。
+##
+## 它写进 [PBBuffBag]（[constant PBBuffRules.CRIT_CHANCE]）而不是直接改
+## [member crit_chance] —— 那一份是**常驻**的，改了就再也退不回去。
+var crit_on_hit: float = 0.0
+
+## 命中时对目标周围的其他敌人各打这一下伤害的几成（B15 神赐予的伤痛）。0 = 不溅射。
+var splash_damage: float = 0.0
+
+## 打**血还很多**的敌人时额外多打几成（B05 日向兄妹）。0 = 没有。
+##
+## §7 的原话是「柔拳百分比伤害对高血量敌人必定触发」。做成一笔追加伤害
+## 而不是「按当前血量的百分比」，是因为后者对 BOSS 是一条指数曲线 ——
+## §04 的 BOSS 血量按波次指数长，百分比伤害会让这一组羁绊在后期独占全场。
+var heavy_bonus: float = 0.0
+
+## 一波之内还能重生几次（B02 不死二人组）。**工作计数器，[method revive] 会把它
+## 重填回 [member revives_max]。**
+var revives: int = 0
+
+## 一波给几次重生。**必须和 [member revives] 分开** —— 攻击者对象会跨波、
+## 跨探测复用（见 [method revive] 顶上那条），只有一个字段的话
+## 「上一波已经用掉了」会漏进下一波，表现是「第二次凑满就不复活了」。
+## 同 [member max_hp] / [member hp] 那一对。
+var revives_max: int = 0
 
 # ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
 
@@ -321,6 +363,12 @@ func clone() -> PBAttacker:
 	# 系统性地偏保守，且不报错。同 [member max_hp] 那条「越探越弱」。
 	out.crit_chance = crit_chance
 	out.crit_bonus = crit_bonus
+	# 触发型那四个同理（M10-d）。**`revives` 不拷贝，`revives_max` 才拷贝** ——
+	# 复制品对应「一个刚站起来的他」，同 `hp` 取 `max_hp` 那一条。
+	out.crit_on_hit = crit_on_hit
+	out.splash_damage = splash_damage
+	out.heavy_bonus = heavy_bonus
+	out.revives_max = revives_max
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
 	out.slot = slot
@@ -360,6 +408,9 @@ func revive() -> void:
 	alive = true
 	hp = max_hp
 	mp = max_mp
+	# 重生次数是**一波一份**（M10-d）。不重填的话上一波用掉的那一次会漏进
+	# 这一波，表现是「第二波起就不复活了」—— 同上面那条残血漏进下一场。
+	revives = revives_max
 	pos = home if move_speed > 0.0 else pos
 	# **按槽位错开第一发**（M4-b）。全队同时开火的话，十个人的子弹
 	# 每隔一个间隔叠成一道，画面上像一发；错开之后才看得出是一队人在射击。
@@ -403,16 +454,30 @@ func is_targetable() -> bool:
 	return alive and max_hp > 0.0
 
 
-## 挨一下打。返回这次是否把它打死了。
+## 挨一下打。返回这次是否把它**真的**打死了 —— 还有重生次数时返回 false。
+##
+## ## 重生的判据必须在这里面，不在调用方
+##
+## 己方阵亡今天有两个落点：近战那一记（[method PBBattleSim._enemies_attack]）
+## 和敌人的子弹命中（[method PBShotRules._hit_ally]），两处都写着
+## `if take_damage(): allies_lost += 1; 记播报`。各判一次重生的话，
+## **漏掉的那一处表现是「被子弹打死就复活不了」** —— 而它不报错。
+##
+## 和 [constant PBBuffRules.HURT] 顶上那条是同一条：读点放进类里，
+## 调用方一律不判。
 func take_damage(amount: float) -> bool:
 	if not is_targetable():
 		return false
 	hp -= amount
-	if hp <= 0.0:
-		hp = 0.0
-		alive = false
-		return true
-	return false
+	if hp > 0.0:
+		return false
+	if revives > 0:
+		revives -= 1
+		hp = max_hp * REVIVE_FRACTION
+		return false
+	hp = 0.0
+	alive = false
+	return true
 
 
 ## 这个单位一发大招打多少。没有大招就是 0。

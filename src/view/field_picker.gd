@@ -152,7 +152,7 @@ func enemy_at(battle: PBBattleSim, spot: Vector2, field: Vector2, pick: float) -
 ## 让 [param live] 改打 [param enemy]。任一为 null 就什么都不做。
 ##
 ## 点名只是一个**偏好**：那个敌人死了、走出射程了、还没进射程，
-## 自动规则都会接管（见 [method PBBattleSim._first_reachable]）。
+## 自动规则都会接管（见 [method PBStrikeRules.first_reachable]）。
 ## 渲染层能碰 sim 的地方只有这一处，理由是它本来就是「玩家的指令」——
 ## 而指令就该是玩家能改的那种状态。
 ##

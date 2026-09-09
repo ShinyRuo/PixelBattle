@@ -275,7 +275,7 @@ func take_damage(amount: float, at_tick: int) -> bool:
 ##
 ## ## 只有溢出那一条路需要它
 ##
-## [method PBBattleSim._pour_damage] 打死一个之后要把「花掉的那一份」
+## [method PBStrikeRules._pour_damage] 打死一个之后要把「花掉的那一份」
 ## 从手上的伤害里减掉，接着打下一个。易伤进来之后
 ## 「掉了多少血」和「花了多少伤害」不再是同一个数，
 ## 而那条路径正是与 [PBCombatRules] 解析式排队模型对拍的锚点 ——

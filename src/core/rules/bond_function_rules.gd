@@ -37,6 +37,7 @@ extends RefCounted
 enum Landing {
 	SKILL,  ## 装在载体的大招上（聚拢 / 吸附 / 定身 / 减速）
 	TEAM,  ## 开波给全队每个人乘死一份（暴击光环）
+	CARRIER,  ## 开波只给载体本人乘死一份（触发型：重生 / 溅射 / 命中后提暴击）
 	ECONOMY,  ## 不进战斗（金币不再倒扣）
 }
 
@@ -91,11 +92,60 @@ const CRIT_CHANCE: StringName = &"crit_chance"
 ## [member PBAttacker.crit_bonus]，理由同 [constant CRIT_CHANCE]。
 const CRIT_DAMAGE: StringName = &"crit_damage"
 
+# ── 触发型（M10-d）─────────────────────────────────────────────
+#
+# 这四个是 [enum Landing] 的 `CARRIER` 档：**只发给载体本人**，
+# 不像暴击光环那样发给全队。M3-f 那条「一组羁绊只出一个载体」因此
+# 原样成立，而且这一档比大招那一档更贴近它 —— 前五个至少还要玩家
+# 手动放一发大招才兑现，这四个是他站在场上就一直在发生的事。
+#
+# **§7 那 15 组没有功能键的羁绊里，只有这四组做得出来。** 其余的机制
+# 是「强化某个角色的某个技能」（豪火球附带天照、月读控两个目标……），
+# 而 49 个角色里配了技能的是 2 个 —— 卡的不是缺一个键，
+# 是被强化的对象根本不存在。见《开发路线图》M10-d 那一节。
+
+## 命中之后短时提暴击（§7 的 B10 绝牛雷犁热刀）。
+## 落点是 [member PBAttacker.crit_on_hit]。
+##
+## **它是暴击系统真正有意思的那一半**：M10-c 那三组给的是常驻光环，
+## 而常驻光环本质上仍然是「更大的百分比」—— §09 要的是机制，
+## 而「打中了才有、停手就没」才是一个玩家能感知、也能主动利用的东西。
+const CRIT_ON_HIT: StringName = &"crit_on_hit"
+
+## 普攻附带范围伤害（§7 的 B15 神赐予的伤痛）。
+## 落点是 [member PBAttacker.splash_damage]。
+const SPLASH: StringName = &"splash"
+
+## 对血还很多的敌人额外多打一笔（§7 的 B05 日向兄妹）。
+## 落点是 [member PBAttacker.heavy_bonus]。
+const HEAVY_HIT: StringName = &"heavy_hit"
+
+## 阵亡时原地重生一次（§7 的 B02 不死二人组）。
+## 落点是 [member PBAttacker.revives_max]。
+##
+## **判据在 [method PBAttacker.take_damage] 里面，不在调用方** ——
+## 己方阵亡有两个落点（近战那一记、敌人的子弹命中），各判一次的表现是
+## 「被子弹打死就复活不了」，而它不报错。
+const REVIVE: StringName = &"revive"
+
 ## 全部合法的功能键。[PBBondTable] 用它拦下拼错的键 ——
 ## 拼错了不会报错，只会静默地什么都不发生，而那种 bug 从现象反推不出来。
 const ALL: Array[StringName] = [
-	GATHER, PULL, ROOT, SLOW_FIELD, GOLD_FLOOR, CRIT_CHANCE, CRIT_DAMAGE
+	GATHER,
+	PULL,
+	ROOT,
+	SLOW_FIELD,
+	GOLD_FLOOR,
+	CRIT_CHANCE,
+	CRIT_DAMAGE,
+	CRIT_ON_HIT,
+	SPLASH,
+	HEAVY_HIT,
+	REVIVE,
 ]
+
+## [enum Landing] 为 `CARRIER` 的那几个。见 [method apply_to_carrier]。
+const CARRIER_KEYS: Array[StringName] = [CRIT_ON_HIT, SPLASH, HEAVY_HIT, REVIVE]
 
 ## 这个键认不认得。
 static func is_known(key: StringName) -> bool:
@@ -118,6 +168,8 @@ static func landing_of(key: StringName) -> Landing:
 		return Landing.ECONOMY
 	if key == CRIT_CHANCE or key == CRIT_DAMAGE:
 		return Landing.TEAM
+	if CARRIER_KEYS.has(key):
+		return Landing.CARRIER
 	return Landing.SKILL
 
 
@@ -170,6 +222,35 @@ static func apply_to_team(attackers: Array[PBAttacker], functions: Dictionary) -
 				CRIT_DAMAGE:
 					for one: PBAttacker in attackers:
 						one.crit_bonus += PBCritRules.BOND_CRIT_DAMAGE
+
+
+## 把一个 [enum Landing] 为 `CARRIER` 的功能装到**载体本人**身上（M10-d）。
+## 返回 false 表示这个键不归它管。
+##
+## ## 为什么它要在建人的循环**里面**，而全队光环在循环外面
+##
+## 两者的判据不同：光环是「这一组羁绊给的」，跟具体哪个人无关；
+## 而这一档要认人 —— 而**只有那个循环里才知道这个攻击者对应哪个角色 id**
+## （[PBAttacker] 上没有、也不该有角色 id，铁律 5）。
+## 搬到循环外面就要再造一份「攻击者 ↔ 角色」的对照表，
+## 而那份表和出战席顺序对不上的表现是「羁绊的机制发到了别人身上」。
+##
+## 和 [method apply_to_skill] 同一条：改的是**已经建好的**攻击者。
+static func apply_to_carrier(attacker: PBAttacker, key: StringName) -> bool:
+	if attacker == null:
+		return false
+	match key:
+		CRIT_ON_HIT:
+			attacker.crit_on_hit += PBStrikeRules.BOND_CRIT_ON_HIT
+		SPLASH:
+			attacker.splash_damage += PBStrikeRules.BOND_SPLASH
+		HEAVY_HIT:
+			attacker.heavy_bonus += PBStrikeRules.BOND_HEAVY_BONUS
+		REVIVE:
+			attacker.revives_max += PBStrikeRules.BOND_REVIVES
+		_:
+			return false
+	return true
 
 
 ## 这份功能表里有没有人带着 [constant GOLD_FLOOR]。
