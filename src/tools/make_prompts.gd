@@ -29,6 +29,16 @@ const COL_KEY: int = 0
 const COL_ORIGIN: int = 1
 const COL_LOOK: int = 2
 
+## 跑姿与出手（玩家提的：24 个人共用一套跑法和出手，屏幕上会像一队复制人）。
+##
+## 这两栏落进 `run` / `attack` 那张图集的【动作】**末尾**，
+## 前面那六格的骨架一个字不改 —— 骨架是流水线的硬要求：
+## `attack` 第 4 格必须是伸得最远的那一格（[method PBActorForge._pick_reach]
+## 按它排出手帧，错了游戏里就是「先掉血、后出手」）、`run` 六格要接得回去、
+## 不许有和身体断开的碎块（切图会把它当成独立的一格）。
+const COL_RUN: int = 3
+const COL_ATTACK: int = 4
+
 
 func _init() -> void:
 	var root: String = ProjectSettings.globalize_path("res://")
@@ -41,11 +51,19 @@ func _init() -> void:
 	var written: int = 0
 	for row: PackedStringArray in _read(root + TABLE):
 		var key: String = row[COL_KEY]
+		if row.size() <= COL_ATTACK:
+			# **少一栏不许静默跳过。** 跳过的表现是这一个人的提示词里
+			# 留着一个没替换掉的 `{{run}}`，而那一整段照样复制得出去。
+			printerr("%s 少了列（要 5 列，实际 %d）" % [key, row.size()])
+			quit(1)
+			return
 		var text: String = template
 		text = text.replace("{{key}}", key)
 		text = text.replace("{{name}}", String(names.get(key, key)))
 		text = text.replace("{{origin}}", row[COL_ORIGIN])
 		text = text.replace("{{look}}", row[COL_LOOK])
+		text = text.replace("{{run}}", row[COL_RUN])
+		text = text.replace("{{attack}}", row[COL_ATTACK])
 		var file := FileAccess.open("%s%s/%s.md" % [root, OUT_DIR, key], FileAccess.WRITE)
 		if file == null:
 			printerr("写不出 %s" % key)
