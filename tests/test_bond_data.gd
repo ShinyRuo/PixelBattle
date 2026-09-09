@@ -33,7 +33,10 @@ func _named() -> Array[PBBond]:
 
 func test_the_data_directory_actually_loads() -> void:
 	assert_gt(_bonds.size(), 0, "data/bonds/ 里应该装得出羁绊")
-	assert_eq(_named().size(), 5, "§09 的首批实现是 5 组命名羁绊")
+	# **23 = 原版的 B01~B23**（M10-b）。写死是有意的，同名册那条：
+	# 表是照抄的，少一组就是漏抄了一行。
+	assert_eq(_named().size(), 23, "羁绊该照 data/bonds.tsv 铺满 23 组")
+	assert_eq(_bonds.size(), _named().size(), "M10-b 起没有兜底羁绊，每一组都是点名的")
 
 
 func test_every_named_member_actually_exists() -> void:
@@ -58,31 +61,20 @@ func test_every_named_bond_can_actually_be_completed() -> void:
 		)
 
 
-func test_element_bonds_cover_every_element_exactly_once() -> void:
-	# §09 的「属性型（同系）」是兜底羁绊 —— 缺哪一系，那一系的角色就白少一份加成，
-	# 而那种偏差只表现为「这个属性好像偏弱」。重复一系则是双倍加成，同样静默。
-	var seen := {}
+func test_no_bond_is_out_of_reach_of_the_field() -> void:
+	# **羁绊只算在场的人**（`PBRunState.bonded_units` → `field_units`），
+	# 而在场上限是 [member PBSimConfig.deploy_slots_max]。满档人数超过它的
+	# 那一组**结构上永远凑不齐** —— 而它不报错：表装得进来、界面照样列它，
+	# 现象只是「这一组我怎么凑不出来」。
+	#
+	# 原版的「木叶十二小强」正是 12 人，原版能要 12 是因为**待命台也算羁绊**，
+	# 而待命台 M3.5-i 已经删了（玩家复核过不恢复）。所以 `data/bonds.tsv`
+	# 里那一组的满档写的是 10，不是 12。
 	for bond: PBBond in _bonds.all():
-		if bond.match_mode != PBBond.Match.ELEMENT:
-			continue
-		assert_false(seen.has(int(bond.match_element)), "属性 %d 有两组兜底羁绊" % int(bond.match_element))
-		seen[int(bond.match_element)] = true
-	assert_eq(seen.size(), PBElement.Type.size(), "每个属性都该有一组兜底羁绊")
-
-
-func test_element_bonds_can_be_filled_from_the_real_roster() -> void:
-	# 兜底羁绊的满档人数不能超过该系的角色数，否则同样是够不着的档。
-	for bond: PBBond in _bonds.all():
-		if bond.match_mode != PBBond.Match.ELEMENT:
-			continue
-		var pool: int = 0
-		for character: PBCharacter in _characters.all():
-			if character.element == bond.match_element:
-				pool += 1
-		assert_gte(
-			pool,
+		assert_lte(
 			bond.full_tier_count(),
-			"%s 满档要 %d 人但该系只有 %d 个角色" % [bond.id, bond.full_tier_count(), pool]
+			_cfg.deploy_slots_max,
+			"%s 满档要 %d 人，而在场最多 %d 个" % [bond.id, bond.full_tier_count(), _cfg.deploy_slots_max]
 		)
 
 
@@ -117,16 +109,28 @@ func test_the_reachable_ceiling_stays_in_a_sane_band() -> void:
 	# **加**每系 4 人 = 24 人在场，而在场上限是 出战 10 + 待命 6 = 16。
 	# **那个数根本够不着**，拿它当护栏量的是个不存在的局面。
 	#
-	# 够得着的最好局面恰好很干净：五组命名羁绊的成员合起来正好 16 人，
-	# 塞满在场席位。属性档是这批人的属性分布顺带吃到的。
+	# ## 够得着的上限由**在场席位**卡着，不是由羁绊组数卡着
+	#
+	# M10-b 之前是「五组命名羁绊的成员合起来正好 16 人」——那个 16 是
+	# 「出战 10 + 待命 6」，而待命台 M3.5-i 就删了，这句话早就不成立了，
+	# 只是当时的 5 组恰好凑出 16 张卡，断言一直绿着。
+	#
+	# 现在 23 组的成员合起来 40 多人，而**在场只有 10 个位置** ——
+	# 所以护栏要量的是「10 个位置最多能同时激活几组」。下面这一队是
+	# 手挑的一个高重叠局面（咒印那三组两两共享成员，鹰小队再蹭一个），
+	# 7 个人吃到 5 组。**手挑不是取巧**：真正的最优要在 49 选 10 里搜，
+	# 而护栏要的是一个够得着、可复现、看得懂的下界。
 	var state := PBRunSim.new_state(_cfg)
 	state.tech_pop = _cfg.tech_pop_max
-	for bond: PBBond in _named():
-		for member_id: StringName in bond.member_ids:
-			state.add_unit(PBUnit.new(_characters.by_id(member_id)))
-	assert_eq(state.roster.size(), 16, "五组命名羁绊的成员应正好填满在场席位")
+	var squad: Array[StringName] = _squad()
+	for member_id: StringName in squad:
+		var character := _characters.by_id(member_id)
+		assert_not_null(character, "护栏用的这一队里有个人不在名册上：%s" % member_id)
+		state.add_unit(PBUnit.new(character))
+	assert_lte(squad.size(), _cfg.deploy_slots_max, "这一队得真的站得下")
 
 	var best: float = state.bond_mult(_cfg)
+	assert_gt(best, 1.0, "这一队该激活好几组羁绊，一组都没激活说明夹具挑错了人")
 	var old_ceiling: float = 1.0 + _cfg.bond_power_per_unit * float(_cfg.bond_unit_cap)
 	assert_gt(best, old_ceiling, "凑满五组还不如旧替身曲线的话，羁绊就白做了")
 	assert_lt(best, old_ceiling * 2.0, "够得着的上限 %.2f× 相对旧的 %.2f× 涨得太狠" % [best, old_ceiling])
@@ -175,6 +179,52 @@ func test_no_bond_id_leaks_into_src() -> void:
 		if _scan_dir("res://src", String(bond.id)):
 			offenders.append(String(bond.id))
 	assert_eq(String(", ").join(offenders), "", "这些羁绊 id 出现在了 src/ 里")
+
+
+## 一个够得着的高重叠阵容：按满档人数从小到大收羁绊，站得下就收。
+##
+## **不写死名字**：写死的话这个夹具会在名册改名的那天红，而红的是夹具
+## 不是护栏。
+##
+## ## 贪的是「重叠」不是「人少」
+##
+## 第一版按满档人数从小到大收，结果收进来的是五组**互不相干**的两人组
+## （10 个位置摊在 5 组上），只有 1.70× —— 比旧替身曲线的 1.72× 还低。
+## 那不是「羁绊白做了」，是这个夹具挑了一个最稀疏的局面。
+##
+## 每一轮改成挑**新增人数最少**的那一组，重叠就被优先吃掉：
+## 咒印那三组两两共享成员，鹰小队再蹭一个，7 个人能吃到 5 组。
+## 平局按 id 排，不然结果会随字典遍历顺序漂。
+func _squad() -> Array[StringName]:
+	var left: Array[PBBond] = _named()
+	var picked: Dictionary = {}
+	while true:
+		var best: PBBond = null
+		var best_cost: int = 999
+		for bond: PBBond in left:
+			var cost: int = _newcomers(bond, picked)
+			if picked.size() + cost > _cfg.deploy_slots_max:
+				continue
+			if cost < best_cost or (cost == best_cost and String(bond.id) < String(best.id)):
+				best = bond
+				best_cost = cost
+		if best == null:
+			break
+		for member_id: StringName in best.member_ids:
+			picked[member_id] = true
+		left.erase(best)
+	var out: Array[StringName] = []
+	out.assign(picked.keys())
+	return out
+
+
+## 收下这一组还要再添几个人。
+func _newcomers(bond: PBBond, picked: Dictionary) -> int:
+	var count: int = 0
+	for member_id: StringName in bond.member_ids:
+		if not picked.has(member_id):
+			count += 1
+	return count
 
 
 func _scan_dir(dir_path: String, needle: String) -> bool:

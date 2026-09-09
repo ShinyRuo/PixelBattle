@@ -134,18 +134,26 @@ var _orders: PBSkillOrders = PBSkillOrders.new()
 ## 不需要每 tick 排序找目标，从这个游标往后扫就行。
 var _front: int = 0
 
+## 暴击掷骰用的流（M10-c）。**null = 不掷**，绝大多数构造点都是。
+## 它不是 [member PBRngStreams.combat] 而是 [method PBRngStreams.battle_rng]
+## 派生的**本波专属**流 —— 理由写在那个方法顶上。
+var _crit_rng: RandomNumberGenerator = null
+
 
 ## [param attackers] 为空时走退化路径：整队折成一个覆盖全场的单体攻击者，
 ## 此时 [param dps] 就是整队 DPS，行为与 M0 完全相同。
 ## 给了攻击者列表时 [param dps] 不参与战斗结算 —— 它只是个报数用的汇总量，
 ## 而汇总量按定义等于各攻击者之和（见 [method PBCombatRules.build_attackers]）。
+## [param crit_rng] 见 [member _crit_rng]，不给就是从不暴击。
 func _init(
 	wave: PBWave,
 	dps: float,
 	def_reduction: float,
 	cfg: PBSimConfig,
-	attackers: Array[PBAttacker] = []
+	attackers: Array[PBAttacker] = [],
+	crit_rng: RandomNumberGenerator = null
 ) -> void:
+	_crit_rng = crit_rng
 	_cfg = cfg
 	_wave = wave
 	_outcome = PBCombatOutcome.new()
@@ -541,9 +549,9 @@ func _advance_shots() -> void:
 ## 记一次命中。**每个见血的地方都走这一句**，而不是各写一遍
 ## `if log_to != null` —— 漏一处的表现是「某一种攻击方式在日志里不存在」，
 ## 而那要盯着日志看很久才发现。
-func _note_hit(source: int, target: int, amount: float, to_ally: bool) -> void:
+func _note_hit(source: int, target: int, amount: float, to_ally: bool, crit := false) -> void:
 	if log_to != null:
-		log_to.hit(_tick, source, target, amount, to_ally)
+		log_to.hit(_tick, source, target, amount, to_ally, crit)
 
 
 ## 记一个忍者倒下。**怪物死了不记**（玩家定的）：一波死几十只，
@@ -827,10 +835,13 @@ func _strike_single(attacker: PBAttacker) -> bool:
 	var target := _first_reachable(attacker)
 	if target == null:
 		return false
-	var damage: float = attacker.strike_for(_tick)
+	# 暴击的**唯一掷点**（M10-c）。近战与子弹都走它，见 [PBCritRules]。
+	var swing: Dictionary = PBCritRules.strike(attacker, _tick, _crit_rng)
+	var damage: float = swing[PBCritRules.DAMAGE]
+	var crit: bool = swing[PBCritRules.CRIT]
 	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
 	if attacker.shot_speed <= 0.0:
-		_note_hit(attacker.slot, target.slot, damage, false)
+		_note_hit(attacker.slot, target.slot, damage, false, crit)
 		if target.take_damage(damage, _tick):
 			_outcome.kills += 1
 		return true
@@ -839,7 +850,7 @@ func _strike_single(attacker: PBAttacker) -> bool:
 		return false
 	shot.launch(
 		attacker.pos, target.slot, damage, attacker.shot_speed,
-		false, PBElement.Type.PHYSICAL, attacker.slot
+		false, PBElement.Type.PHYSICAL, attacker.slot, null, 1, crit
 	)
 	return true
 
@@ -868,7 +879,9 @@ func _first_reachable(attacker: PBAttacker) -> PBEnemy:
 ## 溢出必须结算：高 DPS 一 tick 能打死好几个，漏掉溢出会让战斗时长
 ## 被系统性拉长 —— 而这条路径存在的全部理由就是与解析式排队模型对拍。
 func _pour_damage(attacker: PBAttacker) -> bool:
-	var remaining: float = attacker.strike_for(_tick)
+	# 也走掷点（一把尺子），但这条路上的是 [method PBAttacker.whole_field]
+	# 造的退化标量，暴击率恒为 0 —— 于是一次骰子都不掷，解析式对拍逐位相同。
+	var remaining: float = PBCritRules.strike(attacker, _tick, _crit_rng)[PBCritRules.DAMAGE]
 	var hit: bool = false
 	var index: int = _front
 	while remaining > 0.0 and index < _enemies.size():
@@ -903,7 +916,10 @@ func _pour_damage(attacker: PBAttacker) -> bool:
 ## 那和大招的落点是同一个问题，而大招已经有一整套答案（[PBSkill]）。
 ## 在角色表真的需要「会飞的范围普攻」之前，多一套实现只会多一处分叉。
 func _strike_area(attacker: PBAttacker) -> bool:
-	var damage: float = attacker.strike_for(_tick)
+	# **一次出手掷一次**，命中的几个共用它 —— 逐个目标掷的话，
+	# 一发范围攻击会同时飘出黄的和白的数字，而那本来就是同一下。
+	var swing: Dictionary = PBCritRules.strike(attacker, _tick, _crit_rng)
+	var damage: float = swing[PBCritRules.DAMAGE]
 	if damage <= 0.0:
 		return false
 	var hits: int = 0
@@ -915,7 +931,7 @@ func _strike_area(attacker: PBAttacker) -> bool:
 		index += 1
 		if not enemy.alive or not attacker.can_reach(enemy.pos()):
 			continue
-		_note_hit(attacker.slot, enemy.slot, damage, false)
+		_note_hit(attacker.slot, enemy.slot, damage, false, swing[PBCritRules.CRIT])
 		if enemy.take_damage(damage, _tick):
 			_outcome.kills += 1
 		hits += 1

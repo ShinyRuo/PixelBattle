@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_dju1v"]
+
+[resource]
+script = ExtResource("1_dju1v")
+id = &"hokage_line"
+name_key = "bond.hokage_line"
+member_ids = Array[StringName]([&"hashirama", &"tobirama", &"hiruzen", &"minato"])
+tier_counts = Array[int]([4])
+tier_power = Array[float]([0.42000000000000004])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])

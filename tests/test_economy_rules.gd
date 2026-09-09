@@ -16,16 +16,20 @@ func before_each() -> void:
 func test_gacha_table_bands_are_complete_and_sum_to_100() -> void:
 	# §08 的概率表。少写一档或加错和，会让某个波段的抽卡概率悄悄偏掉。
 	for row: Array in PBEconomyRules.GACHA_TABLE:
-		var total: float = float(row[1]) + float(row[2]) + float(row[3]) + float(row[4])
+		assert_eq(row.size(), PBUnit.Rarity.size() + 1, "每行是「波次上限 + 每档一个概率」")
+		var total: float = 0.0
+		for i: int in range(1, row.size()):
+			total += float(row[i])
 		assert_almost_eq(total, 100.0, 1e-6, "波次 ≤%d 段的概率应加总为 100" % int(row[0]))
 
 
 func test_gacha_gets_better_over_time() -> void:
 	# §08 的节奏设计：30 波后开始爆种。高稀有度概率必须单调上升。
+	# **量的是顶档那一列**（M10-a 之前是 SSR+USR 两列相加）。
 	var previous: float = -1.0
 	for row: Array in PBEconomyRules.GACHA_TABLE:
-		var high_rarity: float = float(row[3]) + float(row[4])
-		assert_gt(high_rarity, previous, "SSR+USR 概率应随波段单调上升")
+		var high_rarity: float = float(row[row.size() - 1])
+		assert_gt(high_rarity, previous, "顶档概率应随波段单调上升")
 		previous = high_rarity
 
 

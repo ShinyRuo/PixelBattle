@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_vq7om"]
+
+[resource]
+script = ExtResource("1_vq7om")
+id = &"konoha_twelve"
+name_key = "bond.konoha_twelve"
+member_ids = Array[StringName]([&"naruto", &"sasuke", &"sakura", &"neji_hyuga", &"hinata", &"rock_lee", &"tenten", &"kiba", &"shino", &"ino", &"choji", &"shikamaru"])
+tier_counts = Array[int]([10])
+tier_power = Array[float]([1.2600000000000002])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])

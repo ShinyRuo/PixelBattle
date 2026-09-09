@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -7,23 +7,17 @@ script = ExtResource("1_char")
 id = &"itachi"
 name_key = "char.itachi"
 icon_key = "itachi"
+actor_key = &"itachi"
 element = 0
-rarity = 3
-def_element = 4
+def_element = 0
 primary = 2
-strength = 18.0
-agility = 18.0
-intellect = 30.0
-strength_growth = 2.0
-agility_growth = 2.0
-intellect_growth = 3.8
-hp_base = 200.0
-mp_base = 90.0
-atk_base = 162.3077
-def_base = 1.0
-attack_speed_base = 1.0
-hp_per_strength = 16.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.22
-attack_speed_per_agility = 0.008
+strength = 16.0
+agility = 16.0
+intellect = 26.0
+strength_growth = 1.7999999999999998
+agility_growth = 1.7999999999999998
+intellect_growth = 3.4000000000000004
+mp_base = 80.0
+atk_base = 123.82269503546098
+rarity = 2
+reach = 2

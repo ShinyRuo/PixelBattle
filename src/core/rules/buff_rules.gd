@@ -77,9 +77,33 @@ const ENEMY_SPEED_SCALE: StringName = &"enemy_speed_scale"
 ## 而 v1 没有任何一个技能要给自己人上 DoT。
 const HARM: StringName = &"harm"
 
+## 暴击率**临时**加多少（M10-c）。读点在 [method PBCritRules.chance_of]。
+##
+## ## 为什么它是量型（累加、空 = 0.0）而不是率型
+##
+## 「+15% 暴击」和「+10% 暴击」摞在一起要得到 +25%，不是 ×1.15×1.10。
+## 概率本来就是加法量，把它塞进率型的话两份 +15% 会算成 +32%，
+## **而它不报错** —— 只表现为「凑得越多暴得越离谱」。
+##
+## ## 常驻的那一份不在这里
+##
+## 羁绊的暴击光环整波常驻、没有施法者、也不该占袋子的槽位，
+## 它落在 [member PBAttacker.crit_chance] 上（同「装备、羁绊已经乘死」那一档）。
+## 这个键是**临时**那一份：命中后短时提暴击、技能给的暴击窗口。
+## 两者在 [method PBCritRules.chance_of] 相加 —— 一个读点。
+const CRIT_CHANCE: StringName = &"crit_chance"
+
+## 暴击时**额外**多打几成，临时那一份（M10-c）。读点在 [method PBCritRules.bonus_of]。
+##
+## **存的是「额外」不是「倍数」**，所以中性值 0.0 就是「不额外多打」，
+## 和量型那条规矩天然对得上。存倍数的话中性值得是 1.0，
+## 而那要么把它挪进 [constant SCALES] 变成连乘（两份 +50% 算成 +125%），
+## 要么给量型开一个例外 —— 两条都比换一个语义贵。
+const CRIT_DAMAGE: StringName = &"crit_damage"
+
 ## 全部**已经接上读点**的键。见本类顶部。
 const ALL: Array[StringName] = [
-	DAMAGE_SCALE, HEAL, MANA, HURT, ENEMY_SPEED_SCALE, HARM
+	DAMAGE_SCALE, HEAL, MANA, HURT, ENEMY_SPEED_SCALE, HARM, CRIT_CHANCE, CRIT_DAMAGE
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。

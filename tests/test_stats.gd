@@ -163,7 +163,7 @@ func test_the_generated_table_still_follows_the_rarity_ladder() -> void:
 		by_rarity[int(character.rarity)] = bucket
 
 	var previous: float = 0.0
-	for rarity: int in range(4):
+	for rarity: int in PBUnit.Rarity.size():
 		if not by_rarity.has(rarity):
 			continue
 		var total: float = 0.0
@@ -177,7 +177,7 @@ func test_the_generated_table_still_follows_the_rarity_ladder() -> void:
 func test_a_code_made_character_still_has_a_rarity_ladder() -> void:
 	# **这一条守着一个静默陷阱。** `data/` 的属性块是生成脚本铺的，
 	# 代码里 `PBCharacter.make()` 造出来的角色没有 —— 不补的话每个人都吃默认值，
-	# **R 和 USR 的战力一模一样**，稀有度阶梯在合成表上彻底消失。
+	# **R 和顶档的战力一模一样**，稀有度阶梯在合成表上彻底消失。
 	#
 	# 它不会让任何断言变红（合成表的用例查的是构成，不是强度），
 	# 只会让所有用合成表的整局测试跑在一副全是白板的牌上。

@@ -235,6 +235,11 @@ static func build_attackers(
 		_equip_skills(attacker, unit, cfg)
 		out[i] = attacker
 
+	# 全队光环那一档（M10-c）。**排在循环外面**：光环是这一组羁绊给的，
+	# 不是这个人给的 —— 放进循环的话载体之前建好的人拿不到，
+	# 而那只表现为「站前排的忍者暴击率好像高一点」。
+	PBBondFunctionRules.apply_to_team(out, bond_functions)
+
 	var beast_attacker := PBBeastRules.build_ultimate_attacker(
 		beast, beast_level, total_dps(out), wave_element, cfg, beast_cooldown_ticks
 	)

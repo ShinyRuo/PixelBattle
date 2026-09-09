@@ -52,14 +52,16 @@ const ZONE_STASH: StringName = &"stash"
 const ZONE_QUEST: StringName = &"quest"
 
 ## 稀有度边框色。下标对齐 [enum PBUnit.Rarity]。
+##
+## **M10-a 砍成三档之后顶档换成了原来 USR 那个金色**，不是留着紫的把金的删掉：
+## 「最高档是金色」这件事玩家已经认了，而顶档换个颜色比少一档更容易被当成 bug。
 const RARITY_COLORS: Array[Color] = [
 	Color(0.45, 0.47, 0.52),  # R
 	Color(0.35, 0.60, 0.88),  # SR
-	Color(0.68, 0.45, 0.90),  # SSR
-	Color(0.95, 0.75, 0.30),  # USR
+	Color(0.95, 0.75, 0.30),  # SSR
 ]
 
-const RARITY_NAMES: Array[String] = ["R", "SR", "SSR", "USR"]
+const RARITY_NAMES: Array[String] = ["R", "SR", "SSR"]
 
 ## 属性的单字名。**全项目唯一一份** —— 界面各处都从这里取。
 const ELEMENT_NAMES := {

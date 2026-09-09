@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_2p3ux"]
+
+[resource]
+script = ExtResource("1_2p3ux")
+id = &"immortal_pair"
+name_key = "bond.immortal_pair"
+member_ids = Array[StringName]([&"kakuzu", &"hidan"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])

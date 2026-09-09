@@ -1,15 +1,13 @@
-[gd_resource type="Resource" script_class="PBBond" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBBond" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_bond"]
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_be1kh"]
 
 [resource]
-script = ExtResource("1_bond")
+script = ExtResource("1_be1kh")
 id = &"team_seven"
 name_key = "bond.team_seven"
-match_mode = 0
-member_ids = Array[StringName]([&"kakashi", &"obito", &"nohara_rin"])
-match_element = 0
-tier_counts = Array[int]([3])
-tier_power = Array[float]([0.28])
+member_ids = Array[StringName]([&"naruto", &"sasuke", &"sakura", &"kakashi"])
+tier_counts = Array[int]([4])
+tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&"pull"])
 tier_function_carriers = Array[StringName]([&"kakashi"])

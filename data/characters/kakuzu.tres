@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_bh158"]
+
+[resource]
+script = ExtResource("1_bh158")
+id = &"kakuzu"
+name_key = "char.kakuzu"
+icon_key = "kakuzu"
+element = 2
+def_element = 3
+primary = 1
+strength = 14.0
+agility = 22.0
+intellect = 14.0
+strength_growth = 1.5999999999999999
+agility_growth = 3.0
+intellect_growth = 1.5999999999999999
+mp_base = 70.0
+atk_base = 88.54421768707483
+rarity = 1
+reach = 2

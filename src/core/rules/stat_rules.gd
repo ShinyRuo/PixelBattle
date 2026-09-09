@@ -24,7 +24,7 @@ extends RefCounted
 ## 它在这里再写一遍，是因为 [method PBCharacter.make] 手上没有配置对象。
 ## 两份写歪了不会报错，只会让合成角色表和真角色表的强度悄悄分叉 ——
 ## `test_stats.gd` 里有一条断言把它们钉在一起。
-const PLACEHOLDER_RARITY_DPS: Array[float] = [100.0, 130.0, 169.0, 220.0]
+const PLACEHOLDER_RARITY_DPS: Array[float] = [100.0, 130.0, 169.0]
 
 ## 主属性按属性分：土/物理 → 力量，风/雷 → 敏捷，火/水 → 智力。
 const PLACEHOLDER_PRIMARY := {
@@ -46,7 +46,7 @@ const PLACEHOLDER_PRIMARY := {
 ## [method PBCharacterTable.synthetic] 造的那整张合成表全走这条路。
 ##
 ## 不铺的话，合成表里每个角色都吃 [PBCharacter] 的默认值：
-## **R 和 USR 的战力一模一样**，稀有度阶梯在合成表上彻底消失。
+## **R 和顶档的战力一模一样**，稀有度阶梯在合成表上彻底消失。
 ## 那不会让任何断言变红（合成表的用例查的是构成，不是强度），
 ## 只会让所有用合成表的整局测试跑在一副「全是白板」的牌上 ——
 ## 实测表现为整套测试从 30 秒涨到 120 秒，而没有一条测试报错。

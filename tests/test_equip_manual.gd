@@ -18,13 +18,28 @@ func before_each() -> void:
 
 
 ## 一支能同时吃物理装和法术装的队伍：一个物理、两个五系。
+##
+## **按属性挑，不钉稀有度**（M10-b 改的）。原来写的是
+## `PBUnit.of(cfg, WATER, SSR)`，而照抄原版名册之后**没有水系 SSR**
+## （8 个 SSR 是火 4 / 土 2 / 风 1 / 雷 1）—— 那一格空了之后
+## 这个夹具拿回来的人属性不是水，两条断言跟着红，而红的是夹具。
+## 这里只关心「一个物理 + 两个五系」，稀有度是哪一档无所谓。
 func _team() -> Array[PBUnit]:
 	var out: Array[PBUnit] = []
 	for element: PBElement.Type in [
 		PBElement.Type.PHYSICAL, PBElement.Type.FIRE, PBElement.Type.WATER
 	]:
-		out.append(PBUnit.of(_cfg, element, PBUnit.Rarity.SSR))
+		var character := _any_of(element)
+		assert_not_null(character, "名册里该有属性 %d 的角色" % int(element))
+		out.append(PBUnit.new(character))
 	return out
+
+
+func _any_of(element: PBElement.Type) -> PBCharacter:
+	for character: PBCharacter in _cfg.characters.all():
+		if character.element == element:
+			return character
+	return null
 
 
 ## 手上有 [param count] 套「钝刀」（物理装）与「雷牙」（法术装）的配件。

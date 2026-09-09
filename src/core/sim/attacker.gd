@@ -139,6 +139,25 @@ var leash: float = 0.0
 ## AOE 一次能命中几个。单体型不读这个字段。
 var max_targets: int = 1
 
+## **整波常驻**的暴击率（M10-c）。羁绊的暴击光环乘死在这里。
+##
+## 和 [member dps] 顶上那句「属性克制、攻击科技、羁绊、装备全部已经乘进来了」
+## 是同一档：战斗层不认识羁绊，它只认这个数。
+##
+## ## 为什么不放进 [member buffs]
+##
+## 袋子是**同 id 整份覆盖**的（[method PBBuffBag.add] 顶上那条「刷新时长」），
+## 两组羁绊各挂一份暴击光环时后一份会静默吃掉前一份；而且袋子只有六个槽、
+## 有时长、有清扫，这三样对「整波不变、没有施法者」的光环全是错的。
+## 临时那一份仍然走袋子，两者在 [method PBCritRules.chance_of] 相加。
+##
+## **0 = 从不暴击，而且一次骰子都不掷** —— 见 [PBCritRules] 顶部。
+var crit_chance: float = 0.0
+
+## **整波常驻**的暴击伤害加成，「额外多打几成」（M10-c）。理由同
+## [member crit_chance]，中性值是 0.0 不是 1.0。
+var crit_bonus: float = 0.0
+
 # ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
 
 ## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
@@ -297,6 +316,11 @@ func clone() -> PBAttacker:
 	out.reach = reach
 	out.shape = shape
 	out.max_targets = max_targets
+	# 暴击那两个也要跟过来（M10-c）：漏掉的话，悬崖二分探测量的是一支
+	# **不会暴击**的队伍，而真正上场的那支会暴 —— 于是探出来的悬崖
+	# 系统性地偏保守，且不报错。同 [member max_hp] 那条「越探越弱」。
+	out.crit_chance = crit_chance
+	out.crit_bonus = crit_bonus
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
 	out.slot = slot

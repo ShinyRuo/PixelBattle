@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -7,23 +7,16 @@ script = ExtResource("1_char")
 id = &"kakashi"
 name_key = "char.kakashi"
 icon_key = "kakashi"
+actor_key = &"kakashi"
 element = 2
-rarity = 2
-def_element = 1
 primary = 1
 strength = 16.0
 agility = 26.0
 intellect = 16.0
-strength_growth = 1.8
-agility_growth = 3.4
-intellect_growth = 1.8
-hp_base = 200.0
+strength_growth = 1.7999999999999998
+agility_growth = 3.4000000000000004
+intellect_growth = 1.7999999999999998
 mp_base = 80.0
-atk_base = 113.9007
-def_base = 1.0
-attack_speed_base = 1.0
-hp_per_strength = 16.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.22
-attack_speed_per_agility = 0.008
+atk_base = 113.90066225165563
+rarity = 2
+reach = 2

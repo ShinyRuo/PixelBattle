@@ -118,13 +118,20 @@ func test_rarity_ladder_stays_flatter_than_the_counter_bonus() -> void:
 	# 初版阶梯是 ×1.84（对克制的 ×2.0），M-1 实测换人只值 1.25 倍战力。
 	# 压到 ×1.30 后升到 1.39 倍。1.45 以上是完全没用的平台，所以卡在 1.45。
 	var cfg := PBSimConfig.new()
-	assert_eq(cfg.rarity_power.size(), 4, "稀有度应有 R/SR/SSR/USR 四档")
+	assert_eq(
+		cfg.rarity_power.size(), PBUnit.Rarity.size(), "战力阶梯要和稀有度档数一样长"
+	)
 	for i: int in range(1, cfg.rarity_power.size()):
 		var step: float = cfg.rarity_power[i] / cfg.rarity_power[i - 1]
 		assert_gt(step, 1.0, "高稀有度不该比低稀有度弱")
 		assert_lt(step, 1.45, "稀有度阶梯 ≥1.45 会让「升一档」替代「换克制系」，属性系统失效")
 
-	# 反过来也要守：USR 若与 R 差不多，抽卡在数值上就没意义了，
+	# 反过来也要守：顶档若与 R 差不多，抽卡在数值上就没意义了，
 	# §08 的「30 波后爆种」体感会消失。
-	var top_to_bottom: float = cfg.rarity_power[3] / cfg.rarity_power[0]
-	assert_gt(top_to_bottom, 1.8, "USR 对 R 的差距太小，抽到高稀有度就没有升级感了")
+	#
+	# **M10-a 砍成三档之后这个下界从 1.8 降到 1.6**：少乘一档，顶档从 2.2
+	# 掉到 1.69。它仍然踩在「抽到高稀有度是明显升级」这条线上，但余量薄了 ——
+	# 要补回去只能提步长，而上面那条 1.45 的上界正好挡着。**两条一起看就是
+	# 「三档 + ×1.30」已经把这个空间用满了**，再要就得动数值，归数值回归。
+	var top_to_bottom: float = cfg.rarity_power[cfg.rarity_power.size() - 1] / cfg.rarity_power[0]
+	assert_gt(top_to_bottom, 1.6, "顶档对 R 的差距太小，抽到高稀有度就没有升级感了")

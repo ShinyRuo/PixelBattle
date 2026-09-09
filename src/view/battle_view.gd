@@ -573,7 +573,7 @@ func _finish_prepare() -> void:
 	)
 	PBRunSim.lock_plan(_state, _plan, _strategy.deploy(_state, _plan.wave, _cfg), accepted, _cfg)
 	_battle = PBBattleSim.new(
-		_plan.wave, _plan.dps, _state.def_reduction(_cfg), _cfg, _plan.attackers
+		_plan.wave, _plan.dps, _state.def_reduction(_cfg), _cfg, _plan.attackers, _plan.crit_rng
 	)
 	# 播报只接在**画面**这一路（M6-j）：扫描那一路 `log_to` 恒为 null。
 	_battle.log_to = _log

@@ -97,6 +97,17 @@ var level: int = 1
 ## 和「谁打的」可以是两个人，而猜错不报错。
 var source: int = -1
 
+## 这一发是不是暴击（M10-c）。战斗结算不读它，它只喂 [PBBattleLog]。
+##
+## ## 掷骰发生在**出膛**那一刻，不是命中那一刻
+##
+## 理由同 [member skill]：命中时施法者可能已经死了，回头去问问不到；
+## 而且掷点必须只有一个（[PBCritRules]），命中那一路在
+## [PBShotRules] 里，把骰子分到两处就又是两把尺子。
+##
+## 玩家分不出这两者的差别 —— 屏幕上只有落地那一下的数字。
+var crit: bool = false
+
 
 ## 把这个实例重置成一发刚出膛的子弹。对象池复用走这里，不要 `.new()`。
 func launch(
@@ -108,7 +119,8 @@ func launch(
 	of_element: PBElement.Type = PBElement.Type.PHYSICAL,
 	from_slot: int = -1,
 	of_skill: PBSkill = null,
-	caster_level: int = 1
+	caster_level: int = 1,
+	was_crit: bool = false
 ) -> void:
 	alive = true
 	pos = from_at
@@ -121,6 +133,7 @@ func launch(
 	source = from_slot
 	skill = of_skill
 	level = caster_level
+	crit = was_crit
 
 
 ## 朝 [param goal] 飞一个 tick。返回这一 tick 是否够到了目标。
@@ -146,3 +159,4 @@ func retire() -> void:
 	# 恰恰是那种只在特定顺序下发作、且不报错的毛病。
 	skill = null
 	level = 1
+	crit = false

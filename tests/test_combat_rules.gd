@@ -144,17 +144,20 @@ func test_card_identity_includes_the_variant() -> void:
 	# 没有 variant，「火系 SSR」全游戏只有一张，玩家永远凑不出四个克制系上场，
 	# §03 的换人策略在模型里被人为掐死一半。这条守着卡池不退化。
 	var seen := {}
-	for rarity: int in 4:
-		for element: int in 6:
+	for rarity: int in PBUnit.Rarity.size():
+		for element: int in PBElement.Type.size():
 			for variant: int in _cfg.characters_per_bucket:
 				var unit := PBUnit.of(
 					_cfg, element as PBElement.Type, rarity as PBUnit.Rarity, variant
 				)
 				assert_false(seen.has(unit.key()), "卡片身份键不应撞车")
 				seen[unit.key()] = true
-	var expected: int = 4 * 6 * _cfg.characters_per_bucket
+	var expected: int = PBUnit.Rarity.size() * PBElement.Type.size() * _cfg.characters_per_bucket
 	assert_eq(seen.size(), expected, "卡池大小应为 稀有度 × 属性 × 每格角色数")
-	assert_gte(expected, 40, "卡池规模应对得上 §09 的「PC 首发 40+ 角色」")
+	# **§09 那条「PC 首发 40+ 角色」量的是 `data/characters/`，不是这张合成表**
+	# （M10-a 砍成三档之后它只有 36 格）。合成表是一条替身曲线，它只需要
+	# 大到「每格都填得满、抽卡不走退化路径」，那条 40+ 由名册那一侧兑现（M10-b）。
+	assert_gte(expected, 30, "合成卡池小到这个地步，抽卡会一直撞空格走退化路径")
 
 
 func test_enough_counter_cards_exist_to_fill_the_bench() -> void:

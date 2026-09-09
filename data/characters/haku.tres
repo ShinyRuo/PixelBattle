@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_1g3sf"]
+
+[resource]
+script = ExtResource("1_1g3sf")
+id = &"haku"
+name_key = "char.haku"
+icon_key = "haku"
+element = 4
+def_element = 4
+primary = 2
+strength = 12.0
+intellect = 18.0
+strength_growth = 1.4
+intellect_growth = 2.6
+atk_base = 73.24087591240875
+reach = 2

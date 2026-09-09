@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_gx6qk"]
+
+[resource]
+script = ExtResource("1_gx6qk")
+id = &"five_kage"
+name_key = "bond.five_kage"
+member_ids = Array[StringName]([&"tsunade", &"gaara", &"mei", &"raikage", &"onoki"])
+tier_counts = Array[int]([5])
+tier_power = Array[float]([0.56])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])

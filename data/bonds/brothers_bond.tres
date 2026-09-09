@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_j4lda"]
+
+[resource]
+script = ExtResource("1_j4lda")
+id = &"brothers_bond"
+name_key = "bond.brothers_bond"
+member_ids = Array[StringName]([&"itachi", &"sasuke"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&"crit_chance"])
+tier_function_carriers = Array[StringName]([&"itachi"])

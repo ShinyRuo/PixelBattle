@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -8,23 +8,5 @@ id = &"tenten"
 name_key = "char.tenten"
 icon_key = "tenten"
 actor_key = &"tenten"
-element = 5
-rarity = 0
-def_element = 5
-primary = 0
-strength = 18.0
-agility = 12.0
-intellect = 12.0
-strength_growth = 2.6
-agility_growth = 1.4
-intellect_growth = 1.4
-hp_base = 260.0
-mp_base = 60.0
-atk_base = 89.3422
-def_base = 3.0
-attack_speed_base = 0.85
-hp_per_strength = 22.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.35
-attack_speed_per_agility = 0.008
+atk_base = 73.24087591240875
+reach = 2

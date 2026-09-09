@@ -31,17 +31,73 @@ func before_each() -> void:
 # ── 数据层 ────────────────────────────────────────────────────
 
 
-func test_the_five_named_bonds_each_unlock_one_function() -> void:
-	# §09 的硬性规范：小队型「3 档功能」、阵营型「6 档功能」——
-	# **每组命名羁绊的最高档必须解锁一个机制**，不能只是更大的百分比。
-	var found: Array[StringName] = []
+func test_exactly_eight_bonds_carry_a_function_and_no_two_share_a_skill_one() -> void:
+	# §09 的硬性规范：**羁绊的最高档要解锁一个机制**，不能只是更大的百分比。
+	#
+	# ## M10-b 之前这条断的是「每一组都要有功能」
+	#
+	# 那时命名羁绊只有 5 组、功能也正好 5 个，两句话是一回事。
+	# 名册换成原版的 23 组之后它们分家了：M3-f 那 5 个功能键
+	# （聚拢 / 吸附 / 定身 / 减速 / 金币）是**一套完整的词汇表**，
+	# 不是「五组各拿一个」的巧合。M10-c 的暴击又加了 2 个键、3 组羁绊。
+	#
+	# ## 「不许共用」只对**落在大招上**的键成立
+	#
+	# 一个大招只有一份，两组配同一个就是少了一个机制 —— 而 §09 要的正是
+	# 「每组一个**不同**的机制」。全队光环反过来：它加法叠加，
+	# 兄弟的爱恨和幕后黑手各带一份暴击率是设计上说得通的
+	# （见 [method PBBondFunctionRules.landing_of]）。
+	#
+	# 所以守两件事：**恰好 8 组带功能**（多出来的说明有人给新羁绊硬套了
+	# 一个不对的键），以及**落在大招上的键不许共用**。
+	var seen: Array[StringName] = []
+	var total: int = 0
 	for bond: PBBond in _cfg.bonds.all():
-		if bond.match_mode != PBBond.Match.MEMBERS:
-			continue
 		var key: StringName = bond.function_at(bond.full_tier_count())
-		assert_ne(key, &"", "命名羁绊 %s 的满档该解锁一个功能" % bond.id)
-		found.append(key)
-	assert_eq(found.size(), 5, "§09 首批是 5 组命名羁绊")
+		if key == &"":
+			continue
+		total += 1
+		if PBBondFunctionRules.landing_of(key) != PBBondFunctionRules.Landing.SKILL:
+			continue
+		assert_false(seen.has(key), "大招档的功能键 %s 被两组羁绊共用了" % key)
+		seen.append(key)
+	assert_eq(total, 8, "M3-f 的 5 组加 M10-c 的 3 组暴击羁绊")
+
+
+func test_the_crit_auras_reach_every_attacker_not_just_the_carrier() -> void:
+	# **光环和前五个功能的落点不同**：那五个装在载体的大招上，
+	# 这两个乘死在全队每一个人身上（[member PBAttacker.crit_chance]）。
+	#
+	# 判据是「**每一个**都拿到了」而不是「载体拿到了」—— 写进建人循环里的话，
+	# 载体之前建好的那几个拿不到，而那只表现为「站前排的忍者暴击率好像高一点」。
+	var units := _units_of(_bond_with_function())
+	var functions := {
+		&"whoever": [PBBondFunctionRules.CRIT_CHANCE, PBBondFunctionRules.CRIT_DAMAGE] as
+		Array[StringName]
+	}
+	var plain := _squad(units, {})
+	var buffed := _squad(units, functions)
+	for attacker: PBAttacker in plain:
+		assert_eq(attacker.crit_chance, 0.0, "没有光环时谁都不暴击")
+	for attacker: PBAttacker in buffed:
+		assert_eq(attacker.crit_chance, PBCritRules.BOND_CRIT_CHANCE, "光环该发给每一个人")
+		assert_eq(attacker.crit_bonus, PBCritRules.BOND_CRIT_DAMAGE, "暴伤那一份同理")
+
+
+func test_two_bonds_granting_the_same_aura_stack_instead_of_overwriting() -> void:
+	# **这条守的是「光环为什么不放进效果袋」。** [method PBBuffBag.add] 是
+	# 同 id 整份覆盖的（那是「刷新时长」的定义），两组羁绊各挂一份同 id 的
+	# 暴击光环时后一份会**静默吃掉**前一份 —— 玩家凑满了两组，拿到一组的量。
+	#
+	# 真表里兄弟的爱恨和幕后黑手正好都给 `crit_chance`，所以这不是假想。
+	var units := _units_of(_bond_with_function())
+	var one := {&"a": [PBBondFunctionRules.CRIT_CHANCE] as Array[StringName]}
+	var two := {
+		&"a": [PBBondFunctionRules.CRIT_CHANCE] as Array[StringName],
+		&"b": [PBBondFunctionRules.CRIT_CHANCE] as Array[StringName],
+	}
+	assert_eq(_squad(units, one)[0].crit_chance, PBCritRules.BOND_CRIT_CHANCE, "一组就是一份")
+	assert_eq(_squad(units, two)[0].crit_chance, PBCritRules.BOND_CRIT_CHANCE * 2.0, "两组该叠起来")
 
 
 func test_every_carrier_is_a_real_member_of_its_own_bond() -> void:
@@ -57,14 +113,19 @@ func test_every_carrier_is_a_real_member_of_its_own_bond() -> void:
 			assert_true(bond.member_ids.has(carrier), "%s 的载体该是本组成员" % bond.id)
 
 
-func test_the_element_fallback_bonds_stay_purely_numeric() -> void:
-	# **这是本节的支点。** 属性型是兜底档，随便带都会自动激活
-	# （在场 16 张卡摊到六个属性，平均每系 2.7 个）。
-	# 给兜底档配功能等于把机制也白送出去，技能阶梯就又回到原点了。
+func test_no_bond_matches_by_element_any_more() -> void:
+	# **这条替掉的是「兜底羁绊不许配功能」。** 那一条守的是 §09 最值钱的
+	# 一句话：属性型兜底随便带都会自动激活（在场 10 张卡摊到六个属性），
+	# 给它配机制等于把机制白送出去，技能阶梯就回到原点。
+	#
+	# M10-b 把 6 组兜底整个删了（玩家定的「羁绊全部按原版文档来」），
+	# 于是那条断言没有对象了 —— 而**它守的东西反而更该守**：
+	# 只要哪天有人往 `data/bonds.tsv` 之外塞回一组按属性匹配的，
+	# 那个白送 1.705× 的池子就回来了，而它不报错。
 	for bond: PBBond in _cfg.bonds.all():
-		if bond.match_mode != PBBond.Match.ELEMENT:
-			continue
-		assert_eq(bond.function_at(bond.full_tier_count()), &"", "兜底羁绊 %s 不该有功能" % bond.id)
+		assert_ne(
+			int(bond.match_mode), int(PBBond.Match.ELEMENT), "%s 是按属性匹配的兜底羁绊" % bond.id
+		)
 
 
 func test_a_misspelled_function_key_is_rejected_instead_of_ignored() -> void:
@@ -269,13 +330,27 @@ func _bond(bond_id: StringName, key: StringName, carrier: StringName) -> PBBond:
 	return bond
 
 
-## 真表里第一组带功能的命名羁绊。
+## 真表里**人最少**的那一组带功能的羁绊。
+##
+## ## 「第一组」不行，而它是 M10-c 才炸的
+##
+## 出战席起步只有 [member PBSimConfig.deploy_slots_base] = 4 个位置，
+## 而 [method PBRunState.bonded_units] 只数在场的人 —— 所以一组 9 个人的羁绊
+## **结构上凑不满**，那几条「凑齐了功能该在」的断言会以「功能不在」失败，
+## 而红的是夹具挑错了组，不是功能坏了。
+##
+## M10-c 之前带功能的 5 组最多 4 个人，恰好都塞得下，所以这条一直没暴露。
+## 同 `test_quest_card.gd` 那个 `_smallest_bond()`。
 func _bond_with_function() -> PBBond:
+	var best: PBBond = null
 	for bond: PBBond in _cfg.bonds.all():
-		if bond.function_at(bond.full_tier_count()) != &"":
-			return bond
-	fail_test("真羁绊表里该有带功能的组")
-	return null
+		if bond.function_at(bond.full_tier_count()) == &"":
+			continue
+		if best == null or bond.member_ids.size() < best.member_ids.size():
+			best = bond
+	if best == null:
+		fail_test("真羁绊表里该有带功能的组")
+	return best
 
 
 ## 一组羁绊的全体成员，各一张卡。
@@ -285,6 +360,22 @@ func _units_of(bond: PBBond) -> Array[PBUnit]:
 		if bond.counts_character(character):
 			out.append(PBUnit.new(character))
 	return out
+
+
+## 一队攻击者，带上给定的功能表。
+func _squad(units: Array[PBUnit], functions: Dictionary) -> Array[PBAttacker]:
+	return PBCombatRules.build_attackers(
+		units,
+		PBElement.Type.PHYSICAL,
+		1.0,
+		1.0,
+		PackedFloat64Array(),
+		_cfg,
+		null,
+		1,
+		0,
+		functions
+	)
 
 
 func _wave(index: int) -> PBWave:

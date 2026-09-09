@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -7,23 +7,22 @@ script = ExtResource("1_char")
 id = &"jiraiya"
 name_key = "char.jiraiya"
 icon_key = "jiraiya"
+actor_key = &"jiraiya"
 element = 0
-rarity = 2
-def_element = 4
+def_element = 0
 primary = 2
-strength = 16.0
-agility = 16.0
-intellect = 26.0
-strength_growth = 1.8
-agility_growth = 1.8
-intellect_growth = 3.4
-hp_base = 200.0
-mp_base = 80.0
-atk_base = 123.8227
-def_base = 1.0
-attack_speed_base = 1.0
-hp_per_strength = 16.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.22
-attack_speed_per_agility = 0.008
+strength = 14.0
+agility = 14.0
+intellect = 22.0
+strength_growth = 1.5999999999999999
+agility_growth = 1.5999999999999999
+intellect_growth = 3.0
+hp_base = 260.0
+mp_base = 70.0
+atk_base = 115.53702920016926
+def_base = 3.0
+attack_speed_base = 0.85
+hp_per_strength = 22.0
+def_per_agility = 0.35
+rarity = 1
+reach = 1

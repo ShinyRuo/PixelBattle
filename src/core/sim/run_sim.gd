@@ -110,6 +110,9 @@ static func begin_wave(state: PBRunState, cfg: PBSimConfig, rng: PBRngStreams) -
 	var plan := PBWavePlan.new()
 	plan.wave = preview_wave(state.wave_index, cfg, rng)
 	plan.quest_grade = PBEconomyRules.roll_quest(rng.quest)
+	# 暴击那条流是**派生的纯函数**，取一次零副作用 —— 所以上面那句
+	# 「本函数只消费 quest 流一次」照旧成立（同 `wave_rng`）。
+	plan.crit_rng = rng.battle_rng(state.wave_index)
 	return plan
 
 
@@ -269,7 +272,7 @@ static func resolve_battle(
 ) -> PBCombatOutcome:
 	if cfg.use_tick_battle:
 		return PBBattleSim.new(
-			plan.wave, plan.dps, def_reduction, cfg, plan.attackers
+			plan.wave, plan.dps, def_reduction, cfg, plan.attackers, plan.crit_rng
 		).run_to_end()
 	return PBCombatRules.resolve(plan.wave, plan.dps, def_reduction, cfg)
 

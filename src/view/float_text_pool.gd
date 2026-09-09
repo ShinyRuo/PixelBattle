@@ -31,10 +31,19 @@ const RISE: float = 14.0
 const FONT_SIZE: int = 8
 const KILL_FONT_SIZE: int = 9
 
+## 暴击（M10-c）。**和击杀同一号字，但换一个颜色** ——
+## 再大一号的话它会盖过击杀，而「他死了」仍然是这一串数字里
+## 唯一会改变玩家决策的那一条。
+const CRIT_FONT_SIZE: int = 9
+
 ## 普通伤害是白的，击杀是金的。**击杀必须比伤害显眼** ——
 ## 「他死了」是这一串数字里唯一会改变玩家决策的那一条。
 const HIT_COLOR := Color(0.94, 0.95, 0.98)
 const KILL_COLOR := Color(0.98, 0.85, 0.45)
+
+## 暴击是橙红的。**和金色分得开是硬要求**：一次暴击击杀会同时满足两条，
+## 而那时该显示的是「他死了」—— 击杀在 [method pop] 里排在前面。
+const CRIT_COLOR := Color(1.0, 0.55, 0.32)
 
 var _labels: Array[Label] = []
 var _life: PackedInt32Array = PackedInt32Array()
@@ -54,16 +63,29 @@ func _ready() -> void:
 		_labels.append(label)
 
 
-## 在 [param at] 飘一个数字出来。[param killed] 为真时用击杀那一套配色。
-func pop(at: Vector2, amount: float, killed: bool) -> void:
+## 在 [param at] 飘一个数字出来。[param killed] 为真时用击杀那一套配色，
+## [param crit] 为真时用暴击那一套（M10-c）。
+##
+## **两个都为真时按击杀画**：一次暴击击杀最该说的仍然是「他死了」。
+## 三档写成一条 if/elif 而不是两个独立的覆盖，正是为了让这个优先级
+## 只有一个答案 —— 分开写的话后一句会盖掉前一句，而那个顺序没人会去读。
+func pop(at: Vector2, amount: float, killed: bool, crit: bool = false) -> void:
 	if amount <= 0.0 and not killed:
 		return
 	var index: int = _next
 	_next = (_next + 1) % CAPACITY
 	var label: Label = _labels[index]
 	label.text = _short(amount)
-	label.add_theme_color_override("font_color", KILL_COLOR if killed else HIT_COLOR)
-	label.add_theme_font_size_override("font_size", KILL_FONT_SIZE if killed else FONT_SIZE)
+	var tint: Color = HIT_COLOR
+	var size: int = FONT_SIZE
+	if killed:
+		tint = KILL_COLOR
+		size = KILL_FONT_SIZE
+	elif crit:
+		tint = CRIT_COLOR
+		size = CRIT_FONT_SIZE
+	label.add_theme_color_override("font_color", tint)
+	label.add_theme_font_size_override("font_size", size)
 	label.visible = true
 	# 每个数字往左右错开一点，同一个敌人连着挨打时才不会叠成一坨黑。
 	_from[index] = at + Vector2(float(index % 5) - 2.0, -6.0)

@@ -56,27 +56,53 @@ func _state_of(count: int, maxed_pop: bool = false) -> PBRunState:
 ## 不依赖角色表里正好有哪几个人，角色表增删时它不会悄悄失效。
 func _state_with_a_bond(count: int) -> PBRunState:
 	var state := PBRunSim.new_state(_cfg)
-	var by_element: Dictionary = {}
-	for character: PBCharacter in _cfg.characters.all():
-		if not by_element.has(character.element):
-			by_element[character.element] = [] as Array[PBCharacter]
-		var bucket: Array = by_element[character.element]
-		bucket.append(character)
+	# **人口要拉满**：羁绊只算在场的人，而初始出战席只有
+	# [member PBSimConfig.deploy_slots_base] 个（4）—— 摆在队尾的那一组
+	# 会整组落在席位外面，一开始就没激活，于是「派人会掉档」无从谈起。
+	state.tech_pop = _cfg.tech_pop_max
+	var squad: PBBond = _smallest_bond()
+	assert_not_null(squad, "羁绊表里得有东西")
+	var members: Array[PBCharacter] = []
+	for member_id: StringName in squad.member_ids:
+		var member := _cfg.characters.by_id(member_id)
+		assert_not_null(member, "%s 的成员 %s 不在名册上" % [squad.id, member_id])
+		members.append(member)
+
+	# **先填闲人、再把这一组摆在队尾。** 派遣走的是末尾规则
+	# （`bonded_units` 掐掉最后 `dispatched` 个），所以要测「派人会掉哪一组」，
+	# 那一组的人必须站在会被掐掉的那一截里。摆在前面的话什么都掉不了，
+	# 而断言会说「这个局面派 3 人应该真的会掉档」。
 	var picked: Array[PBCharacter] = []
-	for element: Variant in by_element:
-		var bucket: Array = by_element[element]
-		if bucket.size() >= 4 and picked.is_empty():
-			for i: int in 4:
-				picked.append(bucket[i])
-	assert_false(picked.is_empty(), "角色表里得有一个属性凑得满四个人")
 	for character: PBCharacter in _cfg.characters.all():
-		if picked.size() >= count:
+		if picked.size() + members.size() >= count:
 			break
-		if not picked.has(character):
+		if not members.has(character):
 			picked.append(character)
+	picked.append_array(members)
 	for character: PBCharacter in picked:
 		state.add_unit(PBUnit.new(character))
 	return state
+
+
+## 成员最少的那一组羁绊。
+##
+## M10-b 之前这个夹具挑的是「同一个属性的 4 个人」—— 那时有属性型兜底羁绊，
+## 4 个同系就激活一组。兜底 M10-b 全删了（羁绊改成照抄原版的 23 组），
+## 于是那样凑出来的队伍**一组羁绊都不激活**，而这条测试要测的恰恰是
+## 「派人会掉哪一组」，没有东西可掉就等于没测。
+##
+## 平局按 id 排：多组两人羁绊的时候，字典遍历顺序会让结果时红时绿。
+func _smallest_bond() -> PBBond:
+	var best: PBBond = null
+	for bond: PBBond in _cfg.bonds.all():
+		if best == null:
+			best = bond
+			continue
+		if bond.full_tier_count() < best.full_tier_count():
+			best = bond
+		elif bond.full_tier_count() == best.full_tier_count() and String(bond.id) < String(best.id):
+			best = bond
+	return best
 
 
 func _plan_of(wave_index: int, grade: int) -> PBWavePlan:
@@ -163,7 +189,9 @@ func test_it_says_so_when_dispatch_breaks_nothing() -> void:
 			state.add_unit(unit)
 			field.append(unit)
 	state.set_field(field)
-	assert_eq(field.size(), 5, "这一系要有 5 个角色，派走 1 个之后才还撑得住 4 人档")
+	# **M10-b 之后这一队一组羁绊都不吃**（兜底羁绊全删了），
+	# 而那恰好就是这条测试要的局面：派一个人出去，什么都不会掉。
+	assert_eq(field.size(), 5, "这一系该有 5 个角色 —— 少了说明名册改动碰到了这个夹具")
 
 	# 派 1 个之后这一系还剩 4 个，仍然吃着同一档；也没有别的组被顶着。
 	var kept := PBBondRules.active_tiers(_bonded_with(state, 0), _cfg.bonds)

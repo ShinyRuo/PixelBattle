@@ -1,0 +1,81 @@
+extends SceneTree
+## 按 `aires/ninja_art.tsv` + `aires/prompts/_ninja_template.md` 铺提示词（M10-b）。
+##
+## ```powershell
+## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --headless --path . -s src/tools/make_prompts.gd
+## ```
+##
+## ## 为什么要生成而不是手写
+##
+## 一份提示词 250 行，其中约 230 行是**四段图集共用的死文本** ——
+## 【图集】【角色】【画风】【背景】那四节「一字不差是有意的」，
+## 差一个字都可能让模型换一次手。24 份手写等于把那 230 行抄 96 遍
+## （四段 × 24 人），而抄错不报错：出来的图看着都对，只是这一张的
+## 方块比那一张细一点、这一段的人比那一段高一点。
+##
+## 每个角色只有三处不同：角色键、原型、外观段落。表里就只有这三栏。
+##
+## ## `aires/` 对 `res://` 是不可见的
+##
+## 那个目录有 `.gdignore`，所以要走
+## [method ProjectSettings.globalize_path]（同 [PBPortraitForge] 读
+## `aires/headshots.txt` 那一条）。
+
+const TABLE := "aires/ninja_art.tsv"
+const TEMPLATE := "aires/prompts/_ninja_template.md"
+const OUT_DIR := "aires/prompts"
+
+const COL_KEY: int = 0
+const COL_ORIGIN: int = 1
+const COL_LOOK: int = 2
+
+
+func _init() -> void:
+	var root: String = ProjectSettings.globalize_path("res://")
+	var template := FileAccess.get_file_as_string(root + TEMPLATE)
+	if template == "":
+		printerr("读不到模板：%s" % (root + TEMPLATE))
+		quit(1)
+		return
+	var names := _display_names(root)
+	var written: int = 0
+	for row: PackedStringArray in _read(root + TABLE):
+		var key: String = row[COL_KEY]
+		var text: String = template
+		text = text.replace("{{key}}", key)
+		text = text.replace("{{name}}", String(names.get(key, key)))
+		text = text.replace("{{origin}}", row[COL_ORIGIN])
+		text = text.replace("{{look}}", row[COL_LOOK])
+		var file := FileAccess.open("%s%s/%s.md" % [root, OUT_DIR, key], FileAccess.WRITE)
+		if file == null:
+			printerr("写不出 %s" % key)
+			quit(1)
+			return
+		file.store_string(text)
+		file.close()
+		written += 1
+	print("写好 ", written, " 份提示词")
+	quit(0)
+
+
+## 显示名从名册里读，**不在这张表里再写一遍** —— 两处写的话
+## 提示词标题上的名字和游戏里显示的名字会慢慢分叉。
+func _display_names(root: String) -> Dictionary:
+	var out: Dictionary = {}
+	for row: PackedStringArray in _read(root + "data/roster.tsv"):
+		if row.size() >= 2:
+			out[row[0]] = row[1]
+	return out
+
+
+func _read(path: String) -> Array:
+	var out: Array = []
+	for line: String in FileAccess.get_file_as_string(path).split("\n"):
+		var trimmed: String = line.strip_edges()
+		if trimmed == "" or trimmed.begins_with("#"):
+			continue
+		var cells: PackedStringArray = trimmed.split("\t")
+		for i: int in cells.size():
+			cells[i] = cells[i].strip_edges()
+		out.append(cells)
+	return out

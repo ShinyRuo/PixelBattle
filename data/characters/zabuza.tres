@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_l6ia4"]
+
+[resource]
+script = ExtResource("1_l6ia4")
+id = &"zabuza"
+name_key = "char.zabuza"
+icon_key = "zabuza"
+element = 4
+primary = 2
+strength = 12.0
+intellect = 18.0
+strength_growth = 1.4
+intellect_growth = 2.6
+hp_base = 260.0
+atk_base = 89.342206955775
+def_base = 3.0
+attack_speed_base = 0.85
+hp_per_strength = 22.0
+def_per_agility = 0.35
+reach = 1

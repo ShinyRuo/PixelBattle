@@ -37,6 +37,22 @@ var attackers: Array[PBAttacker] = []
 ## **各算一遍的话，在 `dispatched` 被清零之后再算就会多算一档**，且不报错。
 var bond_functions: Dictionary = {}
 
+## 本波战斗内部的掷骰流（暴击，M10-c）。**null = 从不暴击。**
+##
+## ## 为什么它挂在计划上，而不是当 [method PBRunSim.resolve_battle] 的参数
+##
+## 这个类顶上那句话就是理由：批量模拟和渲染层要走**同一条准备流程**。
+## 当参数的话两边各自去取一次，而「取的时候用的是哪个波次号」
+## 迟早分叉 —— 那时同种子的两条路会打出不同的暴击序列，且不报错。
+##
+## 它不是 [member PBRngStreams.combat]：那一条是顺序流，而估值那一路
+## （[method PBValuation._leaks_at]）每波要凭空跑几十场战斗。
+## 见 [method PBRngStreams.battle_rng]。
+##
+## > **估值探测拿不到它，所以探出来的悬崖是「不会暴击的那支队伍」的悬崖。**
+## > 那条偏差是系统性的、方向固定的（偏保守），归数值回归。
+var crit_rng: RandomNumberGenerator = null
+
 ## 本波刷出的任务在 [constant PBEconomyRules.QUEST_TABLE] 里的行号。
 var quest_grade: int = 0
 

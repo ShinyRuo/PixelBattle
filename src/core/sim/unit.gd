@@ -17,7 +17,11 @@ extends RefCounted
 ##
 ## 枚举住在这里而不是 [PBCharacter]，纯粹是因为调用点都写着 `PBUnit.Rarity`。
 ## §09 的规格里它叫 `PBRarity.Type`，改名是零行为变化的搬迁，等有必要时再做。
-enum Rarity { R, SR, SSR, USR }
+## 稀有度三档。**M10-a 从四档砍成三档**（玩家定的）：原版只有 R / SR / SSR，
+## 而第四档 `USR` 是我们自己加的，照抄原版名册时它一个人都摊不到 ——
+## 而 `test_every_rarity_has_someone` 拦的正是「某一档空了」（空档会让抽卡
+## 走退化路径，把实际的稀有度分布悄悄改掉）。
+enum Rarity { R, SR, SSR }
 
 ## 这张卡是谁。**唯一的身份来源**，下面两个字段都是从它复制来的。
 var character: PBCharacter

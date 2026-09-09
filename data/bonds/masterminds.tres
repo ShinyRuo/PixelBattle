@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_wg0rp"]
+
+[resource]
+script = ExtResource("1_wg0rp")
+id = &"masterminds"
+name_key = "bond.masterminds"
+member_ids = Array[StringName]([&"madara", &"obito", &"kabuto", &"tendo", &"zetsu"])
+tier_counts = Array[int]([5])
+tier_power = Array[float]([0.56])
+tier_function_keys = Array[StringName]([&"crit_chance"])
+tier_function_carriers = Array[StringName]([&"madara"])

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_686mq"]
+
+[resource]
+script = ExtResource("1_686mq")
+id = &"kimimaro"
+name_key = "char.kimimaro"
+icon_key = "kimimaro"
+element = 3
+def_element = 3
+strength = 22.0
+agility = 14.0
+intellect = 14.0
+strength_growth = 3.0
+agility_growth = 1.5999999999999999
+intellect_growth = 1.5999999999999999
+hp_base = 260.0
+mp_base = 70.0
+atk_base = 115.53702920016926
+def_base = 3.0
+attack_speed_base = 0.85
+hp_per_strength = 22.0
+def_per_agility = 0.35
+rarity = 1
+reach = 1

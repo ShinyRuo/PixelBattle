@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -9,22 +9,15 @@ name_key = "char.obito"
 icon_key = "obito"
 actor_key = &"obito"
 element = 0
-rarity = 2
-def_element = 4
+def_element = 0
 primary = 2
 strength = 16.0
 agility = 16.0
 intellect = 26.0
-strength_growth = 1.8
-agility_growth = 1.8
-intellect_growth = 3.4
-hp_base = 200.0
+strength_growth = 1.7999999999999998
+agility_growth = 1.7999999999999998
+intellect_growth = 3.4000000000000004
 mp_base = 80.0
-atk_base = 123.8227
-def_base = 1.0
-attack_speed_base = 1.0
-hp_per_strength = 16.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.22
-attack_speed_per_agility = 0.008
+atk_base = 123.82269503546098
+rarity = 2
+reach = 2

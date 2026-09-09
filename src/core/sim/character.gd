@@ -176,7 +176,7 @@ const MAX_SKILLS: int = 2
 ## ## 为什么上限是 2
 ##
 ## 把大招数进去之后它和 §08 那张稀有度表严丝合缝：
-## R 一个（大招）、SR 两个、SSR 三个、USR 三个 + 专属机制。
+## R 一个（大招）、SR 两个、SSR 三个 + 专属机制。
 ## §08 那句「稀有度剩下的价值走技能数，不走数值」本来就要一个技能表来承接，
 ## 而它从 M2-a 起一直空着（本类顶上「已知的省略」第一条）。
 ##
@@ -224,7 +224,7 @@ static func make(
 	out.rarity = character_rarity
 	out.name_key = character_name_key if character_name_key != "" else String(character_id)
 	# §03A：代码造出来的角色也得有属性表，否则每个人都吃默认值 ——
-	# **R 和 USR 的战力会一模一样**，而那不会让任何断言变红。
+	# **R 和顶档的战力会一模一样**，而那不会让任何断言变红。
 	# 真角色表的同一套数字由生成脚本写进 `.tres`，规则见 [method PBStatRules.fill_placeholder]。
 	PBStatRules.fill_placeholder(out)
 	return out

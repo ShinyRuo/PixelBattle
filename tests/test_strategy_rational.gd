@@ -34,10 +34,10 @@ func test_gacha_is_worth_less_once_the_bench_is_full_of_good_cards() -> void:
 	stacked.tech_pop = cfg.tech_pop_max
 	for element: int in PBElement.Type.size():
 		for variant: int in cfg.characters_per_bucket:
-			stacked.add_unit(PBUnit.of(cfg, element as PBElement.Type, PBUnit.Rarity.USR, variant))
+			stacked.add_unit(PBUnit.of(cfg, element as PBElement.Type, PBUnit.Rarity.SSR, variant))
 	var late: float = PBValuation.gacha_gain(stacked, cfg)
 
-	assert_gt(early, late, "板凳全是 USR 之后，再抽一张的边际价值应显著低于开局")
+	assert_gt(early, late, "板凳全是顶档 之后，再抽一张的边际价值应显著低于开局")
 
 
 func test_a_duplicate_is_worth_the_same_body_but_no_bond() -> void:

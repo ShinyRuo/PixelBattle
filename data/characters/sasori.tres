@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_akqaw"]
+
+[resource]
+script = ExtResource("1_akqaw")
+id = &"sasori"
+name_key = "char.sasori"
+icon_key = "sasori"
+element = 3
+def_element = 3
+strength = 22.0
+agility = 14.0
+intellect = 14.0
+strength_growth = 3.0
+agility_growth = 1.5999999999999999
+intellect_growth = 1.5999999999999999
+mp_base = 70.0
+atk_base = 94.90647482014387
+rarity = 1
+reach = 2

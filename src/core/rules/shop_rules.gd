@@ -41,7 +41,9 @@ static func open_offer(
 		wave.index, state.gacha_pity, cfg, rng.gacha, cfg.gacha_offer_size
 	)
 	state.gacha_pulls += 1
-	if PBEconomyRules.best_rarity(state.pending_offer) >= int(PBUnit.Rarity.SSR):
+	# **门槛走 [method PBEconomyRules.pity_rarity]，不在这里写死一档** ——
+	# 它必须和保底发放的那一档是同一个数，见那个函数顶上。
+	if PBEconomyRules.best_rarity(state.pending_offer) >= int(PBEconomyRules.pity_rarity()):
 		state.gacha_pity = 0
 	else:
 		state.gacha_pity += 1

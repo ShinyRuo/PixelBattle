@@ -52,6 +52,28 @@ func wave_rng(wave_index: int) -> RandomNumberGenerator:
 	return rng
 
 
+## 某一波**战斗内部**的随机流（暴击，M10-c）。同 [method wave_rng]：
+## 每次调用返回一个全新实例，种子由基准种子和波次序号派生。
+##
+## ## 为什么不能直接把 [member combat] 传进战斗
+##
+## [method PBValuation._leaks_at] 每一波要**凭空跑几十场战斗**做悬崖二分
+## （「整队缩到几成才开始漏怪」）。那些战斗和真正打的那一场共用一条顺序流的话，
+## **「这一局有没有做过估值」会改变真实战斗的暴击序列** ——
+## 而估值跑几场取决于二分收敛得多快，也就是取决于队伍强度。
+##
+## 那正是本类顶上「某一路的调用次数变化不会污染另一路」那条铁律，
+## 只是这一次发生在**一条流的内部**。做成纯函数之后，探测掷多少次骰子
+## 都不改变任何东西，同种子回放也逐位可复现。
+##
+## 标签和 [method wave_rng] 不同（`battle` vs `wave`），否则波型和暴击
+## 会共用同一条序列 —— 那时改一次暴击判定就会换掉所有波型。
+func battle_rng(wave_index: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d/battle/%d" % [base_seed, wave_index])
+	return rng
+
+
 ## 导出三条流的 `state` 供存档。
 ##
 ## **存成字符串不是 int**：`state` 是 uint64，而 JSON 的数字是双精度浮点，

@@ -6,14 +6,19 @@ extends RefCounted
 ## 好让 M-1 能单独关掉某一条看差异 —— §07 的核心论断「经济位 = 战力空位」
 ## 只有在能分别度量的时候才验得了。
 
-## §08 抽卡概率表。每行 `[波次上限, R, SR, SSR, USR]`，概率是百分比。
+## §08 抽卡概率表。每行 `[波次上限, R, SR, SSR]`，概率是百分比。
 ## 最后一行的波次上限用一个大数兜住 51+ 段。
+##
+## **M10-a 从四档砍成三档**（见 [enum PBUnit.Rarity]）。原来那一列 `USR`
+## 的概率**并进 SSR**，不是丢掉 —— 丢掉的话末段顶档从 45% 掉回 33%，
+## 而 §08 那句「30 波后爆种」的体感正是靠末两行那个陡坡给的。
+## 每一行的四个数字加起来仍然是 100。
 const GACHA_TABLE := [
-	[10, 70.0, 27.0, 3.0, 0.0],
-	[20, 55.0, 36.0, 8.5, 0.5],
-	[30, 40.0, 42.0, 16.0, 2.0],
-	[50, 25.0, 45.0, 25.0, 5.0],
-	[999999, 12.0, 43.0, 33.0, 12.0],
+	[10, 70.0, 27.0, 3.0],
+	[20, 55.0, 36.0, 9.0],
+	[30, 40.0, 42.0, 18.0],
+	[50, 25.0, 45.0, 30.0],
+	[999999, 12.0, 43.0, 45.0],
 ]
 
 ## §06 任务表。`[权重, 需派遣人数, 金币基数, 金币每波增量]`。
@@ -133,8 +138,8 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 ## 之前是「掷属性 → 掷变体 → 掷稀有度」，因为那时卡池是
 ## 4 稀有度 × 6 属性 × 2 变体 的**满格网格**，随便掷都落得到人。
 ##
-## 真角色表不是网格：30 个角色摊到 24 格上，大部分格子只有 1 个或 0 个
-## （比如没有水系 USR）。照旧掷法会不停撞空格走退化路径，
+## 真角色表不是网格：几十个角色摊到「档数 × 属性数」格上，大部分格子只有
+## 1 个或 0 个（比如没有水系 SSR）。照旧掷法会不停撞空格走退化路径，
 ## **实际的属性分布会被那条退化路径悄悄改写**，而估值那边算的是别的分布。
 ##
 ## 现在这个次序和 [method PBValuation.expected_surplus] 的口径完全一致：
@@ -151,9 +156,9 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 ##
 ## ## 保底只保第一张
 ##
-## 三张一起视为**一次**抽卡：保底触发时第一张钦定 SSR，另外两张照常掷。
-## 三张各保各的话，保底会变成刷 SSR 的最优路径 —— 那正是
-## [method roll_gacha] 里「保底只保到 SSR、不直接给 USR」防的同一件事。
+## 三张一起视为**一次**抽卡：保底触发时第一张走保底，另外两张照常掷。
+## 三张各保各的话，保底会变成刷高档的最优路径 —— 那正是
+## [method roll_gacha] 里「保底只保到次高档」防的同一件事。
 ##
 ## **消耗 `gacha` 流的次数从 1 变成 `count`。** 铁律 3 说三条流的状态进存档，
 ## 次数变了老存档的续跑序列就对不上 —— 这是一次破坏性改动，记在 §08。
@@ -192,17 +197,37 @@ static func unit_level_cost(level: int, cfg: PBSimConfig) -> int:
 	return _cost_or_capped(level, cfg.unit_level_max, cfg.unit_level_cost, cfg.unit_level_mult)
 
 
+## 保底保的是哪一档 —— 也是**抽到哪一档才清零**（[method PBShopRules.open_offer]）。
+##
+## ## 这两个数必须是同一个
+##
+## M10-a 砍成三档时我先把发放降到了 `SR`（想保住四档时「只保到次高档、
+## 不直接给顶档」那条原意），而清零门槛留在 `SSR` —— **于是保底永远
+## 兑现不了自己的清零条件，计数一路涨到天上**。它不报错：抽卡照抽、
+## 概率照掷，只是从第 20 抽起每一抽都在走保底分支。
+##
+## 四档时那条原意本来就是靠「发放档 == 清零档 == 第 3 档」成立的，
+## 只是当时两个数恰好一致，没人需要说出来。现在说出来：**顶档**。
+## 三档之下没有别的选择 —— `SR` 太常见（27%~45%），拿它当保底目标的话
+## 计数根本攒不起来，保底等于不存在。
+##
+## 防「攒保底比抽卡划算」的不是发放档，是 [member PBSimConfig.gacha_pity]
+## 那个 20 抽的计数本身。
+static func pity_rarity() -> PBUnit.Rarity:
+	return (PBUnit.Rarity.size() - 1) as PBUnit.Rarity
+
+
 static func roll_gacha(
 	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator
 ) -> PBUnit:
-	# 保底只保到 SSR，不直接给 USR —— 否则保底会变成刷 USR 的最优路径。
 	if pity >= cfg.gacha_pity:
-		return _draw(cfg, PBUnit.Rarity.SSR, rng)
+		return _draw(cfg, pity_rarity(), rng)
 
 	var row: Array = _gacha_row(wave_index)
 	var roll: float = rng.randf() * 100.0
 	var acc: float = 0.0
-	for i: int in range(1, 5):
+	# 下标 0 是波次上限，概率从 1 起，所以上界是「档数 + 1」。
+	for i: int in range(1, PBUnit.Rarity.size() + 1):
 		acc += float(row[i])
 		if roll < acc:
 			return _draw(cfg, (i - 1) as PBUnit.Rarity, rng)

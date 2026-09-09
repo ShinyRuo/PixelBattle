@@ -56,8 +56,19 @@ func test_the_texture_is_three_times_what_it_draws_at() -> void:
 	)
 
 
-func test_every_icon_key_can_actually_be_found() -> void:
+func test_every_portrait_belongs_to_somebody() -> void:
 	# 拼错的表现只是「还是白模卡面」—— 没有任何一处会报错。
+	#
+	# ## 方向是反的（M10-b 掉过头）
+	#
+	# 原来量的是「每个角色都要有头像」，而那在**美术永远落后于数据**的时候
+	# 等于断言「画完了没有」：名册一从 30 补到 49，24 个还没出图的角色
+	# 让这条当场红了 —— 红的是进度，不是缺陷。
+	#
+	# 反过来量「每一张头像都要有主」拦的是同一种笔误（任何一侧拼错，
+	# 那张图就变成孤儿），而且它在接图的整个过程中一直成立。
+	# 「谁还没有头像」是进度，进度由 `aires/headshots.txt` 那张表管。
+	var owners: Dictionary = {}
 	var dir := DirAccess.open(CHARACTERS)
 	assert_not_null(dir, "角色目录该打得开")
 	for file_name: String in dir.get_files():
@@ -66,10 +77,9 @@ func test_every_icon_key_can_actually_be_found() -> void:
 		var character := load("%s/%s" % [CHARACTERS, file_name]) as PBCharacter
 		assert_not_null(character, "%s 该是一个角色" % file_name)
 		assert_ne(character.icon_key, "", "%s 的 icon_key 不能是空的" % file_name)
-		assert_true(
-			_portraits().has(character.icon_key),
-			"%s 的 icon_key「%s」在 assets/portraits/ 里查不到" % [file_name, character.icon_key]
-		)
+		owners[character.icon_key] = true
+	for key: String in _portraits():
+		assert_true(owners.has(key), "assets/portraits/%s.png 没有主 —— 哪一边拼错了？" % key)
 
 
 func test_an_icon_key_can_be_used_as_a_file_name() -> void:

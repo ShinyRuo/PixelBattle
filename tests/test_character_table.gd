@@ -14,10 +14,19 @@ func before_each() -> void:
 
 
 func test_the_synthetic_table_reproduces_the_pre_m2_card_pool() -> void:
-	# M2 之前一张卡是 `(属性, 稀有度, 变体)`，卡池 = 4 × 6 × characters_per_bucket。
+	# M2 之前一张卡是 `(属性, 稀有度, 变体)`，卡池 = 档数 × 6 × characters_per_bucket。
+	# **档数问 [enum PBUnit.Rarity]，不写死** —— M10-a 从四档砍到三档时
+	# 这里写的是 4，而它红的是「档数变了」，不是「合成表坏了」。
 	var table := _cfg.characters
-	var expected: int = 4 * PBElement.Type.size() * _cfg.characters_per_bucket
-	assert_eq(table.size(), expected, "合成卡池应该还是 4 稀有度 × 6 属性 × %d 变体" % _cfg.characters_per_bucket)
+	var expected: int = PBUnit.Rarity.size() * PBElement.Type.size() * _cfg.characters_per_bucket
+	assert_eq(
+		table.size(),
+		expected,
+		(
+			"合成卡池应该还是 %d 稀有度 × 6 属性 × %d 变体"
+			% [PBUnit.Rarity.size(), _cfg.characters_per_bucket]
+		)
+	)
 
 	# 每一格都要填满 —— 抽卡是先掷属性再掷变体的，缺一格就会走到退化路径，
 	# 而那条路径会悄悄改变抽卡的实际分布。
@@ -71,14 +80,14 @@ func test_pick_wraps_instead_of_running_off_the_end() -> void:
 
 func test_pick_falls_back_when_a_cell_is_empty() -> void:
 	# **这条守的是真角色表**（M2-a2）：30 个角色摊到 4 稀有度 × 6 属性 上，
-	# 必然有空格（比如没有水系 USR）。抽卡不能因为格子空了就掉一张空 ——
+	# 必然有空格（比如没有水系 SSR）。抽卡不能因为格子空了就掉一张空 ——
 	# 掉空会在几百局之后表现为「某些局莫名少几张卡」，极难反推。
 	var sparse := PBCharacterTable.new()
 	sparse.add(PBCharacter.make(&"only_fire_r", PBElement.Type.FIRE, PBUnit.Rarity.R))
 	var missing := sparse.pick(PBElement.Type.WATER, PBUnit.Rarity.R, 0)
 	assert_not_null(missing, "同稀有度里还有人，就不该返回 null")
 	assert_eq(missing.id, &"only_fire_r")
-	assert_null(sparse.pick(PBElement.Type.FIRE, PBUnit.Rarity.USR, 0), "整个稀有度都空才返回 null")
+	assert_null(sparse.pick(PBElement.Type.FIRE, PBUnit.Rarity.SSR, 0), "整个稀有度都空才返回 null")
 
 
 func test_a_card_is_identified_by_its_character() -> void:

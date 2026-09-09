@@ -102,6 +102,71 @@ func test_a_kill_always_floats_a_number() -> void:
 	assert_gt(killed_and_shown, 0, "这场应该打死过人")
 
 
+func test_a_crit_always_floats_a_number_too() -> void:
+	# 理由和「击杀永远飘」一字不差（M10-c）：攒不够 12% 就不飘的话，
+	# 暴击会**静默并进下一次的合计数**里 —— 屏幕上什么都没发生，
+	# 而那一下正是玩家最想看见的。
+	#
+	# 这里同时钉着「暴击是从外面告诉它的」：血量里既有暴击也有易伤，
+	# [PBDamageWatch] 结构上分不出来，所以那个集合必须由调用方传进来。
+	var sim := _battle(30.0)
+	var watch := PBDamageWatch.new()
+	for _i: int in 3:
+		sim.step()
+		watch.poll(sim.enemies(), sim.current_tick())
+	var plain: int = 0
+	var forced: int = 0
+	for _i: int in 60:
+		sim.step()
+		for hit: Dictionary in watch.poll(sim.enemies(), sim.current_tick()):
+			if float(hit["shown"]) > 0.0:
+				plain += 1
+	sim = _battle(30.0)
+	watch = PBDamageWatch.new()
+	for _i: int in 3:
+		sim.step()
+		watch.poll(sim.enemies(), sim.current_tick(), _all_slots(sim))
+	for _i: int in 60:
+		sim.step()
+		for hit: Dictionary in watch.poll(sim.enemies(), sim.current_tick(), _all_slots(sim)):
+			assert_true(bool(hit["crit"]), "标了暴击的槽位该带着标记出来")
+			if float(hit["shown"]) > 0.0:
+				forced += 1
+	assert_gt(forced, plain, "同样的小伤害，标成暴击之后该每一下都飘")
+
+
+func test_the_crit_marks_come_from_the_battle_log_not_from_the_blood() -> void:
+	# **接线**：sim 记在播报里的那个标记要真的走到屏幕上。
+	# [PBHitFeedback] 自己维护一个游标，读的是 [member PBBattleLog.total]
+	# 而不是 `entries.size()` —— 后者在环形缓冲写满之后恒等于上限，
+	# 于是「消化到第几条」和「一共有几条」永远相等，特效再也不触发
+	# （M8-a 抓出来的那条：施法回音在第 200 条播报之后静默停了）。
+	var root := _spawn()
+	await wait_physics_frames(10)
+	var floats: PBFloatTextPool = root.get_node("Floats")
+	floats.clear()
+	var victim: PBEnemy = null
+	for enemy: PBEnemy in root._battle.enemies():
+		if enemy.is_active(root._battle.current_tick()):
+			victim = enemy
+			break
+	assert_not_null(victim, "开打之后场上该有敌人")
+	# 攒不够 12% 的一点点血 —— 没有暴击标记的话这一下只闪不飘。
+	var tick: int = root._battle.current_tick()
+	victim.take_damage(victim.max_hp * 0.02, tick)
+	root._battle.log_to.hit(tick, 0, victim.slot, 1.0, false, true)
+	root._feedback()
+	assert_eq(_visible_labels(floats), 1, "标了暴击的那一下该飘出来")
+
+
+## 这一帧全部槽位都算暴击。
+func _all_slots(sim: PBBattleSim) -> Dictionary:
+	var out: Dictionary = {}
+	for enemy: PBEnemy in sim.enemies():
+		out[enemy.slot] = true
+	return out
+
+
 func test_resetting_forgets_the_previous_wave() -> void:
 	# 不清的话，开波第一帧会把「上一波那个槽位剩 3 点血」和
 	# 「这一波满血」的差算成一次伤害。

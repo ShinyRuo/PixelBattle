@@ -44,15 +44,27 @@ var _kills: int = 0
 func reset() -> void:
 	_ready = false
 	_kills = 0
+	# 攒着但还没飘出来的那一笔也要扔掉 —— 留着的话开波第一次飘字里
+	# 会掺进上一波的一截伤害，而它看起来只是「这一下打得有点多」。
 	_hp.fill(0.0)
 	_pending.fill(0.0)
 
 
 ## 比对一帧。返回这一帧**挨了打的**那些槽位，每条是
-## `{"slot": int, "shown": float, "killed": bool}`。
+## `{"slot": int, "shown": float, "killed": bool, "crit": bool}`。
 ##
 ## `shown` 是这一条该飘出来的数字，**0 表示还没攒够、这次只闪不飘**。
-func poll(enemies: Array[PBEnemy], current_tick: int) -> Array[Dictionary]:
+##
+## [param crit_slots] 是这一帧**吃了暴击**的槽位（M10-c），由
+## [method PBHitFeedback._crit_slots] 从战斗播报读出来 —— 血量里
+## 既有暴击也有易伤，**这一层结构上分不出来**。
+##
+## 暴击那一下**强制结算攒着的那笔**，理由和「死亡永远飘」一字不差：
+## 攒不够 12% 就不飘的话，暴击会静默并进下一次的合计数里，
+## 而那正是玩家最想看见的一下。
+func poll(
+	enemies: Array[PBEnemy], current_tick: int, crit_slots: Dictionary = {}
+) -> Array[Dictionary]:
 	_fit(enemies.size())
 	_kills = 0
 	var out: Array[Dictionary] = []
@@ -78,7 +90,13 @@ func poll(enemies: Array[PBEnemy], current_tick: int) -> Array[Dictionary]:
 		if lost <= 0.0 and not died:
 			continue
 		_pending[slot] += maxf(lost, 0.0)
-		out.append({"slot": slot, "shown": _take(slot, enemy, died), "killed": died})
+		var crit: bool = crit_slots.has(slot)
+		out.append({
+			"slot": slot,
+			"shown": _take(slot, enemy, died or crit),
+			"killed": died,
+			"crit": crit,
+		})
 	_ready = true
 	return out
 
@@ -88,9 +106,9 @@ func killed_this_frame() -> int:
 	return _kills
 
 
-## 攒够了（或者他死了）就把攒着的那笔取出来飘，否则返回 0。
-func _take(slot: int, enemy: PBEnemy, died: bool) -> float:
-	if not died and _pending[slot] < enemy.max_hp * MIN_FRACTION:
+## 攒够了（或者他死了、或者刚吃了一发暴击）就把攒着的那笔取出来飘，否则返回 0。
+func _take(slot: int, enemy: PBEnemy, forced: bool) -> float:
+	if not forced and _pending[slot] < enemy.max_hp * MIN_FRACTION:
 		return 0.0
 	var shown: float = _pending[slot]
 	_pending[slot] = 0.0

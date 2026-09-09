@@ -22,7 +22,7 @@ func _roster_of(count: int) -> PBRunState:
 			PBUnit.of(
 				_cfg,
 				rng.randi_range(0, 5) as PBElement.Type,
-				rng.randi_range(0, 3) as PBUnit.Rarity,
+				rng.randi_range(0, PBUnit.Rarity.size() - 1) as PBUnit.Rarity,
 				rng.randi_range(0, _cfg.characters_per_bucket - 1)
 			)
 		)

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -7,23 +7,16 @@ script = ExtResource("1_char")
 id = &"gaara"
 name_key = "char.gaara"
 icon_key = "gaara"
+actor_key = &"gaara"
 element = 3
-rarity = 2
-def_element = 2
-primary = 0
-strength = 26.0
-agility = 16.0
-intellect = 16.0
-strength_growth = 3.4
-agility_growth = 1.8
-intellect_growth = 1.8
-hp_base = 200.0
-mp_base = 80.0
-atk_base = 123.8227
-def_base = 1.0
-attack_speed_base = 1.0
-hp_per_strength = 16.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.22
-attack_speed_per_agility = 0.008
+def_element = 3
+strength = 22.0
+agility = 14.0
+intellect = 14.0
+strength_growth = 3.0
+agility_growth = 1.5999999999999999
+intellect_growth = 1.5999999999999999
+mp_base = 70.0
+atk_base = 94.90647482014387
+rarity = 1
+reach = 2

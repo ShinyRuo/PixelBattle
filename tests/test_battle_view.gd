@@ -199,7 +199,7 @@ func test_physical_units_only_cover_the_physical_wave() -> void:
 	var cfg := PBSimConfig.new()
 	var state := PBRunState.new()
 	for variant: int in 2:
-		for rarity: int in 4:
+		for rarity: int in PBUnit.Rarity.size():
 			state.add_unit(
 				PBUnit.of(cfg, PBElement.Type.PHYSICAL, rarity as PBUnit.Rarity, variant)
 			)

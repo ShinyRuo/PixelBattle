@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="PBCharacter" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 
@@ -7,23 +7,21 @@ script = ExtResource("1_char")
 id = &"neji_hyuga"
 name_key = "char.neji_hyuga"
 icon_key = "neji_hyuga"
-element = 4
-rarity = 1
-def_element = 3
-primary = 2
+actor_key = &"neji"
+element = 1
+primary = 1
 strength = 14.0
-agility = 14.0
-intellect = 22.0
-strength_growth = 1.6
-agility_growth = 1.6
-intellect_growth = 3.0
-hp_base = 200.0
+agility = 22.0
+intellect = 14.0
+strength_growth = 1.5999999999999999
+agility_growth = 3.0
+intellect_growth = 1.5999999999999999
+hp_base = 260.0
 mp_base = 70.0
-atk_base = 94.9065
-def_base = 1.0
-attack_speed_base = 1.0
-hp_per_strength = 16.0
-mp_per_intellect = 8.0
-atk_per_primary = 1.0
-def_per_agility = 0.22
-attack_speed_per_agility = 0.008
+atk_base = 108.05202080832333
+def_base = 3.0
+attack_speed_base = 0.85
+hp_per_strength = 22.0
+def_per_agility = 0.35
+rarity = 1
+reach = 1

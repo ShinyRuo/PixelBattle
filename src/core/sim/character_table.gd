@@ -104,7 +104,7 @@ func cell(element: PBElement.Type, rarity: PBUnit.Rarity) -> Array[PBCharacter]:
 ## 取（属性, 稀有度）这一格的第 [param index] 个角色，下标绕回。
 ##
 ## 合成表里这一格必然非空，取到的就是第 index 号变体。
-## **真角色表里这一格可能是空的**（比如没有水系 USR），
+## **真角色表里这一格可能是空的**（比如没有水系 SSR），
 ## 那时候退回到同稀有度的任意一个 —— 抽卡不能因为格子空了就掉空。
 ## 这条退化路径在合成表上永远走不到，所以它不影响对拍。
 func pick(element: PBElement.Type, rarity: PBUnit.Rarity, index: int) -> PBCharacter:

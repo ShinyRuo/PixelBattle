@@ -80,7 +80,8 @@ static func _hit_enemy(
 	if not shot.fly(enemy.pos()):
 		return
 	if book != null:
-		book.hit(tick, shot.source, enemy.slot, shot.damage, false)
+		# 暴击标记是**出膛那一刻**掷好背过来的，见 [member PBProjectile.crit]。
+		book.hit(tick, shot.source, enemy.slot, shot.damage, false, shot.crit)
 	if enemy.take_damage(shot.damage, tick):
 		out.kills += 1
 	elif shot.skill != null and PBSkillRules.apply_hit(enemy, shot.skill, shot.level, cfg, tick):

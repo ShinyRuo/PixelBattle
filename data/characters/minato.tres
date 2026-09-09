@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_7fdhd"]
+
+[resource]
+script = ExtResource("1_7fdhd")
+id = &"minato"
+name_key = "char.minato"
+icon_key = "minato"
+element = 0
+primary = 2
+strength = 16.0
+agility = 16.0
+intellect = 26.0
+strength_growth = 1.7999999999999998
+agility_growth = 1.7999999999999998
+intellect_growth = 3.4000000000000004
+hp_base = 260.0
+mp_base = 80.0
+atk_base = 150.26199415936586
+def_base = 3.0
+attack_speed_base = 0.85
+hp_per_strength = 22.0
+def_per_agility = 0.35
+rarity = 2
+reach = 1

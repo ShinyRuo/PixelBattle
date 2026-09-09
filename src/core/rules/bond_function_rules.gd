@@ -33,6 +33,13 @@ extends RefCounted
 ## 的收益，测出来比不带尾兽还差。所以 [member PBSimConfig.bond_root_seconds]
 ## 取的是 2 秒这种短窗口，**不是越长越好**。
 
+## 一个功能兑现在哪儿。M10-c 之前只有其中两种，而且没人问过。
+enum Landing {
+	SKILL,  ## 装在载体的大招上（聚拢 / 吸附 / 定身 / 减速）
+	TEAM,  ## 开波给全队每个人乘死一份（暴击光环）
+	ECONOMY,  ## 不进战斗（金币不再倒扣）
+}
+
 ## 聚拢：载体的大招落地时把半径内的敌人拖到落点（§02 的「拉拽」）。
 const GATHER: StringName = &"gather"
 
@@ -67,19 +74,51 @@ const SLOW_FIELD: StringName = &"slow_field"
 ## 那条设计和它的解药同时在场，玩家自己选。
 const GOLD_FLOOR: StringName = &"gold_floor"
 
+## 全队暴击率光环（§7 的 B13 兄弟的爱恨 / B16 幕后黑手，M10-c）。
+##
+## **这是第一个不落在大招上的战斗功能。** 前面五个的规矩是
+## 「一组羁绊只出一个载体」，理由是「发给全组就又变回乘以人数的倍率」——
+## 而光环恰恰**不随人数放大**：凑满这一组给的就是那一个定值，
+## 队里站 4 个还是 10 个一模一样。所以那条理由在这里不成立，
+## 但另一条仍然要守：**载体必须真的在场**（[method PBBondRules.active_functions]
+## 那道门槛一个字不改）——他是把光环带进场的人。
+##
+## 落点是 [member PBAttacker.crit_chance]，不是效果袋 —— 袋子是同 id
+## 整份覆盖的，两组羁绊各挂一份会静默吃掉一份。见 [PBCritRules]。
+const CRIT_CHANCE: StringName = &"crit_chance"
+
+## 全队暴击伤害光环（§7 的 B21 晓组织全员，M10-c）。落点是
+## [member PBAttacker.crit_bonus]，理由同 [constant CRIT_CHANCE]。
+const CRIT_DAMAGE: StringName = &"crit_damage"
+
 ## 全部合法的功能键。[PBBondTable] 用它拦下拼错的键 ——
 ## 拼错了不会报错，只会静默地什么都不发生，而那种 bug 从现象反推不出来。
-const ALL: Array[StringName] = [GATHER, PULL, ROOT, SLOW_FIELD, GOLD_FLOOR]
-
+const ALL: Array[StringName] = [
+	GATHER, PULL, ROOT, SLOW_FIELD, GOLD_FLOOR, CRIT_CHANCE, CRIT_DAMAGE
+]
 
 ## 这个键认不认得。
 static func is_known(key: StringName) -> bool:
 	return ALL.has(key)
 
 
-## 这个键是不是落在大招上的（其余的落在别处，目前只有 [constant GOLD_FLOOR]）。
-static func is_combat(key: StringName) -> bool:
-	return key != GOLD_FLOOR and is_known(key)
+## 这个功能兑现在哪儿。
+##
+## ## 它守着一条断言，不只是分类
+##
+## **落在大招上的键不许被两组羁绊共用**：一个大招只有一份，两组配同一个
+## 就是少了一个机制，而 §09 要的正是「每组一个**不同**的机制」。
+## 落在全队的光环反过来 —— 它是加法叠加的，B13 和 B16 各带一份
+## 说得通。`test_bond_function.gd` 的那条断言按这个分类收窄。
+##
+## M10-c 之前这里是 `is_combat`，把「不是金币就是大招」写死了。
+## 那个函数**一个调用者都没有**，所以它错着也没人知道。
+static func landing_of(key: StringName) -> Landing:
+	if key == GOLD_FLOOR:
+		return Landing.ECONOMY
+	if key == CRIT_CHANCE or key == CRIT_DAMAGE:
+		return Landing.TEAM
+	return Landing.SKILL
 
 
 ## 把一个功能装到载体的大招（0 号技能）上。返回 false 表示这个键不归它管。
@@ -109,6 +148,28 @@ static func apply_to_skill(skill: PBSkill, key: StringName, cfg: PBSimConfig) ->
 		_:
 			return false
 	return true
+
+
+## 把 [enum Landing] 为 `TEAM` 的那几个功能发给**全队每一个人**（M10-c）。
+##
+## [param functions] 是 [method PBBondRules.active_functions] 的结果，
+## 所以「载体在不在场」那道门槛已经过了 —— 这里只管发。
+##
+## ## 为什么整队一趟，而不是在建人的循环里顺手做
+##
+## 光环是**这一组羁绊**给的，不是**这个人**给的。放进那个循环的话，
+## 载体建好之前的人拿不到、建好之后的人拿得到 ——
+## 而那只表现为「站在前排的忍者暴击率好像高一点」，不报任何错。
+static func apply_to_team(attackers: Array[PBAttacker], functions: Dictionary) -> void:
+	for keys: Array in functions.values():
+		for key: StringName in keys:
+			match key:
+				CRIT_CHANCE:
+					for one: PBAttacker in attackers:
+						one.crit_chance += PBCritRules.BOND_CRIT_CHANCE
+				CRIT_DAMAGE:
+					for one: PBAttacker in attackers:
+						one.crit_bonus += PBCritRules.BOND_CRIT_DAMAGE
 
 
 ## 这份功能表里有没有人带着 [constant GOLD_FLOOR]。

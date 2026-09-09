@@ -67,13 +67,21 @@ func note(at_tick: int, text: String) -> void:
 
 ## 一次命中。[param to_ally] 区分方向：忍者打敌人还是敌人打忍者。
 ## 两个下标各自是 [member PBAttacker.slot] 和 [member PBEnemy.slot]。
-func hit(at_tick: int, source: int, target: int, amount: float, to_ally: bool) -> void:
+##
+## [param crit] 是这一下暴没暴（M10-c）。**只有播报说得准** ——
+## [PBDamageWatch] 比的是血量，而血量里既有暴击也有易伤，
+## 还会把连续几帧的小伤害攒成一个数飘出来，**结构上分不出哪一下是暴击**。
+## 同「施法回音读播报不读飞行状态」（M7-f）那一条。
+func hit(
+	at_tick: int, source: int, target: int, amount: float, to_ally: bool, crit: bool = false
+) -> void:
 	_add({
 		"kind": Kind.HIT_ALLY if to_ally else Kind.HIT_ENEMY,
 		"tick": at_tick,
 		"source": source,
 		"target": target,
 		"amount": amount,
+		"crit": crit,
 	})
 
 

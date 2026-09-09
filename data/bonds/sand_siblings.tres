@@ -1,14 +1,12 @@
-[gd_resource type="Resource" script_class="PBBond" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBBond" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_bond"]
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_0drge"]
 
 [resource]
-script = ExtResource("1_bond")
+script = ExtResource("1_0drge")
 id = &"sand_siblings"
 name_key = "bond.sand_siblings"
-match_mode = 0
 member_ids = Array[StringName]([&"gaara", &"temari", &"kankuro"])
-match_element = 3
 tier_counts = Array[int]([3])
 tier_power = Array[float]([0.28])
 tier_function_keys = Array[StringName]([&"slow_field"])

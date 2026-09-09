@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_ad5v6"]
+
+[resource]
+script = ExtResource("1_ad5v6")
+id = &"madara"
+name_key = "char.madara"
+icon_key = "madara"
+element = 0
+def_element = 0
+primary = 2
+strength = 16.0
+agility = 16.0
+intellect = 26.0
+strength_growth = 1.7999999999999998
+agility_growth = 1.7999999999999998
+intellect_growth = 3.4000000000000004
+mp_base = 80.0
+atk_base = 123.82269503546098
+rarity = 2
+reach = 2

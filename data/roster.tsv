@@ -1,0 +1,80 @@
+# 忍者名册 —— `src/tools/make_roster.gd` 的输入，一行一个角色。
+#
+# 字段（Tab 分隔）：角色键	显示名	稀有度	攻击距离	攻击属性	护甲属性
+#
+# 数据来源是 `Docs/忍法战场_忍者&羁绊完整数值文档.MD` 的第 5、6 节（原版实测），
+# **不是我们自己配的**。稀有度、近战/远程、攻/防属性四栏一律照抄，
+# 战力那一块由 `PBStatRules.fill_placeholder` 按稀有度和射程算出来。
+#
+# ## 为什么名字住在这个文件里
+#
+# §14 铁律 5：代码里不出现角色名。`tests/test_character_data.gd` 扫的是整个
+# `src/`、**注释也算**（实测拦下过）。换一版名册改这个文件，`src/` 一行不动。
+#
+# ## 攻击属性和护甲属性是两轴，不是一个
+#
+# 文档里大量角色两者不同（角都 雷/土、鹿丸 风/物理），也有大量相同
+# （小南 风/风、我爱罗 土/土）。M10-b 之前这一栏是**推导出来的**
+# （`def = counter_of(atk)`），30 个角色无一例外 —— 也就是那一轴当时
+# 携带的信息量是零。生成器写完战力之后会拿这一栏**覆盖**掉那个推导值。
+#
+# ## 只在羁绊里点到名的 5 个
+#
+# 迈特凯 / 猿飞日斩 / 千手扉间 / 犬冢牙 / 油女志乃 在文档的角色表里没有行，
+# 只出现在羁绊组成里（B04 / B11 / B12 / B20）。稀有度按羁绊那一栏写的填，
+# **攻防属性和射程是我们按人设定的**，没有原版依据 —— 要改先改这里。
+
+# ── R ──────────────────────────────────────────────────────────
+haku	白	R	远程	水	水
+zabuza	桃地再不斩	R	近战	水	物理
+sakura	春野樱	R	近战	物理	物理
+karin	香燐	R	远程	物理	水
+shikamaru	奈良鹿丸	R	远程	风	物理
+choji	秋道丁次	R	近战	物理	土
+ino	山中井野	R	远程	物理	物理
+rock_lee	李洛克	R	近战	物理	物理
+tenten	天天	R	远程	物理	物理
+
+# ── SR ─────────────────────────────────────────────────────────
+kakuzu	角都	SR	远程	雷	土
+hidan	飞段	SR	近战	物理	物理
+konan	小南	SR	远程	风	风
+deidara	迪达拉	SR	远程	风	土
+zetsu	黑绝	SR	近战	土	土
+neji_hyuga	日向宁次	SR	近战	风	物理
+hinata	日向雏田	SR	近战	风	物理
+kankuro	勘九郎	SR	远程	土	土
+temari	手鞠	SR	远程	风	风
+kimimaro	君麻吕	SR	近战	土	土
+tsunade	纲手	SR	近战	物理	物理
+gaara	我爱罗	SR	远程	土	土
+mei	照美冥	SR	远程	水	水
+raikage	艾（雷影）	SR	近战	雷	雷
+onoki	大野木	SR	远程	土	土
+naruto	漩涡鸣人	SR	近战	风	风
+sasuke	宇智波佐助	SR	远程	雷	雷
+jiraiya	自来也	SR	近战	火	火
+orochimaru	大蛇丸	SR	远程	土	土
+asuma	猿飞阿斯玛	SR	近战	风	物理
+kurenai	夕日红	SR	远程	风	物理
+anko	御手洗红豆	SR	近战	火	物理
+kisame	干柿鬼鲛	SR	近战	水	水
+sasori	蝎	SR	远程	土	土
+killer_bee	奇拉比	SR	近战	雷	雷
+jugo	重吾	SR	近战	土	土
+suigetsu	鬼灯水月	SR	近战	水	水
+might_guy	迈特凯	SR	近战	物理	物理
+hiruzen	猿飞日斩	SR	远程	火	水
+tobirama	千手扉间	SR	远程	水	水
+kiba	犬冢牙	SR	近战	物理	物理
+shino	油女志乃	SR	远程	物理	土
+
+# ── SSR ────────────────────────────────────────────────────────
+minato	波风水门	SSR	近战	火	物理
+hashirama	千手柱间	SSR	近战	土	土
+itachi	宇智波鼬	SSR	远程	火	火
+tendo	天道佩恩	SSR	远程	风	风
+madara	宇智波斑	SSR	远程	火	火
+kakashi	旗木卡卡西	SSR	远程	雷	物理
+obito	宇智波带土	SSR	远程	火	火
+kabuto	仙人兜	SSR	远程	土	土
