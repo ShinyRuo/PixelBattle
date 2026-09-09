@@ -427,9 +427,8 @@ func _animate(
 	if restart and sprite.animation == anim:
 		sprite.set_frame_and_progress(0, 0.0)
 	sprite.speed_scale = _anim_speed * fit
-	sprite.flip_h = _poses[index].facing == PBActorPose.FACE_LEFT
-	if skin.source_faces == PBActorSkin.Facing.LEFT:
-		sprite.flip_h = not sprite.flip_h
+	# **和敌人同一把尺子**（[method PBActorSkin.flips_for]）。
+	sprite.flip_h = skin.flips_for(_poses[index].facing)
 
 
 ## 白模按属性染色，真素材不染（[member PBActorSkin.tint_by_element]）。

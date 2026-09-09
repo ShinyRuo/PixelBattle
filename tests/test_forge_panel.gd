@@ -28,7 +28,9 @@ func test_the_panel_builds_and_starts_empty() -> void:
 	var panel := PBActorForgePanel.new()
 	add_child_autofree(panel)
 	await wait_process_frames(1)
-	assert_eq(panel._picks.size(), PBActorForge.anim_names().size(), "四段一开始各挂一份空名单")
+	assert_eq(
+		panel._picks_ui._picks.size(), PBActorForge.anim_names().size(), "四段一开始各挂一份空名单"
+	)
 	assert_true(PBActorForge.anim_names().has(panel._anim()), "下拉框选中的得是个真段名")
 	assert_true(panel._picked().is_empty(), "一开始什么都没挑")
 	assert_true(panel._mid_dir().begins_with(PBActorForgePanel.MID_ROOT), "中间帧目录要在 build 下")
@@ -76,23 +78,66 @@ func test_the_preview_zoom_is_one_ruler_across_a_take() -> void:
 		Image.create_empty(200, 50, false, Image.FORMAT_RGBA8)
 	)
 	var shot := {"used": Rect2i(0, 0, 10, 10), "feet_x": 5.0}
-
-	# 不交基准 = M8-g 之前的行为：两帧各自铺满，缩放比因此不同。
-	canvas.show_frame(tall, shot, Vector2i.ZERO, 1.0)
-	var loose_tall: float = canvas._view_scale()
-	canvas.show_frame(flat, shot, Vector2i.ZERO, 1.0)
-	assert_ne(canvas._view_scale(), loose_tall, "没有基准时两帧的缩放比本来就不同")
-
-	# 交了基准之后必须逐位相同 —— 差一点点的表现是「这一格好像大一圈」，
-	# 而人会去重出那张图集。
+	canvas.mark_at(180, 288)
 	canvas.fit_to(Vector2i(400, 400))
+
+	# **翻帧不许改变缩放比。** 差一点点的表现是「这一格好像大一圈」，
+	# 而人会去重出那张图集。
+	#
+	# M9-j 之后这条更强了：缩放比压根不再看当前这一帧的尺寸
+	# （只看这一段的比和刻度），所以两张尺寸完全不同的帧也必须逐位相同。
 	canvas.show_frame(tall, shot, Vector2i.ZERO, 1.0)
 	var fixed: float = canvas._view_scale()
 	canvas.show_frame(flat, shot, Vector2i.ZERO, 1.0)
-	assert_eq(canvas._view_scale(), fixed, "交了基准之后一段里每一帧的缩放比必须一样")
+	assert_eq(canvas._view_scale(), fixed, "一段里每一帧的缩放比必须一样")
 
-	# 贴底：矮的那帧画在下面，不是浮在正中 —— 脚坐在底边上是这条流水线唯一的锚。
-	assert_almost_eq(canvas._view_rect().end.y, 400.0, 0.01, "矮的那帧该贴着底边")
+
+func test_the_preview_draws_the_real_size_not_a_filled_box() -> void:
+	# **玩家实际报的那条**（M9-j）：「预览的时候大小都差不多，在游戏里一看
+	# 有的动作大有的小。」根因是预览把每一段都放大到**铺满控件** ——
+	# 而各段的成品尺度差着一截（实测 suigetsu 的 attack 图集比 idle 大 69%），
+	# 铺满正好把那个差抹平了，于是预览这块面板对「这一段是不是画大了」
+	# 一个字都说不出来。
+	#
+	# 现在屏幕上的高度 = 成品高 × 一个固定的放大率，所以**两段的比值必须
+	# 等于成品尺度的比值**。
+	var canvas := PBForgeCanvas.new()
+	add_child_autofree(canvas)
+	canvas.size = Vector2(400, 400)
+	canvas.mark_at(180, 288)
+	canvas.fit_to(Vector2i(100, 400))
+	var texture := ImageTexture.create_from_image(
+		Image.create_empty(100, 400, false, Image.FORMAT_RGBA8)
+	)
+	var shot := {"used": Rect2i(0, 100, 100, 200), "feet_x": 50.0}
+
+	canvas.show_frame(texture, shot, Vector2i.ZERO, 0.5)
+	var big: float = canvas._view_scale()
+	canvas.show_frame(texture, shot, Vector2i.ZERO, 0.25)
+	var small: float = canvas._view_scale()
+	assert_almost_eq(big / small, 2.0, 1e-6, "成品尺度差一倍，屏幕上就该差一倍")
+	# 拖「这一段整体缩放」滑块走的是同一条路（滑块乘进这个比里），
+	# 所以这一条同时钉住「拖滑块预览当场跟着变」。
+	assert_gt(big, small, "比大的那一段在屏幕上就该更大")
+
+
+func test_the_ruler_zero_is_the_foot_line() -> void:
+	# 刻度读出来的高度要**就是导出的 PNG 里的高度**，那就要求 0 落在
+	# 人真正会坐上去的那一行 —— [method PBActorForge._seat] 把 `used.end.y`
+	# 坐到画布底边。对不上的话尺子上的每一个数都偏一截，而它看起来完全正常。
+	var canvas := PBForgeCanvas.new()
+	add_child_autofree(canvas)
+	canvas.size = Vector2(400, 400)
+	canvas.mark_at(180, 288)
+	canvas.fit_to(Vector2i(100, 400))
+	var texture := ImageTexture.create_from_image(
+		Image.create_empty(100, 400, false, Image.FORMAT_RGBA8)
+	)
+	# 内容底边在 300，**不是**贴图底边 400 —— 两者相等的话这条测不出东西。
+	var shot := {"used": Rect2i(0, 100, 100, 200), "feet_x": 50.0}
+	canvas.show_frame(texture, shot, Vector2i.ZERO, 0.5)
+	var at_ground: Vector2i = canvas.frame_at(Vector2(200.0, canvas._ground_y()))
+	assert_almost_eq(float(at_ground.y), 300.0, 1.0, "刻度的 0 该落在内容底边（used.end.y）上")
 
 
 func test_the_frame_counter_says_how_many_there_are() -> void:
@@ -190,14 +235,62 @@ func test_copying_a_frame_puts_a_second_copy_right_after_it() -> void:
 	panel._set_picked([0, 2, 3] as Array[int])
 
 	panel._show(2)
-	panel._on_copy()
+	panel._picks_ui._on_copy()
 	assert_eq(panel._picked(), [0, 2, 2, 3] as Array[int], "复制的那一份要插在它后面")
 
 	# **插在后面，不是追加到末尾** —— 顺序就是播放顺序，追到末尾等于
 	# 把「停久一点」变成「结尾多播一帧别的姿势」。
 	panel._show(0)
-	panel._on_copy()
+	panel._picks_ui._on_copy()
 	assert_eq(panel._picked(), [0, 0, 2, 2, 3] as Array[int], "第 0 帧那一份也插在它自己后面")
+
+
+func test_selecting_everything_keeps_the_cut_order() -> void:
+	# **玩家要的那个按钮**（M9-l）：「把当前切出的 6 个图按顺序填到选择栏」。
+	#
+	# 它替掉的「自动挑」在 6 格上是坏的（[method PBActorForge.frames_for]
+	# 顶上那张表），而**坏得很安静**：名单是满的、导出照跑、帧数也对。
+	# 所以这一条钉的不是「选了几个」，是**顺序逐位相同** ——
+	# 排序、去重、按策略挑，三样里任何一样偷偷回来都会被它抓住。
+	var panel := PBActorForgePanel.new()
+	add_child_autofree(panel)
+	await wait_process_frames(1)
+	panel._shots = panel._forge.measure(_fake_take("%s/idle" % ROOT, 6, Rect2i(460, 100, 40, 360)))
+	# **走 `_show` 而不是直接塞进那块控件**：它是面板告诉 [PBForgePicks]
+	# 「现在停在哪一段的哪一帧」的唯一一条路（[method PBForgePicks.aim_at]），
+	# 绕过它的话这条测试测的就是一个真实点击到不了的状态。
+	panel._show(0)
+	panel._picks_ui._on_all()
+	assert_eq(panel._picked(), [0, 1, 2, 3, 4, 5] as Array[int], "顺序就是切出来的顺序")
+
+	# 一段要几帧不写死 6，同 [method PBForgeSource.cells_wanted]。
+	assert_true(panel._status.text.contains("全选上了"), "格数正好时该报绿的那一句")
+
+	# 格数不对时**照样全选**，只是说一句：这块面板一贯是「先给结果，
+	# 再说哪儿不对」——挡着不做的话人只能回去重切，而多一格删掉就行。
+	panel._anim_pick.select(1)
+	assert_eq(panel._anim(), "run", "换段这一步得真的换过去，不然下面量的还是 idle")
+	panel._shots = panel._forge.measure(_fake_take("%s/run" % ROOT, 3, Rect2i(460, 100, 40, 360)))
+	panel._show(0)
+	panel._picks_ui._on_all()
+	assert_eq(panel._picked(), [0, 1, 2] as Array[int], "少了几格也照样按顺序全选")
+	assert_true(panel._status.text.contains("而一段要"), "格数不对得说出来")
+
+
+func test_switching_to_an_empty_take_clears_the_list() -> void:
+	# 名单重画原来排在 [method PBActorForgePanel._load_current] 那个空判断
+	# **后面**，于是从挑满的 `idle` 切到还没抽帧的 `run`，列表上照旧摆着
+	# idle 那 6 行 —— 而那 6 行看起来完全正常，只是属于另一段。
+	var panel := PBActorForgePanel.new()
+	add_child_autofree(panel)
+	await wait_process_frames(1)
+	panel._shots = panel._forge.measure(_fake_take("%s/idle" % ROOT, 6, Rect2i(460, 100, 40, 360)))
+	panel._show(0)
+	panel._picks_ui._on_all()
+	assert_eq(panel._picks_ui._list.item_count, 6, "先得真的摆着 6 行")
+	panel._anim_pick.select(1)
+	panel._load_current()
+	assert_eq(panel._picks_ui._list.item_count, 0, "切到一帧都没有的那一段，列表得空掉")
 
 
 func test_copying_a_frame_that_is_not_picked_says_so() -> void:
@@ -209,7 +302,7 @@ func test_copying_a_frame_that_is_not_picked_says_so() -> void:
 	panel._shots = panel._forge.measure(_fake_take("%s/idle" % ROOT, 3, Rect2i(460, 100, 40, 360)))
 	panel._set_picked([0] as Array[int])
 	panel._show(2)
-	panel._on_copy()
+	panel._picks_ui._on_copy()
 	assert_eq(panel._picked(), [0] as Array[int], "没在名单里就别动名单")
 	assert_true(panel._status.text.contains("还不在名单里"), "得说出为什么没反应")
 

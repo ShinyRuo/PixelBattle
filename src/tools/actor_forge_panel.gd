@@ -15,9 +15,11 @@ extends Control
 ##
 ## ## 它没有替掉的：算法本身
 ##
-## 「自动挑」那个按钮走的还是 [method PBActorForge.select] ——
-## 先让它出一版，人再逐帧改。从零开始一帧帧翻 97 帧太贵，
-## 而算法挑出来的那几帧八成是对的。
+## [method PBActorForge.select] 还在 —— 从零一帧帧翻 97 帧太贵。
+## **但那是视频那条路的账**：图集进来的就已经是一段的帧数，而算法在那么少的
+## 帧上是坏的。所以 M9-l 之后没人直接调它，三条路（这一栏那颗
+## 「全部选择」、① 、② 的空名单兜底）都走 [method PBActorForge.frames_for]
+## 那条按源帧数分岔的判断。
 ##
 ## ## 一个新角色的走法（三个按钮，M6-o）
 ##
@@ -64,13 +66,17 @@ const MID_ROOT := "res://build/aires/mid"
 ## 左边那一栏多宽。右边全给预览 —— 这块面板存在的意义就是看清楚一帧。
 const SIDE_WIDTH: float = 264.0
 
-## 笔刷半径的两头（中间帧像素）。上限 64 已经是「一笔盖住整条鞋底」的量级，
-## 再大就该用框选了。
-
-## 「这一段整体缩放」滑块的两头。够用就行 —— 实测最需要它的那一次是
-## 一张图集里人画大了 16%（0.86 就补回来了）。开得太宽的代价是
-## 拖一格跳太多，而这个数正是要一点点试的。
-const ZOOM_MIN: float = 0.60
+## 「这一段整体缩放」滑块的两头。
+##
+## **下限 M9-j 从 0.60 放到 0.10**（玩家定的）。0.60 那一版的理由是
+## 「够用就行」—— 当时最极端的一次是一张图集里人画大了 16%（0.86 补回来）。
+## 而实测有一套素材的 `attack` 图集比它自己的 `idle` 大 **69%**，
+## 要 `180 ÷ 302 = 0.596` 才补得回来 —— **正好卡在下限上，只差 0.004**。
+##
+## 跨图集尺度不一致这件事没有上界（模型每次出图都可能飘），
+## 所以下限不该按「上一次最极端是多少」定。步长仍是 0.01，
+## 拖不准的那一档由「这一段缩放归 1.00」那个按钮兜着。
+const ZOOM_MIN: float = 0.10
 const ZOOM_MAX: float = 1.60
 
 var _forge := PBActorForge.new()
@@ -78,13 +84,8 @@ var _forge := PBActorForge.new()
 ## 当前这一段量出来的全部帧（[method PBActorForge.measure] 的结果）。
 var _shots: Array = []
 
-## 每一段挑中了哪几帧，`{段名: Array[int]}`。**切段不丢** —— 四段各挑各的。
-## M6-n 起导出是一段一段来的（见 [method _on_export]），这份名单因此
-## 只在「切回去看看上次挑了哪几帧」时用得上。
-var _picks: Dictionary = {}
-
 ## 每一段每一帧的**手动锚点偏移**，`{段名: {帧号: Vector2i}}`，单位是成品像素。
-## 和 [member _picks] 同级、切段不丢，**只活在这一次会话里** ——
+## 和挑帧名单（[PBForgePicks]）同级、切段不丢，**只活在这一次会话里** ——
 ## 调完就该导出，而导出之后它已经烤进那几张 png 了。
 var _nudges: Dictionary = {}
 
@@ -113,7 +114,7 @@ var _status: RichTextLabel
 var _slider: HSlider
 var _zoom: HSlider
 var _zoom_label: Label
-var _list: ItemList
+var _picks_ui: PBForgePicks
 var _tool_pick: OptionButton
 var _nudge_label: Label
 var _anchor_box: Control
@@ -130,7 +131,6 @@ func _ready() -> void:
 	row.add_child(_build_side())
 	row.add_child(_build_preview())
 	for anim: String in PBActorForge.anim_names():
-		_picks[anim] = [] as Array[int]
 		_nudges[anim] = {}
 	# **在 `add_child` 之后接线**：[PBForgeSource] 的控件是它自己在
 	# `_ready` 里建的，进树之前 `bind` / `aim_at` 落不到实处。
@@ -213,28 +213,20 @@ func _build_side() -> Control:
 	side.add_child(_build_tools())
 
 	side.add_child(HSeparator.new())
-	var marks := HBoxContainer.new()
-	marks.add_child(_button("＋ 要这一帧", _on_take))
-	marks.add_child(_button("自动挑", _on_auto))
-	side.add_child(marks)
-
-	_list = ItemList.new()
-	_list.custom_minimum_size = Vector2(0.0, 76.0)
-	_list.item_selected.connect(func(i: int) -> void: _show(int(_picked()[i])))
-	side.add_child(_list)
-	var edits := HBoxContainer.new()
-	edits.add_child(_button("↑", func() -> void: _move(-1)))
-	edits.add_child(_button("↓", func() -> void: _move(1)))
-	edits.add_child(_button("复制", _on_copy))
-	edits.add_child(_button("移除", _on_drop))
-	edits.add_child(_button("清空", func() -> void: _set_picked([] as Array[int])))
-	side.add_child(edits)
+	# 挑帧那一块整个在 [PBForgePicks]（M9-l）—— 名单是它的，面板只
+	# 「翻到那一帧」和「说一句」。
+	_picks_ui = PBForgePicks.new()
+	_picks_ui.show_frame.connect(_show)
+	_picks_ui.changed.connect(func() -> void: _show(_index))
+	_picks_ui.said.connect(_say)
+	side.add_child(_picks_ui)
 
 	side.add_child(HSeparator.new())
 	# **三个按钮，从上到下就是一个新角色的走法**（M6-n / M6-o，玩家定的）：
-	# 先一把全出（帧是算法挑的，八成对），再逐段预览、重挑、覆盖，最后装表。
+	# 先一把全出（帧怎么定见 [method PBActorForge.frames_for]），
+	# 再逐段预览、重挑、覆盖，最后装表。
 	# 合成一个的话，想重调 `attack` 就得连着另外三段一起重来。
-	side.add_child(_button("① 导出四段（自动挑帧）", _on_export_all))
+	side.add_child(_button("① 导出四段（帧自动定）", _on_export_all))
 	side.add_child(_button("② 导出（只覆盖这一段）", _on_export))
 	side.add_child(_button("③ 生成形象表", _on_link))
 	scroll.add_child(side)
@@ -334,6 +326,12 @@ func _build_preview() -> Control:
 	_canvas = PBForgeCanvas.new()
 	_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# 背景那把尺子上标哪两条线（M9-j）。**两个数都从流水线拿** ——
+	# 各算一份的话，尺子和导出会对「站姿多高」「上限在哪」说两个数，
+	# 而那正是这块预览要回答的问题。
+	_canvas.mark_at(
+		_forge.texture_height(), PBActorForge.CANVAS_CEILING * maxi(_forge.scale_up, 1)
+	)
 	_canvas.anchor_aimed.connect(_on_anchor_aimed)
 	_canvas.dabbed.connect(func(at: Vector2i) -> void: _eraser.on_dabbed(at))
 	_canvas.wiped.connect(func(area: Rect2i) -> void: _eraser.on_wiped(area))
@@ -374,6 +372,11 @@ func _load_current() -> void:
 	_shots = _forge.measure(_mid_dir())
 	_index = 0
 	_slider.max_value = float(maxi(_shots.size() - 1, 0))
+	# **在那个空判断之前重画名单。** 原来它排在后面，于是从挑满的
+	# `idle` 切到还没抽帧的 `run`，列表上照旧摆着 idle 那 6 行 ——
+	# 而那 6 行看起来完全正常，只是属于另一段。
+	_picks_ui.aim_at(_anim(), _shots, 0)
+	_picks_ui.refresh()
 	if _shots.is_empty():
 		_texture = null
 		_canvas.show_nothing()
@@ -382,7 +385,6 @@ func _load_current() -> void:
 	_canvas.fit_to(_widest())
 	_refresh_scale()
 	_show(0)
-	_refresh_list()
 	_say("载入 %d 帧。← → 翻帧，看中了按「＋ 要这一帧」。" % _shots.size())
 
 
@@ -412,12 +414,13 @@ func _show(to: int) -> void:
 	# 下一笔会落在上一帧那张图上，而相邻两帧长得几乎一样 ——
 	# 要等存完盘翻回去才看得出擦错了张。
 	_eraser.aim_at(_anim(), _shots, _index, _texture)
+	_picks_ui.aim_at(_anim(), _shots, _index)
 	# **下标 0 起，而总数是总数。** 原来写的是「第 %d / %d」加 `size() - 1`，
 	# 于是六帧永远显示成「/ 5」—— 一个 0 起的下标配一个「总数减一」的分母，
 	# 读起来就是「5 帧里的第 4 帧」，而那时候人会去找丢掉的那一帧。
 	# 下标不改成 1 起：挑帧列表存的就是这个数（`_picked()`），两处必须是同一个。
 	_count_label.text = "第 %d 帧（共 %d 帧）%s" % [
-		_index, _shots.size(), "　✓已选" if _picked().has(_index) else ""
+		_index, _shots.size(), "　✓已选" if _picks_ui.holds(_index) else ""
 	]
 	_refresh_frame()
 
@@ -513,107 +516,10 @@ func _on_nudge_all() -> void:
 	)
 
 
-
 func _remeasure(index: int) -> void:
 	var shot := _forge.measure_one(_shots[index]["path"])
 	if not shot.is_empty():
 		_shots[index] = shot
-
-
-# ── 挑帧 ────────────────────────────────────────────────────────
-
-
-## 要这一帧。**再按一次就是取消** —— 一个按钮两个方向，
-## 省掉「我到底选没选中」这个要去列表里数的问题。
-func _on_take() -> void:
-	if _shots.is_empty():
-		return
-	var picked := _picked()
-	if picked.has(_index):
-		picked.erase(_index)
-	else:
-		picked.append(_index)
-	_set_picked(picked)
-
-
-func _on_auto() -> void:
-	if _shots.is_empty():
-		return
-	var spec := PBActorForge.spec_of(_anim())
-	_set_picked(_forge.select(_shots, String(spec["pick"]), int(spec["want"])))
-	_say("自动挑了 %d 帧 —— 逐帧看一遍，不合适就自己改。" % _picked().size())
-
-
-## 把选中的那一帧在名单里**再放一份**，插在它后面。M9-e。
-##
-## ## 为什么「＋ 要这一帧」做不到
-##
-## 那个按钮是**开关**（在名单里就拿掉、不在就加上），所以同一帧按两次
-## 等于没按。而 [member PBSimConfig.anim_frames] 要求每一段 6 帧 ——
-## 源片里凑不够 6 个像样姿势的时候，就得**把某一帧停久一点**。
-##
-## ## 和载入时那次补有什么不同
-##
-## [method PBActorSkin.hold_last_to] 也补，但它只会重复**最后一帧**（那是
-## 兜底，对 27 个已入库的角色一视同仁）。这里能选**停哪一帧** ——
-## 攻击段常常是想让「伸得最远」那一格多停两帧，而不是让收招拖长。
-##
-## ## 复制的**恒是当前这一帧**
-##
-## 列表里那个选中项只用来**区分同一帧的哪一份**（复制过之后同一帧会出现
-## 两次），不用来决定复制谁 —— 用它决定的话，翻帧不会清掉旧的选中项，
-## 于是「翻到第 5 帧按复制，出来的是第 2 帧」，而屏幕上两处各说各的。
-func _on_copy() -> void:
-	if _shots.is_empty():
-		return
-	var picked := _picked()
-	var rows := _list.get_selected_items()
-	var at: int = -1
-	if not rows.is_empty() and picked[rows[0]] == _index:
-		at = rows[0]
-	else:
-		at = picked.find(_index)
-	if at < 0:
-		_say("[color=#e06666]这一帧还不在名单里 —— 先按「＋ 要这一帧」。[/color]")
-		return
-	var frame: int = picked[at]
-	picked.insert(at + 1, frame)
-	_set_picked(picked)
-	_list.select(at + 1)
-	_say("第 %d 帧多留了一份，这一段现在 %d 帧。" % [frame, picked.size()])
-
-
-func _on_drop() -> void:
-	var rows := _list.get_selected_items()
-	if rows.is_empty():
-		return
-	var picked := _picked()
-	picked.remove_at(rows[0])
-	_set_picked(picked)
-
-
-## 调整顺序。**顺序就是播放顺序** —— 攻击段第 0 帧必须是打出去那一下
-## （规格第 8 节），起手排在前面的话游戏里会「先掉血、后挥手」。
-func _move(by: int) -> void:
-	var rows := _list.get_selected_items()
-	if rows.is_empty():
-		return
-	var from: int = rows[0]
-	var to: int = from + by
-	var picked := _picked()
-	if to < 0 or to >= picked.size():
-		return
-	var moved: int = picked[from]
-	picked.remove_at(from)
-	picked.insert(to, moved)
-	_set_picked(picked)
-	_list.select(to)
-
-
-func _refresh_list() -> void:
-	_list.clear()
-	for slot: int in _picked().size():
-		_list.add_item("第 %d 帧 → %s_%d" % [_picked()[slot], _anim(), slot])
 
 
 # ── 导出 ────────────────────────────────────────────────────────
@@ -631,7 +537,8 @@ func _refresh_list() -> void:
 ## 不这么做的话，后导的那一段会带着更大的画布落地而前面几段还是旧尺寸 ——
 ## 人在动画之间跳一下，`tests/test_actor_data.gd` 会红。
 ##
-## **没挑过就自动挑**：先让算法出一版是这块面板一贯的用法。
+## **没挑过就替你定一版**：先给一版再让人改，是这块面板一贯的用法。
+## 定的规矩见 [method PBActorForge.frames_for]（M9-l 起图集那条路按顺序全要）。
 func _on_export() -> void:
 	var key: String = _key_edit.text.strip_edges()
 	if key == "":
@@ -644,8 +551,7 @@ func _on_export() -> void:
 		return
 	var picked: Array[int] = _picked()
 	if picked.is_empty():
-		var spec := PBActorForge.spec_of(anim)
-		picked = _forge.select(shots, String(spec["pick"]), int(spec["want"]))
+		picked = _forge.frames_for(shots, anim)
 		_set_picked(picked)
 	var scale := _scale_for(anim, shots)
 	if scale <= 0.0:
@@ -667,7 +573,7 @@ func _on_export() -> void:
 	if _forge.clamped:
 		_say(
 			(
-				"[color=#e0a666]%s 段 %d 帧，画布 %d×%d —— 撞上头顶上限，"
+				"[color=#e0a666]%s 段 %d 帧，画布 %d×%d —— 撞上画布上限，"
 				+ "头被切掉了一截。挑帧里有跳得太高的那一张？[/color]"
 			)
 			% [anim, picked.size(), canvas.x, canvas.y]
@@ -712,8 +618,8 @@ func _relink_if_needed(key: String) -> void:
 ##
 ## ## 它和 [method _on_export] 的分工
 ##
-## 这一个负责**从零到有**：从零开始一帧帧翻 97 帧 × 4 段太贵，而算法挑的
-## 八成是对的。那一个负责**改**：预览某一段、重挑、只覆盖它。
+## 这一个负责**从零到有**：从零开始一帧帧翻 97 帧 × 4 段太贵，而替你定的
+## 那一版八成是对的。那一个负责**改**：预览某一段、重挑、只覆盖它。
 ##
 ## ## 为什么它的画布算得比逐段那条好
 ##
@@ -721,9 +627,9 @@ func _relink_if_needed(key: String) -> void:
 ## 后面逐段覆盖时基本不用再重裱。反过来先导窄的那几段，
 ## 等导到 `attack` 时就要把前面几段全部重裱一遍 —— 结果一样，只是多跑几趟。
 ##
-## **挑帧一律走算法，不看已经挑过的名单** —— 按钮上写着「自动挑帧」，
-## 而「有时候用我挑的、有时候不用」是一个说不清的按钮。挑好的名单会填回
-## 各段的列表里，接着改就是了。
+## **帧一律现定，不看已经挑过的名单** —— 按钮上写着「帧自动定」，
+## 而「有时候用我挑的、有时候不用」是一个说不清的按钮。定好的名单会填回
+## 各段的列表里，接着改就是了。怎么定见 [method PBActorForge.frames_for]。
 func _on_export_all() -> void:
 	var key: String = _key_edit.text.strip_edges()
 	if key == "":
@@ -737,8 +643,7 @@ func _on_export_all() -> void:
 			_say("[color=#e06666]%s 段一帧都没有 —— 四段都要抽过帧才导得出。[/color]" % anim)
 			return
 		takes[anim] = shots
-		var spec := PBActorForge.spec_of(anim)
-		chosen[anim] = _forge.select(shots, String(spec["pick"]), int(spec["want"]))
+		chosen[anim] = _forge.frames_for(shots, anim)
 
 	var scales := _zoomed(_forge.scales(takes, _source.shares_idle_scale()))
 	var canvas := _forge.fit_canvas(takes, scales, chosen)
@@ -749,12 +654,11 @@ func _on_export_all() -> void:
 		if err != "":
 			_say("[color=#e06666]%s[/color]" % err)
 			return
-		_picks[anim] = chosen[anim]
-	_refresh_list()
+		_picks_ui.set_picks(anim, chosen[anim])
 	if _forge.clamped:
 		_say(
 			(
-				"[color=#e0a666]四段出好了，画布 %d×%d —— 撞上头顶上限，"
+				"[color=#e0a666]四段出好了，画布 %d×%d —— 撞上画布上限，"
 				+ "头被切掉了一截。逐段翻一遍，把跳得太高的那张换掉。[/color]"
 			)
 			% [canvas.x, canvas.y]
@@ -918,15 +822,14 @@ func _mid_dir() -> String:
 	return "%s/%s" % [MID_ROOT, _anim()]
 
 
+## 当前这一段的名单。**名单在 [PBForgePicks] 手上**，这两行只是导出那几条
+## 路少写一个 `_anim()`。
 func _picked() -> Array[int]:
-	return _picks.get(_anim(), [] as Array[int])
+	return _picks_ui.picks_of(_anim())
 
 
 func _set_picked(picked: Array[int]) -> void:
-	_picks[_anim()] = picked
-	_refresh_list()
-	if not _shots.is_empty():
-		_show(_index)
+	_picks_ui.set_picks(_anim(), picked)
 
 
 ## 这一段的锚点偏移账。**按需建**：段名是从下拉框里读的，
@@ -943,9 +846,6 @@ func _mark_table() -> Dictionary:
 
 func _nudge_now() -> Vector2i:
 	return _nudge_table().get(_index, Vector2i.ZERO)
-
-
-## 这一段的橡皮笔迹账。
 
 
 func _say(text: String) -> void:

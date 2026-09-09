@@ -22,6 +22,21 @@ extends Node2D
 ## 放大到 8 倍、一段只播一段、画出画布框和脚底十字、
 ## 并且在信息栏里直接写出「这张皮是从 `data/actors/` 装的还是退回了白模」。
 ##
+## ## 怪也在这里看（M9-k）
+##
+## 面板上多了一个**阵营**开关，另一档是那 30 种怪
+## （6 属性 × 5 形态，[method PBEnemyPool.skin_key]）。上面那三层
+## 对怪一条不落，而且**更要紧** —— 忍者的皮键写在角色表里，
+## 怪的皮键是**拼出来的**：拼出来的键查不到不报错，
+## [PBActorLibrary] 安静地退回白模，表现就是「接了素材还是白模」。
+## 那正是 M9-f 之前那 5 张物理怪皮的处境（一只都刷不出来，而没人发现）。
+##
+## **怪没有 [PBCharacter]**，所以下拉框那一行只写得出「属性 · 形态」，
+## 而白模兜底要走敌人那一张不是己方那一张
+## （[method PBEnemyPool.white_for]，边数按属性、体型按档次）——
+## 退回己方白模的话，预览台会对「这一种怪在游戏里长什么样」这个
+## **它唯一要回答的问题**给出一个错的答案。
+##
 ## ## 它不碰 sim
 ##
 ## 战斗画面里动画状态由 [PBActorPose] 从 sim 的**状态**里差分出来
@@ -56,12 +71,32 @@ const ROW_H: float = 20.0
 const GAP: float = 6.0
 const PAD: float = 6.0
 
+## 五种形态的中文名，**按 [method PBEnemyPool.form_of] 的下标排** ——
+## 和 [constant PBEnemyPool.FORM_NAMES] 是同一排东西的两种写法
+## （那边是皮键里的名字，这边是给人看的），所以长度对不上就是错的，
+## `test_actor_lab.gd` 钉着。
+const FOE_FORMS: Array[String] = ["近战", "远程", "精英近战", "精英远程", "BOSS"]
+
+## 怪按三个档次枚举。**不按形态下标枚举**：白模的体型要的是档次
+## （[constant PBEnemyPool.RANK_BULK]），而从形态倒推档次就是把
+## [method PBEnemyPool.form_of] 反着再写一遍 —— 一把尺子两个方向，
+## 而 BOSS 那一档「吃掉远近」正好让这个反函数不存在。
+const FOE_RANKS: Array[int] = [PBEnemy.Rank.MINION, PBEnemy.Rank.ELITE, PBEnemy.Rank.BOSS]
+
 const GUIDE_GROUND := Color(0.42, 0.47, 0.58, 0.9)
 const GUIDE_CANVAS := Color(0.95, 0.78, 0.35, 0.55)
 const GUIDE_CROSS := Color(0.42, 0.86, 0.98, 0.95)
 const CROSS_ARM: float = 10.0
 
-var _characters: Array[PBCharacter] = []
+## 下拉框里现在摆的那一批。每条 `{"title", "key", "element", "rank"}` ——
+## **两个阵营共用一种条目**，因为从这里往下（挂皮、染色、量脚底、报缺段）
+## 每一步对忍者和怪都是同一句话。分成两条路的话，那几步会各长出一份，
+## 而它们迟早在脚底锚点或朝向上分叉 —— 那恰恰是这个工具用来查别人的东西。
+var _entries: Array[Dictionary] = []
+
+## 现在看的是怪不是忍者。
+var _foes: bool = false
+
 var _index: int = 0
 var _state: int = PBActorPose.State.IDLE
 var _zoom: int = 4
@@ -76,6 +111,8 @@ var _from_data: bool = false
 
 var _sprite: AnimatedSprite2D = null
 var _pick: OptionButton = null
+var _title: Label = null
+var _family: Button = null
 var _info: RichTextLabel = null
 var _ground: Line2D = null
 var _canvas: Line2D = null
@@ -90,7 +127,7 @@ var _last_frame: int = -1
 
 
 func _ready() -> void:
-	_characters = PBCharacterLoader.table().all()
+	_build_entries()
 	_stage_rect.position = STAGE.position
 	_stage_rect.size = STAGE.size
 	_anchor.position = FOOT
@@ -160,15 +197,15 @@ func _build_panel() -> void:
 	var width: float = PANEL.size.x - PAD * 2.0
 	var y: float = PANEL.position.y + PAD
 
-	PBSkin.label(_ui, Vector2(left, y), width, PBSkin.FONT_TITLE, PBSkin.TITLE).text = "战场形象预览"
+	_title = PBSkin.label(_ui, Vector2(left, y), width, PBSkin.FONT_TITLE, PBSkin.TITLE)
+	_title.text = _title_line()
 	y += 15.0
 	_pick = OptionButton.new()
 	_pick.position = Vector2(left, y)
 	_pick.size = Vector2(width, 16.0)
 	_pick.focus_mode = Control.FOCUS_NONE
 	PBSkin.style_button(_pick, PBSkin.Tone.PLAIN)
-	for character: PBCharacter in _characters:
-		_pick.add_item(_title_of(character))
+	_fill_picker()
 	_pick.item_selected.connect(_choose)
 	_ui.add_child(_pick)
 	y += 16.0 + GAP * 2.0
@@ -227,11 +264,17 @@ func _build_zoom(left: float, width: float, top: float) -> float:
 	return y + ROW_H + GAP * 2.0
 
 
+## 三个开关挤一行。**阵营那个挤进这一行、不另起一行**：面板高度是排满的
+## （下面那块信息栏是「剩下多少给多少」），多一行就从信息栏身上扣 26 像素，
+## 而那块正是这个工具的产出 —— 五行里裁掉一行的表现是「来源那一行看不见了」。
 func _build_toggles(left: float, width: float, top: float) -> float:
-	var cell: float = (width - GAP) * 0.5
+	var cell: float = (width - GAP * 2.0) / 3.0
+	_family = _button(
+		_family_label(), Rect2(Vector2(left, top), Vector2(cell, ROW_H)), _swap_family
+	)
 	_button(
 		"翻转朝向",
-		Rect2(Vector2(left, top), Vector2(cell, ROW_H)),
+		Rect2(Vector2(left + cell + GAP, top), Vector2(cell, ROW_H)),
 		func() -> void:
 			_flip = not _flip
 			_face()
@@ -239,7 +282,7 @@ func _build_toggles(left: float, width: float, top: float) -> float:
 	)
 	_button(
 		"辅助线",
-		Rect2(Vector2(left + cell + GAP, top), Vector2(cell, ROW_H)),
+		Rect2(Vector2(left + (cell + GAP) * 2.0, top), Vector2(cell, ROW_H)),
 		func() -> void:
 			_guides_on = not _guides_on
 			_guides.visible = _guides_on
@@ -266,16 +309,106 @@ func _title_of(character: PBCharacter) -> String:
 	return "%s · %s" % [PBLocale.of_character(character), element]
 
 
-func _character() -> PBCharacter:
-	if _index < 0 or _index >= _characters.size():
-		return null
-	return _characters[_index]
+## 下拉框里摆哪一批。**换阵营整份重建，两批不混在一张表里** ——
+## 混着摆的话，想看第 3 种怪要先划过 30 个忍者，
+## 而这个工具的用法恰恰是「一种一种往下走」（←→ 就是干这个的）。
+func _build_entries() -> void:
+	_entries.clear()
+	if _foes:
+		_build_foes()
+		return
+	for character: PBCharacter in PBCharacterLoader.table().all():
+		_entries.append(
+			{
+				"title": _title_of(character),
+				"key": character.actor_key,
+				"element": character.element,
+				"rank": PBEnemy.Rank.MINION,
+			}
+		)
+
+
+## 那 30 种怪：6 属性 × 5 形态。
+##
+## **按「档次 × 远近」枚举，再靠 [method PBEnemyPool.form_of] 去重**，
+## 而不是直接数到 5：BOSS 那一档吃掉了远近这一维，所以 (BOSS, 远) 和
+## (BOSS, 近) 是同一种，`seen` 挡掉后一个。这样枚举出来的键和战斗里
+## 查的是同一个函数（[method PBEnemyPool.skin_key]），
+## 而**档次是顺手拿到的** —— 白模的体型正要它。
+func _build_foes() -> void:
+	for element: PBElement.Type in PBEnemyPool.ELEMENT_NAMES:
+		var seen: Dictionary = {}
+		for rank: int in FOE_RANKS:
+			for ranged: bool in [false, true]:
+				var form: int = PBEnemyPool.form_of(rank, ranged)
+				if seen.has(form):
+					continue
+				seen[form] = true
+				_entries.append(
+					{
+						"title": _foe_title(element, form),
+						"key": PBEnemyPool.skin_key(element, rank, ranged),
+						"element": element,
+						"rank": rank,
+					}
+				)
+
+
+## 怪那一行：「火 · 精英近战」。**没有名字可写** —— 怪没有 [PBCharacter]，
+## 属性和形态就是它全部的身份，也正是皮键的两半。
+func _foe_title(element: PBElement.Type, form: int) -> String:
+	return "%s · %s" % [PBUnitTile.ELEMENT_NAMES.get(element, "?"), FOE_FORMS[form]]
+
+
+func _fill_picker() -> void:
+	_pick.clear()
+	for entry: Dictionary in _entries:
+		_pick.add_item(String(entry["title"]))
+	if not _entries.is_empty():
+		_pick.select(_index)
+
+
+## 换阵营。**下拉框、标题、按钮三处一起换** ——
+## 少换一处的表现是「标题写着忍者，舞台上站着一只怪」。
+func _swap_family() -> void:
+	_foes = not _foes
+	_index = 0
+	_build_entries()
+	_title.text = _title_line()
+	_family.text = _family_label()
+	_fill_picker()
+	_dress()
+
+
+func _title_line() -> String:
+	return "战场形象预览 · %s" % ("怪物" if _foes else "忍者")
+
+
+## 按钮上写的是**按下去会发生什么**，不是现在在看什么 —— 后者标题栏
+## 已经写着了，两处都写「现在」的话这个按钮就成了一个没有动词的标签。
+func _family_label() -> String:
+	return "看忍者" if _foes else "看怪物"
+
+
+func _entry() -> Dictionary:
+	if _index < 0 or _index >= _entries.size():
+		return {}
+	return _entries[_index]
+
+
+## 这一条该去 [PBActorLibrary] 里查哪个键。忍者是角色表里填的，
+## 怪是拼出来的 —— 而**两边查不到的后果一模一样**：安静地退回白模。
+func _key() -> StringName:
+	var entry := _entry()
+	if not entry.has("key"):
+		return &""
+	return entry["key"]
 
 
 func _choose(index: int) -> void:
-	if _characters.is_empty():
+	if _entries.is_empty():
 		return
-	_index = posmod(index, _characters.size())
+	_index = posmod(index, _entries.size())
 	_pick.select(_index)
 	_dress()
 
@@ -283,13 +416,13 @@ func _choose(index: int) -> void:
 ## 换一张皮。**没配就退回白模** —— 和 [method PBAllyPool._dress] 同一条规矩，
 ## 而这里额外把「走了哪一条」记下来给信息栏（[member _from_data]）。
 func _dress() -> void:
-	var character := _character()
 	_skin = null
-	if character != null:
-		_skin = PBActorLibrary.skin_for(character.actor_key)
+	var key: StringName = _key()
+	if key != &"":
+		_skin = PBActorLibrary.skin_for(key)
 	_from_data = _skin != null
 	if _skin == null:
-		_skin = PBWhiteModel.ally()
+		_skin = _white_model()
 	_sprite.sprite_frames = _skin.frames
 	_sprite.offset = _skin.draw_offset()
 	_sprite.modulate = _tint()
@@ -307,12 +440,15 @@ func _play(state: int) -> void:
 	_refresh()
 
 
-## 朝向两步走，和 [method PBAllyPool._animate] 一字不差：先按看向哪边翻，
-## 再按**源图朝哪边**翻回来（[member PBActorSkin.source_faces]）。
+## 朝向**和两个池子同一把尺子**（[method PBActorSkin.flips_for]）。
+##
+## 「翻转朝向」那个按钮的意思就是「看向左边」，所以这里把它翻译成一个
+## [member PBActorPose.facing] 再问 —— 自己再写一遍那两行的话，
+## 这个**专门用来验朝向的工具**就会和它要验的东西各说各的（M9-m 正是这条）。
 func _face() -> void:
-	_sprite.flip_h = _flip
-	if _skin.source_faces == PBActorSkin.Facing.LEFT:
-		_sprite.flip_h = not _sprite.flip_h
+	_sprite.flip_h = _skin.flips_for(
+		PBActorPose.FACE_LEFT if _flip else PBActorPose.FACE_RIGHT
+	)
 
 
 func _toggle_pause() -> void:
@@ -351,12 +487,26 @@ func _apply_zoom() -> void:
 	_sprite.scale = Vector2.ONE * (_skin.pixel_scale * float(_zoom))
 
 
+## 查不到真素材时退回哪张白模。**两个阵营不是同一张**：己方那张是个方块人，
+## 怪那张是按属性定边数、按档次定体型的多边形（[method PBEnemyPool.white_for]）。
+## 退回己方那张的话，预览台会对「这一种怪在游戏里长什么样」——
+## 它唯一要回答的问题 —— 给出一个错的答案。
+func _white_model() -> PBActorSkin:
+	var entry := _entry()
+	if not _foes or entry.is_empty():
+		return PBWhiteModel.ally()
+	var element: PBElement.Type = entry["element"]
+	var rank: int = entry["rank"]
+	return PBEnemyPool.white_for(element, rank)
+
+
 ## 白模按属性染色，真素材不染（[member PBActorSkin.tint_by_element]）。
 func _tint() -> Color:
-	var character := _character()
-	if not _skin.tint_by_element or character == null:
+	var entry := _entry()
+	if not _skin.tint_by_element or entry.is_empty():
 		return Color.WHITE
-	return PBEnemyPool.ELEMENT_COLORS.get(character.element, Color.WHITE)
+	var element: PBElement.Type = entry["element"]
+	return PBEnemyPool.ELEMENT_COLORS.get(element, Color.WHITE)
 
 
 func _frame_count() -> int:
@@ -395,12 +545,11 @@ func _lay_guides() -> void:
 func _refresh() -> void:
 	if _info == null:
 		return
-	var character := _character()
 	var lines: Array[String] = []
 	var source: String = (
 		PBSkin.tint("data/actors", PBSkin.GOOD) if _from_data else PBSkin.tint("白模兜底", PBSkin.WARN)
 	)
-	var key: String = String(character.actor_key) if character != null else ""
+	var key: String = String(_key())
 	lines.append("来源　%s　key「%s」" % [source, key if key != "" else "（空）"])
 	lines.append(_missing_line())
 	lines.append(
@@ -422,7 +571,7 @@ func _refresh() -> void:
 			% [_zoom, "左" if _sprite.flip_h else "右", "暂停" if _paused else "播放中"]
 		)
 	)
-	lines.append(PBSkin.tint("空格暂停　←→ 换人　Esc 退出", PBSkin.DIM))
+	lines.append(PBSkin.tint("空格暂停　←→ 换一个　Esc 退出", PBSkin.DIM))
 	_info.text = "\n".join(lines)
 
 

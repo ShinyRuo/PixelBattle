@@ -13,6 +13,9 @@ extends GutTest
 
 const ROOT := "user://forge_test"
 
+## 造假素材时那个人占的位置。挑帧那几条只关心「有几帧」，不关心画了什么。
+const BODY := Rect2i(460, 100, 40, 360)
+
 var _forge: PBActorForge
 
 
@@ -92,9 +95,8 @@ func test_the_canvas_is_fitted_to_the_chosen_frames_only() -> void:
 	assert_lt(narrow.x, with_junk.x, "挑中那一帧才算数 —— 没挑的杂点不该撑宽画布")
 
 
-func test_the_canvas_never_pokes_into_the_top_bar() -> void:
-	# 画布高度超过头顶那一截的话，最上面那排的头会戳进 A 顶栏 ——
-	# 而 `test_layout.gd` 钉的是 [PBLayout] 的常量，钉不到素材。
+func test_the_canvas_stops_at_the_ceiling() -> void:
+	# 画布再高也要有个头，否则一帧能长到屏幕外面去。
 	#
 	# **那道墙量的是逻辑像素**，所以高清档要先除回 [member PBActorForge.scale_up]
 	# 再比。忘了除的话高清素材会被压掉三分之二，而画布、坐标、锚点
@@ -107,11 +109,41 @@ func test_the_canvas_never_pokes_into_the_top_bar() -> void:
 			{"idle": shots}, {"idle": 1.0 * float(up)}, {"idle": [0] as Array[int]}
 		)
 		assert_lte(
-			float(canvas.y) / float(up), PBLayout.SPRITE_HEADROOM, "%d 倍档越过了头顶余量" % up
+			float(canvas.y) / float(up),
+			float(PBActorForge.CANVAS_CEILING),
+			"%d 倍档越过了画布上限" % up
 		)
 		# **压回去这一下不许无声。** 被压掉的是头，而画布、坐标、锚点
 		# 全部看起来完全正确 —— 命令行和插件都靠这个字段才说得出话。
 		assert_true(_forge.clamped, "%d 倍档撞了上限却没记下来" % up)
+
+
+func test_the_ceiling_keeps_the_tallest_pose_on_screen() -> void:
+	# **M9-i 把画布上限和头顶留白拆成了两个数**，于是要有一条钉住新的边界。
+	#
+	# 最上面那条泳道的脚落在 [constant PBLayout.GROUND_TOP]，而画布上限就是
+	# 「头最高能到脚上方多少」—— 超过它，抬手那几帧的头就戳出屏幕顶了，
+	# **而那种越界测试抓不到，只能截图**（[PBLayout] 顶部那条老教训）。
+	#
+	# 玩家原话要的是「加倍」（64 → 128），实测那样头会在 y = −30。
+	# 所以这一条同时是「为什么最后定在 1.5 倍」的记录。
+	assert_lte(
+		float(PBActorForge.CANVAS_CEILING),
+		PBLayout.GROUND_TOP,
+		"画布上限超过脚到屏幕顶的距离了 —— 抬手那几帧会戳出屏幕"
+	)
+	# 反过来也要钉：低于头顶留白的话，**站着的人**就白白被切了 ——
+	# 而那一截才是这条流水线真正保证的东西。
+	assert_gte(
+		float(PBActorForge.CANVAS_CEILING),
+		PBLayout.SPRITE_HEADROOM,
+		"画布上限不该比头顶留白还矮，那样站姿都装不下"
+	)
+	assert_gte(
+		PBActorForge.CANVAS_CEILING,
+		PBActorForge.TARGET_HEIGHT + PBActorForge.PAD_TOP,
+		"连站姿加留白都装不下的话，每一套素材都会被切"
+	)
 
 
 func test_the_hd_tier_makes_a_bigger_texture_that_draws_the_same_size() -> void:
@@ -328,10 +360,46 @@ func test_borrowing_needs_an_idle_to_borrow_from() -> void:
 	assert_gt(float(_forge.scales(only).get("run", 0.0)), 0.0, "不借的那一路照旧算得出")
 
 
+func test_a_take_that_is_already_the_right_length_is_used_in_order() -> void:
+	# **M9-l 那条**：图集切出来的就是一段要的帧数，而 [method PBActorForge.select]
+	# 是按「从几十上百帧里挑 6 帧」写的 —— [constant PBActorForge.TRIM]
+	# 头尾各掐 8 帧，6 全在掐掉的范围里。实测它在 6 格上给 `idle` 挑出
+	# `[5, 5]`、给 `dead` 挑出 `[0, 2, 4, 5, 5, 0]`（最后一格回到站姿），
+	# **而这不报错**：名单是满的、导出照跑、帧数也对。
+	for spec: Dictionary in PBActorForge.ANIMS:
+		var anim: String = String(spec["name"])
+		var want: int = int(spec["want"])
+		var exact := _forge.measure(_fake_take("%s/%s" % [ROOT, anim], want, BODY))
+		var order: Array[int] = []
+		order.assign(range(want))
+		assert_eq(_forge.frames_for(exact, anim), order, "%s 段刚好够就该按顺序全要" % anim)
+
+	# **另一半**：源帧多的时候（视频那条路）这条判断不能反过来吃掉算法 ——
+	# 那样 97 帧的视频会导出 97 帧，而规格要求一段就是 `want` 帧。
+	var spec := PBActorForge.spec_of("attack")
+	var want: int = int(spec["want"])
+	var many := _forge.measure(_fake_take("%s/long" % ROOT, want * 5, BODY))
+	var got := _forge.frames_for(many, "attack")
+	assert_eq(got.size(), want, "帧多的时候得挑够这一段要的帧数")
+	assert_eq(got, _forge.select(many, String(spec["pick"]), want), "那一档必须还是走算法")
+
+
+func test_one_take_is_the_same_number_of_frames_everywhere() -> void:
+	# 「一段几帧」现在有三个读者：挑帧那一档（[constant PBActorForge.ANIMS]
+	# 的 `want`）、图集切几格（[method PBForgeSource.cells_wanted]）、
+	# 以及 sim 那边的 [member PBSimConfig.anim_frames]。三处对不上的话，
+	# [method PBActorForge.frames_for] 那条「刚好够就按顺序全要」永远不成立 ——
+	# **而它不报错**，只是又悄悄退回那套在 6 格上是坏的算法。
+	var want: int = PBForgeSource.cells_wanted()
+	assert_eq(want, PBSimConfig.new().anim_frames, "切几格就该是 sim 要几帧")
+	for spec: Dictionary in PBActorForge.ANIMS:
+		assert_eq(int(spec["want"]), want, "%s 段要的帧数得和另外两处一样" % spec["name"])
+
+
 func test_the_auto_picker_survives_a_very_short_clip() -> void:
 	# 四种挑法里有三种从第 [constant PBActorForge.TRIM] 帧起算（掐头去尾），
 	# 而一段只有几帧的视频**根本没有那么多帧可掐**。
-	# 越界的表现是编辑器里点一下「自动挑」整个卡死，而不是一句报错。
+	# 越界的表现是编辑器里点一下导出整个卡死，而不是一句报错。
 	var dir := _fake_take("%s/tiny" % ROOT, 3, Rect2i(460, 100, 40, 360))
 	var shots := _forge.measure(dir)
 	for spec: Dictionary in PBActorForge.ANIMS:

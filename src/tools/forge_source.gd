@@ -222,7 +222,7 @@ func _on_cut() -> void:
 	# 见 [method PBSheetCutter.guess_key]。
 	var key := PBSheetCutter.guess_key(sheet)
 	PBSheetCutter.key_out(sheet, key, _tol_size())
-	var cells := PBSheetCutter.cut(sheet, _gap_size())
+	var cells := PBSheetCutter.cut(sheet, _gap_size(), PBSheetCutter.DEFAULT_CELL, cells_wanted())
 	if cells.is_empty():
 		said.emit(
 			(
@@ -253,14 +253,23 @@ func _write(sheet: Image, cells: Array[Rect2i]) -> String:
 	return ""
 
 
-## 切出几格要说出来。**不是 6 格就标黄** —— 切歪了之后每一帧看起来
+## 一张图集该有几格。**从 [member PBSimConfig.anim_frames] 来，不写死 6** ——
+## 图集的格数就是一段动画的帧数，两处各写一个 6 的话，哪天默认帧数变了，
+## 这块面板会一直报「切出 8 格，不是 6 格」而其实是对的。
+static func cells_wanted() -> int:
+	return PBSimConfig.new().anim_frames
+
+
+## 切出几格要说出来。**不对就标黄** —— 切歪了之后每一帧看起来
 ## 都很正常（就是一个人站在洋红底上），只有数一数才发现少了一格
 ## 或者一个人被劈成了两半。
 func _report(count: int, key: Color) -> void:
 	var tone: String = "底色 #%s" % key.to_html(false)
-	if count == 6:
+	var want: int = cells_wanted()
+	if count == want:
 		said.emit(
-			"[color=#71d08c]切出 6 格[/color]（%s）。← → 翻一遍确认没切歪，再挑帧。" % tone
+			"[color=#71d08c]切出 %d 格[/color]（%s）。← → 翻一遍确认没切歪，再挑帧。"
+			% [want, tone]
 		)
 		return
 	if count == 1:
@@ -272,12 +281,24 @@ func _report(count: int, key: Color) -> void:
 			% tone
 		)
 		return
+	if count < want:
+		# 走到这里说明连补刀都没救回来（M9-h）——**滑块在这一档救不了场**，
+		# 它能做的只是让更窄的缝也算缝，而两只重叠时那道缝是负的。
+		said.emit(
+			(
+				"[color=#e0a666]切出 %d 格，少了 %d 格[/color]（%s）。两只叠在一起了，"
+				+ "连按最深的谷补刀都切不开 —— 把这一段重出一版（宽的生物排成"
+				+ "3 行 2 列，每格宽一倍就挤得开），或者在图上把它们之间涂一条底色。"
+			)
+			% [count, want - count, tone]
+		)
+		return
 	said.emit(
 		(
-			"[color=#e0a666]切出 %d 格，不是 6 格[/color]（%s）。两格粘在一起就把"
-			+ "「至少空多少」调小，一个人被切成两半就调大，然后重切。"
+			"[color=#e0a666]切出 %d 格，多了 %d 格[/color]（%s）。一个人被切成两半了，"
+			+ "把「至少空多少」调大再重切。"
 		)
-		% [count, tone]
+		% [count, count - want, tone]
 	)
 
 

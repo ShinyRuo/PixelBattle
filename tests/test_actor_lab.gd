@@ -24,9 +24,57 @@ func test_the_lab_opens_with_every_character_in_the_picker() -> void:
 	var lab := _open()
 	var table := PBCharacterLoader.table()
 	assert_gt(table.size(), 0, "真角色表该装得进来")
-	var panel: Node = lab.get_node("HUD/Panel")
-	var pick: OptionButton = panel.find_children("", "OptionButton", true, false)[0]
-	assert_eq(pick.item_count, table.size(), "下拉框少一个角色，那个角色就永远预览不到")
+	assert_eq(_picker(lab).item_count, table.size(), "下拉框少一个角色，那个角色就永远预览不到")
+
+
+func test_the_other_family_holds_all_thirty_monster_kinds() -> void:
+	# 30 种怪的皮键是**拼出来的**，而拼错了不报错（[PBActorLibrary] 安静地
+	# 退回白模）。少列一种的表现是「这一种永远验不到」，
+	# 而它恰恰是最需要人眼验的那一批 —— 接素材时只有这里看得见。
+	var lab := _open()
+	lab._swap_family()
+	var want: Dictionary = {}
+	for element: PBElement.Type in PBEnemyPool.ELEMENT_NAMES:
+		for rank: int in PBActorLab.FOE_RANKS:
+			for ranged: bool in [false, true]:
+				want[PBEnemyPool.skin_key(element, rank, ranged)] = true
+	assert_eq(want.size(), 30, "30 种是 §04 定的，这条先量准分母")
+	assert_eq(_picker(lab).item_count, 30, "下拉框少一种怪，那一种就永远预览不到")
+	var got: Dictionary = {}
+	for entry: Dictionary in lab._entries:
+		got[entry["key"]] = true
+	assert_eq(got, want, "预览台列的键必须和战斗里查的是同一批")
+
+
+func test_the_form_names_line_up_with_the_skin_key_halves() -> void:
+	# 两排东西是同一件事的两种写法（一排进皮键、一排给人看），
+	# 而下标是 [method PBEnemyPool.form_of] 给的。长度对不上就是错位，
+	# 表现是「精英近战那一格写着 BOSS」——所有键都还是对的。
+	assert_eq(
+		PBActorLab.FOE_FORMS.size(), PBEnemyPool.FORM_NAMES.size(), "形态名两排得一样长"
+	)
+
+
+func test_a_monster_without_art_falls_back_to_the_enemy_white_model() -> void:
+	# **不是己方那张白模。** 退回错的一张时屏幕上照样站着一个人，
+	# 画布、脚底、坐标全部正确 —— 只是这个工具对「这一种怪在游戏里
+	# 长什么样」这个它唯一要回答的问题给出了一个错的答案。
+	var lab := _open()
+	lab._swap_family()
+	var checked: int = 0
+	for i: int in lab._entries.size():
+		var entry: Dictionary = lab._entries[i]
+		if PBActorLibrary.skin_for(entry["key"]) != null:
+			continue
+		lab._choose(i)
+		var element: PBElement.Type = entry["element"]
+		assert_same(
+			lab._skin,
+			PBEnemyPool.white_for(element, entry["rank"]),
+			"「%s」退回的白模得和战场上那只是同一张" % entry["title"]
+		)
+		checked += 1
+	assert_gt(checked, 0, "今天 30 种怪一张真素材都没有，量不到说明遍历那一步坏了")
 
 
 func test_the_foot_lands_on_the_ground_line() -> void:
@@ -41,13 +89,18 @@ func test_the_foot_lands_on_the_ground_line() -> void:
 func test_zooming_keeps_the_foot_on_the_ground_line() -> void:
 	# 放大是这个工具的核心功能（27 像素高的人光看原大什么都验不了），
 	# 而放大恰恰是 [method PBActorSkin.draw_offset] 那条平方 bug 的触发条件。
+	#
+	# **两个阵营各量一遍**：怪退回的是另一张白模（画布是方的、按档次变大），
+	# 而量具歪没歪和皮是哪一张有关。
 	var lab := _open()
 	var sprite: AnimatedSprite2D = lab.get_node("Anchor").get_child(0)
-	for zoom: int in PBActorLab.ZOOMS:
-		lab._set_zoom(zoom)
-		var foot: Vector2 = _foot(sprite)
-		assert_almost_eq(foot.y, PBActorLab.FOOT.y, 0.001, "放大 %d× 之后人浮起来了" % zoom)
-		assert_almost_eq(foot.x, PBActorLab.FOOT.x, 0.001, "放大 %d× 之后人横向跑偏了" % zoom)
+	for family: int in 2:
+		for zoom: int in PBActorLab.ZOOMS:
+			lab._set_zoom(zoom)
+			var foot: Vector2 = _foot(sprite)
+			assert_almost_eq(foot.y, PBActorLab.FOOT.y, 0.001, "放大 %d× 之后人浮起来了" % zoom)
+			assert_almost_eq(foot.x, PBActorLab.FOOT.x, 0.001, "放大 %d× 之后人横向跑偏了" % zoom)
+		lab._swap_family()
 
 
 func test_every_state_plays_something_that_exists() -> void:
@@ -100,6 +153,11 @@ func test_nothing_in_the_lab_hangs_off_the_edge() -> void:
 			"%s 伸出屏幕：%s ~ %s" % [control.name, rect.position, edge]
 		)
 	assert_gt(checked, 10, "该量到一板子控件，量不到说明遍历那一步坏了")
+
+
+func _picker(lab: PBActorLab) -> OptionButton:
+	var panel: Node = lab.get_node("HUD/Panel")
+	return panel.find_children("", "OptionButton", true, false)[0]
 
 
 ## 这个精灵的**脚底**现在落在屏幕的哪一点。

@@ -158,6 +158,70 @@ func test_an_empty_sheet_cuts_into_nothing() -> void:
 	assert_true(PBSheetCutter.cut(image).is_empty(), "空图不该切出格子")
 
 
+## 一条「两只贴着」的假图集：三个块，中间两条缝都只有 2 像素宽，
+## 而且缝里还各有一根「腿」把它们连起来 —— 也就是**空白带那条判据彻底失效**。
+func _touching() -> Image:
+	var image := Image.create_empty(300, 120, false, Image.FORMAT_RGBA8)
+	image.fill(MAGENTA)
+	for i: int in 3:
+		image.fill_rect(Rect2i(10 + i * 96, 10, 92, 90), BODY)
+	# 两道缝上各搭一根细腿：贴着还能靠 FLOOR 挡掉，搭上就真连成一片了。
+	image.fill_rect(Rect2i(102, 80, 4, 20), BODY)
+	image.fill_rect(Rect2i(198, 80, 4, 20), BODY)
+	return image
+
+
+func test_touching_figures_are_split_at_the_deepest_valley() -> void:
+	# **玩家实际踩到的那条**（M9-h）：宽的生物（犀牛）一行塞三只，
+	# 相邻两只贴上甚至交错，于是一整行并成一格 —— 而滑块救不了场，
+	# 它能做的只是让更窄的缝也算缝，而这里的缝是 0。
+	var image := _touching()
+	PBSheetCutter.key_out(image)
+	# 不告诉它该有几格 —— 空白带这条判据本来就切不开，这是根因。
+	assert_eq(PBSheetCutter.cut(image).size(), 1, "贴着的三只，按空白带切只有一格")
+	# 告诉它该有三格，就该在两道缝上各补一刀。
+	var cells := PBSheetCutter.cut(image, PBSheetCutter.DEFAULT_GAP, 24, 3)
+	assert_eq(cells.size(), 3, "补刀之后该是三格，实际 %s" % str(cells))
+	for i: int in 2:
+		assert_lt(cells[i].position.x, cells[i + 1].position.x, "补出来的格子也要按 x 排好")
+	# 每一格里正好一个块（那根腿会跟着它那一侧走，宽出几像素是允许的）。
+	for cell: Rect2i in cells:
+		var used := image.get_region(cell).get_used_rect()
+		assert_between(used.size.x, 90, 100, "每格里该只有一个块，实际宽 %d" % used.size.x)
+		assert_eq(used.size.y, 90, "高度不该被动到")
+
+
+func test_a_single_figure_is_never_split_just_to_reach_the_count() -> void:
+	# **这一条比上一条要紧。** 切不开的时候宁可少一格让人重出，
+	# 也不能把一只从腰上劈开 —— 劈开之后每一格看起来仍然「像一帧」，
+	# 只有数一数才发现不对，而下游的包围盒、缩放比、脚底中点跟着全错。
+	var image := Image.create_empty(200, 120, false, Image.FORMAT_RGBA8)
+	image.fill(MAGENTA)
+	image.fill_rect(Rect2i(20, 10, 160, 100), BODY)
+	PBSheetCutter.key_out(image)
+	assert_eq(PBSheetCutter.cut(image, PBSheetCutter.DEFAULT_GAP, 24, 6).size(), 1, "实心块切不开")
+
+
+func test_asking_for_the_count_changes_nothing_when_the_gaps_are_there() -> void:
+	# **补刀只在切不够时才接管。** 切得开的图一个像素都不该变 ——
+	# 否则「以前切对的图重切一遍就变了」，而那不报错。
+	var image := _sheet(Vector2i(300, 280), _six())
+	PBSheetCutter.key_out(image)
+	var plain := PBSheetCutter.cut(image)
+	var asked := PBSheetCutter.cut(image, PBSheetCutter.DEFAULT_GAP, 24, 6)
+	assert_eq(plain, asked, "空白带切得够数时，要不要补刀出来的结果必须一样")
+
+
+func test_the_wanted_count_comes_from_the_frame_count() -> void:
+	# 图集的格数就是一段动画的帧数。两处各写一个 6 的话，哪天默认帧数变了，
+	# 面板会一直报「切出 8 格，不是 6 格」而其实是对的。
+	assert_eq(
+		PBForgeSource.cells_wanted(),
+		PBSimConfig.new().anim_frames,
+		"该有几格要从 anim_frames 来，不写死"
+	)
+
+
 func test_stray_pixels_do_not_glue_two_cells_together() -> void:
 	# AI 出的图边缘常留几个孤立像素。按「非空 = 有一个前景像素」算的话，
 	# 它们会把本来分开的两格连成一格 —— [constant PBSheetCutter.FLOOR] 挡的就是这个。

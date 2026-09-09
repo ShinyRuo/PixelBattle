@@ -56,11 +56,31 @@ enum Nib {
 	RECT,  ## 拉框，横贯整图的地面阴影用它
 }
 
+## 刻度画到画布上限的几倍高。**固定，不跟着当前这一帧变** ——
+## 超上限的帧要能看见它超出去多少，而不是被裁在框顶上。
+const RULER_HEADROOM: float = 1.25
+
+## 每隔多少**成品像素**一道细刻度。30 成品像素 = 10 个逻辑像素（高清档 3 倍）。
+const TICK_STEP: int = 30
+
+## 脚底那条线离控件底边留几像素。贴着底边的话鞋底和边框糊在一起。
+const GROUND_PAD: float = 16.0
+
 const BACK_COLOR := Color(0.09, 0.10, 0.13, 1.0)
 const BOX_COLOR := Color(0.38, 0.62, 0.95, 0.85)
 const FEET_COLOR := Color(0.98, 0.85, 0.45, 0.95)
 const AIM_COLOR := Color(0.45, 0.90, 0.85, 0.95)
 const NIB_COLOR := Color(0.98, 0.45, 0.45, 0.85)
+const TICK_COLOR := Color(1.0, 1.0, 1.0, 0.07)
+const GROUND_COLOR := Color(0.62, 0.66, 0.76, 0.70)
+const STAND_COLOR := Color(0.42, 0.85, 0.55, 0.80)
+const CEILING_COLOR := Color(0.95, 0.65, 0.35, 0.85)
+
+## 站姿在成品像素里多高（那条绿线）、画布上限在哪（那条橙线）。
+## **由面板交进来，不在这儿算** —— 两个数都跟 [member PBActorForge.scale_up]
+## 有关，各算一份的话刻度和导出会对同一件事说两个数。
+var _stand: int = 0
+var _ceiling: int = 0
 
 var _texture: Texture2D = null
 var _fit := Vector2i.ZERO
@@ -101,8 +121,21 @@ func show_nothing() -> void:
 ##
 ## 预览这块面板的全部用处就是「这一格对不对」，而它自己是一把会变的尺子的话，
 ## 人只能去量原图 —— 那正是这块面板要省掉的事。
+##
+## **M9-j 之后它只剩宽度这一半用处**：高度由刻度定死（见 [method _mag]），
+## 这个数只用来判断「这一段最宽的那一帧会不会横着出框」。
 func fit_to(box: Vector2i) -> void:
 	_fit = box
+	queue_redraw()
+
+
+## 刻度上标哪两条线：站姿多高、画布上限在哪（都是**成品像素**）。
+##
+## 面板在建好这块预览之后交一次就够 —— 两个数只跟
+## [member PBActorForge.scale_up] 有关，一局之内不会变。
+func mark_at(stand: int, ceiling: int) -> void:
+	_stand = maxi(stand, 0)
+	_ceiling = maxi(ceiling, 0)
 	queue_redraw()
 
 
@@ -122,6 +155,7 @@ func frame_at(local: Vector2) -> Vector2i:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BACK_COLOR)
+	_draw_ruler()
 	if _texture == null or _shot.is_empty():
 		return
 	var shown := _view_rect()
@@ -137,6 +171,43 @@ func _draw() -> void:
 	_draw_guides(shown, view)
 	if _tool == Tool.ERASE:
 		_draw_nib(shown, view)
+
+
+## 背景上那把尺子。刻度的单位是**成品像素**，也就是导出的 PNG 里的像素 ——
+## 而 [method _view_scale] 保证「成品像素 → 屏幕像素」在这一段里是个常数，
+## 所以尺子上的一格在屏幕上恒定这么宽，翻帧、换段都不变。
+##
+## 两条线是有名字的：**站姿**（绿）和**画布上限**（橙）。
+## 判「这一段是不是整体大了一圈」看的就是人头落在这两条线的哪一边 ——
+## 越过橙线就是导出时会被切头，而那一档面板本来只在导完之后才说得出话。
+##
+## 画在贴图**底下**（`_draw` 里排在 `draw_texture_rect` 之前）：
+## 尺子是背景，不该盖住人。人挡住的那一段线在两侧照样露出来，够判断了。
+func _draw_ruler() -> void:
+	if _ceiling <= 0:
+		return
+	var mag: float = _mag()
+	var ground: float = _ground_y()
+	var top: float = _ruler_top()
+	var at: int = TICK_STEP
+	while float(at) < top:
+		if at != _stand and at != _ceiling:
+			var y: float = ground - float(at) * mag
+			draw_line(Vector2(0.0, y), Vector2(size.x, y), TICK_COLOR, 1.0)
+		at += TICK_STEP
+	_rule_line(ground, "地面 0", GROUND_COLOR)
+	_rule_line(ground - float(_stand) * mag, "站姿 %d" % _stand, STAND_COLOR)
+	_rule_line(ground - float(_ceiling) * mag, "上限 %d" % _ceiling, CEILING_COLOR)
+
+
+func _rule_line(y: float, text: String, color: Color) -> void:
+	draw_line(Vector2(0.0, y), Vector2(size.x, y), color, 1.0)
+	var font := get_theme_default_font()
+	if font == null:
+		return
+	draw_string(
+		font, Vector2(4.0, y - 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, color
+	)
 
 
 ## 两个十字：量出来的（黄）和调整之后的（青）。见类顶那段。
@@ -232,28 +303,63 @@ func _release() -> void:
 
 ## 整张图等比装进这块控件的哪一块。
 ##
-## **横向居中、纵向贴底。** 贴底不是排版偏好：一段里各帧的高矮就是要比的东西，
-## 而脚坐在画布底边上是这条流水线唯一的锚（[method PBActorForge._seat]）——
-## 各帧底边对齐之后，「这一格是不是画大了」一眼就看得出来。
-## 每帧尺寸相同时（视频路线）贴底和居中给出同一个位置，那条路因此没动。
+## **横向居中，纵向把「脚底」坐到刻度的 0 上**（M9-j）。在这之前是
+## 「纵向贴底」——那时预览按帧铺满，底边就是唯一能对齐的东西。
+## 现在有尺子了，对齐的基准换成人真正会坐上去的那一行
+## （[method PBActorForge._seat] 把 `used.end.y` 坐到画布底边），
+## 于是尺子上读到的高度**就是导出的 PNG 里的高度**。
 func _view_rect() -> Rect2:
 	var full := Rect2(Vector2.ZERO, size)
 	if _texture == null:
 		return full
 	var view: float = _view_scale()
-	var box: Vector2 = _fit_box() * view
 	var shown: Vector2 = Vector2(_texture.get_size()) * view
-	var at := full.position + Vector2(
-		(full.size.x - shown.x) * 0.5, (full.size.y - box.y) * 0.5 + box.y - shown.y
-	)
-	return Rect2(at, shown)
+	var feet: float = shown.y
+	if not _shot.is_empty():
+		feet = float((_shot["used"] as Rect2i).end.y) * view
+	return Rect2(Vector2((full.size.x - shown.x) * 0.5, _ground_y() - feet), shown)
 
 
+## 中间帧像素 → 屏幕像素。
+##
+## ## M9-j：它不再是「铺满这个框」
+##
+## 以前是 `min(框宽/图宽, 框高/图高)`，也就是**每一段都被放大到刚好铺满** ——
+## 于是屏幕上所有动作看起来一样大，而它们在游戏里差着一圈。玩家报的原话：
+## 「预览的时候大小都差不多，在游戏里一看有的动作大有的小。」
+##
+## 现在它是 `成品尺度 × 一个固定的放大率`：[member _scale] 是这一段
+## 「中间帧 → 成品」的比（**手动缩放滑块已经乘在里面**，所以拖滑块预览会
+## 当场跟着变大变小），[method _mag] 是「成品 → 屏幕」，而那个数只跟
+## 尺子的高度和这一段最宽的那一帧有关，**跟当前这一帧无关**。
 func _view_scale() -> float:
 	if _texture == null:
 		return 1.0
-	var box := _fit_box()
-	return minf(size.x / box.x, size.y / box.y)
+	return _mag() * _scale
+
+
+## 成品像素 → 屏幕像素。**这一段里是个常数。**
+##
+## 正常情况下由尺子的高度定死（`框高 ÷ 刻度顶`），这样换段、翻帧、
+## 换角色都是同一把尺子。**只有一种情况会缩小**：这一段最宽的那一帧
+## 按这个放大率画出来会横着出框（带长武器的角色）——那时按宽度让步，
+## 而尺子上的**数字照旧是对的**，只是每一格窄一点。
+func _mag() -> float:
+	var by_height: float = size.y / _ruler_top()
+	var wide: float = maxf(_fit_box().x * _scale, 1.0)
+	return minf(by_height, size.x / wide)
+
+
+## 刻度画到多高（成品像素）。上限还没交进来时给一个够用的默认值，
+## 免得除以零。
+func _ruler_top() -> float:
+	var top: float = float(_ceiling) * RULER_HEADROOM
+	return top if top > 1.0 else 360.0
+
+
+## 刻度的 0 在屏幕的哪一行 —— 也就是脚底那条线。
+func _ground_y() -> float:
+	return maxf(size.y - GROUND_PAD, 1.0)
 
 
 ## 缩放按哪个尺寸算。没交过 [method fit_to] 就退回当前这一帧自己 ——

@@ -48,6 +48,22 @@ const DEFAULT_GAP: int = 24
 ## 一格至少多大才算数，用来丢掉噪点。
 const DEFAULT_CELL: int = 24
 
+## 补刀时，切点离这一格两端至少留出多少（占格宽的比例）。
+##
+## **不留的话第一刀会削掉一条腿**：贴着的两只之间那道谷是全局最小，
+## 但一只野兽的**外侧轮廓**（尾巴尖、抬起来的前腿）投影同样很低，
+## 而它离边缘很近。留出两成之后，剩下的最小值必定落在两只之间。
+const SPLIT_MARGIN: float = 0.2
+
+## 补刀时，谷底要浅到什么程度才认。**判据是「和这一格的平均高度比」**，
+## 不是一个绝对值 —— 图有多大、生物有多高都在变，绝对值调不准。
+##
+## 两只贴着时那一列上只有尾巴和腿（实测远低于三成），
+## 而**一整只野兽**的中间再瘦也瘦不到平均的三成 —— 那正是要挡住的：
+## 切不开的时候宁可少切一格让人重出，也不能把一只从腰上劈开，
+## 因为劈开之后每一格看起来仍然「像一帧」，只有数一数才发现不对。
+const SPLIT_VALLEY: float = 0.3
+
 
 ## 猜这张图的背景色。**不假设它是纯洋红。**
 ##
@@ -143,8 +159,23 @@ static func key_out(image: Image, key: Color = KEY_COLOR, tol: float = DEFAULT_T
 ## 切成一格一格，**按从左到右、从上到下**排好。图里一格都没有就返回空数组。
 ##
 ## [param image] 必须**已经抠过背景**（[method key_out]）—— 这里只看 alpha。
+##
+## ## [param want]：知道该有几格的话，切不够就补刀（M9-h）
+##
+## 空白带这条判据要求**一整列一个前景像素都没有**。而模型画宽的生物时
+## （犀牛、蛇这种横向很长的四足兽，一行还塞三只）经常让相邻两只**贴上甚至
+## 交错** —— 那样的一列根本不存在，于是一整行并成一格。
+## 面板上那个「至少空多少」滑块**在这一档救不了场**：它能做的只是让更窄的
+## 缝也算缝，而这里的缝是 0。
+##
+## 所以 [param want] > 0 时多一层兜底：**取最宽的那一格，在它的列投影上
+## 找最深的谷切一刀**，重复到够数。谷不为零，但它仍然是那一段的最小值。
+##
+## **它只在空白带切不够时才接管** —— 切得开的图一个像素都不会变。
+## 补不满也照旧返回（调用方去数），见 [constant SPLIT_VALLEY]：
+## 宁可少一格让人重出，也不能把一只从腰上劈开。
 static func cut(
-	image: Image, min_gap: int = DEFAULT_GAP, min_cell: int = DEFAULT_CELL
+	image: Image, min_gap: int = DEFAULT_GAP, min_cell: int = DEFAULT_CELL, want: int = 0
 ) -> Array[Rect2i]:
 	var out: Array[Rect2i] = []
 	if image == null:
@@ -168,7 +199,104 @@ static func cut(
 			_add_row(data, w, y, cols)
 		for col: Vector2i in _bands(cols, min_gap, min_cell):
 			out.append(Rect2i(col.x, band.x, col.y - col.x, band.y - band.x))
+	while want > out.size() and _split_widest(data, w, out, min_cell):
+		pass
 	return out
+
+
+## 挑最宽的那一格切一刀，**从宽到窄依次试，切开一格就收手**。
+## 切不动任何一格时返回 `false`，调用方据此收工。
+##
+## 切开的两半**各自重新收紧**（去掉内侧的空列）—— 不收紧的话那道谷里
+## 剩下的空白会算进包围盒，而下游全靠 [method Image.get_used_rect] 量人。
+static func _split_widest(
+	data: PackedByteArray, w: int, cells: Array[Rect2i], min_cell: int
+) -> bool:
+	var order: Array[int] = []
+	for i: int in cells.size():
+		order.append(i)
+	order.sort_custom(
+		func(a: int, b: int) -> bool: return cells[a].size.x > cells[b].size.x
+	)
+	for i: int in order:
+		var cell: Rect2i = cells[i]
+		if cell.size.x < min_cell * 2:
+			continue
+		var cols := _columns(data, w, cell)
+		var at: int = _valley(cols, min_cell)
+		if at < 0:
+			continue
+		var left := _slice(cols, cell, 0, at)
+		var right := _slice(cols, cell, at, cell.size.x)
+		if left.size.x < min_cell or right.size.x < min_cell:
+			continue
+		cells[i] = left
+		cells.insert(i + 1, right)
+		return true
+	return false
+
+
+## 这一格的列投影（下标 0 对齐格子的左沿）。
+static func _columns(data: PackedByteArray, w: int, cell: Rect2i) -> PackedInt32Array:
+	var cols := PackedInt32Array()
+	cols.resize(cell.size.x)
+	for y: int in range(cell.position.y, cell.end.y):
+		var base: int = y * w * 4 + 3
+		for x: int in cell.size.x:
+			if data[base + (cell.position.x + x) * 4] >= 128:
+				cols[x] += 1
+	return cols
+
+
+## 最深的那道谷在哪一列（格内下标），没有够浅的谷就返回 −1。
+##
+## **取谷底最宽的那一段的中点**，不是第一个最小值：两只贴着时那道谷常常
+## 是好几列一样浅的一条，取第一列会把切点顶到左边那只的尾巴上。
+static func _valley(cols: PackedInt32Array, min_cell: int) -> int:
+	var span: int = cols.size()
+	var margin: int = maxi(min_cell, int(round(float(span) * SPLIT_MARGIN)))
+	if span - margin * 2 < 1:
+		return -1
+	var total: int = 0
+	for count: int in cols:
+		total += count
+	var mean: float = float(total) / float(span)
+	if mean <= 0.0:
+		return -1
+	var low: int = -1
+	for x: int in range(margin, span - margin):
+		if low < 0 or cols[x] < low:
+			low = cols[x]
+	if low < 0 or float(low) > mean * SPLIT_VALLEY:
+		return -1
+	var best_from: int = -1
+	var best_len: int = 0
+	var from: int = -1
+	for x: int in range(margin, span - margin):
+		if cols[x] != low:
+			from = -1
+			continue
+		if from < 0:
+			from = x
+		if x - from + 1 > best_len:
+			best_len = x - from + 1
+			best_from = from
+	return best_from + best_len / 2
+
+
+## 取 [param cols] 上 `[from, to)` 那一段，**收紧到真有像素的地方**，
+## 换成一个绝对矩形。[param cols] 的下标对齐 [param cell] 的左沿。
+##
+## 不收紧的话，那道谷里剩下的空白会算进包围盒，
+## 而下游全靠 [method Image.get_used_rect] 量人。
+static func _slice(cols: PackedInt32Array, cell: Rect2i, from: int, to: int) -> Rect2i:
+	var lo: int = from
+	while lo < to and cols[lo] <= FLOOR:
+		lo += 1
+	var hi: int = to
+	while hi > lo and cols[hi - 1] <= FLOOR:
+		hi -= 1
+	return Rect2i(cell.position.x + lo, cell.position.y, hi - lo, cell.size.y)
 
 
 static func _count_row(data: PackedByteArray, w: int, y: int) -> int:

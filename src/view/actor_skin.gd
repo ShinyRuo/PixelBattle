@@ -24,7 +24,8 @@ extends Resource
 ## [PBWhiteModel] 按同一套字段现造一份白模，于是这条链路从今天起就是通的 ——
 ## 真素材进来时改的是 `data/actors/*.tres`，[PBAllyPool] 一行不动。
 
-## 源图里的人朝哪边。**只有这一个字段决定要不要 `flip_h`。**
+## 源图里的人朝哪边。**只有这一个字段决定要不要 `flip_h`**，
+## 而问它的路只有一条：[method flips_for]。
 ##
 ## 写成数据而不是「一律画成朝右」：外包回来的素材朝哪边由画的人定，
 ## 为这件事返工一遍全部资源没有道理，而记错方向的表现是
@@ -139,6 +140,25 @@ enum Facing { RIGHT, LEFT }
 ## 默认值跟着白模走（[constant PBWhiteModel.ALLY_HEIGHT]）：真素材和白模
 ## 同屏站在一起，两边不一样高的表现是「这个人怎么比别人矮一截」。
 @export var height_px: float = 41.0
+
+## 这一帧要不要水平翻转。[param facing] 走 [member PBActorPose.facing]。
+##
+## ## 敌我共用这一处（M9-m）
+##
+## 在这之前两个池子各写了一份两行的判断，而且**符号是反的**：己方是
+## `facing == FACE_LEFT`（对），敌人是 `facing == FACE_RIGHT`（错）。
+## 敌人那一份的注释写着「白模画的是朝右的剪影，而敌人默认朝左，
+## 所以这里的翻转是常态」—— **那句话把「敌人通常朝左」数了两遍**，
+## 一遍已经在 `facing` 里了。
+##
+## **白模看不出来**：那是个正多边形，左右翻过来几乎一模一样。所以这条
+## 从 M6-b 起一直错着，直到第一张真怪素材进来才现形 ——
+## 表现是「从右往左走，人却朝着右边，像在倒着走」（玩家报的）。
+## 同 M6-e 查出的那条 `draw_offset` 平方 bug：都是白模恰好取不到的那个值。
+func flips_for(facing: int) -> bool:
+	var flip: bool = facing == PBActorPose.FACE_LEFT
+	return not flip if source_faces == Facing.LEFT else flip
+
 
 ## [param state] 走 [enum PBActorPose.State]。返回一个 [member frames] 里
 ## **确实存在**的动画名 —— 查不到就一路退回待机，最后退回第一段。

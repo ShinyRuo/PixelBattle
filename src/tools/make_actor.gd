@@ -89,7 +89,7 @@ func _run_frames() -> bool:
 		)
 	)
 	if _forge.clamped:
-		printerr("画布撞上头顶上限，头被切掉了一截 —— 挑帧里有跳得太高的那一张？")
+		printerr("画布撞上上限，头被切掉了一截 —— 挑帧里有跳得太高的那一张？")
 
 	for spec: Dictionary in PBActorForge.ANIMS:
 		var anim: String = String(spec["name"])

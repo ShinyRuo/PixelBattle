@@ -13,6 +13,56 @@ extends GutTest
 ## 素材性质错了是「人浮在地上」或者「卡在上一帧」。
 
 
+func test_the_art_is_mirrored_when_it_faces_away_from_where_he_looks() -> void:
+	# **玩家报的那条**（M9-m）：「怪物从右往左走却播放的是向右的动画，
+	# 看起来是倒着走的」。
+	#
+	# 根因是敌我两个池子各写了一份翻转判断，**而符号是反的** ——
+	# 己方 `facing == FACE_LEFT`，敌人 `facing == FACE_RIGHT`。白模是个
+	# 左右几乎对称的多边形，所以这条从 M6-b 起错着没人看得见。
+	#
+	# 四种组合全钉上：两个朝向 × 源图朝哪边画的。
+	var right := PBActorSkin.new()
+	right.source_faces = PBActorSkin.Facing.RIGHT
+	assert_false(right.flips_for(PBActorPose.FACE_RIGHT), "朝右画的人看向右边，不该翻")
+	assert_true(right.flips_for(PBActorPose.FACE_LEFT), "朝右画的人看向左边，必须翻")
+
+	var left := PBActorSkin.new()
+	left.source_faces = PBActorSkin.Facing.LEFT
+	assert_true(left.flips_for(PBActorPose.FACE_RIGHT), "朝左画的人看向右边，必须翻")
+	assert_false(left.flips_for(PBActorPose.FACE_LEFT), "朝左画的人看向左边，不该翻")
+
+	# 流水线出的素材一律填 RIGHT（[method PBActorForge.link]），白模也是 ——
+	# 所以「往左走要翻」是今天全部素材实际走的那一档。
+	assert_eq(
+		PBWhiteModel.enemy(6).source_faces,
+		PBActorSkin.Facing.RIGHT,
+		"白模也是朝右画的，敌人往左走时必须翻"
+	)
+
+
+func test_nobody_works_out_the_mirroring_on_their_own() -> void:
+	# **一把尺子**。上面那条钉的是规则本身，这一条钉的是「只有一处问它」——
+	# 而 M9-m 那个 bug 恰恰是规则没错、有人自己又推了一遍，还推反了。
+	#
+	# 单元测试抓不到那种复制：两个池子各自都「能跑」，只是其中一个
+	# 演的是倒着走的人。所以这里直接扫源码。
+	for path: String in ["res://src/view/enemy_pool.gd", "res://src/view/ally_pool.gd",
+		"res://src/tools/actor_lab.gd"]:
+		var text := FileAccess.get_file_as_string(path)
+		assert_ne(text, "", "读得到 %s 才谈得上扫" % path)
+		for line: String in text.split("\n"):
+			var code: String = line.strip_edges()
+			if code.begins_with("#") or not code.contains("flip_h"):
+				continue
+			if not code.contains("=") or code.contains("=="):
+				continue
+			assert_true(
+				code.contains("flips_for"),
+				"%s 自己算了一遍翻转：%s —— 走 PBActorSkin.flips_for" % [path, code]
+			)
+
+
 func test_a_short_attack_take_is_padded_to_six_frames() -> void:
 	# **玩家定的**（M9-e）：不够六帧就重复最后一帧补到六帧。
 	#

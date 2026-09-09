@@ -136,9 +136,7 @@ func _ready() -> void:
 	for element: PBElement.Type in ELEMENT_NAMES:
 		var forms: Array[StringName] = []
 		for form: int in FORM_NAMES.size():
-			forms.append(
-				StringName("enemy_%s_%s" % [ELEMENT_NAMES[element], FORM_NAMES[form]])
-			)
+			forms.append(key_for(element, form))
 		_keys[element] = forms
 	_nodes.resize(cfg.count_cap)
 	_skins.resize(cfg.count_cap)
@@ -274,9 +272,7 @@ func _dress(index: int, enemy: PBEnemy) -> PBActorSkin:
 	var form: int = form_of(enemy.rank, enemy.ranged)
 	var skin: PBActorSkin = PBActorLibrary.skin_for(_keys[enemy.element][form])
 	if skin == null:
-		skin = PBWhiteModel.enemy(
-			ELEMENT_SIDES.get(enemy.element, 6), RANK_BULK[clampi(enemy.rank, 0, 2)]
-		)
+		skin = white_for(enemy.element, enemy.rank)
 	if _skins[index] != skin:
 		_skins[index] = skin
 		var node: AnimatedSprite2D = _nodes[index]
@@ -301,10 +297,28 @@ static func form_of(rank: int, ranged: bool) -> int:
 ## **只有这一处拼这个字符串。** 出图那一侧照它建目录，
 ## 两处各拼一份的话，出好的素材装不进来而工具一句话都不说 ——
 ## [PBActorLibrary] 查不到就退回白模，表现是「接了素材还是白模」。
+##
+## **这一处以前不是一处。** [method _ready] 预拼那 30 个键时自己又写了一遍
+## 同样的格式串，两份里只有这一份带 `.get(element, "physical")` 兜底 ——
+## 也就是说加一个属性时，池子里那份会拼出 `enemy__melee`，
+## 而它照样是个合法的 [StringName]，只是没人查得到。M9-k 收成一处。
+static func key_for(element: PBElement.Type, form: int) -> StringName:
+	var slot: int = clampi(form, 0, FORM_NAMES.size() - 1)
+	return StringName("enemy_%s_%s" % [ELEMENT_NAMES.get(element, "physical"), FORM_NAMES[slot]])
+
+
+## 皮键，按「档次 + 远近」问。战斗里走这一条（那边手上是一只 [PBEnemy]）。
 static func skin_key(element: PBElement.Type, rank: int, ranged: bool) -> StringName:
-	return StringName(
-		"enemy_%s_%s" % [ELEMENT_NAMES.get(element, "physical"), FORM_NAMES[form_of(rank, ranged)]]
-	)
+	return key_for(element, form_of(rank, ranged))
+
+
+## 这一种怪**没有真素材时**长什么样。
+##
+## 抽出来是给预览台用的（M9-k）：预览台要摊开 30 种怪，而它们今天全是白模。
+## 两处各写一份的话，预览台里的怪会和战场上的怪在边数或体型上分叉 ——
+## 而「这一种怪在游戏里长什么样」恰恰是那个工具唯一要回答的问题。
+static func white_for(element: PBElement.Type, rank: int) -> PBActorSkin:
+	return PBWhiteModel.enemy(ELEMENT_SIDES.get(element, 6), RANK_BULK[clampi(rank, 0, 2)])
 
 
 ## 待机 / 行军 / 出手三段。**敌人恒定朝左** —— 他们从战场右端来，
@@ -352,10 +366,9 @@ func _animate(index: int, enemy: PBEnemy) -> void:
 		if have > 0.0 and want > 0.0:
 			fit = clampf(have / want, PBAllyPool.FIT_MIN, PBAllyPool.FIT_MAX)
 	node.speed_scale = _anim_speed * fit
-	# 白模画的是朝右的剪影，而敌人默认朝左 —— 所以这里的翻转是常态。
-	node.flip_h = pose.facing == PBActorPose.FACE_RIGHT
-	if skin.source_faces == PBActorSkin.Facing.LEFT:
-		node.flip_h = not node.flip_h
+	# **和己方同一把尺子**（[method PBActorSkin.flips_for]）—— M9-m 之前
+	# 这里的符号是反的，而白模左右对称，看不出来。
+	node.flip_h = skin.flips_for(pose.facing)
 
 
 func _decay_flash() -> void:

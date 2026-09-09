@@ -30,9 +30,12 @@ extends RefCounted
 
 ## 目标身高（**屏幕像素**，脚底到头顶）。M6-m 从 41 抬到 60，玩家定的。
 ##
-## **这是 B 这个框放得下的极限，不是一个还能再调的数**：画布要装下人
-## 加一点留白，而上限是 [constant PBLayout.SPRITE_HEADROOM] = 64。
-## 再高就要压地面带或者撑大 B，两条都改配平。
+## **这是 B 这个框放得下的极限，不是一个还能再调的数**：站着的人加一点留白
+## 要塞进 [constant PBLayout.SPRITE_HEADROOM] = 64。再高就要压地面带或者
+## 撑大 B，两条都改配平。
+##
+## **「一帧最高能画多高」是另一个数**（[constant CANVAS_CEILING]，M9-i 拆开的）
+## —— 抬手、跳起来那几帧本来就比站姿高，那件事和这个数无关。
 ##
 ## **白模没有跟着抬**（玩家定的「白模先不动」）—— 它的画布是方的
 ## （手臂要摆得开），按同样比例放到 60 要 79 见方，装不进 64。
@@ -43,15 +46,47 @@ extends RefCounted
 ## 「一张图有多少像素」由 [method texture_height] 回答 —— M6-l 之前两者是一回事。
 const TARGET_HEIGHT: int = 60
 
-## 画布上下左右各留几格。**不能太大** —— 画布高度超过
-## [constant PBLayout.SPRITE_HEADROOM] 的话最上面那排的头会戳进顶栏。
+## 一帧最高能画多高（**屏幕像素**）。M9-i 从 64 抬到 96，玩家定的。
 ##
-## **顶上这个 M6-m 从 6 压到 2**：身高抬到 60 之后，64 的上限里
-## 只剩这么多了。压它是安全的 —— [method fit_canvas] 里那个 `tall`
-## 已经取了**挑中的全部帧**的最大值（跑动的起伏、出拳的伸展都在里面），
-## 这一截纯粹是余量，不是给谁腾地方。
+## ## 它和 [constant PBLayout.SPRITE_HEADROOM] 是两个数，不是一个
 ##
-## 左右那个不受上限管（画布宽度没有天花板），所以没动。
+## M9-i 之前这里直接读那个常量，因为一开始立的约束是最强的那条：
+## **任何一帧都不许越过 B 框上沿。** 但那两个数回答的是两个不同的问题：
+##
+## - `SPRITE_HEADROOM` = 地面带从 B 框上沿让出多少。这是**排版**，
+##   和 [member PBSimConfig.field_height] 抢同一块地方 —— 动它就是动配平
+## - 这一个 = 一帧最高能画多高。这是**素材**
+##
+## 两者相等意味着「抬手、跳起来那几帧也不许越界」，而那几帧本来就比站姿高：
+## 实测 29 套素材里 **10 套顶到了旧上限**，其中 3 套是真把头切了
+## （两个忍者 + 一只土系远程怪 —— 怪的体型更容易顶天）。
+##
+## 放宽成「**站姿保证不越界，抬手那几帧允许探出去一点**」之后，
+## 这个数就能独立抬起来，**一分配平都不用动**。
+##
+## ## 为什么是 96 而不是 128
+##
+## 最上面那条泳道的脚落在 [constant PBLayout.GROUND_TOP] = 98。
+## 画布上限就是「头最高能到脚上方多少」，所以最坏情况下头在 `98 − 本值`：
+##
+## [codeblock]
+## 上限  64（旧）→ 头在 34，正好贴着 B 框上沿
+## 上限  96（现）→ 头在  2，还在屏幕里，抬手那两帧会压住顶栏的字
+## 上限 128      → 头在 −30，**戳出屏幕外**，顶栏整个被盖住
+## [/codeblock]
+##
+## 所以 `GROUND_TOP` 就是这个数的硬上限，`test_actor_forge.gd` 钉着它。
+## 玩家原话要的是「加倍」，实测 128 越界，最后定在 1.5 倍。
+const CANVAS_CEILING: int = 96
+
+## 画布上下左右各留几格。**顶上这个不是余量，是给描边和抗锯齿留的**。
+##
+## M6-m 从 6 压到 2 是因为当时上限只有 64，而身高已经 60。
+## **M9-i 把上限抬到 96 之后这条约束松了**，但没跟着调大 ——
+## [method fit_canvas] 里那个 `tall` 已经取了**挑中的全部帧**的最大值
+## （跑动的起伏、出拳的伸展都在里面），再加留白只会让人在屏幕上更矮一点点。
+##
+## 左右那个不受上限管（画布宽度没有天花板），所以从来没动过。
 const PAD_TOP: int = 2
 const PAD_SIDE: int = 5
 
@@ -316,13 +351,14 @@ func fit_canvas(takes: Dictionary, scale_of: Dictionary, chosen: Dictionary) -> 
 			tall = maxf(tall, float(used.size.y) * scale)
 	var width: int = (ceili(half) + PAD_SIDE * scale_up) * 2
 	var height: int = ceili(tall) + PAD_TOP * scale_up
-	# 高度撞上头顶那一截就压回去 —— 超了的话最上面那排的头会戳进 A 顶栏，
-	# 而 `tests/test_layout.gd` 钉的是 [PBLayout] 的常量，钉不到素材。
+	# 高度撞上上限就压回去。**那个上限是 [constant CANVAS_CEILING]，
+	# 不是 [constant PBLayout.SPRITE_HEADROOM]** —— 两者 M9-i 拆开了，
+	# 理由写在那个常量上。
 	#
 	# **上限也要乘 [member scale_up]**：那道墙量的是**逻辑像素**，
 	# 而高清档的画布是贴图像素 —— 忘了乘的话人会被压掉三分之二，
 	# 而画布、坐标、锚点全部看起来完全正确。
-	var ceiling: int = int(PBLayout.SPRITE_HEADROOM) * scale_up
+	var ceiling: int = CANVAS_CEILING * scale_up
 	# **压回去这一下要留个话。** 被压掉的那一截是**头**（脚坐在底边上，
 	# 见 [method _seat]），而画布、坐标、锚点全部看起来完全正确 ——
 	# 不说的话人只会觉得「这个角色怎么是平头」。
@@ -377,10 +413,41 @@ func compose(shot: Dictionary, scale: float, nudge := Vector2i.ZERO) -> Image:
 	return image
 
 
+## 这一段该用哪几帧。**没人直接调 [method select]**，都走这里（M9-l）。
+##
+## ## 判据是源帧数
+##
+## [method select] 是按「从几十上百帧的视频里挑 6 帧」写的：[constant TRIM]
+## 头尾各掐掉 8 帧，再在中间找呼吸的最高点、跑动的循环、伸得最远那一格。
+## **图集那条路（M9-b / M9-h）切出来的就是 6 格，6 全在掐掉的范围里** ——
+## 实测（`build/probe_pick.gd`）它在 6 格上给出：
+## `idle` → `[5, 5]`（只有两帧，而且都是最后一格）、
+## `run` / `attack` → `[…, 5, 5, 5, 5]`（末格重复四次、中间几格丢掉）、
+## `dead` → `[0, 2, 4, 5, 5, 0]`（**最后一格回到了站姿**）。
+## **四条一条都不报错**：名单是满的、导出照跑、成品帧数也对，
+## 表现只是「这一段做出来一顿一顿的」「人死了又站起来」。
+##
+## 源帧数正好等于这一段要的帧数时，答案是**按顺序全要** ——
+## 那 6 格本来就是按顺序画好的一段动画，不排序、不去重、不挑。
+##
+## **判的是帧数，不是「用户从图集还是从视频进来的」。** 后者要回头去问界面
+## 的状态，而那不是这条流水线该知道的；而且视频恰好抽出 6 帧时，
+## 按顺序全要同样是对的答案。
+func frames_for(shots: Array, anim: String) -> Array[int]:
+	var spec := spec_of(anim)
+	var want: int = int(spec["want"])
+	if shots.size() != want:
+		return select(shots, String(spec["pick"]), want)
+	var all: Array[int] = []
+	all.assign(range(want))
+	return all
+
+
 ## 自动挑帧。**靠量，不靠数格子** —— 数格子十次有八次差一帧，
 ## 而差一帧的表现是「跑起来一瘸一拐」或者「先掉血、后挥手」。
 ##
-## 插件里它是「自动挑」那个按钮：先让它出一版，人再逐帧改。
+## **别直接调它**，走 [method frames_for] —— 它只对「帧比要的多得多」
+## 那一档成立，而那个前提在图集那条路上不成立。
 func select(shots: Array, how: String, want: int) -> Array[int]:
 	if shots.is_empty():
 		return [] as Array[int]
