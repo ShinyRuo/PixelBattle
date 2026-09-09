@@ -87,7 +87,7 @@ static func kill_drop_income(
 ) -> int:
 	var gain: int = cfg.kill_drop_gain
 	if gold_floor:
-		gain = int(round(float(gain) * cfg.bond_gold_gain_scale))
+		gain = int(round(float(gain) * PBBondFunctionRules.GOLD_GAIN_SCALE))
 	var total: int = 0
 	for _i: int in kills:
 		var roll: float = rng.randf()

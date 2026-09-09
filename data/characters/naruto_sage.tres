@@ -1,21 +1,21 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_7fdhd"]
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_e2a8r"]
 
 [resource]
-script = ExtResource("1_7fdhd")
-id = &"minato"
-name_key = "char.minato"
-icon_key = "minato"
-element = 4
+script = ExtResource("1_e2a8r")
+id = &"naruto_sage"
+name_key = "char.naruto_sage"
+icon_key = "naruto_sage"
+element = 1
 def_element = 1
 primary = 1
 strength = 27.0
-agility = 35.0
+agility = 36.0
 intellect = 17.0
-strength_growth = 26.0
-agility_growth = 35.0
-intellect_growth = 17.0
+strength_growth = 28.0
+agility_growth = 35.5
+intellect_growth = 16.0
 hp_base = 100.0
 mp_base = 100.0
 atk_base = 1.0

@@ -71,6 +71,7 @@ const ELEMENT_NAMES := {
 	PBElement.Type.EARTH: "土",
 	PBElement.Type.WATER: "水",
 	PBElement.Type.PHYSICAL: "物",
+	PBElement.Type.SAGE: "仙",
 }
 
 ## 波型名。**和 [constant ELEMENT_NAMES] 摆在一起是有意的** ——

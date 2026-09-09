@@ -116,6 +116,44 @@ const CRIT_ON_HIT: StringName = &"crit_on_hit"
 ## 落点是 [member PBAttacker.splash_damage]。
 const SPLASH: StringName = &"splash"
 
+# ── 功能档的量（M3-f 定的数，M12-a 从 [PBSimConfig] 搬过来）───────
+#
+# 这几个数**不是配平出来的**，是把 §09 的文字描述落成可跑的量。
+# 现在调它们没有依据：功能的价值取决于「一次能拖到多少人」，
+# 而那要等 `attack_shape` 分配之后才量得出来（见路线图那条共同下游）。
+#
+# **为什么从配置里搬出来。** [PBSimConfig] 顶上写着自己装的是
+# 「批量扫描每局一份副本」要改的参数，而这六个从 M3-f 落地至今
+# 一条扫描都没改过，只有三处读点；而那个文件当时正卡在 1000 行上限。
+# 同 M10-c 把暴击那三个数放在 [PBCritRules] 上。
+# 真要扫它们的那天再搬回去，**但别搬成嵌套对象** ——
+# [method PBSimConfig.clone] 是反射逐字段拷贝的，嵌套那份会按引用共享。
+
+## [constant PULL] 把大招半径放大几倍。
+##
+## 吸附强化的是**够得着多远**，不是伤害 —— 它的产出是给别人创造命中数。
+const PULL_RADIUS_SCALE: float = 2.0
+
+## [constant ROOT] 定住多少秒。
+##
+## **短是有依据的。** M3-d 实测：每波一发的全屏定身会把行军队列压扁成一堆，
+## 解除的那一刻整群同时涌进交战区，恰好抵消掉 M3-a「射程梯度把敌人分批处理」
+## 的收益 —— 一尾、五尾因此测出来比不带尾兽还差。定身在这里是一个
+## 「攒一波集火窗口」的短操作，不是「让敌人别动」的长控场。
+const ROOT_SECONDS: float = 2.0
+
+## 定身期间全队普攻的伤害倍率。§09 猪鹿蝶：「井野控制期间敌人受伤 +30%」。
+const ROOT_DAMAGE_SCALE: float = 1.3
+
+## [constant SLOW_FIELD] 把敌人速度压到几成。
+const SLOW_SCALE: float = 0.5
+
+## 减速力场持续多少秒。比定身长得多 —— 它换的是「晚到多久」而不是集火窗口。
+const SLOW_SECONDS: float = 6.0
+
+## [constant GOLD_FLOOR] 把击杀掉落的正收益放大几倍。
+const GOLD_GAIN_SCALE: float = 1.25
+
 ## 对血还很多的敌人额外多打一笔（§7 的 B05 日向兄妹）。
 ## 落点是 [member PBAttacker.heavy_bonus]。
 const HEAVY_HIT: StringName = &"heavy_hit"
@@ -187,16 +225,16 @@ static func apply_to_skill(skill: PBSkill, key: StringName, cfg: PBSimConfig) ->
 			skill.gather = true
 		PULL:
 			skill.gather = true
-			skill.radius *= cfg.bond_pull_radius_scale
+			skill.radius *= PULL_RADIUS_SCALE
 		ROOT:
 			skill.slow_scale = 0.0
-			skill.slow_ticks = _to_ticks(cfg.bond_root_seconds, cfg)
-			skill.team_damage_scale = cfg.bond_root_damage_scale
+			skill.slow_ticks = _to_ticks(ROOT_SECONDS, cfg)
+			skill.team_damage_scale = ROOT_DAMAGE_SCALE
 			# 增伤窗口 = 定身窗口。§09 的原话是「控制期间」，不是「另算一段」。
 			skill.buff_ticks = skill.slow_ticks
 		SLOW_FIELD:
-			skill.slow_scale = cfg.bond_slow_scale
-			skill.slow_ticks = _to_ticks(cfg.bond_slow_seconds, cfg)
+			skill.slow_scale = SLOW_SCALE
+			skill.slow_ticks = _to_ticks(SLOW_SECONDS, cfg)
 		_:
 			return false
 	return true

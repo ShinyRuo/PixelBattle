@@ -42,14 +42,19 @@ func test_the_data_directory_actually_loads() -> void:
 	# **49 = 原版名册**（M10-b）：文档正表 45 人（两张佐助并成一张 → 44）
 	# 加上只在羁绊里点名的 5 个。数字写死是有意的 —— 名册是照抄的，
 	# 少一个人就是漏抄了一行，而漏抄不报错（那一组羁绊只是永远凑不齐）。
-	assert_eq(_table.size(), 49, "名册该照 data/roster.tsv 铺满 49 个角色")
+	assert_eq(_table.size(), 56, "名册该照 data/roster.tsv 铺满 56 个角色")
 	assert_gte(_table.size(), 40, "§09 的「PC 首发 40+ 角色」")
 
 
 func test_every_element_can_fill_the_starting_bench() -> void:
 	# 出战席初始 4 格。某一系的角色数少于 4，「这一波上满克制系」
 	# 就是做不到的事，§03 的克制加成会被系统性低估。
-	for element: int in PBElement.Type.size():
+	#
+	# **铺的是 [constant PBElement.PICKABLE] 不是 `Type.size()`**（M12-a）：
+	# 仙不是一个「该有四个人」的系，它是三个特定角色身上的东西，
+	# 照枚举个数铺的话这条会因为「仙系只有两个人」而红，
+	# 而红的是一条不该存在的要求。
+	for element: int in PBElement.PICKABLE:
 		var count: int = 0
 		for character: PBCharacter in _table.all():
 			if int(character.element) == element:
@@ -74,8 +79,10 @@ func test_no_element_is_over_represented() -> void:
 	var counts := {}
 	for character: PBCharacter in _table.all():
 		counts[int(character.element)] = int(counts.get(int(character.element), 0)) + 1
-	var share: float = 1.0 / float(PBElement.Type.size())
-	for element: int in PBElement.Type.size():
+	# 均分只对 [constant PBElement.PICKABLE] 那六系成立（M12-a）——
+	# 仙不参与均分，它按角色给，不按系铺。
+	var share: float = 1.0 / float(PBElement.PICKABLE.size())
+	for element: int in PBElement.PICKABLE:
 		var got: float = float(counts.get(element, 0)) / float(_table.size())
 		assert_almost_eq(got, share, 0.07, "属性 %d 的占比偏离均分太多（%.1f%%）" % [element, got * 100.0])
 

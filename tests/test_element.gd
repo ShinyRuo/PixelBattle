@@ -14,6 +14,33 @@ const ELEMENTS: Array[int] = [
 	PBElement.Type.WATER,
 ]
 
+## 原版矩阵的行列顺序。
+const MATRIX_ORDER: Array[int] = [
+	PBElement.Type.FIRE,
+	PBElement.Type.WIND,
+	PBElement.Type.THUNDER,
+	PBElement.Type.EARTH,
+	PBElement.Type.WATER,
+	PBElement.Type.PHYSICAL,
+	PBElement.Type.SAGE,
+]
+
+## 原版矩阵，行 = 攻方、列 = 守方，顺序同 [constant MATRIX_ORDER]。
+##
+## **这张表是从地图文件里解出来的，不是我们拍的**
+## （`war3mapMisc.txt` 的 `DamageBonus*`，见
+## `Docs/原版数据_忍法战场v1.5.80.md` §2.3）。逐格钉住它的理由是：
+## 倍率错一格不会让任何别的测试变红，只会让某一对属性的博弈悄悄失效。
+const MATRIX: Array = [
+	[0.50, 2.00, 0.75, 1.00, 0.50, 1.00, 0.50],  # 火
+	[0.50, 0.50, 2.00, 0.75, 1.00, 1.00, 0.50],  # 风
+	[1.00, 0.50, 0.50, 2.00, 0.75, 1.00, 0.50],  # 雷
+	[0.75, 1.00, 0.50, 0.50, 2.00, 1.00, 0.50],  # 土
+	[2.00, 0.75, 1.00, 0.50, 0.50, 1.00, 0.50],  # 水
+	[1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 0.50],  # 物理
+	[2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 1.50],  # 仙
+]
+
 
 func test_ring_covers_all_five_elements() -> void:
 	assert_eq(PBElement.RING.size(), 5, "克制环应恰好包含五个属性")
@@ -56,9 +83,20 @@ func test_counter_and_weak_are_symmetric() -> void:
 		)
 
 
-func test_same_element_is_neutral() -> void:
+func test_same_element_is_punished_not_merely_unhelpful() -> void:
+	# **M12-a 把这条整个反了过来。** 在那之前断的是「同属性对撞应无加成」，
+	# 而原版矩阵里同系那一格是 0.50 —— 带一个和本波同系的忍者不是
+	# 「白带」，是**主动做错**，和被克吃一样的惩罚。
+	#
+	# 这一档并进 WEAK 而不是自立门户，理由见 [enum PBElement.Relation]。
+	var cfg := PBSimConfig.new()
 	for element: int in ELEMENTS:
-		assert_eq(PBElement.relation(element, element), PBElement.Relation.NEUTRAL, "同属性对撞应无加成")
+		assert_eq(
+			PBElement.relation(element, element),
+			PBElement.Relation.WEAK,
+			"同属性对撞在原版是 0.50，不是无加成"
+		)
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.WEAK), 0.50, "同系与被克共用 0.50")
 
 
 func test_each_element_has_exactly_one_counter_and_one_victim() -> void:
@@ -91,20 +129,104 @@ func test_physical_never_participates_in_the_ring() -> void:
 
 func test_default_multipliers_match_spec() -> void:
 	var cfg := PBSimConfig.new()
-	assert_eq(cfg.damage_multiplier(PBElement.Relation.COUNTER), 2.00, "§03 克制默认 2.00")
-	assert_eq(cfg.damage_multiplier(PBElement.Relation.WEAK), 0.50, "§03 被克默认 0.50")
-	assert_eq(cfg.damage_multiplier(PBElement.Relation.NEUTRAL), 1.00, "§03 无关默认 1.00")
-	assert_eq(cfg.damage_multiplier(PBElement.Relation.PHYSICAL), 1.05, "§03 物理默认 1.05")
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.COUNTER), 2.00, "克制 2.00")
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.WEAK), 0.50, "被克与同系 0.50")
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.NEUTRAL), 1.00, "隔两个 1.00")
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.DISTANT), 0.75, "隔一个 0.75")
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.PHYSICAL), 1.00, "物理 1.00")
+	assert_eq(cfg.damage_multiplier(PBElement.Relation.SAGE_MIRROR), 1.50, "仙打仙 1.50")
 
 
 func test_physical_multiplier_stays_below_the_danger_line() -> void:
 	# §03 的明文警告：MULT_PHYSICAL 调到 1.15 以上，堆物理躺赢成为最优解，
 	# 属性系统当场作废。这条断言的作用是让「顺手调一下试试」变成一次红色测试，
 	# 而不是三个月后才发现构筑全部收敛。
+	#
+	# **M12-a 把下界从「> 1.0」改成「== 无关属性」。** 在那之前物理是一个
+	# 高 5% 的保底补丁；对齐原版之后它恰好等于中立，价值改由
+	# 「对每一系都不会选错」提供 —— 而同一步把同系压到了 0.50，
+	# 那才是物理队真正的收益来源。
 	var cfg := PBSimConfig.new()
 	assert_lt(cfg.mult_physical, 1.15, "MULT_PHYSICAL ≥ 1.15 会让物理纯队成为最优解（§03）")
-	assert_gt(cfg.mult_physical, 1.0, "物理低于 1.0 就不再是保底补丁了")
+	assert_eq(cfg.mult_physical, cfg.mult_neutral, "物理是中立位，不是加成位")
 	assert_lt(cfg.mult_physical, cfg.mult_counter, "物理必须显著低于克制，否则没人配属性")
+
+
+func test_the_whole_matrix_matches_the_original_map() -> void:
+	var cfg := PBSimConfig.new()
+	for row: int in MATRIX_ORDER.size():
+		for col: int in MATRIX_ORDER.size():
+			var attacker: int = MATRIX_ORDER[row]
+			var defender: int = MATRIX_ORDER[col]
+			var got: float = cfg.damage_multiplier(PBElement.relation(attacker, defender))
+			assert_almost_eq(
+				got,
+				float(MATRIX[row][col]),
+				0.0001,
+				"攻%d 打 防%d 应为 %.2f" % [attacker, defender, MATRIX[row][col]]
+			)
+
+
+func test_ring_multipliers_are_a_function_of_distance() -> void:
+	# 五系那 25 组不是随手填的，是环距的纯函数。写成断言之后，
+	# 有人为了「让水强一点」单独改一格，这里立刻红 —— 而只改一格
+	# 会让环失去对称性，那正是 §03 最不能出的错。
+	var cfg := PBSimConfig.new()
+	var want: Array[float] = [0.50, 2.00, 0.75, 1.00, 0.50]
+	for attacker: int in ELEMENTS:
+		for defender: int in ELEMENTS:
+			var dist: int = PBElement.ring_distance(attacker, defender)
+			assert_between(dist, 0, 4, "五系之间的环距应在 0–4")
+			assert_almost_eq(
+				cfg.damage_multiplier(PBElement.relation(attacker, defender)),
+				want[dist],
+				0.0001,
+				"环距 %d 的倍率应为 %.2f" % [dist, want[dist]]
+			)
+
+
+func test_sage_beats_everything_and_is_halved_by_everything() -> void:
+	# 仙是物理的反面：物理对谁都一样，仙对谁都占优。
+	# 原版把「攻仙」和「防仙」拆开发给不同角色（同时拿到两半的只有
+	# 已被删掉的 USR 神卡），所以这两条要分别验。
+	for element: int in PBElement.PICKABLE:
+		assert_eq(
+			PBElement.relation(PBElement.Type.SAGE, element),
+			PBElement.Relation.COUNTER,
+			"仙打任何常规属性都应吃满克制"
+		)
+		assert_eq(
+			PBElement.relation(element, PBElement.Type.SAGE),
+			PBElement.Relation.WEAK,
+			"任何常规属性打仙都应减半"
+		)
+	assert_eq(
+		PBElement.relation(PBElement.Type.SAGE, PBElement.Type.SAGE),
+		PBElement.Relation.SAGE_MIRROR,
+		"仙打仙自成一档"
+	)
+
+
+func test_sage_is_not_a_pickable_element() -> void:
+	# 仙不进 [constant PBElement.PICKABLE]，所以合成卡池、波次属性里都不会有它。
+	# 这条钉的是那份名单本身 —— 有人「顺手补全」把仙加进去的话，
+	# 合成表会凭空多出一批克制一切的角色，而没有任何断言会因此变红。
+	assert_false(PBElement.PICKABLE.has(PBElement.Type.SAGE), "仙不是可发牌的属性")
+	assert_false(PBElement.RING.has(PBElement.Type.SAGE), "仙不在克制环上")
+	assert_eq(PBElement.ring_distance(PBElement.Type.SAGE, PBElement.Type.FIRE), -1, "仙不上环")
+	for element: int in PBElement.PICKABLE:
+		assert_ne(PBElement.counter_of(element), PBElement.Type.SAGE, "counter_of 不该答仙")
+
+
+func test_no_wave_and_no_synthetic_character_is_ever_sage() -> void:
+	# 敌人那两张表（[constant PBEnemyPool.ELEMENT_SIDES] / `ELEMENT_NAMES`）
+	# **故意没有仙这一格**，靠的就是这条前提。哪天真刷出一只仙系怪，
+	# 它会安静地领到物理的皮，而两处都只是 `.get(…, 兜底)`。
+	for element: int in PBWaveRules.WAVE_ELEMENTS:
+		assert_ne(element, PBElement.Type.SAGE, "波次属性里不该出现仙")
+	var table := PBCharacterTable.synthetic(1)
+	for character: PBCharacter in table.all():
+		assert_ne(character.element, PBElement.Type.SAGE, "合成卡池不该发出仙系角色")
 
 
 func test_rarity_ladder_stays_flatter_than_the_counter_bonus() -> void:

@@ -191,7 +191,13 @@ func test_it_says_so_when_dispatch_breaks_nothing() -> void:
 	state.set_field(field)
 	# **M10-b 之后这一队一组羁绊都不吃**（兜底羁绊全删了），
 	# 而那恰好就是这条测试要的局面：派一个人出去，什么都不会掉。
-	assert_eq(field.size(), 5, "这一系该有 5 个角色 —— 少了说明名册改动碰到了这个夹具")
+	# **不写死人数**（M12-b）：写死的话每次名册变动这里都红一次，
+	# 而红的是「雷系现在有几个人」，不是这条测试要问的东西。
+	# 它真正要的前提只有一条 —— 这一队摆得满、且一组羁绊都不吃，
+	# 后者由下面那条断言直接量。
+	assert_gte(
+		field.size(), _cfg.deploy_slots_base, "这一系的人数该够摆满出战席，否则这个夹具不成立"
+	)
 
 	# 派 1 个之后这一系还剩 4 个，仍然吃着同一档；也没有别的组被顶着。
 	var kept := PBBondRules.active_tiers(_bonded_with(state, 0), _cfg.bonds)

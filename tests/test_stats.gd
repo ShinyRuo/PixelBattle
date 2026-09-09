@@ -107,11 +107,18 @@ func test_the_strike_reads_the_attackers_attack_and_the_defenders_defence() -> v
 	var weak: float = PBStatRules.strike_damage(
 		100.0, PBElement.Type.WIND, 0.0, PBElement.Type.FIRE, _cfg
 	)
+	# **基准不能用「火打火」**（M12-a）：同系在原版矩阵里是 0.50，
+	# 和被克一个数 —— 拿它当无加成的参照，「被克 < 无加成」会永远相等而红。
+	# 真正的无加成是环距 3「隔两个」，火对土就是。
 	var neutral: float = PBStatRules.strike_damage(
+		100.0, PBElement.Type.FIRE, 0.0, PBElement.Type.EARTH, _cfg
+	)
+	var mirror: float = PBStatRules.strike_damage(
 		100.0, PBElement.Type.FIRE, 0.0, PBElement.Type.FIRE, _cfg
 	)
 	assert_gt(counter, neutral, "火攻打风防该吃克制")
 	assert_lt(weak, neutral, "风攻打火防该被克")
+	assert_eq(mirror, weak, "同系与被克在原版是同一个数")
 
 
 func test_armour_never_reaches_full_immunity() -> void:

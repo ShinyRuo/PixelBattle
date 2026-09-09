@@ -10,22 +10,45 @@ extends RefCounted
 ## 所有字段都是设计意图的占位值。M-1 的产出就是把 `growth` 从占位变成有依据的数。
 
 # ── §03 属性伤害系数 ────────────────────────────────────────────
-## 克制倍率。
+## 克制倍率。环距 1。
 var mult_counter: float = 2.00
 
-## 被克倍率。
+## 被克倍率。**环距 4「它克我」与环距 0「同系」共用这一档** ——
+## 原版矩阵里那两格是同一个数，理由见 [enum PBElement.Relation]。
 var mult_weak: float = 0.50
 
-## 无关属性倍率。§03 标为固定值，列出来只为公式完整。
+## 无关属性倍率。环距 3，隔两个。§03 标为固定值，列出来只为公式完整。
 var mult_neutral: float = 1.00
+
+## 环距 2「隔一个」的倍率。**M12-a 对齐原版时补的第五档。**
+##
+## 在它之前只有 2.00 / 1.00 / 0.50 三档，等于把原版的「隔一个 0.75」
+## 和「隔两个 1.00」压成同一个数 —— 五系里有两格本该略吃亏的配对
+## 因此变成完全无所谓，§03 那套「每波挑谁上」比原版钝一截，而它不报错。
+var mult_distant: float = 0.75
 
 ## 物理倍率。**全局最敏感的一个旋钮。**
 ##
-## 物理不吃克制、恒定这一个系数，是「这波我没配对」的保底补丁。
 ## §03 警告：调到 1.15 以上，堆物理躺赢就成了最优解，整个属性系统当场作废。
 ## 改这个值必须跑回归 —— test_element 里那条「物理纯队极限波次显著低于五系队」
 ## 就是为它准备的。
-var mult_physical: float = 1.05
+##
+## **M12-a 从 1.05 改成原版的 1.00，物理因此不再是「保底补丁」。**
+## 在那之前它比无关属性高 5%，理由是「这波没配对也别太惨」；
+## 而同一步把同系从 1.00 压到了 0.50，物理的价值随之换了个来源 ——
+## 它现在买的是**永远不会选错**（对每一系都恰好 1.00），
+## 而不是「有一点加成」。这两件事必须一起看：只改一半的话，
+## 物理要么白白弱了 5%，要么在同系惩罚下强得离谱。
+var mult_physical: float = 1.00
+
+## 仙打仙的倍率。原版 `DamageBonusChaos` 对英雄护甲那一格是 1.50。
+##
+## **它在今天的名册里一次都不会发生** —— 攻仙的两个（佩恩、兜）都是防物理，
+## 防仙的那个（重吾）是攻物理，怪物没有仙系。照原版填而不是随便填，
+## 是因为「一个永远走不到的分支填错了」没有任何地方会报错：
+## 哪天加进一个攻防都是仙的单位（原版的 USR 神卡就是），
+## 错的那个数会当场生效，而排查会从别处开始。
+var mult_sage_mirror: float = 1.50
 
 # ── §04 成长曲线 ────────────────────────────────────────────────
 ## 1 波普通怪血量。
@@ -288,36 +311,9 @@ var ultimate_gather_share: float = 0.0
 ## 大招落点是后面那一步的事。
 var aoe_max_targets: int = 4
 
-# ── 羁绊功能档（§09，M3-f；**暴击那三个数在 [PBCritRules] 上**）──
-#
-# 这几个数**不是配平出来的**，是把 §09 的文字描述落成可跑的量。
-# 现在调它们没有依据：功能的价值取决于「一次能拖到多少人」，
-# 而那要等 `attack_shape` 分配之后才量得出来（见路线图那条共同下游）。
-
-## [constant PBBondFunctionRules.PULL] 把大招半径放大几倍。
-##
-## 吸附强化的是**够得着多远**，不是伤害 —— 它的产出是给别人创造命中数。
-var bond_pull_radius_scale: float = 2.0
-
-## [constant PBBondFunctionRules.ROOT] 定住多少秒。
-##
-## **短是有依据的。** M3-d 实测：每波一发的全屏定身会把行军队列压扁成一堆，
-## 解除的那一刻整群同时涌进交战区，恰好抵消掉 M3-a「射程梯度把敌人分批处理」
-## 的收益 —— 一尾、五尾因此测出来比不带尾兽还差。定身在这里是一个
-## 「攒一波集火窗口」的短操作，不是「让敌人别动」的长控场。
-var bond_root_seconds: float = 2.0
-
-## 定身期间全队普攻的伤害倍率。§09 猪鹿蝶：「井野控制期间敌人受伤 +30%」。
-var bond_root_damage_scale: float = 1.3
-
-## [constant PBBondFunctionRules.SLOW_FIELD] 把敌人速度压到几成。
-var bond_slow_scale: float = 0.5
-
-## 减速力场持续多少秒。比定身长得多 —— 它换的是「晚到多久」而不是集火窗口。
-var bond_slow_seconds: float = 6.0
-
-## [constant PBBondFunctionRules.GOLD_FLOOR] 把击杀掉落的正收益放大几倍。
-var bond_gold_gain_scale: float = 1.25
+# ── 羁绊功能档（§09，M3-f）—— 那六个数 M12-a 搬去 [PBBondFunctionRules] 了 ──
+# 理由同 M10-c 把暴击三个数放在 [PBCritRules]：本类装的是「扫描要改的参数」，
+# 而它们从落地至今一条扫描都没改过。搬回来的那天**别搬成嵌套对象**。
 
 # ── 基地（M-1 新增，§07 只说了「漏怪掉血」没定规模）─────────────
 ## 基地初始血量。漏怪按敌人 ATK 扣，而 ATK 走指数曲线 ——
@@ -832,6 +828,10 @@ func damage_multiplier(rel: PBElement.Relation) -> float:
 			return mult_weak
 		PBElement.Relation.PHYSICAL:
 			return mult_physical
+		PBElement.Relation.DISTANT:
+			return mult_distant
+		PBElement.Relation.SAGE_MIRROR:
+			return mult_sage_mirror
 		_:
 			return mult_neutral
 

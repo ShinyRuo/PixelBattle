@@ -1,22 +1,21 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_rdkv7"]
 
 [resource]
-script = ExtResource("1_char")
-id = &"temari"
-name_key = "char.temari"
-icon_key = "temari"
-actor_key = &"temari"
-element = 1
+script = ExtResource("1_rdkv7")
+id = &"danzo"
+name_key = "char.danzo"
+icon_key = "danzo"
+element = 0
 def_element = 1
 primary = 1
 strength = 21.0
-agility = 32.0
-intellect = 15.0
+agility = 31.0
+intellect = 18.0
 strength_growth = 21.0
-agility_growth = 32.0
-intellect_growth = 15.0
+agility_growth = 31.0
+intellect_growth = 18.0
 hp_base = 100.0
 mp_base = 100.0
 atk_base = 1.0

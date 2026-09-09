@@ -26,7 +26,46 @@ extends RefCounted
 ## `test_stats.gd` 里有一条断言把它们钉在一起。
 const PLACEHOLDER_RARITY_DPS: Array[float] = [100.0, 130.0, 169.0]
 
-## 主属性按属性分：土/物理 → 力量，风/雷 → 敏捷，火/水 → 智力。
+# ── 原版的换算系数（M12-b）──────────────────────────────────────
+#
+# 全部来自原版地图的 `war3mapMisc.txt`，见
+# `Docs/原版数据_忍法战场v1.5.80.md` §3。它们是引擎默认值，
+# 也就是原版作者**没有改过**这一层 —— 差异全在每个角色的三围上。
+#
+# **这几个数只给真名册用**（[method apply_original_scale]）。
+# [method fill_placeholder] 那条路仍走它自己的一套 —— 那不是两把尺子：
+# 占位表是一条**声明为替身的曲线**，它的职责是复现稀有度阶梯，
+# 而真角色现在有真三围，两者回答的不是同一个问题。
+
+## 每点力量给多少生命。
+const HP_PER_STRENGTH: float = 80.0
+
+## 每点主属性给多少攻击力。
+const ATK_PER_PRIMARY: float = 3.5
+
+## 每点敏捷给多少护甲。
+const DEF_PER_AGILITY: float = 0.22
+
+## 每点敏捷给多少攻速（比例）。
+const SPEED_PER_AGILITY: float = 0.009
+
+## 每点智力给多少查克拉。
+const MP_PER_INTELLECT: float = 0.7
+
+## 不含三围时的生命 / 查克拉 / 攻击 / 护甲。原版每个单位的物编都是这一套 ——
+## **所有忍者的基础值完全相同**，差异一格都不在这里。
+const BASE_HP: float = 100.0
+const BASE_MP: float = 100.0
+const BASE_ATK: float = 1.0
+const BASE_DEF: float = 4.0
+
+## 主属性按属性分：土/物理 → 力量，风/雷 → 敏捷，火/水/仙 → 智力。
+##
+## **仙这一格只有占位表用得到。** 真名册里攻仙的两个人主属性并不一致
+## （佩恩是敏捷、兜是智力），所以这张表答不了他们 ——
+## 而它本来也不负责：真角色的主属性从 `data/roster.tsv` 逐个读。
+## 留这一格是为了不让 [method PBCharacter.make] 掉进 `.get` 的兜底，
+## 那条路会让一个仙系角色安静地变成力量型。
 const PLACEHOLDER_PRIMARY := {
 	PBElement.Type.EARTH: PBCharacter.Primary.STRENGTH,
 	PBElement.Type.PHYSICAL: PBCharacter.Primary.STRENGTH,
@@ -34,7 +73,40 @@ const PLACEHOLDER_PRIMARY := {
 	PBElement.Type.THUNDER: PBCharacter.Primary.AGILITY,
 	PBElement.Type.FIRE: PBCharacter.Primary.INTELLECT,
 	PBElement.Type.WATER: PBCharacter.Primary.INTELLECT,
+	PBElement.Type.SAGE: PBCharacter.Primary.INTELLECT,
 }
+
+
+## 把原版那套换算系数铺到一个角色上（M12-b）。
+##
+## 三围、成长与攻击间隔由调用方从 `data/roster.tsv` 逐个填 —— 那些是**数据**；
+## 这里只负责那一层**规则**（几点力量换多少血）。
+##
+## ## 它和 [method fill_placeholder] 的分工
+##
+## 那个函数的名字就说清楚了：**给一个还没有属性数据的角色**铺占位值。
+## 真角色现在有属性数据了，所以名册那条路不再调它 —— 调了的话，
+## 它会先按稀有度覆盖一遍三围，再反解 `atk_base` 把 DPS 拉回阶梯上，
+## 于是「56 个角色各有各的三围」这件事在最后一步被抹平，
+## **而它不报错**：属性栏里数字全对，只是每个人打出来的伤害一样多。
+##
+## [param interval] 是原版的攻击间隔（秒）。攻速在本项目里是「每秒几次」
+## （[method PBAttacker.prime] 拿 `tick_rate / attack_speed` 换间隔），
+## 所以这里取倒数 —— 直接把 1.5 填进 `attack_speed_base` 的话，
+## 每个人会变成一秒打一点五下，快出一倍还多。
+static func apply_original_scale(character: PBCharacter, interval: float) -> void:
+	if character == null:
+		return
+	character.hp_base = BASE_HP
+	character.mp_base = BASE_MP
+	character.atk_base = BASE_ATK
+	character.def_base = BASE_DEF
+	character.hp_per_strength = HP_PER_STRENGTH
+	character.atk_per_primary = ATK_PER_PRIMARY
+	character.def_per_agility = DEF_PER_AGILITY
+	character.mp_per_intellect = MP_PER_INTELLECT
+	character.attack_speed_per_agility = SPEED_PER_AGILITY
+	character.attack_speed_base = 1.0 / maxf(interval, 0.05)
 
 
 ## 给一个还没有属性数据的角色铺一套占位属性（§03A）。

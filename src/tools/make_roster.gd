@@ -33,14 +33,38 @@ extends SceneTree
 
 const ROSTER := "res://data/roster.tsv"
 const OUT_DIR := "res://data/characters"
+const ACTOR_DIR := "res://data/actors"
 
-## 表头那六列的列号。
+## 表头那十四列的列号。**列号只在这里出现一次** —— 散在下面的话，
+## 名册加一列时改漏一处会读到相邻那一栏，而它照样是个合法的数。
 const COL_ID: int = 0
 const COL_NAME: int = 1
 const COL_RARITY: int = 2
 const COL_REACH: int = 3
 const COL_ATTACK: int = 4
 const COL_DEFENCE: int = 5
+const COL_PRIMARY: int = 6
+const COL_STR: int = 7
+const COL_AGI: int = 8
+const COL_INT: int = 9
+const COL_STR_GROW: int = 10
+const COL_AGI_GROW: int = 11
+const COL_INT_GROW: int = 12
+const COL_INTERVAL: int = 13
+const COL_ACTOR: int = 14
+
+## 表一共几列。少一列就整行不要 —— 用默认值兜底的表现是
+## 「那个角色的三围全是 0」，而 0 力量算出来是一个合法的血量。
+const COLUMNS: int = 15
+
+## 形象键那一列写这个 = 和角色键同名。
+const SAME_AS_ID := "-"
+
+const PRIMARIES := {
+	"力量": PBCharacter.Primary.STRENGTH,
+	"敏捷": PBCharacter.Primary.AGILITY,
+	"智力": PBCharacter.Primary.INTELLECT,
+}
 
 const RARITIES := {"R": PBUnit.Rarity.R, "SR": PBUnit.Rarity.SR, "SSR": PBUnit.Rarity.SSR}
 const REACHES := {"近战": PBCharacter.Reach.MELEE, "远程": PBCharacter.Reach.RANGED}
@@ -51,6 +75,7 @@ const ELEMENTS := {
 	"土": PBElement.Type.EARTH,
 	"水": PBElement.Type.WATER,
 	"物理": PBElement.Type.PHYSICAL,
+	"仙": PBElement.Type.SAGE,
 }
 
 
@@ -84,8 +109,8 @@ func _read_roster() -> Array:
 		var cells: PackedStringArray = trimmed.split("\t")
 		for i: int in cells.size():
 			cells[i] = cells[i].strip_edges()
-		if cells.size() < 6:
-			printerr("这一行少了列（要 6 列，实际 %d）：%s" % [cells.size(), trimmed])
+		if cells.size() < COLUMNS:
+			printerr("这一行少了列（要 %d 列，实际 %d）：%s" % [COLUMNS, cells.size(), trimmed])
 			continue
 		out.append(cells)
 	return out
@@ -96,38 +121,57 @@ func _write_one(row: PackedStringArray) -> String:
 	var key: String = row[COL_ID]
 	var path: String = "%s/%s.tres" % [OUT_DIR, key]
 	var character := PBCharacter.new()
-	# 三样人工填的先从旧文件里捞回来，见类顶部。
+	# `skill_ids` 是人工挂的（M7-g），从旧文件里捞回来。
+	# **`actor_key` 不再从旧文件读** —— M12-b 把那份映射搬进名册最后一列了，
+	# 两处都能给的话，删掉 `data/characters/` 重跑一次就会得到不同的结果。
 	var old: PBCharacter = null
 	if ResourceLoader.exists(path):
 		old = ResourceLoader.load(path) as PBCharacter
 	if old != null:
-		character.actor_key = old.actor_key
-		character.icon_key = old.icon_key
 		character.skill_ids = old.skill_ids.duplicate()
 
 	character.id = StringName(key)
 	character.name_key = "char.%s" % key
-	if String(character.icon_key) == "":
-		character.icon_key = key
+	character.icon_key = key
+
+	# 形象键：名册那一列写 `-` 就按角色键找。**盘上没有就留空** ——
+	# 留一个查不到的键和留空是同一个结果（退回白模），
+	# 但留空时预览台的信息栏会照实说「来源：白模兜底」。
+	var actor: String = key
+	if row.size() > COL_ACTOR and row[COL_ACTOR] != SAME_AS_ID and row[COL_ACTOR] != "":
+		actor = row[COL_ACTOR]
+	if ResourceLoader.exists("%s/%s.tres" % [ACTOR_DIR, actor]):
+		character.actor_key = StringName(actor)
 	if not RARITIES.has(row[COL_RARITY]):
 		return "%s 的稀有度不认识：%s" % [key, row[COL_RARITY]]
 	if not REACHES.has(row[COL_REACH]):
 		return "%s 的攻击距离不认识：%s" % [key, row[COL_REACH]]
 	if not ELEMENTS.has(row[COL_ATTACK]) or not ELEMENTS.has(row[COL_DEFENCE]):
 		return "%s 的攻/防属性不认识：%s / %s" % [key, row[COL_ATTACK], row[COL_DEFENCE]]
+	if not PRIMARIES.has(row[COL_PRIMARY]):
+		return "%s 的主属性不认识：%s" % [key, row[COL_PRIMARY]]
 	character.rarity = RARITIES[row[COL_RARITY]]
 	character.reach = REACHES[row[COL_REACH]]
 	character.element = ELEMENTS[row[COL_ATTACK]]
-
-	# **战力那一段走规则层那一份，不在这里再算一遍。**
-	# 它读 `rarity` / `element` / `reach_tier()`，所以上面那三行必须先填。
-	PBStatRules.fill_placeholder(character)
-
-	# **护甲属性要排在后面。** `fill_placeholder` 里那一句
-	# `def_element = counter_of(element)` 是给合成表用的占位推导，
-	# 而名册这一栏是原版实测值 —— 先填会被它盖掉，表现是
-	# 「表里写着物理，游戏里按土算」，而两个数看起来都很正常。
 	character.def_element = ELEMENTS[row[COL_DEFENCE]]
+	character.primary = PRIMARIES[row[COL_PRIMARY]]
+
+	# 三围与成长是**数据**，逐个从名册读（M12-b）。
+	character.strength = float(row[COL_STR])
+	character.agility = float(row[COL_AGI])
+	character.intellect = float(row[COL_INT])
+	character.strength_growth = float(row[COL_STR_GROW])
+	character.agility_growth = float(row[COL_AGI_GROW])
+	character.intellect_growth = float(row[COL_INT_GROW])
+
+	# **换算那一层走规则层那一份，不在这里再算一遍。**
+	#
+	# 这里**不再调 `fill_placeholder`**（M12-b）：那个函数是给
+	# 「还没有属性数据的角色」铺占位值的，它会先按稀有度覆盖一遍三围、
+	# 再反解 `atk_base` 把 DPS 拉回稀有度阶梯上 —— 于是上面刚读进来的
+	# 56 份三围在最后一步被整个抹平，**而它不报错**：
+	# 属性栏里每个数都对，只是同一稀有度的人打出来的伤害一样多。
+	PBStatRules.apply_original_scale(character, float(row[COL_INTERVAL]))
 
 	var err := ResourceSaver.save(character, path)
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]

@@ -19,7 +19,13 @@ extends Node2D
 ## M6-b 把静态多边形换成了**会动的多边形**（[method PBWhiteModel.enemy]）：
 ## 剪影一个顶点都没变，但待机、行军、出手三段从此分得出来。
 
-## 五系 + 物理的主色调。§02 指定的色相。
+## 五系 + 物理 + 仙的主色调。§02 指定的色相。
+##
+## **这张表敌我共用**（[method PBAllyPool._element_color] 也读它），
+## 所以它必须铺满**己方**能有的每一种属性 —— 少一格的表现是
+## 仙系角色的卡面和场上方块一起变成兜底的白，而它不报错。
+## 下面那两张（[constant ELEMENT_SIDES] / [constant ELEMENT_NAMES]）
+## 只给敌人用，情况相反，见它们各自顶上那段。
 const ELEMENT_COLORS := {
 	PBElement.Type.FIRE: Color(0.90, 0.35, 0.20),
 	PBElement.Type.WIND: Color(0.25, 0.80, 0.55),
@@ -27,10 +33,18 @@ const ELEMENT_COLORS := {
 	PBElement.Type.EARTH: Color(0.60, 0.45, 0.25),
 	PBElement.Type.WATER: Color(0.30, 0.55, 0.95),
 	PBElement.Type.PHYSICAL: Color(0.70, 0.70, 0.72),
+	PBElement.Type.SAGE: Color(0.78, 0.62, 0.96),
 }
 
 ## 每系的边数，用来生成可区分的剪影。物理用 8 边（接近圆）。
 ## 去色之后靠的就是这个 —— 三角、方、五边、六边、菱形一眼能分开。
+##
+## **没有仙这一格，那是规则不是遗漏。** 怪物只有五系与物理两类
+## （[constant PBElement.PICKABLE]，原版也是如此：常规怪五系轮转、
+## 精英怪吃物理档），仙只出现在己方的三个角色身上。
+## `test_element` 里有一条钉住「波次属性里不许出现仙」——
+## 不钉的话哪天真刷出一只仙系怪，它会安静地领到物理的皮和边数，
+## 而两处都只是 `.get(…, 兜底)`，一句话都不会说。
 const ELEMENT_SIDES := {
 	PBElement.Type.FIRE: 3,
 	PBElement.Type.WIND: 5,

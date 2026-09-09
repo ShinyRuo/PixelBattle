@@ -88,22 +88,37 @@ func test_boss_leaks_hurt_more() -> void:
 
 
 func test_counter_element_is_worth_about_twice_physical() -> void:
-	# §03 的支点：克制 2.0 对物理 1.05，接近两倍。
+	# §03 的支点：克制对物理接近两倍。
+	# **倍率从配置读，不写死** —— M12-a 把物理从 1.05 改成原版的 1.00，
+	# 写死的那一版红的是「有人改了物理倍率」，而那件事本来就该由
+	# `test_element` 那两条专门的断言去管。
 	var water := PBUnit.of(_cfg, PBElement.Type.WATER, PBUnit.Rarity.SR)
 	var physical := PBUnit.of(_cfg, PBElement.Type.PHYSICAL, PBUnit.Rarity.SR)
 	var fire_wave := PBElement.Type.FIRE
 	var ratio := water.effective_power(fire_wave, _cfg) / physical.effective_power(fire_wave, _cfg)
-	assert_almost_eq(ratio, 2.0 / 1.05, 1e-6, "克制系对物理应接近 1.9 倍")
+	var want: float = _cfg.mult_counter / _cfg.mult_physical
+	assert_almost_eq(ratio, want, 1e-6, "克制系对物理应是 %.2f 倍" % want)
+	assert_gt(want, 1.8, "克制对物理的差距塌到 1.8 倍以下，换人就不值得做了")
 
 
-func test_a_static_five_element_team_barely_beats_physical() -> void:
-	# **这是 M-1 最重要的一条测试。**
+func test_a_static_five_element_team_now_loses_to_physical() -> void:
+	# **这是 M-1 最重要的一条测试，M12-a 把它的结论推翻了一半。**
 	#
-	# 五系阵容如果全员固定上场，对任意一波的平均倍率是 (2.0+0.5+1.0×3)/5 = 1.10，
-	# 而纯物理是 1.05 —— 只差 5%。§03 那 2.0 倍的克制加成全部来自**每波换人**。
+	# 旧模型（三档：2.0 / 1.0 / 0.5）下，五系全员固定上场的平均倍率是
+	# `(2.0 + 0.5 + 1.0×3) / 5 = 1.10`，而纯物理 1.05 —— 固定阵容仍**略胜**。
 	#
-	# 这条断言的作用是把这个事实钉死：将来有人把策略脚本改成固定上场，
-	# 跑出「属性系统没用」的结论时，这里会先红，提醒他是模型错了不是设计错了。
+	# 换成原版的五档之后（同系 0.50、隔一个 0.75、隔两个 1.00），
+	# 打一波火：水克制 2.00、土隔一个 0.75、雷隔两个 1.00、风被克 0.50、
+	# **火自己同系也是 0.50** —— 平均 `4.75 / 5 = 0.95`，而物理恰好 1.00。
+	# **固定五系阵容现在打不过纯物理队。**
+	#
+	# 这不是回归，是原版有意的设计：物理买的是「永远不会选错」，
+	# 而五系买的是「选对了赚一倍」。不肯换人就等于只承担了选错的代价
+	# 而没有拿走选对的收益。§03 那 2.0 倍的加成**全部**来自每波换人 ——
+	# 这条比旧版更硬地说明了这件事。
+	#
+	# 断言的作用不变：将来有人把策略脚本改成固定上场、跑出
+	# 「属性系统没用」的结论时，这里会先红，提醒他是模型错了不是设计错了。
 	var static_team: Array[PBUnit] = []
 	for element: int in PBElement.RING:
 		static_team.append(PBUnit.of(_cfg, element as PBElement.Type, PBUnit.Rarity.SR))
@@ -118,7 +133,8 @@ func test_a_static_five_element_team_barely_beats_physical() -> void:
 		physical_team, PBElement.Type.FIRE, 1.0, 1.0, PackedFloat64Array(), _cfg
 	)
 	var edge := static_dps / physical_dps
-	assert_between(edge, 1.0, 1.10, "不换人的五系阵容对物理只有个位数百分比的优势")
+	assert_between(edge, 0.90, 1.00, "不换人的五系阵容应略输给纯物理队（原版五档矩阵）")
+	assert_lt(edge, 1.0, "固定阵容一旦反超物理，「每波换人」就不再是必要操作")
 
 
 func test_rotating_the_team_unlocks_the_real_advantage() -> void:
@@ -145,14 +161,18 @@ func test_card_identity_includes_the_variant() -> void:
 	# §03 的换人策略在模型里被人为掐死一半。这条守着卡池不退化。
 	var seen := {}
 	for rarity: int in PBUnit.Rarity.size():
-		for element: int in PBElement.Type.size():
+		# 铺 [constant PBElement.PICKABLE] 不铺 `Type.size()`（M12-a）：
+		# 仙那三格在合成表里是空的，而 [method PBCharacterTable.pick]
+		# 撞到空格会走退化路径 —— 退化出来的卡键和别的格重复，
+		# 于是「卡片身份键不应撞车」会红，而红的原因和它要测的东西无关。
+		for element: int in PBElement.PICKABLE:
 			for variant: int in _cfg.characters_per_bucket:
 				var unit := PBUnit.of(
 					_cfg, element as PBElement.Type, rarity as PBUnit.Rarity, variant
 				)
 				assert_false(seen.has(unit.key()), "卡片身份键不应撞车")
 				seen[unit.key()] = true
-	var expected: int = PBUnit.Rarity.size() * PBElement.Type.size() * _cfg.characters_per_bucket
+	var expected: int = PBUnit.Rarity.size() * PBElement.PICKABLE.size() * _cfg.characters_per_bucket
 	assert_eq(seen.size(), expected, "卡池大小应为 稀有度 × 属性 × 每格角色数")
 	# **§09 那条「PC 首发 40+ 角色」量的是 `data/characters/`，不是这张合成表**
 	# （M10-a 砍成三档之后它只有 36 格）。合成表是一条替身曲线，它只需要

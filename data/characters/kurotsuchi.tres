@@ -1,20 +1,20 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_g7yhg"]
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_ecp1o"]
 
 [resource]
-script = ExtResource("1_g7yhg")
-id = &"mei"
-name_key = "char.mei"
-icon_key = "mei"
+script = ExtResource("1_ecp1o")
+id = &"kurotsuchi"
+name_key = "char.kurotsuchi"
+icon_key = "kurotsuchi"
 element = 4
-def_element = 4
+def_element = 3
 primary = 1
-strength = 23.0
-agility = 32.0
+strength = 22.0
+agility = 33.0
 intellect = 15.0
-strength_growth = 23.0
-agility_growth = 32.0
+strength_growth = 22.0
+agility_growth = 33.0
 intellect_growth = 15.0
 hp_base = 100.0
 mp_base = 100.0

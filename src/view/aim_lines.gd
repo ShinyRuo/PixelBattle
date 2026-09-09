@@ -174,7 +174,7 @@ func sync(
 			tier = cast.skill.target
 			if tier == PBSkill.Target.GROUND:
 				# 半径读技能自己的，不读配置：羁绊功能档会放大它
-				# （[member PBSimConfig.bond_pull_radius_scale]），而圈画小了
+				# （[constant PBBondFunctionRules.PULL_RADIUS_SCALE]），而圈画小了
 				# 等于告诉玩家一件错的事。
 				cast_px = cast.skill.radius * PBLayout.px_per_unit(field)
 			elif tier == PBSkill.Target.ALLY:

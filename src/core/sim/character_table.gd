@@ -36,7 +36,12 @@ var _by_rarity: Dictionary = {}
 static func synthetic(per_bucket: int) -> PBCharacterTable:
 	var table := PBCharacterTable.new()
 	for rarity: int in PBUnit.Rarity.size():
-		for element: int in PBElement.Type.size():
+		# 铺的是 [constant PBElement.PICKABLE]，**不是 `Type.size()`**。
+		# 照枚举个数铺等于宣称「每个枚举值都是一个可以随便发牌的属性」，
+		# 而 M12-a 加进仙之后那句话不成立 —— 合成卡池会凭空多出一批
+		# **克制一切**的仙系角色，而它不报错，只是所有拿合成表跑出来的
+		# 配平结论一起失真（这张表正是慢档整局扫描用的那副牌）。
+		for element: int in PBElement.PICKABLE:
 			for variant: int in maxi(per_bucket, 1):
 				table.add(
 					PBCharacter.make(

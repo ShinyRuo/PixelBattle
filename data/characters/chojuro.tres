@@ -1,20 +1,21 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_g7yhg"]
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_147cn"]
 
 [resource]
-script = ExtResource("1_g7yhg")
-id = &"mei"
-name_key = "char.mei"
-icon_key = "mei"
+script = ExtResource("1_147cn")
+id = &"chojuro"
+name_key = "char.chojuro"
+icon_key = "chojuro"
+actor_key = &"chojuro"
 element = 4
 def_element = 4
 primary = 1
-strength = 23.0
-agility = 32.0
+strength = 24.0
+agility = 30.0
 intellect = 15.0
-strength_growth = 23.0
-agility_growth = 32.0
+strength_growth = 24.0
+agility_growth = 30.0
 intellect_growth = 15.0
 hp_base = 100.0
 mp_base = 100.0
@@ -26,4 +27,4 @@ mp_per_intellect = 0.7
 atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 rarity = 1
-reach = 2
+reach = 1

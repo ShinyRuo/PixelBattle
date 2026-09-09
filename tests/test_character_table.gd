@@ -17,8 +17,12 @@ func test_the_synthetic_table_reproduces_the_pre_m2_card_pool() -> void:
 	# M2 之前一张卡是 `(属性, 稀有度, 变体)`，卡池 = 档数 × 6 × characters_per_bucket。
 	# **档数问 [enum PBUnit.Rarity]，不写死** —— M10-a 从四档砍到三档时
 	# 这里写的是 4，而它红的是「档数变了」，不是「合成表坏了」。
+	#
+	# **属性数问 [constant PBElement.PICKABLE] 不问 `Type.size()`**（M12-a）：
+	# 合成表铺的是可发牌的六系，仙不在其中。照枚举个数算的话，
+	# 期望值会凭空多出三格，而那三格永远填不满。
 	var table := _cfg.characters
-	var expected: int = PBUnit.Rarity.size() * PBElement.Type.size() * _cfg.characters_per_bucket
+	var expected: int = PBUnit.Rarity.size() * PBElement.PICKABLE.size() * _cfg.characters_per_bucket
 	assert_eq(
 		table.size(),
 		expected,
@@ -31,7 +35,7 @@ func test_the_synthetic_table_reproduces_the_pre_m2_card_pool() -> void:
 	# 每一格都要填满 —— 抽卡是先掷属性再掷变体的，缺一格就会走到退化路径，
 	# 而那条路径会悄悄改变抽卡的实际分布。
 	for rarity: int in PBUnit.Rarity.size():
-		for element: int in PBElement.Type.size():
+		for element: int in PBElement.PICKABLE:
 			assert_eq(
 				table.count_in_cell(element as PBElement.Type, rarity as PBUnit.Rarity),
 				_cfg.characters_per_bucket,

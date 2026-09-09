@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_7rcdc"]
+
+[resource]
+script = ExtResource("1_7rcdc")
+id = &"chiyo"
+name_key = "char.chiyo"
+icon_key = "chiyo"
+primary = 2
+agility = 22.0
+intellect = 25.0
+strength_growth = 17.0
+agility_growth = 21.0
+intellect_growth = 24.0
+hp_base = 100.0
+mp_base = 100.0
+atk_base = 1.0
+def_base = 4.0
+attack_speed_base = 0.6666666666666666
+hp_per_strength = 80.0
+mp_per_intellect = 0.7
+atk_per_primary = 3.5
+attack_speed_per_agility = 0.009
+reach = 2

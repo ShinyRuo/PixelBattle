@@ -1,18 +1,19 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_8dtwy"]
 
 [resource]
-script = ExtResource("1_char")
-id = &"sakura"
-name_key = "char.sakura"
-icon_key = "sakura"
-actor_key = &"sakura"
+script = ExtResource("1_8dtwy")
+id = &"rin_nohara"
+name_key = "char.rin_nohara"
+icon_key = "rin_nohara"
+actor_key = &"rin"
 primary = 2
-agility = 13.0
+strength = 23.0
+agility = 19.0
 intellect = 29.0
-strength_growth = 18.0
-agility_growth = 13.0
+strength_growth = 22.0
+agility_growth = 19.0
 intellect_growth = 29.0
 hp_base = 100.0
 mp_base = 100.0
@@ -24,4 +25,3 @@ mp_per_intellect = 0.7
 atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 reach = 2
-skill_ids = Array[StringName]([&"medical_ninjutsu"])
