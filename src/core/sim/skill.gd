@@ -142,8 +142,31 @@ enum Party {
 ## 现在「本体土属性但大招是火系」这种角色做得出来了。
 @export var element: PBElement.Type = PBElement.Type.PHYSICAL
 
+## 一发打**施法者战力的几倍**（M11-a）。`data/skills/*.tres` 里配的是这一项。
+##
+## ## 为什么技能的伤害必须是派生量
+##
+## M11-a 之前 `data/skills/` 那两份直接写着绝对值（火球术 160），
+## 而大招走的是 [method PBCombatRules.skill_damage]：
+## `战力 × 属性克制 × 队伍倍率 × 系数`。两条路的后果差得很远，
+## 而**三条全部不报错**：
+##
+## - **属性克制对角色技能完全不生效** —— `.tres` 里配了 `element = 火`，
+##   但那个数里没有 `damage_multiplier`。§03 铁律 4「element 挂在伤害事件上」
+##   在这条路上是一句空话
+## - **装备、羁绊、攻击科技一律不生效**（那个 `mult` 没乘）
+## - **第 1 波很强、第 50 波等于 0** —— 敌人血量按波次指数长，而 160 是个常数
+##
+## 没人发现是因为当时只有两个角色配了技能，且数值标着「占位」。
+## 47 个角色的技能落地之前必须先修这一条，否则每一个数都要重填一遍。
+@export var power_mult: float = 0.0
+
 ## 一发打多少。属性克制、科技、羁绊、装备**全部已经乘进来了**，
 ## 和 [member PBAttacker.dps] 一样，战斗层只认这个数。
+##
+## **`.tres` 里不许写它**（[method PBSkillLoader.check] 拦着）：它在建人那一刻
+## 由 [member power_mult] 算出来并覆盖，写了也不生效 ——
+## 而「配了不生效」比「配不了」难查得多。要配的是上面那个倍率。
 @export var damage: float = 0.0
 
 ## 杀伤半径。**以落点为圆心的一个真圆**（M4-a）。
@@ -290,32 +313,22 @@ enum Party {
 ## （见 [method PBValuation._leaks_at]），共享同一份 [PBSkill] 的话，
 ## 探测那一下改动会污染正在真正战斗的那一份 —— 而它不报错，
 ## 只表现为「悬崖二分跑着跑着，真实队伍的大招变了」。
+## ## 逐字段反射，不手抄（M11-a）
+##
+## 在此之前这里是 21 行 `out.x = x`，而这个类有 21 个 `@export`。
+## **加一个字段忘了抄一行不报错** —— 表现是「悬崖二分探测时那个技能
+## 少了一个效果」，而那条路一局要跑几十次，谁都不会去看。
+##
+## 反射走 `get_property_list()` 里的 `PROPERTY_USAGE_SCRIPT_VARIABLE`，
+## 和 [method PBSimConfig.clone] 同一个写法 —— 那边也是一张长参数表，
+## 也是同一条理由。M11 要往这个类上加一批新字段，这一改是那批的前提。
+##
+## 两张效果表（[member on_hit] / [member on_self]）跟着**共享同一份引用**：
+## [PBBuff] 是不可变的定义（谁都不改它的字段），而 [member damage] 那种
+## 会被探测就地改写的标量是值类型，反射拷贝本来就是真复制。
 func clone() -> PBSkill:
 	var out := PBSkill.new()
-	out.id = id
-	out.name_key = name_key
-	out.shot_key = shot_key
-	out.target = target
-	out.affects = affects
-	# 两张效果表**共享同一份引用**，不逐个复制：[PBBuff] 是不可变的定义
-	# （谁都不改它的字段），而 [member damage] 那种会被探测就地改写的标量
-	# 才需要真复制。
-	out.on_hit = on_hit
-	out.on_self = on_self
-	out.element = element
-	out.damage = damage
-	out.radius = radius
-	out.cooldown_ticks = cooldown_ticks
-	out.delay_ticks = delay_ticks
-	out.shot_cross_seconds = shot_cross_seconds
-	out.max_targets = max_targets
-	out.carry_over_ticks = carry_over_ticks
-	out.mp_cost = mp_cost
-	out.gather = gather
-	out.knockback = knockback
-	out.slow_scale = slow_scale
-	out.slow_ticks = slow_ticks
-	out.team_damage_scale = team_damage_scale
-	out.buff_ticks = buff_ticks
-	out.reset_cooldowns = reset_cooldowns
+	for prop: Dictionary in get_property_list():
+		if prop["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			out.set(prop["name"], get(prop["name"]))
 	return out

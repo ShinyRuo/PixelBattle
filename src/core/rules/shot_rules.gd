@@ -139,7 +139,7 @@ static func _hit_ally(
 	)
 	if book != null:
 		book.hit(tick, shot.source, target.slot, hurt, true)
-	if target.take_damage(hurt):
+	if target.take_damage(hurt, tick):
 		out.allies_lost += 1
 		if book != null:
 			book.ally_down(tick, target.slot)

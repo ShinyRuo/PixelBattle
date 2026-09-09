@@ -101,13 +101,47 @@ const CRIT_CHANCE: StringName = &"crit_chance"
 ## 要么给量型开一个例外 —— 两条都比换一个语义贵。
 const CRIT_DAMAGE: StringName = &"crit_damage"
 
+## 护盾：还能替他挡下多少伤害（M11-b）。读点在 [method PBAttacker.take_damage]。
+##
+## ## 它是**会被消耗**的那一份，所以走 [method PBBuffBag.absorb]
+##
+## 别的键都是「查一下现在是多少」，护盾是「花掉一点就少一点」——
+## 那笔账只能记在挂着的那一份上（[member PBBuffState.mods]），
+## 而扣减必须只有一个入口，否则「同一发伤害被两处各扣一次护盾」不报错。
+##
+## **量型（累加）**：两份护盾摞起来是两份都能挡。而它有时限 ——
+## 「一段时间内吸收 N 点伤害」这两个维度正好是一份 buff 的形状，
+## 挂在 [PBAttacker] 上一个裸字段的话，到期该减多少没有地方记。
+const SHIELD: StringName = &"shield"
+
+## 挨打的倍率：这个人受到的每一下乘多少（M11-b）。**0 = 无敌。**
+##
+## 读点在 [method PBAttacker.take_damage] **里面**，不在调用方 ——
+## 己方挨打有两条路（敌人近战、敌人的子弹），漏乘一处的表现是
+## 「被子弹打就吃不到减伤」，而它不报错。同 [constant HURT] 顶上那条。
+##
+## **和敌方那边的 [constant HURT] 是相反方向的同一件事**，但故意是两个键：
+## 一个挂在忍者身上（我扛得住多少），一个挂在怪身上（他挨得更疼），
+## 合成一个键的话「给敌人上易伤」和「给自己上减伤」会共用一份数值，
+## 而那两件事的合理取值范围完全不同。
+const DAMAGE_TAKEN: StringName = &"damage_taken"
+
 ## 全部**已经接上读点**的键。见本类顶部。
 const ALL: Array[StringName] = [
-	DAMAGE_SCALE, HEAL, MANA, HURT, ENEMY_SPEED_SCALE, HARM, CRIT_CHANCE, CRIT_DAMAGE
+	DAMAGE_SCALE,
+	HEAL,
+	MANA,
+	HURT,
+	ENEMY_SPEED_SCALE,
+	HARM,
+	CRIT_CHANCE,
+	CRIT_DAMAGE,
+	SHIELD,
+	DAMAGE_TAKEN,
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
-const SCALES: Array[StringName] = [DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE]
+const SCALES: Array[StringName] = [DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE, DAMAGE_TAKEN]
 
 ## 「全队短时增伤」那一份的定义。见 [method team_damage]。
 static var _team_damage: PBBuff = null
@@ -119,7 +153,7 @@ static var _team_damage: PBBuff = null
 ##
 ## 它的窗口和倍率来自**大招**（[member PBSkill.buff_ticks] /
 ## [member PBSkill.team_damage_scale]），而那两个数一个来自尾兽表、
-## 一个来自 [member PBSimConfig.bond_root_damage_scale] —— 都是要扫的参数。
+## 一个来自 [constant PBBondFunctionRules.ROOT_DAMAGE_SCALE]。
 ## 再抄一份进 `.tres` 就是第二处真相，而 [member PBCharacter.reach] 顶上
 ## 那条已经讲过这件事：**全场共用的那一份走配置，逐角色独有的走 `data/`。**
 ##

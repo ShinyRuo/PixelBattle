@@ -78,12 +78,23 @@ static func load_from(dir_path: String) -> PBSkillTable:
 ## [method PBSkillRules.validate] 管，效果的键与成长由
 ## [method PBBuffRules.validate] 管。合成一句话的话，
 ## 报错指不出是技能写错了还是它挂的那份 buff 写错了。
+## 另外两条只对 `.tres` 成立，所以拦在这一层而不是
+## [method PBSkillRules.validate] 里 —— 大招是代码现造的，
+## 它**必须**直接写 `damage`（那一份没有 `.tres`）。
 static func check(skill: PBSkill) -> String:
 	var why: String = PBSkillRules.validate(skill)
 	if why != "":
 		return why
 	if skill.id == &"":
 		return "技能没有 id"
+	# **写了也不生效**：建人那一刻 [method PBCombatRules._equip_skills]
+	# 会按 `power_mult` 算出来覆盖掉它。而「配了不生效」比「配不了」难查 ——
+	# 数据、界面、日志全正常，只有伤害数字不对。
+	if skill.damage != 0.0:
+		return "别在数据里写 damage，写 power_mult —— 那个数会在建人时被覆盖"
+	if skill.power_mult <= 0.0 and skill.on_hit.is_empty() and skill.on_self.is_empty():
+		# 既不打伤害也不挂效果的技能，放出去屏幕上什么都不会发生。
+		return "这个技能既没有 power_mult 也没有任何效果 —— 放出去什么都不会发生"
 	for buff: PBBuff in skill.on_hit + skill.on_self:
 		var bad: String = PBBuffRules.validate(buff)
 		if bad != "":

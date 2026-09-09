@@ -782,7 +782,7 @@ func _enemies_attack() -> void:
 			enemy.damage_per_shot, enemy.element, target.defence, target.def_element, _cfg
 		)
 		_note_hit(enemy.slot, target.slot, damage, true)
-		if target.take_damage(damage):
+		if target.take_damage(damage, _tick):
 			_outcome.allies_lost += 1
 			_note_down(target.slot)
 

@@ -235,7 +235,7 @@ static func build_attackers(
 		# 而 [PBAttacker] 身上没有也不该有 `level` —— 见
 		# [member PBSkillCast.caster_level]。
 		attacker.ultimate = PBSkillCast.new(skill, unit.level)
-		_equip_skills(attacker, unit, cfg)
+		_equip_skills(attacker, unit, wave_element, mult, cfg)
 		out[i] = attacker
 
 	# 全队光环那一档（M10-c）。**排在循环外面**：光环是这一组羁绊给的，
@@ -268,7 +268,18 @@ static func build_attackers(
 ## 超过两个也只取前两个（决策 6）：指令卡那一行只画得下两格
 ## （[constant PBCommandCard.SKILL_COMMANDS]），多出来的放不出去 ——
 ## 而「配了却放不出」比「没配」更难查。
-static func _equip_skills(attacker: PBAttacker, unit: PBUnit, cfg: PBSimConfig) -> void:
+## ## 伤害在这里算，不在 `.tres` 里写死（M11-a）
+##
+## 每人一份拷贝之后**当场把 [member PBSkill.damage] 算出来**，
+## 走的是和大招同一句 [method skill_damage] —— 那正是「每人一份拷贝」
+## 这件事第一次真的被用上：同一个技能在不同的人、不同的波次下是不同的数。
+static func _equip_skills(
+	attacker: PBAttacker,
+	unit: PBUnit,
+	wave_element: PBElement.Type,
+	mult: float,
+	cfg: PBSimConfig
+) -> void:
 	if cfg.skills == null:
 		return
 	for id: StringName in unit.character.skill_ids:
@@ -279,7 +290,9 @@ static func _equip_skills(attacker: PBAttacker, unit: PBUnit, cfg: PBSimConfig) 
 		if skill == null:
 			push_error("角色表里点了一个不存在的技能：%s" % id)
 			continue
-		attacker.skills.append(PBSkillCast.new(skill.clone(), unit.level))
+		var mine := skill.clone()
+		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
+		attacker.skills.append(PBSkillCast.new(mine, unit.level))
 
 
 ## 造一个单位这一波的大招（§02，M3-b）。
@@ -292,14 +305,42 @@ static func _build_skill(
 ) -> PBSkill:
 	var skill := PBSkill.new()
 	skill.element = unit.character.ultimate_element()
-	var rel := PBElement.relation(skill.element, wave_element)
-	skill.damage = unit.power(cfg) * cfg.damage_multiplier(rel) * mult * cfg.ultimate_power_mult
+	skill.power_mult = cfg.ultimate_power_mult
+	skill.damage = skill_damage(unit, skill, wave_element, mult, cfg)
 	skill.radius = cfg.ultimate_radius
 	skill.cooldown_ticks = int(round(cfg.ultimate_cooldown_seconds * float(cfg.tick_rate)))
 	skill.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
 	skill.mp_cost = cfg.ultimate_mp_cost
 	skill.gather = gather
 	return skill
+
+
+## 一发技能打多少（M11-a）。**大招和角色技能共用这一句。**
+##
+## `战力 × 属性克制 × 队伍倍率 × 这一发的倍率`。
+##
+## ## 为什么必须只有一处
+##
+## M11-a 之前大招走这个式子、角色技能直接用 `.tres` 里的字面量，
+## 于是**属性克制、装备、羁绊、科技对角色技能一律不生效**，
+## 而且那个常数在第 50 波等于 0 —— 三条全部不报错，
+## 见 [member PBSkill.power_mult]。
+##
+## **克制按技能自己的属性算，不按单位的**（§03 铁律 4：element 挂在
+## 伤害事件上）。所以「本体土属性、大招火系」的角色，普攻和技能会在
+## 同一波里吃到不同的倍率 —— 那正是那条铁律想留出来的空间。
+##
+## [param mult] 是队伍这一波的倍率（攻击科技 × 羁绊 × 这个人的装备），
+## 也就是 [method build_attackers] 里乘进 [member PBAttacker.dps] 的那一份。
+static func skill_damage(
+	unit: PBUnit,
+	skill: PBSkill,
+	wave_element: PBElement.Type,
+	mult: float,
+	cfg: PBSimConfig
+) -> float:
+	var rel := PBElement.relation(skill.element, wave_element)
+	return unit.power(cfg) * cfg.damage_multiplier(rel) * mult * skill.power_mult
 
 
 ## 一组攻击者的 DPS 之和 —— 也就是对外报的「队伍战力」。

@@ -456,19 +456,32 @@ func is_targetable() -> bool:
 
 ## 挨一下打。返回这次是否把它**真的**打死了 —— 还有重生次数时返回 false。
 ##
-## ## 重生的判据必须在这里面，不在调用方
+## ## 挨打这一路上的每一样东西都在这个函数里面，调用方一律不判
 ##
-## 己方阵亡今天有两个落点：近战那一记（[method PBBattleSim._enemies_attack]）
+## 己方挨打今天有两个落点：敌人近战那一记（[method PBBattleSim._enemies_attack]）
 ## 和敌人的子弹命中（[method PBShotRules._hit_ally]），两处都写着
-## `if take_damage(): allies_lost += 1; 记播报`。各判一次重生的话，
-## **漏掉的那一处表现是「被子弹打死就复活不了」** —— 而它不报错。
+## `if take_damage(): allies_lost += 1; 记播报`。
+## 减伤（M11-b）、护盾（M11-b）、重生（M10-d）各判一次的话，
+## **漏掉的那一处表现是「被子弹打就吃不到减伤 / 用不完护盾 / 复活不了」**
+## —— 三样都不报错。和 [constant PBBuffRules.HURT] 顶上那条同形。
 ##
-## 和 [constant PBBuffRules.HURT] 顶上那条是同一条：读点放进类里，
-## 调用方一律不判。
-func take_damage(amount: float) -> bool:
+## ## 顺序：先减伤，再护盾，最后扣血
+##
+## 减伤改的是「这一下有多重」，护盾吃的是**减完之后**那个数。
+## 反过来的话护盾会替他挡掉一部分本来就不该挨的伤害，
+## 表现是「带减伤的时候护盾特别不经用」。
+##
+## ## [param at_tick] 故意没有默认值
+##
+## 同 [method PBEnemy.take_damage] 顶上那条：给了默认值的话，漏传的调用方
+## 会静默拿到一个「所有效果都已过期」的 tick —— 也就是
+## 「减伤和护盾在这条路上不生效」，正是这个读点要挡的东西。
+func take_damage(amount: float, at_tick: int) -> bool:
 	if not is_targetable():
 		return false
-	hp -= amount
+	var hurt: float = amount * buffs.amount(PBBuffRules.DAMAGE_TAKEN, at_tick)
+	hurt = buffs.absorb(hurt, at_tick)
+	hp -= hurt
 	if hp > 0.0:
 		return false
 	if revives > 0:

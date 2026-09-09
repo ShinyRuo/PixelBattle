@@ -95,6 +95,45 @@ func amount(key: StringName, at_tick: int) -> float:
 	return out
 
 
+## 让身上挂着的护盾去吃这一下伤害，返回**剩下多少**（M11-b）。
+##
+## ## 为什么它不能写成「查一下护盾是多少，然后调用方自己减」
+##
+## 护盾是这张表里唯一**会被消耗**的键 —— 别的都是「现在是多少」，
+## 它是「花掉一点就少一点」。查询 + 调用方自己扣的话，
+## 那笔扣减会散到每一个挨打的地方（今天两处），
+## 而**漏扣一处的表现是「那条路上的护盾用不完」**，不报错。
+##
+## 所以扣减只有这一个入口，[method PBAttacker.take_damage] 调它。
+##
+## ## 扣的是挂着的那几份，不是一个总数
+##
+## 每一份护盾有自己的时限，所以「还剩多少」只能记在各自的
+## [member PBBuffState.mods] 上。**按槽位顺序吃干净一份再吃下一份**，
+## 不按剩余时间排 —— 排序要每次挨打都比一遍，而这是热路径；
+## 而且两份护盾同时在身上是很罕见的情形，为它引入一个「先花哪一份」
+## 的规则等于给一个还没人问过的问题拍一个答案。
+##
+## 吃光的那一份把值留在 0 上，不清槽位：清扫是 [method sweep] 的事，
+## 而「这一份还在、只是空了」正是界面上那个图标该表达的状态。
+func absorb(amount: float, at_tick: int) -> float:
+	var left: float = amount
+	if left <= 0.0:
+		return left
+	for state: PBBuffState in _slots:
+		if left <= 0.0:
+			break
+		if not state.is_live(at_tick) or not state.mods.has(PBBuffRules.SHIELD):
+			continue
+		var pool: float = float(state.mods[PBBuffRules.SHIELD])
+		if pool <= 0.0:
+			continue
+		var eaten: float = minf(pool, left)
+		state.mods[PBBuffRules.SHIELD] = pool - eaten
+		left -= eaten
+	return left
+
+
 ## 现在挂着几份。**「身上有没有东西」也问这一个**（`count(t) > 0`）——
 ## 另开一个 `has_any` 就是同一个问题的第二个答案。
 func count(at_tick: int) -> int:

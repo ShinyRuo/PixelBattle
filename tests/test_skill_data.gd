@@ -45,6 +45,46 @@ func _unit_of(character: PBCharacter) -> PBUnit:
 	return PBUnit.new(character)
 
 
+## 名单里第一个**技能真的打伤害**的角色。治疗那一类不算 ——
+## 上面那两条量的是伤害，而 `power_mult` 为 0 的技能量不出比值。
+func _skill_carrier() -> PBCharacter:
+	for character: PBCharacter in _carriers():
+		var skill: PBSkill = _cfg.skills.by_id(character.skill_ids[0])
+		if skill != null and skill.power_mult > 0.0:
+			return character
+	fail_test("该有一个技能打伤害的角色")
+	return null
+
+
+## 一队人在指定队伍倍率下的攻击者。
+func _skilled_squad(units: Array[PBUnit], mult: float) -> Array[PBAttacker]:
+	return PBCombatRules.build_attackers(
+		units, PBElement.Type.PHYSICAL, mult, 1.0, PackedFloat64Array(), _cfg
+	)
+
+
+## 一个波次属性，使得 [param mine] 打它是 [param want] 那种关系。
+func _wave_where(mine: PBElement.Type, want: PBElement.Relation) -> PBElement.Type:
+	for one: int in PBElement.RING:
+		if PBElement.relation(mine, one as PBElement.Type) == want:
+			return one as PBElement.Type
+	fail_test("克制环上该有这么一波")
+	return PBElement.Type.PHYSICAL
+
+
+## 这个角色的第一个技能，打在 [param wave] 那一波上是多少伤害。
+func _damage_against(character: PBCharacter, wave: PBElement.Type) -> float:
+	var squad := PBCombatRules.build_attackers(
+		[_unit_of(character)] as Array[PBUnit],
+		wave,
+		1.0,
+		1.0,
+		PackedFloat64Array(),
+		_cfg
+	)
+	return squad[0].skills[0].skill.damage
+
+
 func _squad(units: Array[PBUnit], with_skills: bool) -> Array[PBAttacker]:
 	var cfg: PBSimConfig = _cfg
 	if not with_skills:
@@ -56,6 +96,86 @@ func _squad(units: Array[PBUnit], with_skills: bool) -> Array[PBAttacker]:
 	return PBCombatRules.build_attackers(
 		units, PBElement.Type.FIRE, 1.0, 1.0, PackedFloat64Array(), cfg
 	)
+
+
+# ── 伤害是派生量（M11-a）────────────────────────────────────────
+
+
+func test_a_character_skill_eats_the_element_matchup_like_the_ultimate_does() -> void:
+	# **M11-a 之前它不吃。** 角色技能的伤害是 `.tres` 里的字面量，
+	# 而大招走 `战力 × 克制 × 队伍倍率 × 系数` —— 于是「配了 element = 火」
+	# 在这条路上是一句空话，§03 铁律 4 只对大招成立。
+	#
+	# 判据是两波的比值，不是绝对值：绝对值会跟着占位数值一起变，
+	# 而这条断的是「克制这一乘有没有发生」。
+	var carrier := _skill_carrier()
+	var skill: PBSkill = _cfg.skills.by_id(carrier.skill_ids[0])
+	# **按关系找那两波，不用 `counter_of`** —— 那个函数答的是「谁克制 x」，
+	# 而这里要的是两个方向各一波，写反了断言仍然会红但红得没道理。
+	var strong := _damage_against(carrier, _wave_where(skill.element, PBElement.Relation.COUNTER))
+	var weak := _damage_against(carrier, _wave_where(skill.element, PBElement.Relation.WEAK))
+	assert_gt(strong, 0.0, "前提：这个技能真的打伤害")
+	assert_gt(strong, weak, "打克制的那一波该更疼")
+	assert_almost_eq(
+		strong / weak,
+		_cfg.mult_counter / _cfg.mult_weak,
+		0.001,
+		"两波的比值该正好是那两个克制倍率的比"
+	)
+
+
+func test_a_character_skill_eats_the_team_multiplier_too() -> void:
+	# 攻击科技、羁绊、装备三样都乘在同一个 `mult` 上。M11-a 之前
+	# 那一乘对角色技能不发生 —— 也就是「装备加的攻对技能无效」，不报错。
+	var carrier := _skill_carrier()
+	var plain := _skilled_squad([_unit_of(carrier)], 1.0)
+	var buffed := _skilled_squad([_unit_of(carrier)], 2.0)
+	assert_almost_eq(
+		buffed[0].skills[0].skill.damage,
+		plain[0].skills[0].skill.damage * 2.0,
+		0.001,
+		"队伍倍率翻倍，技能伤害也该翻倍"
+	)
+
+
+func test_writing_damage_into_a_tres_is_refused_instead_of_ignored() -> void:
+	# 那个数会在建人时被 `power_mult` 算出来的值覆盖 —— 写了也不生效，
+	# 而这个项目最贵的 bug 就是这个形状。
+	var skill := PBSkill.new()
+	skill.id = &"probe"
+	skill.power_mult = 1.0
+	assert_eq(PBSkillLoader.check(skill), "", "只配倍率是合法的")
+	skill.damage = 160.0
+	assert_ne(PBSkillLoader.check(skill), "", "直接写 damage 该被拒收")
+
+
+func test_an_empty_skill_that_does_nothing_at_all_is_refused() -> void:
+	# 既不打伤害也不挂效果的技能，指令卡上有一格、按下去屏幕上什么都不发生。
+	var skill := PBSkill.new()
+	skill.id = &"probe"
+	assert_ne(PBSkillLoader.check(skill), "", "什么都不做的技能该被拒收")
+
+
+func test_cloning_carries_every_field_without_anyone_listing_them() -> void:
+	# `clone()` M11-a 之前是 21 行手抄，而这个类正好有 21 个 `@export` ——
+	# **加一个字段忘了抄一行不报错**，表现是「探测时那个技能少了一个效果」。
+	# 现在走反射，这条断言因此也是反射的：以后加字段两边都不用改。
+	var skill := PBSkill.new()
+	skill.id = &"probe"
+	skill.power_mult = 2.5
+	skill.damage = 999.0
+	skill.radius = 0.3
+	skill.gather = true
+	skill.slow_scale = 0.5
+	skill.mp_cost = 12.0
+	var copy := skill.clone()
+	var seen: int = 0
+	for prop: Dictionary in skill.get_property_list():
+		if not (prop["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+		assert_eq(copy.get(prop["name"]), skill.get(prop["name"]), "字段 %s 没跟过来" % prop["name"])
+		seen += 1
+	assert_gt(seen, 15, "该扫到这个类全部的导出字段")
 
 
 # ── 表本身 ──────────────────────────────────────────────────────

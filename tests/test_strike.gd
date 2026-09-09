@@ -52,12 +52,12 @@ func test_the_carrier_gets_back_up_once_and_only_once() -> void:
 	var attacker := _striker()
 	attacker.revives_max = 1
 	attacker.revive()
-	assert_false(attacker.take_damage(999.0), "第一次打死该被重生接住")
+	assert_false(attacker.take_damage(999.0, 0), "第一次打死该被重生接住")
 	assert_true(attacker.alive, "他还站着")
 	assert_almost_eq(
 		attacker.hp, attacker.max_hp * PBAttacker.REVIVE_FRACTION, 0.001, "带着部分血回来"
 	)
-	assert_true(attacker.take_damage(999.0), "第二次就真死了")
+	assert_true(attacker.take_damage(999.0, 0), "第二次就真死了")
 	assert_false(attacker.alive, "这次躺下了")
 
 
@@ -68,7 +68,7 @@ func test_the_revive_counter_is_refilled_every_wave() -> void:
 	var attacker := _striker()
 	attacker.revives_max = 1
 	attacker.revive()
-	attacker.take_damage(999.0)
+	attacker.take_damage(999.0, 0)
 	assert_eq(attacker.revives, 0, "这一波用掉了")
 	attacker.revive()
 	assert_eq(attacker.revives, 1, "下一波该重新给")
@@ -80,7 +80,7 @@ func test_a_clone_carries_the_quota_but_not_the_spent_counter() -> void:
 	var attacker := _striker()
 	attacker.revives_max = 1
 	attacker.revive()
-	attacker.take_damage(999.0)
+	attacker.take_damage(999.0, 0)
 	var copy := attacker.clone()
 	assert_eq(copy.revives_max, 1, "配额要跟过来")
 	copy.revive()

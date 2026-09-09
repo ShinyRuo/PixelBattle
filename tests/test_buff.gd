@@ -198,6 +198,66 @@ func test_a_clone_starts_with_an_empty_bag() -> void:
 # ── 全队增伤搬进 bag 之后仍然是全队的 ───────────────────────────
 
 
+func test_mitigation_is_applied_before_the_shield_eats_the_rest() -> void:
+	# 顺序反了的话，护盾会替他挡掉一部分**本来就不该挨**的伤害 ——
+	# 表现是「带减伤的时候护盾特别不经用」，而它不报错。
+	#
+	# 100 的伤害，五成减伤 → 50，护盾 30 吃掉 30 → 掉 20 血。
+	# 反过来（先护盾后减伤）是 (100 − 30) × 0.5 = 35，护盾还会多花 30。
+	var unit := _attacker()
+	unit.buffs.add(_lasting(&"guard", {}), {PBBuffRules.DAMAGE_TAKEN: 0.5}, 0, 100, 0)
+	unit.buffs.add(_lasting(&"wall", {}), {PBBuffRules.SHIELD: 30.0}, 0, 100, 0)
+	var before: float = unit.hp
+	unit.take_damage(100.0, 0)
+	assert_almost_eq(before - unit.hp, 20.0, 0.001, "先减伤再护盾")
+
+
+func test_a_shield_is_spent_not_just_read() -> void:
+	# **护盾是这张表里唯一会被消耗的键。** 只查不扣的话它能挡无限次 ——
+	# 而屏幕上看起来只是「这个人特别肉」。
+	var unit := _attacker()
+	unit.buffs.add(_lasting(&"wall", {}), {PBBuffRules.SHIELD: 50.0}, 0, 100, 0)
+	var before: float = unit.hp
+	unit.take_damage(30.0, 0)
+	assert_eq(unit.hp, before, "第一下全被挡住")
+	assert_almost_eq(unit.buffs.amount(PBBuffRules.SHIELD, 0), 20.0, 0.001, "护盾该少了 30")
+	unit.take_damage(30.0, 0)
+	assert_almost_eq(before - unit.hp, 10.0, 0.001, "第二下只挡得住剩下的 20")
+	assert_eq(unit.buffs.amount(PBBuffRules.SHIELD, 0), 0.0, "护盾用光了")
+
+
+func test_a_shield_stops_absorbing_once_it_expires() -> void:
+	# 护盾是「一段时间内吸收 N 点」——两个维度正好是一份 buff 的形状。
+	# 挂在一个裸字段上的话，到期该减多少没有地方记。
+	var unit := _attacker()
+	unit.buffs.add(_lasting(&"wall", {}), {PBBuffRules.SHIELD: 50.0}, 0, 10, 0)
+	var before: float = unit.hp
+	unit.take_damage(30.0, 20)
+	assert_almost_eq(before - unit.hp, 30.0, 0.001, "过期之后一点都挡不住")
+
+
+func test_zero_damage_taken_is_how_invulnerability_is_spelled() -> void:
+	# 无敌不是第二个键，就是这个率型键取 0 —— 两种写法表达同一件事
+	# 就是两把尺子（同 [member PBSkill.target] 顶上「没有 SELF 这一档」）。
+	var unit := _attacker()
+	unit.buffs.add(_lasting(&"turn", {}), {PBBuffRules.DAMAGE_TAKEN: 0.0}, 0, 100, 0)
+	var before: float = unit.hp
+	assert_false(unit.take_damage(9999.0, 0), "无敌期间打不死")
+	assert_eq(unit.hp, before, "一点血都不掉")
+
+
+func test_nobody_works_out_the_mitigation_on_their_own() -> void:
+	# 己方挨打有两个落点（敌人近战、敌人的子弹），两处都写着
+	# `if take_damage(): allies_lost += 1`。减伤和护盾各判一次的话，
+	# 漏掉的那一处表现是「被子弹打就吃不到减伤 / 用不完护盾」。
+	# 同 `test_strike.gd` 里重生那条扫描。
+	for path: String in ["res://src/core/sim/battle_sim.gd", "res://src/core/rules/shot_rules.gd"]:
+		var text := FileAccess.get_file_as_string(path)
+		assert_ne(text, "", "读得到 %s" % path)
+		assert_false(text.contains("absorb("), "%s 不该自己扣护盾" % path)
+		assert_false(text.contains("DAMAGE_TAKEN"), "%s 不该自己乘减伤" % path)
+
+
 func test_the_team_damage_buff_lands_on_everyone() -> void:
 	# M3-d 那个「全场一份」的增伤现在是「给每个人都挂一份」。
 	# 它是这一层的第一个客户，而 test_beast / test_bond_function 里
