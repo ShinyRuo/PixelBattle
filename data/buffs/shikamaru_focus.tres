@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_1iwvf"]
+
+[resource]
+script = ExtResource("1_1iwvf")
+id = &"shikamaru_focus"
+name_key = "buff.shikamaru_focus"
+icon_key = "buff.shikamaru_focus"
+kind = 2
+duration_seconds = 6.0
+period_seconds = 1.0
+mods = {
+&"mana": 1.0
+}
+mods_growth = {
+&"mana": 1.0
+}

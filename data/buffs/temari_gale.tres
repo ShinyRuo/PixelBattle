@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_h0er2"]
+
+[resource]
+script = ExtResource("1_h0er2")
+id = &"temari_gale"
+name_key = "buff.temari_gale"
+icon_key = "buff.temari_gale"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.13
+}
+mods_growth = {
+&"damage_scale": 0.13
+}

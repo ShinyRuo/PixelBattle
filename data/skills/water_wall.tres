@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_5swor"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_86fbm"]
+
+[sub_resource type="Resource" id="Resource_magih"]
+script = ExtResource("1_5swor")
+id = &"tobirama_wall"
+name_key = "buff.tobirama_wall"
+icon_key = "buff.tobirama_wall"
+kind = 1
+duration_seconds = 3.0
+mods = {
+&"damage_taken": 0.4
+}
+
+[resource]
+script = ExtResource("2_86fbm")
+target = 0
+id = &"water_wall"
+name_key = "skill.water_wall"
+affects = 0
+on_self = Array[ExtResource("1_5swor")]([SubResource("Resource_magih")])
+element = 4
+cooldown_ticks = 340
+mp_cost = 10.0

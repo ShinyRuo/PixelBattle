@@ -229,23 +229,40 @@ func test_a_dead_caster_cannot_get_one_off() -> void:
 # ── 数据那一侧 ──────────────────────────────────────────────────
 
 
-func test_the_fireball_in_the_table_is_a_real_bullet_skill() -> void:
-	# `data/skills/fireball.tres` 是这条路第一个真数据 —— 它同时是
-	# `ENEMY` 档第一次有东西放得出来（M7-c 只做了合法形状）。
+func test_the_table_has_a_real_bullet_skill() -> void:
+	# **按形状找，不按 id 找**（M12-c1 改的）。
+	#
+	# 这两条原来点名 `fireball` 与 `medical_ninjutsu` —— 那是 M7-g/M8-b
+	# 手写的两个样本，而 `data/skills.tsv` 一接管，表里装的就是原版那 113 个，
+	# 两个样本当场没了。红的是「名册换了人」，不是「子弹技能坏了」。
+	#
+	# 它们要问的本来就是**表里两种都有**：分界线
+	# （[member PBSkill.shot_cross_seconds]）是数据的事，不是代码的事。
 	var table := PBSkillLoader.table()
-	var skill: PBSkill = table.by_id(&"fireball")
-	assert_not_null(skill, "表里该有它")
-	assert_eq(skill.target, PBSkill.Target.ENEMY, "它是点敌人的")
-	assert_gt(skill.shot_cross_seconds, 0.0, "而且是子弹档")
-	assert_false(skill.on_hit.is_empty(), "飞到了要上一份灼烧")
-	assert_eq(PBSkillRules.validate(skill), "", "而且合法")
+	var bullets: Array[PBSkill] = []
+	for id: StringName in table.ids():
+		var skill: PBSkill = table.by_id(id)
+		if skill.target == PBSkill.Target.ENEMY and skill.shot_cross_seconds > 0.0:
+			bullets.append(skill)
+	assert_false(bullets.is_empty(), "表里该有点敌人的子弹技能")
+	for skill: PBSkill in bullets:
+		assert_eq(PBSkillRules.validate(skill), "", "%s 该合法" % skill.id)
+		assert_false(
+			skill.on_hit.is_empty(), "%s 飞到了得干点什么 —— 子弹档的伤害或效果都挂在命中上" % skill.id
+		)
 
 
 func test_the_medic_stays_instant() -> void:
 	# 同一张表里两种都有，才说明那条分界线是数据的事、不是代码的事。
-	var skill: PBSkill = PBSkillLoader.table().by_id(&"medical_ninjutsu")
-	assert_not_null(skill, "前提：它还在")
-	assert_eq(skill.shot_cross_seconds, 0.0, "医疗忍术是瞬发，直接给对方上 buff")
+	var table := PBSkillLoader.table()
+	var medics: Array[PBSkill] = []
+	for id: StringName in table.ids():
+		var skill: PBSkill = table.by_id(id)
+		if skill.target == PBSkill.Target.ALLY:
+			medics.append(skill)
+	assert_false(medics.is_empty(), "表里该有点队友的技能")
+	for skill: PBSkill in medics:
+		assert_eq(skill.shot_cross_seconds, 0.0, "%s 点的是队友，该瞬发直接上 buff" % skill.id)
 
 
 ## 现在有几发子弹在飞。

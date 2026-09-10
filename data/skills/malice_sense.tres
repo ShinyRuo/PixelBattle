@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_tc44o"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_tkb5q"]
+
+[sub_resource type="Resource" id="Resource_57brq"]
+script = ExtResource("1_tc44o")
+id = &"sage_sense"
+name_key = "buff.sage_sense"
+icon_key = "buff.sage_sense"
+kind = 1
+duration_seconds = 25.0
+mods = {
+&"damage_taken": 0.88
+}
+
+[resource]
+script = ExtResource("2_tkb5q")
+target = 0
+id = &"malice_sense"
+name_key = "skill.malice_sense"
+affects = 0
+on_self = Array[ExtResource("1_tc44o")]([SubResource("Resource_57brq")])
+element = 1
+cooldown_ticks = 500
+mp_cost = 10.0

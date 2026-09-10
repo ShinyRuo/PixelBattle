@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_o1ybv"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_roecc"]
+
+[resource]
+script = ExtResource("2_roecc")
+id = &"leaf_gale"
+name_key = "skill.leaf_gale"
+power_mult = 2.7
+radius = 0.13
+cooldown_ticks = 300
+delay_ticks = 8
+knockback = 0.06
+slow_scale = 0.0
+slow_ticks = 20
+mp_cost = 10.0

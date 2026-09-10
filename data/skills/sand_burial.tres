@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_s20kg"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_a0ddl"]
+
+[sub_resource type="Resource" id="Resource_hfxwh"]
+script = ExtResource("1_s20kg")
+id = &"sand_coffin"
+name_key = "buff.sand_coffin"
+icon_key = "buff.sand_coffin"
+kind = 2
+friendly = false
+duration_seconds = 2.0
+period_seconds = 0.5
+mods = {
+&"harm": 50.0
+}
+mods_growth = {
+&"harm": 50.0
+}
+
+[resource]
+script = ExtResource("2_a0ddl")
+id = &"sand_burial"
+name_key = "skill.sand_burial"
+on_hit = Array[ExtResource("1_s20kg")]([SubResource("Resource_hfxwh")])
+element = 1
+power_mult = 1.2
+radius = 0.14
+cooldown_ticks = 360
+delay_ticks = 8
+slow_scale = 0.0
+slow_ticks = 40
+mp_cost = 10.0

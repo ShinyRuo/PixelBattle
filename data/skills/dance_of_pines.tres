@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_i7713"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_2al1v"]
+
+[sub_resource type="Resource" id="Resource_o0ytm"]
+script = ExtResource("1_i7713")
+id = &"kimimaro_bone"
+name_key = "buff.kimimaro_bone"
+icon_key = "buff.kimimaro_bone"
+kind = 1
+duration_seconds = 3.0
+mods = {
+&"damage_taken": 0.5
+}
+
+[resource]
+script = ExtResource("2_2al1v")
+target = 0
+id = &"dance_of_pines"
+name_key = "skill.dance_of_pines"
+on_self = Array[ExtResource("1_i7713")]([SubResource("Resource_o0ytm")])
+power_mult = 1.8
+radius = 0.17
+cooldown_ticks = 360
+mp_cost = 15.0

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_t2fgr"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_vmqws"]
+
+[sub_resource type="Resource" id="Resource_o6no6"]
+script = ExtResource("1_t2fgr")
+id = &"karin_ward"
+name_key = "buff.karin_ward"
+icon_key = "buff.karin_ward"
+kind = 1
+duration_seconds = 4.0
+mods = {
+&"damage_taken": 0.9
+}
+mods_growth = {
+&"damage_taken": 0.01
+}
+
+[resource]
+script = ExtResource("2_vmqws")
+target = 0
+id = &"kagura_eye"
+name_key = "skill.kagura_eye"
+affects = 0
+on_self = Array[ExtResource("1_t2fgr")]([SubResource("Resource_o6no6")])
+element = 0
+radius = 0.32
+cooldown_ticks = 400
+mp_cost = 8.0

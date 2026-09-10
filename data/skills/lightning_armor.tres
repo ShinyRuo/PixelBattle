@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_idkqk"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_rqiwx"]
+
+[sub_resource type="Resource" id="Resource_lkqpo"]
+script = ExtResource("1_idkqk")
+id = &"raikage_armor"
+name_key = "buff.raikage_armor"
+icon_key = "buff.raikage_armor"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.5
+}
+
+[resource]
+script = ExtResource("2_rqiwx")
+target = 0
+id = &"lightning_armor"
+name_key = "skill.lightning_armor"
+affects = 0
+on_self = Array[ExtResource("1_idkqk")]([SubResource("Resource_lkqpo")])
+element = 2
+cooldown_ticks = 400
+mp_cost = 10.0

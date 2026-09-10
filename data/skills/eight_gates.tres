@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_qoaua"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_vjqyd"]
+
+[sub_resource type="Resource" id="Resource_1lyv2"]
+script = ExtResource("1_qoaua")
+id = &"guy_gate"
+name_key = "buff.guy_gate"
+icon_key = "buff.guy_gate"
+kind = 1
+duration_seconds = 12.0
+mods = {
+&"damage_scale": 1.5
+}
+
+[resource]
+script = ExtResource("2_vjqyd")
+target = 0
+id = &"eight_gates"
+name_key = "skill.eight_gates"
+affects = 0
+on_self = Array[ExtResource("1_qoaua")]([SubResource("Resource_1lyv2")])
+cooldown_ticks = 360
+mp_cost = 12.0

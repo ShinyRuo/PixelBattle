@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_kqdan"]
+
+[resource]
+script = ExtResource("1_kqdan")
+id = &"haku_chill"
+name_key = "buff.haku_chill"
+icon_key = "buff.haku_chill"
+kind = 1
+friendly = false
+duration_seconds = 5.0
+mods = {
+&"enemy_speed_scale": 0.7
+}

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_dmrmy"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_u1oe2"]
+
+[sub_resource type="Resource" id="Resource_qwl1h"]
+script = ExtResource("1_dmrmy")
+id = &"neji_kaiten"
+name_key = "buff.neji_kaiten"
+icon_key = "buff.neji_kaiten"
+kind = 1
+duration_seconds = 1.0
+mods = {
+&"damage_taken": 0.0
+}
+
+[resource]
+script = ExtResource("2_u1oe2")
+target = 0
+id = &"kaiten"
+name_key = "skill.kaiten"
+on_self = Array[ExtResource("1_dmrmy")]([SubResource("Resource_qwl1h")])
+element = 4
+power_mult = 2.6
+radius = 0.12
+cooldown_ticks = 320
+mp_cost = 10.0

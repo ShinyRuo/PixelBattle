@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_brt7n"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_smjxb"]
+
+[resource]
+script = ExtResource("2_smjxb")
+target = 0
+id = &"almighty_push"
+name_key = "skill.almighty_push"
+element = 6
+power_mult = 2.0
+radius = 0.18
+cooldown_ticks = 340
+knockback = 0.1
+mp_cost = 10.0

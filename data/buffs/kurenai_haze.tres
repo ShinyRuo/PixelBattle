@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_h16h1"]
+
+[resource]
+script = ExtResource("1_h16h1")
+id = &"kurenai_haze"
+name_key = "buff.kurenai_haze"
+icon_key = "buff.kurenai_haze"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.25,
+&"hurt": 2.0
+}

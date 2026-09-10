@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_vqtmf"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ongqg"]
+
+[sub_resource type="Resource" id="Resource_jkndk"]
+script = ExtResource("1_vqtmf")
+id = &"kurenai_haze"
+name_key = "buff.kurenai_haze"
+icon_key = "buff.kurenai_haze"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.25,
+&"hurt": 2.0
+}
+
+[resource]
+script = ExtResource("2_ongqg")
+target = 2
+id = &"haze_illusion"
+name_key = "skill.haze_illusion"
+on_hit = Array[ExtResource("1_vqtmf")]([SubResource("Resource_jkndk")])
+element = 0
+cooldown_ticks = 360
+shot_cross_seconds = 0.3
+mp_cost = 10.0

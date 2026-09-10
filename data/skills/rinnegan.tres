@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_35cpx"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_r8tj2"]
+
+[sub_resource type="Resource" id="Resource_bf100"]
+script = ExtResource("1_35cpx")
+id = &"tendo_rinnegan"
+name_key = "buff.tendo_rinnegan"
+icon_key = "buff.tendo_rinnegan"
+kind = 1
+duration_seconds = 30.0
+mods = {
+&"crit_chance": 0.15
+}
+
+[resource]
+script = ExtResource("2_r8tj2")
+target = 0
+id = &"rinnegan"
+name_key = "skill.rinnegan"
+affects = 0
+on_self = Array[ExtResource("1_35cpx")]([SubResource("Resource_bf100")])
+element = 6
+cooldown_ticks = 600
+mp_cost = 10.0

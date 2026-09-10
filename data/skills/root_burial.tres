@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_i1x2d"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_e15ar"]
+
+[resource]
+script = ExtResource("2_e15ar")
+id = &"root_burial"
+name_key = "skill.root_burial"
+element = 0
+power_mult = 2.7
+radius = 0.15
+cooldown_ticks = 340
+delay_ticks = 40
+slow_scale = 0.0
+slow_ticks = 40
+mp_cost = 18.0

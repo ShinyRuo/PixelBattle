@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_nb0su"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_llj8l"]
+
+[sub_resource type="Resource" id="Resource_pbixt"]
+script = ExtResource("1_nb0su")
+id = &"kushina_chakra"
+name_key = "buff.kushina_chakra"
+icon_key = "buff.kushina_chakra"
+kind = 2
+duration_seconds = 8.0
+period_seconds = 1.0
+mods = {
+&"heal": 35.0
+}
+mods_growth = {
+&"heal": 35.0
+}
+
+[resource]
+script = ExtResource("2_llj8l")
+target = 0
+id = &"battle_chakra"
+name_key = "skill.battle_chakra"
+affects = 0
+on_hit = Array[ExtResource("1_nb0su")]([SubResource("Resource_pbixt")])
+element = 4
+radius = 0.22
+cooldown_ticks = 400
+mp_cost = 12.0

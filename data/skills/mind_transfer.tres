@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_aqevm"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_i6hsf"]
+
+[sub_resource type="Resource" id="Resource_wqey7"]
+script = ExtResource("1_aqevm")
+id = &"ino_seize"
+name_key = "buff.ino_seize"
+icon_key = "buff.ino_seize"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+
+[resource]
+script = ExtResource("2_i6hsf")
+target = 2
+id = &"mind_transfer"
+name_key = "skill.mind_transfer"
+on_hit = Array[ExtResource("1_aqevm")]([SubResource("Resource_wqey7")])
+element = 2
+cooldown_ticks = 480
+shot_cross_seconds = 0.35
+mp_cost = 10.0

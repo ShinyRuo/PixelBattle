@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_04v6d"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_n1f2x"]
+
+[sub_resource type="Resource" id="Resource_r4775"]
+script = ExtResource("1_04v6d")
+id = &"tenten_tools"
+name_key = "buff.tenten_tools"
+icon_key = "buff.tenten_tools"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.1
+}
+mods_growth = {
+&"damage_scale": 0.04
+}
+
+[resource]
+script = ExtResource("2_n1f2x")
+target = 0
+id = &"tool_control"
+name_key = "skill.tool_control"
+affects = 0
+on_self = Array[ExtResource("1_04v6d")]([SubResource("Resource_r4775")])
+cooldown_ticks = 400
+mp_cost = 8.0

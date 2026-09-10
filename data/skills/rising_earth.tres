@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_xyvpq"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_xuikb"]
+
+[resource]
+script = ExtResource("2_xuikb")
+id = &"rising_earth"
+name_key = "skill.rising_earth"
+element = 4
+power_mult = 2.5
+radius = 0.11
+cooldown_ticks = 300
+delay_ticks = 8
+knockback = 0.05
+slow_scale = 0.0
+slow_ticks = 30
+mp_cost = 12.0

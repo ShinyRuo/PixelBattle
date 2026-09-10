@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_lih7f"]
+
+[resource]
+script = ExtResource("1_lih7f")
+id = &"sage_sense"
+name_key = "buff.sage_sense"
+icon_key = "buff.sage_sense"
+kind = 1
+duration_seconds = 25.0
+mods = {
+&"damage_taken": 0.88
+}

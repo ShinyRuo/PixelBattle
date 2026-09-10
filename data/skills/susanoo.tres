@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_sxb4a"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_5gqyi"]
+
+[sub_resource type="Resource" id="Resource_b8f7d"]
+script = ExtResource("1_sxb4a")
+id = &"madara_susanoo"
+name_key = "buff.madara_susanoo"
+icon_key = "buff.madara_susanoo"
+kind = 1
+duration_seconds = 3.0
+mods = {
+&"damage_taken": 0.5
+}
+
+[resource]
+script = ExtResource("2_5gqyi")
+target = 0
+id = &"susanoo"
+name_key = "skill.susanoo"
+on_self = Array[ExtResource("1_sxb4a")]([SubResource("Resource_b8f7d")])
+element = 0
+power_mult = 2.2
+radius = 0.15
+cooldown_ticks = 360
+slow_scale = 0.0
+slow_ticks = 30
+mp_cost = 13.0

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_pabcr"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ibu1p"]
+
+[resource]
+script = ExtResource("2_ibu1p")
+id = &"adamantine_chains"
+name_key = "skill.adamantine_chains"
+element = 4
+power_mult = 1.0
+radius = 0.18
+cooldown_ticks = 400
+delay_ticks = 10
+slow_scale = 0.5
+slow_ticks = 60
+mp_cost = 15.0

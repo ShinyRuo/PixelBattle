@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_w6ift"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_e6bh5"]
+
+[sub_resource type="Resource" id="Resource_0pjl4"]
+script = ExtResource("1_w6ift")
+id = &"hyuga_guard"
+name_key = "buff.hyuga_guard"
+icon_key = "buff.hyuga_guard"
+kind = 1
+duration_seconds = 2.0
+mods = {
+&"damage_taken": 0.0
+}
+
+[resource]
+script = ExtResource("2_e6bh5")
+target = 0
+id = &"palm_rotation"
+name_key = "skill.palm_rotation"
+affects = 0
+on_hit = Array[ExtResource("1_w6ift")]([SubResource("Resource_0pjl4")])
+element = 2
+radius = 0.11
+cooldown_ticks = 360
+mp_cost = 10.0

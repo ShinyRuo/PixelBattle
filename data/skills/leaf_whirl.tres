@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_j3okx"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_7mq7d"]
+
+[sub_resource type="Resource" id="Resource_utb3g"]
+script = ExtResource("1_j3okx")
+id = &"lee_whirl"
+name_key = "buff.lee_whirl"
+icon_key = "buff.lee_whirl"
+kind = 1
+duration_seconds = 3.5
+mods = {
+&"damage_taken": 0.35
+}
+
+[resource]
+script = ExtResource("2_7mq7d")
+target = 0
+id = &"leaf_whirl"
+name_key = "skill.leaf_whirl"
+on_self = Array[ExtResource("1_j3okx")]([SubResource("Resource_utb3g")])
+power_mult = 1.8
+radius = 0.1
+cooldown_ticks = 340
+mp_cost = 10.0

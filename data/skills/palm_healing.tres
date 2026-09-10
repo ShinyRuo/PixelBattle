@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_fc2ed"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_3gsg6"]
+
+[sub_resource type="Resource" id="Resource_5pwlc"]
+script = ExtResource("1_fc2ed")
+id = &"heal_burst"
+name_key = "buff.heal_burst"
+icon_key = "buff.heal_burst"
+mods = {
+&"heal": 180.0
+}
+mods_growth = {
+&"heal": 180.0
+}
+
+[resource]
+script = ExtResource("2_3gsg6")
+target = 1
+id = &"palm_healing"
+name_key = "skill.palm_healing"
+affects = 0
+on_hit = Array[ExtResource("1_fc2ed")]([SubResource("Resource_5pwlc")])
+cooldown_ticks = 20
+mp_cost = 3.0

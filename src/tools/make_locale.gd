@@ -20,6 +20,8 @@ extends SceneTree
 
 const ROSTER := "res://data/roster.tsv"
 const BONDS := "res://data/bonds.tsv"
+const SKILLS := "res://data/skills.tsv"
+const BUFFS := "res://data/buffs.tsv"
 const LOCALE := "res://data/locale/zh_CN.json"
 
 
@@ -39,11 +41,15 @@ func _init() -> void:
 	var out: Dictionary = {}
 	# 先搬别的键，保持原顺序。`bond.fn.*` 是功能名，不是羁绊名，也留着。
 	for key: String in table:
-		if key.begins_with("char.") or (key.begins_with("bond.") and not key.begins_with("bond.fn.")):
+		if key.begins_with("char.") or key.begins_with("skill.") or key.begins_with("buff."):
+			continue
+		if key.begins_with("bond.") and not key.begins_with("bond.fn."):
 			continue
 		out[key] = table[key]
 	var bonds: int = _fill(out, BONDS, "bond.")
 	var characters: int = _fill(out, ROSTER, "char.")
+	var skills: int = _fill(out, SKILLS, "skill.")
+	var buffs: int = _fill(out, BUFFS, "buff.")
 
 	var text := JSON.stringify(out, "\t")
 	var write := FileAccess.open(LOCALE, FileAccess.WRITE)
@@ -53,7 +59,12 @@ func _init() -> void:
 		return
 	write.store_string(text + "\n")
 	write.close()
-	print("语言表写好了：", characters, " 个角色名 + ", bonds, " 组羁绊名")
+	print(
+		(
+			"语言表写好了：%d 个角色名 + %d 组羁绊名 + %d 个技能名 + %d 份效果名"
+			% [characters, bonds, skills, buffs]
+		)
+	)
 	quit(0)
 
 

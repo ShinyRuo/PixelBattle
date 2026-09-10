@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_lb42n"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_vsunv"]
+
+[sub_resource type="Resource" id="Resource_8igcm"]
+script = ExtResource("1_lb42n")
+id = &"kabuto_mend"
+name_key = "buff.kabuto_mend"
+icon_key = "buff.kabuto_mend"
+kind = 2
+duration_seconds = 12.0
+period_seconds = 1.0
+mods = {
+&"heal": 125.0
+}
+mods_growth = {
+&"heal": 125.0
+}
+
+[resource]
+script = ExtResource("2_vsunv")
+target = 1
+id = &"mending_jutsu"
+name_key = "skill.mending_jutsu"
+affects = 0
+on_hit = Array[ExtResource("1_lb42n")]([SubResource("Resource_8igcm")])
+element = 6
+cooldown_ticks = 560
+mp_cost = 8.0

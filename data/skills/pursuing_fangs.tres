@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_7j6g3"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_4q2g1"]
+
+[sub_resource type="Resource" id="Resource_0vyu4"]
+script = ExtResource("1_7j6g3")
+id = &"kakashi_bind"
+name_key = "buff.kakashi_bind"
+icon_key = "buff.kakashi_bind"
+kind = 1
+friendly = false
+duration_seconds = 5.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+
+[resource]
+script = ExtResource("2_4q2g1")
+target = 2
+id = &"pursuing_fangs"
+name_key = "skill.pursuing_fangs"
+on_hit = Array[ExtResource("1_7j6g3")]([SubResource("Resource_0vyu4")])
+element = 2
+power_mult = 1.2
+cooldown_ticks = 540
+shot_cross_seconds = 0.35
+mp_cost = 10.0

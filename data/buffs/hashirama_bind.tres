@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_lap30"]
+
+[resource]
+script = ExtResource("1_lap30")
+id = &"hashirama_bind"
+name_key = "buff.hashirama_bind"
+icon_key = "buff.hashirama_bind"
+kind = 1
+friendly = false
+duration_seconds = 2.5
+mods = {
+&"enemy_speed_scale": 0.0
+}

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_0c5jn"]
+
+[resource]
+script = ExtResource("1_0c5jn")
+id = &"tenten_tools"
+name_key = "buff.tenten_tools"
+icon_key = "buff.tenten_tools"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.1
+}
+mods_growth = {
+&"damage_scale": 0.04
+}

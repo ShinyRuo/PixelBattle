@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_cjo47"]
+
+[resource]
+script = ExtResource("1_cjo47")
+id = &"shisui_kotoama"
+name_key = "buff.shisui_kotoama"
+icon_key = "buff.shisui_kotoama"
+kind = 1
+duration_seconds = 30.0
+mods = {
+&"crit_chance": 0.1
+}

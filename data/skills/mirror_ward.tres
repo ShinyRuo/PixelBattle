@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ynq3j"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_bbbss"]
+
+[sub_resource type="Resource" id="Resource_ciqi0"]
+script = ExtResource("1_ynq3j")
+id = &"kurenai_shield"
+name_key = "buff.kurenai_shield"
+icon_key = "buff.kurenai_shield"
+kind = 1
+duration_seconds = 9.0
+mods = {
+&"shield": 800.0
+}
+mods_growth = {
+&"shield": 800.0
+}
+
+[resource]
+script = ExtResource("2_bbbss")
+target = 1
+id = &"mirror_ward"
+name_key = "skill.mirror_ward"
+affects = 0
+on_hit = Array[ExtResource("1_ynq3j")]([SubResource("Resource_ciqi0")])
+element = 0
+cooldown_ticks = 300
+mp_cost = 12.0

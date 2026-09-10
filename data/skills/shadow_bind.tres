@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_2cqek"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_hlhnr"]
+
+[sub_resource type="Resource" id="Resource_uyypq"]
+script = ExtResource("1_2cqek")
+id = &"shadow_hold"
+name_key = "buff.shadow_hold"
+icon_key = "buff.shadow_hold"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+
+[resource]
+script = ExtResource("2_hlhnr")
+target = 2
+id = &"shadow_bind"
+name_key = "skill.shadow_bind"
+on_hit = Array[ExtResource("1_2cqek")]([SubResource("Resource_uyypq")])
+element = 3
+cooldown_ticks = 280
+shot_cross_seconds = 0.3
+mp_cost = 12.0

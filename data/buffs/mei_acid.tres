@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ism6p"]
+
+[resource]
+script = ExtResource("1_ism6p")
+id = &"mei_acid"
+name_key = "buff.mei_acid"
+icon_key = "buff.mei_acid"
+kind = 2
+friendly = false
+duration_seconds = 4.0
+period_seconds = 1.0
+mods = {
+&"harm": 30.0
+}
+mods_growth = {
+&"harm": 30.0
+}

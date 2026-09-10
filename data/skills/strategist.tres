@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_cx5fe"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_u5lgh"]
+
+[sub_resource type="Resource" id="Resource_0jjv8"]
+script = ExtResource("1_cx5fe")
+id = &"shikamaru_focus"
+name_key = "buff.shikamaru_focus"
+icon_key = "buff.shikamaru_focus"
+kind = 2
+duration_seconds = 6.0
+period_seconds = 1.0
+mods = {
+&"mana": 1.0
+}
+mods_growth = {
+&"mana": 1.0
+}
+
+[resource]
+script = ExtResource("2_u5lgh")
+target = 0
+id = &"strategist"
+name_key = "skill.strategist"
+affects = 0
+on_self = Array[ExtResource("1_cx5fe")]([SubResource("Resource_0jjv8")])
+element = 3
+radius = 0.3
+cooldown_ticks = 360
+mp_cost = 6.0

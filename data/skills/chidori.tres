@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_baldw"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_1c8fc"]
+
+[resource]
+script = ExtResource("2_1c8fc")
+id = &"chidori"
+name_key = "skill.chidori"
+element = 2
+power_mult = 2.8
+radius = 0.15
+cooldown_ticks = 240
+delay_ticks = 6
+mp_cost = 15.0

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_u0r3i"]
+
+[resource]
+script = ExtResource("1_u0r3i")
+id = &"obito_embers"
+name_key = "buff.obito_embers"
+icon_key = "buff.obito_embers"
+kind = 2
+friendly = false
+duration_seconds = 6.0
+period_seconds = 1.0
+mods = {
+&"harm": 60.0
+}
+mods_growth = {
+&"harm": 60.0
+}

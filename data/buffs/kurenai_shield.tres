@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_625m7"]
+
+[resource]
+script = ExtResource("1_625m7")
+id = &"kurenai_shield"
+name_key = "buff.kurenai_shield"
+icon_key = "buff.kurenai_shield"
+kind = 1
+duration_seconds = 9.0
+mods = {
+&"shield": 800.0
+}
+mods_growth = {
+&"shield": 800.0
+}

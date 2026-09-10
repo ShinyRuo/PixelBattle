@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_maae0"]
+
+[resource]
+script = ExtResource("1_maae0")
+id = &"kabuto_mend"
+name_key = "buff.kabuto_mend"
+icon_key = "buff.kabuto_mend"
+kind = 2
+duration_seconds = 12.0
+period_seconds = 1.0
+mods = {
+&"heal": 125.0
+}
+mods_growth = {
+&"heal": 125.0
+}

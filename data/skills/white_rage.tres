@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_f8rpp"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_yo3ej"]
+
+[resource]
+script = ExtResource("2_yo3ej")
+id = &"white_rage"
+name_key = "skill.white_rage"
+element = 6
+power_mult = 2.6
+radius = 0.18
+cooldown_ticks = 400
+delay_ticks = 10
+mp_cost = 15.0

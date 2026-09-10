@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_361dd"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ifske"]
+
+[resource]
+script = ExtResource("2_ifske")
+id = &"human_bullet"
+name_key = "skill.human_bullet"
+element = 0
+power_mult = 2.2
+radius = 0.1
+cooldown_ticks = 340
+delay_ticks = 8
+knockback = 0.06
+mp_cost = 15.0

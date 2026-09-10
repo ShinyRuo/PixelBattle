@@ -252,6 +252,42 @@ func test_every_skill_id_on_a_character_can_actually_be_found() -> void:
 			assert_true(table.has(id), "角色表点了一个不存在的技能：%s → %s" % [character.id, id])
 
 
+func test_every_skill_in_the_table_has_an_owner() -> void:
+	# **反过来那一条**（M12-c1）。上面那条拦的是「角色点了一个不存在的技能」，
+	# 这条拦的是「技能躺在表里没人点」——
+	# 两个方向都会因为一个拼错的键出现，而只有一个方向今天有人查。
+	#
+	# 同 `test_portrait_data.gd` 那条「每一张头像都要有主」：
+	# 它换到的是**接内容全程成立**，而「每个角色都有技能」那种断言
+	# 在内容永远落后于名册时等于断言「配完了没有」。
+	var owned: Dictionary = {}
+	for character: PBCharacter in PBCharacterLoader.table().all():
+		for id: StringName in character.skill_ids:
+			owned[id] = character.id
+	var table := PBSkillLoader.table()
+	for id: StringName in table.ids():
+		assert_true(owned.has(id), "技能 %s 没有主 —— 哪一边拼错了？" % id)
+
+
+func test_every_buff_in_the_folder_is_reachable_from_some_skill() -> void:
+	# 同上，只是往下一层：`data/buffs/` 里的一份效果如果没有任何技能引用它，
+	# 它这辈子不会生效，**而没有任何地方会说这件事**。
+	var used: Dictionary = {}
+	var table := PBSkillLoader.table()
+	for id: StringName in table.ids():
+		var skill: PBSkill = table.by_id(id)
+		for buff: PBBuff in skill.on_hit:
+			used[buff.id] = true
+		for buff: PBBuff in skill.on_self:
+			used[buff.id] = true
+	var dir := DirAccess.open("res://data/buffs")
+	assert_not_null(dir, "buffs 目录该在")
+	for file_name: String in dir.get_files():
+		if not file_name.ends_with(".tres"):
+			continue
+		assert_true(used.has(StringName(file_name.get_basename())), "效果 %s 没人引用" % file_name)
+
+
 # ── 接进战斗 ────────────────────────────────────────────────────
 
 

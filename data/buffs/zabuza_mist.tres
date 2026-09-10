@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_d0k14"]
+
+[resource]
+script = ExtResource("1_d0k14")
+id = &"zabuza_mist"
+name_key = "buff.zabuza_mist"
+icon_key = "buff.zabuza_mist"
+kind = 1
+duration_seconds = 5.0
+mods = {
+&"damage_scale": 1.35
+}

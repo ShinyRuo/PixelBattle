@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_r8ib1"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_fsdcb"]
+
+[resource]
+script = ExtResource("2_fsdcb")
+id = &"dark_walk"
+name_key = "skill.dark_walk"
+element = 4
+power_mult = 2.7
+radius = 0.15
+cooldown_ticks = 360
+delay_ticks = 10
+slow_scale = 0.5
+slow_ticks = 60
+mp_cost = 10.0

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_g3qlg"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_tts2l"]
+
+[sub_resource type="Resource" id="Resource_bqa1d"]
+script = ExtResource("1_g3qlg")
+id = &"rin_cheer"
+name_key = "buff.rin_cheer"
+icon_key = "buff.rin_cheer"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.1
+}
+mods_growth = {
+&"damage_scale": 0.03
+}
+
+[resource]
+script = ExtResource("2_tts2l")
+target = 1
+id = &"reincarnation"
+name_key = "skill.reincarnation"
+affects = 0
+on_hit = Array[ExtResource("1_g3qlg")]([SubResource("Resource_bqa1d")])
+cooldown_ticks = 1200
+mp_cost = 10.0

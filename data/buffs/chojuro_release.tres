@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_oip6t"]
+
+[resource]
+script = ExtResource("1_oip6t")
+id = &"chojuro_release"
+name_key = "buff.chojuro_release"
+icon_key = "buff.chojuro_release"
+kind = 1
+duration_seconds = 5.0
+mods = {
+&"damage_scale": 1.5
+}
+mods_growth = {
+&"damage_scale": 0.15
+}

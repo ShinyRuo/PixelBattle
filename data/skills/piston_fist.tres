@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_vfto4"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_jdjx3"]
+
+[resource]
+script = ExtResource("2_jdjx3")
+id = &"piston_fist"
+name_key = "skill.piston_fist"
+power_mult = 2.4
+radius = 0.15
+cooldown_ticks = 320
+delay_ticks = 8
+knockback = 0.05
+slow_scale = 0.5
+slow_ticks = 60
+mp_cost = 10.0

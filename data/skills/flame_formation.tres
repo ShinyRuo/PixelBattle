@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_rue5x"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_f6wvu"]
+
+[sub_resource type="Resource" id="Resource_h1uce"]
+script = ExtResource("1_rue5x")
+id = &"obito_embers"
+name_key = "buff.obito_embers"
+icon_key = "buff.obito_embers"
+kind = 2
+friendly = false
+duration_seconds = 6.0
+period_seconds = 1.0
+mods = {
+&"harm": 60.0
+}
+mods_growth = {
+&"harm": 60.0
+}
+
+[resource]
+script = ExtResource("2_f6wvu")
+id = &"flame_formation"
+name_key = "skill.flame_formation"
+on_hit = Array[ExtResource("1_rue5x")]([SubResource("Resource_h1uce")])
+element = 0
+power_mult = 2.8
+radius = 0.18
+cooldown_ticks = 340
+delay_ticks = 10
+mp_cost = 15.0

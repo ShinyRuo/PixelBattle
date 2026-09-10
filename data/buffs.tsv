@@ -1,0 +1,122 @@
+# 效果表 —— `src/tools/make_skills.gd` 的输入，一行一份 buff。
+#
+# 字段（Tab 分隔，共 7 列）：
+#   buff键  显示名  档  善恶  持续秒  周期秒  效果
+#
+# ## 档
+#
+# `瞬间` 当场改一次量（血、蓝）就没了，**不进效果袋**。
+# `持续` 在窗口内改率（倍率、加值），进袋子、到期失效。
+# `周期` 窗口内每隔一段触发一次「瞬间」的载荷 —— **持续回血走这一档**。
+#
+# ## 善恶
+#
+# `增益` / `减益`。它只管**显示**（信息栏那条 buff 图标带的冷暖色），
+# 不影响结算 —— 结算看的是效果值本身。
+#
+# ## 效果
+#
+# `键=基数` 或 `键=基数+每级成长`，多条用 `;` 隔开。
+# **键必须是 `PBBuffRules.ALL` 里已经接上读点的那几个**，
+# 生成器拿 `PBBuffRules.validate` 逐条查，不认识的键直接报错退出。
+#
+# 这一条是有意的：拼错一个键**不会**让任何东西报错，
+# 数据、界面、日志全部正常，只有那个效果这辈子没人读 ——
+# 也就是「配了不生效」，而它比「配不了」难查得多。
+#
+# 今天认的键（10 个）：
+#   damage_scale  伤害倍率        heal          回血（量）
+#   mana          回蓝（量）      hurt          易伤倍率（敌人）
+#   harm          掉血（量/周期） enemy_speed_scale 敌人移速倍率
+#   crit_chance   暴击率          crit_damage   暴击伤害
+#   shield        护盾（量，会被花掉）          damage_taken  受伤倍率（0 = 无敌）
+#
+# **只写成长不写基数会被拦下** —— 那会静默变成「1 级时是 0」。
+
+#buff键	显示名	档	善恶	持续秒	周期秒	效果
+
+# ## 一份效果只在有人引用它的那一步进表
+#
+# `tests/test_skill_data.gd` 有一条断言：`data/buffs/` 里的每一份都必须被
+# 某个技能引用。没人引用的那一份**这辈子不会生效，而没有任何地方会说这件事**——
+# 同 M7-a 那条「词汇表里的键 = 已经接上读点的键」，只是往下了一层。
+#
+# M7/M8 手写的 `burn`（灼烧）和 `regen`（持续回血）因此**没有搬进来**：
+# 它们原来挂在 `fireball` 与 `medical_ninjutsu` 上，而那两个样本技能已经被
+# 这张表接管掉了。等火系技能（天照、火龙炎弹）和纲手的百豪之术进表那一步，
+# 它们跟着一起回来。
+
+# ── M7/M8 就有、现在仍有人引用的那一份 ──────────────────────────
+heal_burst	治疗	瞬间	增益	0	0	heal=180+180
+
+# ── M12-c1：R 档角色技能要用的 ────────────────────────────────
+haku_chill	水翔·迟滞	持续	减益	5	0	enemy_speed_scale=0.7
+rin_cheer	鼓舞	持续	增益	20	0	damage_scale=1.1+0.03
+karin_ward	神乐心眼	持续	增益	4	0	damage_taken=0.9+0.01
+lee_whirl	木叶旋风·免疫	持续	增益	3.5	0	damage_taken=0.35
+kiba_spin	通牙·无敌	持续	增益	1.5	0	damage_taken=0
+zabuza_mist	雾隐	持续	增益	5	0	damage_scale=1.35
+shikamaru_focus	天才军师	周期	增益	6	1	mana=1+1
+tenten_tools	忍具操纵	持续	增益	20	0	damage_scale=1.1+0.04
+
+# 单体控制走「给那一个敌人挂一份」，**不走技能上的 `slow=`** ——
+# 那一档是地面大招的全场效果，子弹技能配了不会生效
+# （`PBSkillLoader.check` 会当场拦下，M8-b 那条）。
+#
+# ⚠ 原版这两个是「无法移动**攻击和施法**」，而我们今天只做得到「不能动」：
+# `enemy_speed_scale=0` 停的是走位，敌人站在原地照样出手。
+# 「不能攻击」缺一个读点，排在 M12-c2。
+ino_seize	心转·束缚	持续	减益	2	0	enemy_speed_scale=0
+shadow_hold	影子禁锢	持续	减益	4	0	enemy_speed_scale=0
+
+# ── M12-c1：SR 档角色技能要用的 ────────────────────────────────
+#
+# `burn` 回来了 —— 猿飞日斩的火龙炎弹要它（说明原文：「持续 7 秒受到燃烧伤害，
+# 每秒 60-600 点」）。它上一次出场是 M8-b 挂在样本技能 fireball 上。
+
+# 自增益
+chojuro_release	鲆鲽解放	持续	增益	5	0	damage_scale=1.5+0.15
+konan_wings	纸天使之术	持续	增益	20	0	damage_scale=1.1+0.02
+guy_gate	八门遁甲·生门	持续	增益	12	0	damage_scale=1.5
+kimimaro_bone	唐松之舞·骨甲	持续	增益	3	0	damage_taken=0.5
+tobirama_wall	水遁·水阵壁	持续	增益	3	0	damage_taken=0.4
+neji_kaiten	回天·无敌	持续	增益	1	0	damage_taken=0
+hyuga_guard	回天·守护	持续	增益	2	0	damage_taken=0
+naruto_kurama	九尾查克拉	周期	增益	12	1	heal=20+20
+
+# 落在友军身上的
+kurenai_shield	幻术·镜守	持续	增益	9	0	shield=800+800
+kushina_chakra	尾兽查克拉·历战	周期	增益	8	1	heal=35+35
+temari_gale	气流乱舞	持续	增益	20	0	damage_scale=1.13+0.13
+
+# 落在敌人身上的
+burn	灼烧	周期	减益	7	1	harm=60+60
+sand_coffin	砂缚柩·磨蚀	周期	减益	2	0.5	harm=50+50
+mei_acid	溶解爆酸	周期	减益	4	1	harm=30+30
+sasori_iron	沙铁界法·磨蚀	周期	减益	4	0.5	harm=20+20
+kakashi_bind	追牙·束缚	持续	减益	5	0	enemy_speed_scale=0
+suigetsu_bind	水龙·禁锢	持续	减益	2	0	enemy_speed_scale=0
+kurenai_haze	幻术·霞	持续	减益	2	0	hurt=2.0;enemy_speed_scale=0.25
+
+# ── M12-c1：SSR 档角色技能要用的 ───────────────────────────────
+#
+# **月读要两份 buff**（定住 + 每 0.5 秒磨一次），因为一份 buff 只有一个档
+# （`持续` 改率、`周期` 每隔一段触发一次量）。技能那一列的 `on_hit` 收逗号分隔
+# 的多个键，所以挂两份是它本来就支持的形状，不需要给 buff 加第二个档。
+
+# 自增益
+madara_susanoo	须佐能乎	持续	增益	3	0	damage_taken=0.5
+raikage_armor	雷遁护甲	持续	增益	20	0	damage_scale=1.5
+sage_sense	恶意感知	持续	增益	25	0	damage_taken=0.88
+shisui_kotoama	别天神·光芒	持续	增益	30	0	crit_chance=0.10
+tendo_rinnegan	轮回眼	持续	增益	30	0	crit_chance=0.15
+
+# 落在友军身上的
+kabuto_mend	强力再生术	周期	增益	12	1	heal=125+125
+
+# 落在敌人身上的
+hashirama_bind	森罗万象·缠绕	持续	减益	2.5	0	enemy_speed_scale=0
+hashirama_forest	树界降临·侵蚀	周期	减益	6	1	harm=35+35
+itachi_moon_hold	月读·囚	持续	减益	2	0	enemy_speed_scale=0
+itachi_moon_grind	月读·磨蚀	周期	减益	2	0.5	harm=100+100
+obito_embers	火焰阵·余烬	周期	减益	6	1	harm=60+60

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_rbb2l"]
+
+[resource]
+script = ExtResource("1_rbb2l")
+id = &"raikage_armor"
+name_key = "buff.raikage_armor"
+icon_key = "buff.raikage_armor"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.5
+}

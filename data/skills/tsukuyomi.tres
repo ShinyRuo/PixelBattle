@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_hcniy"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_86uta"]
+
+[sub_resource type="Resource" id="Resource_qbfmy"]
+script = ExtResource("1_hcniy")
+id = &"itachi_moon_hold"
+name_key = "buff.itachi_moon_hold"
+icon_key = "buff.itachi_moon_hold"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+
+[sub_resource type="Resource" id="Resource_ffr1v"]
+script = ExtResource("1_hcniy")
+id = &"itachi_moon_grind"
+name_key = "buff.itachi_moon_grind"
+icon_key = "buff.itachi_moon_grind"
+kind = 2
+friendly = false
+duration_seconds = 2.0
+period_seconds = 0.5
+mods = {
+&"harm": 100.0
+}
+mods_growth = {
+&"harm": 100.0
+}
+
+[resource]
+script = ExtResource("2_86uta")
+target = 2
+id = &"tsukuyomi"
+name_key = "skill.tsukuyomi"
+on_hit = Array[ExtResource("1_hcniy")]([SubResource("Resource_qbfmy"), SubResource("Resource_ffr1v")])
+element = 0
+cooldown_ticks = 300
+shot_cross_seconds = 0.3
+mp_cost = 10.0

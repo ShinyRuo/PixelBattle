@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_tnlh8"]
+
+[resource]
+script = ExtResource("1_tnlh8")
+id = &"madara_susanoo"
+name_key = "buff.madara_susanoo"
+icon_key = "buff.madara_susanoo"
+kind = 1
+duration_seconds = 3.0
+mods = {
+&"damage_taken": 0.5
+}

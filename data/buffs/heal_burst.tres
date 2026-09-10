@@ -1,19 +1,15 @@
-[gd_resource type="Resource" script_class="PBBuff" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PBBuff" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_buff"]
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_c0fhh"]
 
 [resource]
-script = ExtResource("1_buff")
+script = ExtResource("1_c0fhh")
 id = &"heal_burst"
 name_key = "buff.heal_burst"
 icon_key = "buff.heal_burst"
-kind = 0
-friendly = true
-duration_seconds = 0.0
-period_seconds = 0.0
 mods = {
-&"heal": 80.0
+&"heal": 180.0
 }
 mods_growth = {
-&"heal": 14.0
+&"heal": 180.0
 }

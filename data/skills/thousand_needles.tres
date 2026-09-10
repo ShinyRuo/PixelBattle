@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_jvde1"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_l6tms"]
+
+[sub_resource type="Resource" id="Resource_r003w"]
+script = ExtResource("1_jvde1")
+id = &"haku_chill"
+name_key = "buff.haku_chill"
+icon_key = "buff.haku_chill"
+kind = 1
+friendly = false
+duration_seconds = 5.0
+mods = {
+&"enemy_speed_scale": 0.7
+}
+
+[resource]
+script = ExtResource("2_l6tms")
+id = &"thousand_needles"
+name_key = "skill.thousand_needles"
+on_hit = Array[ExtResource("1_jvde1")]([SubResource("Resource_r003w")])
+element = 4
+power_mult = 2.4
+radius = 0.14
+cooldown_ticks = 300
+delay_ticks = 10
+mp_cost = 10.0

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_cx1j1"]
+
+[resource]
+script = ExtResource("1_cx1j1")
+id = &"kushina_chakra"
+name_key = "buff.kushina_chakra"
+icon_key = "buff.kushina_chakra"
+kind = 2
+duration_seconds = 8.0
+period_seconds = 1.0
+mods = {
+&"heal": 35.0
+}
+mods_growth = {
+&"heal": 35.0
+}

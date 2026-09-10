@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_gbttl"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_q80hl"]
+
+[sub_resource type="Resource" id="Resource_4o1jm"]
+script = ExtResource("1_gbttl")
+id = &"suigetsu_bind"
+name_key = "buff.suigetsu_bind"
+icon_key = "buff.suigetsu_bind"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+
+[resource]
+script = ExtResource("2_q80hl")
+target = 2
+id = &"water_dragon"
+name_key = "skill.water_dragon"
+on_hit = Array[ExtResource("1_gbttl")]([SubResource("Resource_4o1jm")])
+element = 4
+power_mult = 2.5
+cooldown_ticks = 320
+shot_cross_seconds = 0.3
+mp_cost = 11.0

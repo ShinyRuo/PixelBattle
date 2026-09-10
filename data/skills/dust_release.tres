@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_li3sr"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_nj3xl"]
+
+[resource]
+script = ExtResource("2_nj3xl")
+id = &"dust_release"
+name_key = "skill.dust_release"
+element = 3
+power_mult = 3.0
+radius = 0.17
+cooldown_ticks = 340
+delay_ticks = 12
+mp_cost = 10.0

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ux8x4"]
+
+[resource]
+script = ExtResource("1_ux8x4")
+id = &"kiba_spin"
+name_key = "buff.kiba_spin"
+icon_key = "buff.kiba_spin"
+kind = 1
+duration_seconds = 1.5
+mods = {
+&"damage_taken": 0.0
+}

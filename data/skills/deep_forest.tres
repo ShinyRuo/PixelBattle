@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_xe174"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_11ikk"]
+
+[sub_resource type="Resource" id="Resource_fy5ii"]
+script = ExtResource("1_xe174")
+id = &"hashirama_bind"
+name_key = "buff.hashirama_bind"
+icon_key = "buff.hashirama_bind"
+kind = 1
+friendly = false
+duration_seconds = 2.5
+mods = {
+&"enemy_speed_scale": 0.0
+}
+
+[resource]
+script = ExtResource("2_11ikk")
+target = 2
+id = &"deep_forest"
+name_key = "skill.deep_forest"
+on_hit = Array[ExtResource("1_xe174")]([SubResource("Resource_fy5ii")])
+element = 3
+power_mult = 1.4
+cooldown_ticks = 280
+shot_cross_seconds = 0.3
+mp_cost = 10.0

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_k8xdr"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_pmafj"]
+
+[resource]
+script = ExtResource("2_pmafj")
+id = &"flying_raijin_ball"
+name_key = "skill.flying_raijin_ball"
+element = 4
+power_mult = 3.0
+radius = 0.06
+cooldown_ticks = 280
+delay_ticks = 6
+knockback = 0.05
+slow_scale = 0.0
+slow_ticks = 40
+mp_cost = 13.0

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ygpwv"]
+
+[resource]
+script = ExtResource("1_ygpwv")
+id = &"ino_seize"
+name_key = "buff.ino_seize"
+icon_key = "buff.ino_seize"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.0
+}

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_mce0r"]
+
+[resource]
+script = ExtResource("1_mce0r")
+id = &"neji_kaiten"
+name_key = "buff.neji_kaiten"
+icon_key = "buff.neji_kaiten"
+kind = 1
+duration_seconds = 1.0
+mods = {
+&"damage_taken": 0.0
+}

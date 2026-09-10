@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_v0ioj"]
+
+[resource]
+script = ExtResource("1_v0ioj")
+id = &"itachi_moon_grind"
+name_key = "buff.itachi_moon_grind"
+icon_key = "buff.itachi_moon_grind"
+kind = 2
+friendly = false
+duration_seconds = 2.0
+period_seconds = 0.5
+mods = {
+&"harm": 100.0
+}
+mods_growth = {
+&"harm": 100.0
+}

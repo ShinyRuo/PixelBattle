@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_2rtmt"]
+
+[resource]
+script = ExtResource("1_2rtmt")
+id = &"guy_gate"
+name_key = "buff.guy_gate"
+icon_key = "buff.guy_gate"
+kind = 1
+duration_seconds = 12.0
+mods = {
+&"damage_scale": 1.5
+}

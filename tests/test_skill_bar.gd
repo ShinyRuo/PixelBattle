@@ -81,10 +81,19 @@ func _in_battle(box: SubViewport = null) -> Node2D:
 	return root
 
 
-## 选中场上第一个忍者，返回他。
+## 选中场上第一个忍者，返回他。**并且把他自带的技能清空。**
+##
+## M12-c1 之前名册里没有任何角色配着技能，所以「场上第一个人」天然是
+## 一块白板；c1 把原版那 113 个技能接进来之后，他手上有没有格子
+## 取决于随机抽到了谁 —— 于是这个文件会随名册变动而红，
+## **而红的原因和它要测的东西无关**（它测的是格子的行为，不是名册的内容）。
+##
+## 清空是有意的：下面每一条都靠 [method _give] 从零开始摆自己要的那几格。
 func _pick_first(root: Node2D) -> PBAttacker:
 	var live: PBAttacker = root._battle.attackers()[0]
 	root._select(PBSelection.Kind.UNIT, root._plan.deployed[live.slot].key())
+	live.skills.clear()
+	root._refresh_battle_panels()
 	return live
 
 

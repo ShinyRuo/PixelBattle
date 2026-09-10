@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_apge6"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_fbvk6"]
+
+[sub_resource type="Resource" id="Resource_qn2ln"]
+script = ExtResource("1_apge6")
+id = &"konan_wings"
+name_key = "buff.konan_wings"
+icon_key = "buff.konan_wings"
+kind = 1
+duration_seconds = 20.0
+mods = {
+&"damage_scale": 1.1
+}
+mods_growth = {
+&"damage_scale": 0.02
+}
+
+[resource]
+script = ExtResource("2_fbvk6")
+target = 0
+id = &"paper_wings"
+name_key = "skill.paper_wings"
+affects = 0
+on_self = Array[ExtResource("1_apge6")]([SubResource("Resource_qn2ln")])
+element = 4
+cooldown_ticks = 440
+mp_cost = 9.0

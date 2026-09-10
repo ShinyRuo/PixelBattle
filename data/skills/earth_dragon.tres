@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_bln30"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_cnw11"]
+
+[resource]
+script = ExtResource("2_cnw11")
+id = &"earth_dragon"
+name_key = "skill.earth_dragon"
+element = 3
+power_mult = 2.4
+radius = 0.1
+cooldown_ticks = 320
+delay_ticks = 8
+slow_scale = 0.7
+slow_ticks = 60
+mp_cost = 15.0

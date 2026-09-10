@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_f7pth"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_4hl1n"]
+
+[resource]
+script = ExtResource("2_4hl1n")
+id = &"great_fireball"
+name_key = "skill.great_fireball"
+element = 0
+power_mult = 3.0
+radius = 0.11
+cooldown_ticks = 280
+delay_ticks = 8
+mp_cost = 13.0

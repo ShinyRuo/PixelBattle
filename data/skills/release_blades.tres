@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_aj6b3"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_u53hx"]
+
+[sub_resource type="Resource" id="Resource_ew463"]
+script = ExtResource("1_aj6b3")
+id = &"chojuro_release"
+name_key = "buff.chojuro_release"
+icon_key = "buff.chojuro_release"
+kind = 1
+duration_seconds = 5.0
+mods = {
+&"damage_scale": 1.5
+}
+mods_growth = {
+&"damage_scale": 0.15
+}
+
+[resource]
+script = ExtResource("2_u53hx")
+target = 0
+id = &"release_blades"
+name_key = "skill.release_blades"
+affects = 0
+on_self = Array[ExtResource("1_aj6b3")]([SubResource("Resource_ew463")])
+element = 4
+cooldown_ticks = 360
+mp_cost = 11.0

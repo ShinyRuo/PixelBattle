@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_0otck"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ohxut"]
+
+[resource]
+script = ExtResource("2_ohxut")
+id = &"infinite_sharks"
+name_key = "skill.infinite_sharks"
+element = 4
+power_mult = 2.8
+radius = 0.18
+cooldown_ticks = 400
+delay_ticks = 10
+slow_scale = 0.0
+slow_ticks = 30
+mp_cost = 10.0

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_1mb3l"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_5e3ho"]
+
+[sub_resource type="Resource" id="Resource_g4m6i"]
+script = ExtResource("1_1mb3l")
+id = &"shisui_kotoama"
+name_key = "buff.shisui_kotoama"
+icon_key = "buff.shisui_kotoama"
+kind = 1
+duration_seconds = 30.0
+mods = {
+&"crit_chance": 0.1
+}
+
+[resource]
+script = ExtResource("2_5e3ho")
+target = 0
+id = &"kotoamatsukami"
+name_key = "skill.kotoamatsukami"
+affects = 0
+on_self = Array[ExtResource("1_1mb3l")]([SubResource("Resource_g4m6i")])
+element = 0
+cooldown_ticks = 600
+mp_cost = 12.0
