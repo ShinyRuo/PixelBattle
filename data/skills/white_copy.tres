@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_odgy8"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_sg2w1"]
+
+[resource]
+script = ExtResource("2_sg2w1")
+target = 0
+id = &"white_copy"
+name_key = "skill.white_copy"
+affects = 0
+element = 3
+cooldown_ticks = 400
+mp_cost = 10.0
+summon_count = 1
+summon_power = 0.5
+summon_hp_share = 0.29
+summon_seconds = 6.0

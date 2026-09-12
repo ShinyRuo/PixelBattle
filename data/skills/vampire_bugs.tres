@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_kkbw7"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_2wtpg"]
+
+[resource]
+script = ExtResource("2_2wtpg")
+target = 0
+id = &"vampire_bugs"
+name_key = "skill.vampire_bugs"
+affects = 0
+element = 3
+cooldown_ticks = 500
+mp_cost = 14.0
+summon_count = 10
+summon_power = 0.12
+summon_hp_share = 0.08
+summon_seconds = 12.0

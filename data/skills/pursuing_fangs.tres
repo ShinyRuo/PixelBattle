@@ -27,3 +27,7 @@ power_mult = 1.2
 cooldown_ticks = 540
 shot_cross_seconds = 0.35
 mp_cost = 10.0
+summon_count = 5
+summon_power = 0.45
+summon_hp_share = 0.3
+summon_seconds = 5.0

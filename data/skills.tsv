@@ -66,7 +66,7 @@ hidden_mist	zabuza	雾隐之术	水	不用点	我方	0	0	30	10	on_self=zabuza_mi
 # ── SR 档：现有词汇表做得出的 31 个 ─────────────────────────────
 #
 # 缺读点而**整个缓到 c2** 的那些没有出现在下面：飞燕.空穿（每 N 次普攻叠层）、
-# 黏土蜘蛛与傀儡乌鸦与吸血虫与影分身与白绝复制体（召唤物）、
+# 黏土蜘蛛（自爆，现有词汇表就做得出，没排）、
 # 柔拳与骨拔（百分比生命）、
 # 死司凭血与针地藏（反弹）、伊邪那岐与百豪之术与生命的交易与尾兽外衣与
 # 地之咒印（受致命伤/低血量触发）、蜉蝣（闪避）、纸手里剑（直线穿透）、
@@ -117,7 +117,7 @@ kaiten	neji_hyuga	八卦掌·回天	水	不用点	敌方	2.6	0.12	16	10	on_self=
 palm_rotation	hinata	八卦掌·回天	雷	不用点	我方	0	0.11	18	10	on_hit=hyuga_guard
 
 # 点敌人（子弹档）
-pursuing_fangs	kakashi	追牙之术	雷	点敌人	敌方	1.2	0	27	10	fly=0.35;on_hit=kakashi_bind
+pursuing_fangs	kakashi	追牙之术	雷	点敌人	敌方	1.2	0	27	10	fly=0.35;on_hit=kakashi_bind;summon=5;summon_power=0.45;summon_hp=0.30;summon_secs=5
 water_dragon	suigetsu	水遁·水龙弹术	水	点敌人	敌方	2.5	0	16	11	fly=0.3;on_hit=suigetsu_bind
 haze_illusion	kurenai	幻术·霞	火	点敌人	敌方	0	0	18	10	fly=0.3;on_hit=kurenai_haze
 
@@ -157,3 +157,17 @@ almighty_push	tendo	神罗天征	仙	不用点	敌方	2.0	0.18	17	10	knockback=0
 # 点敌人（子弹档）
 deep_forest	hashirama	森罗万象	土	点敌人	敌方	1.4	0	14	10	fly=0.3;on_hit=hashirama_bind
 tsukuyomi	itachi	月读	火	点敌人	敌方	0	0	15	10	fly=0.3;on_hit=itachi_moon_hold,itachi_moon_grind
+
+# ── M12-c3：召唤物 ───────────────────────────────
+#
+# 召唤物是**真会挨打会死的单位**（玩家定的），位子开波预留，
+# 规则在 `PBSummonRules`。`summon_hp` 是**本体血的几成** ——
+# 原版写的是「承受 600% 伤害」，换算成一六的血，两者等价而后者不要新机制。
+#
+# 降级记一笔：**吸血虫那句「将 20% 的伤害值转换为生命给自己」缺读点**
+# （吸血）；影分身原版持续 6~15 秒、吸血虫 5+等级×1.5 秒，
+# 而我们今天只写得下一个定数（技能表没有「随等级变」这一档）。
+shadow_clones	naruto	多重影分身之术	风	不用点	我方	0	0	22	10	summon=3;summon_power=0.40;summon_hp=0.18;summon_secs=10
+white_copy	zetsu	白绝复制体	土	不用点	我方	0	0	20	10	summon=1;summon_power=0.50;summon_hp=0.29;summon_secs=6
+puppet_crow	kankuro	傀儡术·乌鸦	土	不用点	我方	0	0	25	10	summon=1;summon_power=0.50;summon_hp=0.50;summon_secs=12
+vampire_bugs	shino	通灵术·吸血虫	土	不用点	我方	0	0	25	14	summon=10;summon_power=0.12;summon_hp=0.08;summon_secs=12

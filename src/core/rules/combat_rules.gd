@@ -168,7 +168,12 @@ static func build_attackers(
 ) -> Array[PBAttacker]:
 	var team_mult: float = atk_tech_mult * bond_mult
 	var out: Array[PBAttacker] = []
-	out.resize(deployed.size())
+	# 召唤物的位子在这一刻就留好（M12-c3）—— 理由写在
+	# [member PBAttacker.summoned] 顶上：中途往数组里塞人会让一批
+	# 按人数铺好的东西失配，而失配基本都不报错。
+	# **没有召唤技能就一个不留**，所以既有配平数字一位不动。
+	var spare: int = PBSummonRules.reserve(deployed, cfg)
+	out.resize(deployed.size() + spare)
 	# 带聚拢大招的名额按出战席顺序发前 n 个。**按比例而不是按角色表**，
 	# 理由见 [member PBSimConfig.ultimate_gather_share]。
 	var gather_count: int = int(
@@ -245,6 +250,14 @@ static func build_attackers(
 		attacker.ultimate = PBSkillCast.new(skill, unit.level)
 		_equip_skills(attacker, unit, wave_element, mult, cfg)
 		out[i] = attacker
+
+	# 预留那几个先空着 —— 它们要等本体放技能才站上来。
+	for i: int in spare:
+		var spot := PBAttacker.new()
+		spot.slot = deployed.size() + i
+		spot.summoned = true
+		PBSummonRules.dismiss(spot)
+		out[deployed.size() + i] = spot
 
 	# 全队光环那一档（M10-c）。**排在循环外面**：光环是这一组羁绊给的，
 	# 不是这个人给的 —— 放进循环的话载体之前建好的人拿不到，

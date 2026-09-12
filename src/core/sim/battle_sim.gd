@@ -165,6 +165,11 @@ func _init(
 		_attackers = solo
 	for attacker: PBAttacker in _attackers:
 		attacker.prime(cfg.tick_rate, cfg)
+		# 召唤物的位子开波是**空着**的（M12-c3）。走 `revive()` 的话
+		# 它会满血站在场上，而这一波本体可能一次技能都没放。
+		if attacker.summoned:
+			PBSummonRules.dismiss(attacker)
+			continue
 		# 开波满血（§03A）。和大招的冷却一样，攻击者对象会跨波、跨探测复用，
 		# 不重置的话上一场的残血会漏进这一场，表现为「同一支队伍越探越弱」。
 		attacker.revive()
@@ -204,6 +209,10 @@ func step() -> void:
 	_orders.flush(_attackers, _cfg, _tick, log_to)
 	_tick += 1
 	_resolve_ultimates()
+	# 到点的召唤物散场（M12-c3）。**排在技能落地之后** —— 本体可以
+	# 在同一 tick 里放一发新的，刚散的那个位子当场就能再站一个人；
+	# 排在前面的话那一发会少召一个，**而它不报错**。
+	PBSummonRules.expire(_attackers, _tick)
 	# **排在大招落地之后**：这一 tick 挂上的 buff 对这一 tick 的出手就生效，
 	# 和 M7-a 之前那对 `_buff_scale` / `_buff_until` 逐字一致。
 	_advance_buffs()
@@ -411,6 +420,13 @@ func _order(attacker: PBAttacker, spot: Vector2) -> void:
 ## 它们本来就和「打中了谁」无关。
 func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 	var skill := cast.skill
+	# 召唤物在这一刻就站上来（M12-c3）。**排在子弹那条提前 return
+	# 之前** —— 追牙之术恰好是一发子弹技能（束缚那一半要飞到才算），
+	# 排在后面的话它那五只忍犬**一只都不会出现**，而它不报错。
+	#
+	# 召唤跟着**下达**而不是命中，同扣蓝那一下（[method PBSkillOrders.issue]）：
+	# 那几只狗是他放出去的，不是那一发打中了才长出来的。
+	PBSummonRules.raise_from(_attackers, attacker, skill, _tick, _cfg)
 	# **子弹技能：这一刻只是出膛**（M8-b）。伤害与 `on_hit` 等它飞到目标身上
 	# 才结算，见 [member PBSkill.shot_cross_seconds]。冷却从出膛算起 ——
 	# `is_pending` 那个状态的全部意义是「落点已定、还没结算」，也就是地面档的

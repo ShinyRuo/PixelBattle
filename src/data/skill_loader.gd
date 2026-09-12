@@ -81,6 +81,17 @@ static func load_from(dir_path: String) -> PBSkillTable:
 ## 另外两条只对 `.tres` 成立，所以拦在这一层而不是
 ## [method PBSkillRules.validate] 里 —— 大招是代码现造的，
 ## 它**必须**直接写 `damage`（那一份没有 `.tres`）。
+## 放出去屏幕上真的什么都不会发生吗。
+##
+## **召唤是第三种「会发生的事」**（M12-c3）。不把它算进来的话，
+## 一个纯召唤技能（多重影分身：不打伤害、不挂效果）会被这条拦下来 ——
+## 而它守的规矩从来不是「必须有伤害」，是「放出去要有事发生」。
+static func _does_nothing(skill: PBSkill) -> bool:
+	if skill.power_mult > 0.0 or skill.summon_count > 0:
+		return false
+	return skill.on_hit.is_empty() and skill.on_self.is_empty()
+
+
 static func check(skill: PBSkill) -> String:
 	var why: String = PBSkillRules.validate(skill)
 	if why != "":
@@ -92,9 +103,9 @@ static func check(skill: PBSkill) -> String:
 	# 数据、界面、日志全正常，只有伤害数字不对。
 	if skill.damage != 0.0:
 		return "别在数据里写 damage，写 power_mult —— 那个数会在建人时被覆盖"
-	if skill.power_mult <= 0.0 and skill.on_hit.is_empty() and skill.on_self.is_empty():
-		# 既不打伤害也不挂效果的技能，放出去屏幕上什么都不会发生。
-		return "这个技能既没有 power_mult 也没有任何效果 —— 放出去什么都不会发生"
+	if _does_nothing(skill):
+		# 既不打伤害、也不挂效果、还不召人的技能，放出去屏幕上什么都不会发生。
+		return "这个技能既没有 power_mult、也没有效果、还不召人 —— 放出去什么都不会发生"
 	for buff: PBBuff in skill.on_hit + skill.on_self:
 		var bad: String = PBBuffRules.validate(buff)
 		if bad != "":

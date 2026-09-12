@@ -243,6 +243,24 @@ var reflect: float = 0.0
 ## 另开一个骰子就是同一次出手掷两遍（M10-c 那条「一个掷点」）。
 var on_hit_buffs: Array[PBBuff] = []
 
+## 这个位子是给召唤物留的，不是一张卡（M12-c3）。
+##
+## **它一辈子不会变**：位子在建队伍那一刻就按“这支队伍最多召得出几个”
+## 留好了（[method PBSummonRules.reserve]），跑动中只在“空着”和“站着人”之间切。
+##
+## **为什么是预留而不是跑动中往数组里塞人**：定长是这个 sim 里
+## 一堆东西的隐含前提 —— [member PBBattleSim._orders] 开波按人数铺一次、
+## 渲染池按人数建节点、防挤两两遍历。中途变长会让它们各自失配，
+## **而失配基本都不报错**。预留则是本项目已经用熟的形状（同
+## [PBProjectile] 池、[PBEnemy] 池：定长 + `alive` 标志）。
+##
+## **没有召唤技能的队伍一个位子也不留** —— 所以全部既有配平数字一位不动，
+## 同 M3.5-f 装备那条「空着 = 一字不差」。
+var summoned: bool = false
+
+## 召唤物散场的 tick。**负数 = 这个位子现在空着**（或者他不是召唤物）。
+var expires_at: int = -1
+
 # ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
 
 ## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
@@ -420,6 +438,8 @@ func clone() -> PBAttacker:
 	out.bite_lost = bite_lost
 	out.reflect = reflect
 	out.on_hit_buffs = on_hit_buffs
+	out.summoned = summoned
+	out.expires_at = expires_at
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
 	out.slot = slot

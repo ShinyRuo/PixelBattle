@@ -253,9 +253,14 @@ static func hurt_ally(
 	if book != null:
 		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true)
 	if target.take_damage(hurt, tick, rng):
-		out.allies_lost += 1
-		if book != null:
-			book.ally_down(tick, target.slot)
+		# **召唤物没了不算「折了一个」**（玩家定的，M12-c3）。
+		# `allies_lost` 是玩家要心疼的那个数，而影分身本来就是拿来炸的 ——
+		# 算进去的话结算面板会天天报大数。播报同理：
+		# 「忍者倒下」那一档每条都要玩家看一眼，而一波散几批影分身会把它冲干净。
+		if not target.summoned:
+			out.allies_lost += 1
+			if book != null:
+				book.ally_down(tick, target.slot)
 	_reflect(target, source, hurt, tick, book, out)
 
 
