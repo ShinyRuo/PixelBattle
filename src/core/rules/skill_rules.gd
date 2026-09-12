@@ -115,7 +115,7 @@ static func _check_shot(skill: PBSkill) -> String:
 static func apply_hit(
 	enemy: PBEnemy, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
 ) -> bool:
-	return _apply_all_enemy(enemy, skill.on_hit, level, cfg, tick)
+	return apply_all_enemy(enemy, skill.on_hit, level, cfg, tick)
 
 
 ## 一发**子弹**落在己方单位身上（M8-b，治疗那一类）。
@@ -154,7 +154,7 @@ static func land(
 			continue
 		# **命中之后才挂 [member PBSkill.on_hit]**（M7-d）：给一具尸体
 		# 挂减速没有意义，而且它会让「这一发定住了几个」虚高。
-		if _apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
+		if apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
 			kills += 1
 			continue
 		# 活下来的才挪 —— 挪一个尸体没有意义，而且会让「聚拢值多少」虚高。
@@ -215,7 +215,7 @@ static func land_on_enemy(
 		return 0
 	if enemy.take_damage(cast.skill.damage, tick):
 		return 1
-	return 1 if _apply_all_enemy(enemy, cast.skill.on_hit, cast.caster_level, cfg, tick) else 0
+	return 1 if apply_all_enemy(enemy, cast.skill.on_hit, cast.caster_level, cfg, tick) else 0
 
 
 ## 打全场：伤害发给**每一个已出场且还活着的敌人**，不看位置
@@ -242,7 +242,7 @@ static func land_on_field(
 		if enemy.take_damage(skill.damage, tick):
 			kills += 1
 			continue
-		if _apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
+		if apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
 			kills += 1
 	return kills
 
@@ -282,8 +282,14 @@ static func apply_one(
 	unit.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
 
 
+## 把一组效果挂到一个敌人身上。返回这一下有没有把它打死。
+##
+## **M12-c2 转成公开的**：角色自带的被动也要挂效果
+## （[method PBStrikeRules.land] 里那一句），而它不经过技能。
+## 另写一份的话，「技能挂的减速」和「被动挂的减速」迟早在
+## 叠加方式或者「死了还挂不挂」上分叉，而分叉的那一侧静默生效。
 ## 把一串效果挂到一个**敌人**身上。返回它有没有被这一串里的瞬间伤害打死。
-static func _apply_all_enemy(
+static func apply_all_enemy(
 	enemy: PBEnemy, buffs: Array[PBBuff], level: int, cfg: PBSimConfig, tick: int
 ) -> bool:
 	for buff: PBBuff in buffs:

@@ -173,53 +173,6 @@ func _build(characters: Array) -> Array[PBAttacker]:
 	)
 
 
-# ── 闪避：判在挨打那一侧 ──────────────────────────────────────
-
-
-func test_dodging_is_decided_inside_take_damage_not_by_the_callers() -> void:
-	# **同 M10-d 重生那条。** 己方挨打有两个落点（敌人近战在 `battle_sim`、
-	# 敌人子弹在 `shot_rules`），各判一次的表现是「被子弹打就闪不掉」，
-	# 而它不报错。判据是**扫源码**：那两个文件里不许出现 `dodge`。
-	for path: String in [SIM_PATH, SHOT_PATH]:
-		var text := FileAccess.get_file_as_string(path)
-		assert_ne(text, "", "读得到 %s" % path)
-		assert_false(text.contains("dodge"), "%s 不该自己判闪避，那是 take_damage 里面的事" % path)
-
-
-func test_nobody_dodges_without_a_chance_and_no_dice_are_rolled() -> void:
-	# **0 时一次都不掷** —— 同 [method PBCritRules.strike] 顶上那条：
-	# 掷了就算没闪也已经拨动了那条流，而 `whole_field` 那条与解析式
-	# 排队模型逐位对拍的退化路径靠的就是「该掷几次就掷几次」。
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 20260912
-	var before: int = rng.state
-	var plain := _hurtable(0.0)
-	assert_false(PBPassiveRules.dodges(plain, rng), "没配就不该闪")
-	assert_eq(rng.state, before, "没配就一步都不许走")
-	var lucky := _hurtable(0.6)
-	PBPassiveRules.dodges(lucky, rng)
-	assert_ne(rng.state, before, "配了就该拨动那条流")
-
-
-func test_a_dodged_hit_costs_nothing_at_all() -> void:
-	# 闪避是「一点血都不掉」，不是「少掉一点」—— 后者是减伤
-	# （[constant PBBuffRules.DAMAGE_TAKEN]），两件事。
-	var one := _hurtable(1.0)
-	var full: float = one.hp
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
-	assert_false(one.take_damage(500.0, 0, rng), "闪掉了就不该死")
-	assert_eq(one.hp, full, "一点都不该掉")
-
-
-func test_without_dice_nobody_ever_dodges() -> void:
-	# 批量扫描、悬崖二分、老的构造点都不给 rng —— 那一路必须
-	# 和没有闪避这件事**完全一样**，否则全部既有配平数字会随这一步漂移。
-	var one := _hurtable(1.0)
-	one.take_damage(10.0, 0)
-	assert_lt(one.hp, one.max_hp, "不给骰子就照常挨打")
-
-
 # ── 按生命百分比那一笔 ────────────────────────────────────────
 
 
@@ -301,14 +254,6 @@ func _quarter_health() -> Array[PBEnemy]:
 	return out
 
 
-func _hurtable(dodge: float) -> PBAttacker:
-	var one := PBAttacker.new()
-	one.max_hp = 1000.0
-	one.hp = 1000.0
-	one.alive = true
-	one.dodge = dodge
-	return one
-
 
 ## 打一下要害，量出主伤害之外多打了多少。
 func _bite_of(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
@@ -316,3 +261,76 @@ func _bite_of(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
 	var before: float = enemies[0].hp
 	PBStrikeRules.land(attacker, enemies[0], 10.0, true, enemies, _cfg, 0, null, out)
 	return before - enemies[0].hp - 10.0
+
+
+# ── 被动也能挂一份效果（M12-c2）────────────────────────────────
+
+
+func test_a_telling_blow_hangs_the_passives_own_effect_on_the_target() -> void:
+	# **这是被动通道从「只带得了数」长出来的那一半。** 原版有一批被动是
+	# 「攻击时 X% 几率给目标上一份效果」（带土的扭曲攻击晕眩 0.7 秒），
+	# 而在它之前那一批只能降格成一个要玩家手动按的技能。
+	var attacker := _striker()
+	attacker.on_hit_buffs = [_stun()]
+	var enemies := _pack(1)
+	var out := PBCombatOutcome.new()
+	PBStrikeRules.land(attacker, enemies[0], 10.0, true, enemies, _cfg, 0, null, out)
+	assert_gt(
+		enemies[0].buffs.amount(PBBuffRules.STUN, 0), 0.0, "打出要害就该把效果挂上去"
+	)
+
+
+func test_an_ordinary_hit_hangs_nothing() -> void:
+	# 它骑在暴击那个掷点上（同按生命百分比那一笔），所以 `crit` 为 false 时什么都不做。
+	var attacker := _striker()
+	attacker.on_hit_buffs = [_stun()]
+	var enemies := _pack(1)
+	var out := PBCombatOutcome.new()
+	PBStrikeRules.land(attacker, enemies[0], 10.0, false, enemies, _cfg, 0, null, out)
+	assert_eq(enemies[0].buffs.amount(PBBuffRules.STUN, 0), 0.0, "没打出要害就不挂")
+
+
+func test_nothing_gets_hung_on_a_corpse() -> void:
+	# 同 M7-d 那条：给一具尸体挂减速没有意义，而且会让
+	# 「这一发定住了几个」虚高。
+	var attacker := _striker()
+	attacker.on_hit_buffs = [_stun()]
+	var enemies := _pack(1)
+	enemies[0].max_hp = 1.0
+	enemies[0].hp = 1.0
+	var out := PBCombatOutcome.new()
+	PBStrikeRules.land(attacker, enemies[0], 100.0, true, enemies, _cfg, 0, null, out)
+	assert_false(enemies[0].alive, "这一下该打死他")
+	assert_eq(enemies[0].buffs.amount(PBBuffRules.STUN, 0), 0.0, "死了就不该再挂")
+
+
+func test_a_passive_effect_reaches_the_attacker_it_belongs_to() -> void:
+	var with_buff := _character({})
+	with_buff.on_hit_buffs = [_stun()]
+	var built := _build([_character({}), with_buff])
+	assert_eq(built[1].on_hit_buffs.size(), 1, "他自己那一份该到他身上")
+	assert_eq(built[0].on_hit_buffs.size(), 0, "别人不该沾上")
+
+
+func test_the_real_table_hangs_what_it_says_it_hangs() -> void:
+	# 名册那一列写的是效果**键**，而它要被解析成一份真资源。解析不出来的话
+	# 生成器会退出码 1，但盘上的 `.tres` 也可能是手改的 ——
+	# 挂着一个空数组的表现是「配了不生效」。
+	var carriers: int = 0
+	for character: PBCharacter in _characters.all():
+		for buff: PBBuff in character.on_hit_buffs:
+			assert_not_null(buff, "「%s」的被动挂着一个空效果" % character.id)
+			assert_ne(buff.id, &"", "「%s」挂的那份效果没有 id" % character.id)
+			carriers += 1
+	assert_gt(carriers, 0, "名册里一个带效果的被动都没有，上面什么都没量")
+
+
+## 一份定住敌人的效果。
+func _stun() -> PBBuff:
+	var buff := PBBuff.new()
+	buff.id = &"probe_stun"
+	buff.kind = PBBuff.Kind.DURATION
+	buff.friendly = false
+	buff.duration_seconds = 2.0
+	buff.mods = {PBBuffRules.STUN: 1.0}
+	return buff

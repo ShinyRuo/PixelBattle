@@ -231,6 +231,18 @@ var bite_lost: float = 0.0
 ## **而那不报错**。原版那句「每隔 5 秒必定触发一次」同样缺读点（内置 CD）。
 var reflect: float = 0.0
 
+## 打出要害那一下顺带挂在目标身上的效果（M12-c2）。
+## 读点在 [method PBStrikeRules.land] 里面。
+##
+## **这是被动那条通道带得了一份效果的那一半。**
+## [member PBCharacter.passives] 只存得了「键 → 数」，而原版有一批被动是
+## 「攻击时 X% 几率**给目标上一份效果**」（带土的扭曲攻击）。
+## 在它之前那一批只能降格成一个要玩家手动按的技能。
+##
+## **它骑在暴击那个掷点上**，同 [member bite_current]：
+## 另开一个骰子就是同一次出手掷两遍（M10-c 那条「一个掷点」）。
+var on_hit_buffs: Array[PBBuff] = []
+
 # ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
 
 ## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
@@ -407,6 +419,7 @@ func clone() -> PBAttacker:
 	out.bite_current = bite_current
 	out.bite_lost = bite_lost
 	out.reflect = reflect
+	out.on_hit_buffs = on_hit_buffs
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
 	out.slot = slot

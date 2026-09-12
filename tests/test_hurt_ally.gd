@@ -132,6 +132,53 @@ func _enemy() -> PBEnemy:
 	out.slot = 0
 	return out
 
+
+# ── 闪避：判在挨打那一侧 ──────────────────────────────────────
+
+
+func test_dodging_is_decided_inside_take_damage_not_by_the_callers() -> void:
+	# **同 M10-d 重生那条。** 己方挨打有两个落点（敌人近战在 `battle_sim`、
+	# 敌人子弹在 `shot_rules`），各判一次的表现是「被子弹打就闪不掉」，
+	# 而它不报错。判据是**扫源码**：那两个文件里不许出现 `dodge`。
+	for path: String in [SIM_PATH, SHOT_PATH]:
+		var text := FileAccess.get_file_as_string(path)
+		assert_ne(text, "", "读得到 %s" % path)
+		assert_false(text.contains("dodge"), "%s 不该自己判闪避，那是 take_damage 里面的事" % path)
+
+
+func test_nobody_dodges_without_a_chance_and_no_dice_are_rolled() -> void:
+	# **0 时一次都不掷** —— 同 [method PBCritRules.strike] 顶上那条：
+	# 掷了就算没闪也已经拨动了那条流，而 `whole_field` 那条与解析式
+	# 排队模型逐位对拍的退化路径靠的就是「该掷几次就掷几次」。
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260912
+	var before: int = rng.state
+	var plain := _hurtable(0.0)
+	assert_false(PBPassiveRules.dodges(plain, rng), "没配就不该闪")
+	assert_eq(rng.state, before, "没配就一步都不许走")
+	var lucky := _hurtable(0.6)
+	PBPassiveRules.dodges(lucky, rng)
+	assert_ne(rng.state, before, "配了就该拨动那条流")
+
+
+func test_a_dodged_hit_costs_nothing_at_all() -> void:
+	# 闪避是「一点血都不掉」，不是「少掉一点」—— 后者是减伤
+	# （[constant PBBuffRules.DAMAGE_TAKEN]），两件事。
+	var one := _hurtable(1.0)
+	var full: float = one.hp
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	assert_false(one.take_damage(500.0, 0, rng), "闪掉了就不该死")
+	assert_eq(one.hp, full, "一点都不该掉")
+
+
+func test_without_dice_nobody_ever_dodges() -> void:
+	# 批量扫描、悬崖二分、老的构造点都不给 rng —— 那一路必须
+	# 和没有闪避这件事**完全一样**，否则全部既有配平数字会随这一步漂移。
+	var one := _hurtable(1.0)
+	one.take_damage(10.0, 0)
+	assert_lt(one.hp, one.max_hp, "不给骰子就照常挨打")
+
 ## 一个满血、打不死的忍者。
 func _hurtable(dodge: float) -> PBAttacker:
 	var one := PBAttacker.new()

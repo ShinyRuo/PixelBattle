@@ -233,6 +233,9 @@ static func build_attackers(
 		# 两处各写一份的话「羁绊给的溅射」和「他自带的溅射」会不一样大。
 		# 排在羁绊后面、`+=` 叠加：一个人可以既是载体又自带一个被动。
 		PBPassiveRules.grant_all(attacker, unit.character.passives)
+		# 同一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
+		# 所以直接共用引用不拷贝 —— 同 [member PBSkill.on_hit] 那一条。
+		attacker.on_hit_buffs = unit.character.on_hit_buffs
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)

@@ -280,6 +280,12 @@ func test_every_buff_in_the_folder_is_reachable_from_some_skill() -> void:
 			used[buff.id] = true
 		for buff: PBBuff in skill.on_self:
 			used[buff.id] = true
+	# **技能不再是唯一的引用方**（M12-c2）：角色自带的被动也挂效果
+	# （[member PBCharacter.on_hit_buffs]）。不数这一路的话，带土那份晕眩
+	# 会被当成孤儿报出来 —— 而它实际上正在生效。
+	for character: PBCharacter in PBCharacterLoader.table().all():
+		for buff: PBBuff in character.on_hit_buffs:
+			used[buff.id] = true
 	var dir := DirAccess.open("res://data/buffs")
 	assert_not_null(dir, "buffs 目录该在")
 	for file_name: String in dir.get_files():

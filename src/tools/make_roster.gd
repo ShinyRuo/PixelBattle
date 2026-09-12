@@ -34,6 +34,10 @@ extends SceneTree
 const ROSTER := "res://data/roster.tsv"
 const OUT_DIR := "res://data/characters"
 const ACTOR_DIR := "res://data/actors"
+const BUFF_DIR := "res://data/buffs"
+
+## 被动那一列里指一份效果的写法。其余的键全是 `键=量`。
+const ON_HIT := "on_hit"
 
 ## 表头那十四列的列号。**列号只在这里出现一次** —— 散在下面的话，
 ## 名册加一列时改漏一处会读到相邻那一栏，而它照样是个合法的数。
@@ -174,13 +178,30 @@ func _write_one(row: PackedStringArray) -> String:
 	# 属性栏里每个数都对，只是同一稀有度的人打出来的伤害一样多。
 	PBStatRules.apply_original_scale(character, float(row[COL_INTERVAL]))
 
-	var passives: Variant = _parse_passives(row[COL_PASSIVE])
-	if passives is String:
-		return "%s 的被动：%s" % [key, passives]
-	character.passives = passives as Dictionary
+	var trouble := _fill_passives(character, row[COL_PASSIVE])
+	if trouble != "":
+		return "%s 的被动：%s" % [key, trouble]
 
 	var err := ResourceSaver.save(character, path)
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
+
+
+## 把被动那一列的两半都填进去。**返回错误信息，空串 = 成功。**
+##
+## 抽出来是因为 gdlint 的 `max-returns`（同 M12-c1 抽
+## `make_skills.gd` 的 `_check_enums`）—— 而这一步本来就是一件事：
+## 那一列里 `键=量` 进 [member PBCharacter.passives]，
+## `on_hit=<效果键>` 进 [member PBCharacter.on_hit_buffs]。
+func _fill_passives(character: PBCharacter, cell: String) -> String:
+	var passives: Variant = _parse_passives(cell)
+	if passives is String:
+		return passives
+	var hung: Variant = _parse_on_hit(cell)
+	if hung is String:
+		return hung
+	character.passives = passives as Dictionary
+	character.on_hit_buffs = hung as Array[PBBuff]
+	return ""
 
 
 ## 被动那一列：`键=量;键=量`，`-` 或空 = 没有。
@@ -201,11 +222,40 @@ func _parse_passives(cell: String) -> Variant:
 		if pair.size() != 2:
 			return "「%s」不是 键=量 的样子" % piece
 		var name := StringName(pair[0].strip_edges())
+		# `on_hit=` 那几个由 [method _parse_on_hit] 收，这里跳过。
+		if name == ON_HIT:
+			continue
 		if not PBPassiveRules.is_known(name):
 			return "不认识的键「%s」" % name
 		if out.has(name):
 			return "键「%s」写了两遍" % name
 		out[name] = float(pair[1].strip_edges())
+	return out
+
+
+## 被动那一列里的 `on_hit=<效果键>` 那几个（M12-c2）。
+##
+## **和 [method _parse_passives] 各拿同一列的一半**：那边收 `键=量`，
+## 这边收引用。两个字段而不是一个，理由写在
+## [member PBCharacter.on_hit_buffs] 顶上。
+##
+## **查不到那份效果就报错退出**，不静默跳过 —— 跳过的表现正是
+## 「配了不生效」。效果由 `make_skills.gd` 从 `data/buffs.tsv` 铺出来，
+## **所以那一支要排在这一支前面跑**。
+##
+## 返回 [Array] = 成功，返回 [String] = 错误信息。
+func _parse_on_hit(cell: String) -> Variant:
+	var out: Array[PBBuff] = []
+	if cell == "" or cell == SAME_AS_ID:
+		return out
+	for piece: String in cell.split(";", false):
+		var pair: PackedStringArray = piece.split("=")
+		if pair.size() != 2 or pair[0].strip_edges() != ON_HIT:
+			continue
+		var path: String = "%s/%s.tres" % [BUFF_DIR, pair[1].strip_edges()]
+		if not ResourceLoader.exists(path):
+			return "挂不上、查不到的效果「%s」" % pair[1].strip_edges()
+		out.append(ResourceLoader.load(path) as PBBuff)
 	return out
 
 

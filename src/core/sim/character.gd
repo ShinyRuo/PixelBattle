@@ -206,6 +206,14 @@ const MAX_SKILLS: int = 2
 ## 这是 M12 头一步真的动了自动模拟的输出，归数值回归。
 @export var passives: Dictionary = {}
 
+## 被动里那份「打出要害就给目标挂上」的效果（M12-c2）。
+##
+## **和 [member passives] 是名册同一列的两半**：`键=量` 进上面那份，
+## `on_hit=<效果键>` 进这份。分两个字段是因为一个存数、一个存引用 ——
+## [Dictionary] 里混着资源引用的话，`.tres` 里那一格看起来像个数，
+## 而读它的人得先知道哪些键是引用。
+@export var on_hit_buffs: Array[PBBuff] = []
+
 
 ## 大招实际打什么属性。见 [member ultimate_element_override]。
 func ultimate_element() -> PBElement.Type:

@@ -146,7 +146,6 @@ mending_jutsu	kabuto	强力再生术	仙	点队友	我方	0	0	28	8	on_hit=kabuto
 great_fireball	itachi	大豪火球	火	点地面	敌方	3.0	0.11	14	13	delay=0.4
 white_rage	kabuto	仙法·白激之术	仙	点地面	敌方	2.6	0.18	20	15	delay=0.5
 flame_formation	obito	宇智波·火焰阵	火	点地面	敌方	2.8	0.18	17	15	delay=0.5;on_hit=obito_embers
-warped_strike	obito	神威·扭曲攻击	火	点敌人	敌方	1.4	0	12	8	fly=0.35;on_hit=obito_warp
 wood_descent	hashirama	树界降临	土	点地面	敌方	1.2	0.18	20	10	delay=0.5;slow=0.7;slow_secs=6;on_hit=hashirama_forest
 sun_halo_dance	shisui	宇智波流·日晕舞	火	不用点	敌方	2.4	0.35	15	12	targets=9
 

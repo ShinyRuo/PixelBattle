@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_l6ia4"]
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ry4qq"]
 
 [resource]
 script = ExtResource("1_l6ia4")

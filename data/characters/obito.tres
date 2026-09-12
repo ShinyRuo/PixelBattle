@@ -1,6 +1,8 @@
 [gd_resource type="Resource" script_class="PBCharacter" format=3]
 
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_75d8y"]
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+[ext_resource type="Resource" path="res://data/buffs/obito_warp.tres" id="2_4tsuy"]
 
 [resource]
 script = ExtResource("1_char")
@@ -28,4 +30,8 @@ atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 rarity = 2
 reach = 1
-skill_ids = Array[StringName]([&"flame_formation", &"warped_strike"])
+skill_ids = Array[StringName]([&"flame_formation"])
+passives = {
+&"crit_chance": 0.15
+}
+on_hit_buffs = Array[ExtResource("1_75d8y")]([ExtResource("2_4tsuy")])

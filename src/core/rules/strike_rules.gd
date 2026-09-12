@@ -191,6 +191,32 @@ static func land(
 		return
 	out.kills += _splash(attacker, enemy, enemies, damage, tick)
 	_arm_crit(attacker, cfg, tick)
+	out.kills += _hang_on_hit(attacker, enemy, crit, cfg, tick)
+
+
+## 打出要害那一下把他自带的效果挂到目标身上
+## （[member PBAttacker.on_hit_buffs]，M12-c2）。返回这一下挂死了几个。
+##
+## ## 三条
+##
+## **骑在暴击那个掷点上**，同 [method _bite_extra]：原版那几个各有自己的
+## 概率（带土的扭曲攻击 10~15%），而另开一个骰子就是同一次出手掷两遍。
+##
+## **死了就不挂**（M7-d）：给一具尸体挂减速没有意义，
+## 而且它会让「这一发定住了几个」虚高。
+##
+## **等级从大招那份上读**：[PBAttacker] 身上没有也不该有 `level`（铁律 5
+## 那一条的同批决定，见 [member PBSkillCast.caster_level]），
+## 而每个上场的人都带着一份按自己等级建的大招。拿不到就算 1 级。
+static func _hang_on_hit(
+	attacker: PBAttacker, enemy: PBEnemy, crit: bool, cfg: PBSimConfig, tick: int
+) -> int:
+	if not crit or not enemy.alive or attacker.on_hit_buffs.is_empty():
+		return 0
+	var level: int = 1
+	if attacker.ultimate != null:
+		level = attacker.ultimate.caster_level
+	return 1 if PBSkillRules.apply_all_enemy(enemy, attacker.on_hit_buffs, level, cfg, tick) else 0
 
 
 ## 一次**敌人的攻击**落在一个忍者身上的唯一落点（M12-c2）。
