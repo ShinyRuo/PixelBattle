@@ -12,6 +12,7 @@ aura_member_ids = Array[StringName]([])
 aura_ultimate_cd_scale = 1.0
 aura_def_reduction = 0.0
 aura_passives = {
+&"attack_speed": 0.04,
 &"crit_chance": 0.015
 }
 ultimate_cooldown_seconds = 0.0

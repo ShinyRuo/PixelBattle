@@ -311,19 +311,26 @@ static func leak_threshold_dps(
 	# 探测要反复改 dps，所以复制一份 —— 直接改真正上场的那批会污染本波的计划。
 	var squad: Array[PBAttacker] = []
 	var share := PackedFloat64Array()
+	# **一发多重也要按同一个分母记份额**（M12-c5）：`Σ attack_i × 攻速_i` 恰好
+	# 等于 `squad_dps`，所以按它缩之后整队的每秒输出精确落在 `total` 上。
+	var attack_share := PackedFloat64Array()
 	var ult_share := PackedFloat64Array()
 	var squad_dps: float = PBCombatRules.total_dps(attackers)
 	if squad_dps > 0.0:
 		for attacker: PBAttacker in attackers:
 			squad.append(attacker.clone())
 			share.append(attacker.dps / squad_dps)
+			attack_share.append(attacker.attack / squad_dps)
 			# 大招也要跟着等比例缩。只缩普攻的话，队伍缩得越弱大招占比越高，
 			# 缩到最后是一发大招定生死 —— 那量出来的是另一支队伍的悬崖。
 			ult_share.append(attacker.ultimate_damage() / squad_dps)
 
 	var high: float = maxf(wave.hp_each, 1.0)
 	var guard: int = 0
-	while guard < 64 and _leaks_at(wave, high, def_reduction, cfg, squad, share, ult_share):
+	while (
+		guard < 64
+		and _leaks_at(wave, high, def_reduction, cfg, squad, share, attack_share, ult_share)
+	):
 		high *= 2.0
 		guard += 1
 	if guard >= 64:
@@ -331,7 +338,7 @@ static func leak_threshold_dps(
 	var low: float = 0.0
 	for _i: int in 32:
 		var mid: float = (low + high) * 0.5
-		if _leaks_at(wave, mid, def_reduction, cfg, squad, share, ult_share):
+		if _leaks_at(wave, mid, def_reduction, cfg, squad, share, attack_share, ult_share):
 			low = mid
 		else:
 			high = mid
@@ -350,11 +357,15 @@ static func _leaks_at(
 	cfg: PBSimConfig,
 	squad: Array[PBAttacker],
 	share: PackedFloat64Array,
+	attack_share: PackedFloat64Array,
 	ult_share: PackedFloat64Array
 ) -> bool:
 	if squad.is_empty():
 		return PBCombatRules.resolve(wave, total, def_reduction, cfg).leaked > 0
 	for i: int in squad.size():
+		# **一发多重也要跟着缩**（M12-c5）：只缩 dps 的话缩放对战斗毫无作用，
+		# 二分会一路收敛到上界，而那不报错 —— 量出来的悬崖是个假数。
+		squad[i].attack = total * attack_share[i]
 		squad[i].dps = total * share[i]
 		if squad[i].ultimate != null:
 			squad[i].ultimate.skill.damage = total * ult_share[i]

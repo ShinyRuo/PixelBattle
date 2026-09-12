@@ -43,6 +43,7 @@ extends RefCounted
 ## | `defence` | [member PBAttacker.defence] | [method PBStatRules.strike_damage] |
 ## | `hp_bonus` | [member PBAttacker.hp_bonus] | [method equip] 折进 `max_hp` |
 ## | `move_speed_bonus` | [member PBAttacker.move_speed_bonus] | [method equip] 折进 `move_speed` |
+## | `attack_speed` | [member PBAttacker.attack_speed_bonus] | [method PBAttacker.prime] |
 ##
 ## ## 裸名 = 量型，`_bonus` 后缀 = 率型
 ##
@@ -119,6 +120,17 @@ const HP_BONUS: StringName = &"hp_bonus"
 ## 移动速度多几成（M12-e2）。中性 0.0，折算在 [method equip] 末尾。
 const MOVE_SPEED_BONUS: StringName = &"move_speed_bonus"
 
+## 出手多快几成（M12-c4）。中性 0.0。
+##
+## **键名是裸的 `attack_speed`，而它落在 `attack_speed_bonus` 上** ——
+## 表里写的是原版那句「提升 [4x等级]% 的攻击速度」，而
+## [member PBAttacker.attack_speed] 那个字段是**基础攻速**，
+## 直接往上加等于没加（见 [member PBAttacker.attack_speed_bonus]）。
+##
+## **它不在 [method _settle] 里折算**，唯一的消费方是
+## [method PBAttacker.prime]，而那一句在建人之后才跑。
+const ATTACK_SPEED: StringName = &"attack_speed"
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
 	CRIT_CHANCE,
@@ -135,6 +147,7 @@ const ALL: Array[StringName] = [
 	DEFENCE,
 	HP_BONUS,
 	MOVE_SPEED_BONUS,
+	ATTACK_SPEED,
 ]
 
 
@@ -201,6 +214,8 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.hp_bonus += amount
 		MOVE_SPEED_BONUS:
 			attacker.move_speed_bonus += amount
+		ATTACK_SPEED:
+			attacker.attack_speed_bonus += amount
 		_:
 			return false
 	return true

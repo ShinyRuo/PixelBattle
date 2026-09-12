@@ -191,6 +191,10 @@ static func build_attackers(
 		var mult: float = team_mult * (equip_mults[i] if i < equip_mults.size() else 1.0)
 		var attacker := PBAttacker.new()
 		attacker.slot = i
+		# **一发多重**（M12-c5）：战斗真正用的是这个数，见 [member PBAttacker.attack]。
+		attacker.attack = unit.effective_attack(wave_element, cfg) * mult
+		# 每秒多少：从此只是统计量与退化路径的输入。**这一行一个字没动** ——
+		# 面板、估值、解析模型读到的仍是它一直以来的那个数。
 		attacker.dps = unit.effective_power(wave_element, cfg) * mult
 		# 挨打这一半（§03A，M3.5-b）。**血与防不吃 `mult`** ——
 		# 装备、羁绊、尾兽光环目前全是进攻向的，把它们乘到防守上

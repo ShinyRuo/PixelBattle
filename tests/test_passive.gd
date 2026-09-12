@@ -211,6 +211,7 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.defence,
 		one.hp_bonus,
 		one.move_speed_bonus,
+		one.attack_speed_bonus,
 	]
 
 

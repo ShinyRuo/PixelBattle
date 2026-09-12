@@ -60,6 +60,9 @@ func _target_of(sim: PBBattleSim) -> PBEnemy:
 func _shooter(dps: float, speed: float, shot_speed: float = 0.0) -> PBAttacker:
 	var out := PBAttacker.new()
 	out.dps = dps
+	# **一发就是攻击力**（M12-c5）。按面板攻速折算出来，
+	# 这样这个夹具在新口径下与它此前的行为最接近。
+	out.attack = dps / maxf(speed, 0.0001)
 	out.pos = Vector2.ZERO
 	out.reach = _cfg.field_diagonal()
 	out.attack_speed = speed
@@ -76,24 +79,38 @@ func _run(squad: Array[PBAttacker], ticks: int) -> PBEnemy:
 	return target
 
 
-# ── 节奏变了，总量没变 ──────────────────────────────────────────
+# ── 总量 = 一发 × 发数 ─────────────────────────────────────────
 
 
-func test_splitting_the_stream_into_shots_keeps_the_average_dps() -> void:
-	# **本文件的正题。** 一发的伤害是由**间隔反推**的，不是 `dps ÷ 攻速` ——
-	# 间隔取整之后两者会差一点点，而按间隔算的那份保证平均 DPS 分毫不差。
-	# 差了的话整条配平曲线会平移，且不报错。
+func test_every_swing_deals_exactly_one_attack_worth_of_damage() -> void:
+	# **本文件的正题，M12-c5 换了口径。**
+	#
+	# 在那之前一发的伤害由**间隔反推**（`dps × 间隔 ÷ tick_rate`），
+	# 这条断言问的是「平均 DPS 分毫不差」—— 那是离散化当年敢做的前提。
+	# 玩家 M12-c5 定的口径是「每次攻击都是实时结算的，就像 RPG 里那样」：
+	# **一发就是他的攻击力**，出手多快由攻速单独决定，
+	# 两者的乘积降级成统计量。
+	#
+	# 所以现在守的是新的那条 —— **总量恰好是「一发 × 打了几发」**，
+	# 一个零头都不许多也不许少。它同样拦得住「整条配平曲线悄悄平移」。
 	for speed: float in [0.5, 1.0, 2.0, 4.0]:
 		var squad: Array[PBAttacker] = [_shooter(1000.0, speed)]
-		var ticks: int = squad[0].attack_interval() * 10
-		var target := _run(squad, ticks)
+		var interval: int = squad[0].attack_interval()
+		var target := _run(squad, interval * 10)
 		var dealt: float = target.max_hp - target.hp
 		assert_almost_eq(
 			dealt,
-			1000.0 * float(ticks) / float(_cfg.tick_rate),
+			squad[0].damage_per_shot() * 10.0,
 			1e-6,
-			"攻速 %.1f：十个间隔打出来的总伤害该正好等于 DPS × 时间" % speed
+			"攻速 %.1f：十个间隔该正好打出十发" % speed
 		)
+
+
+func test_the_swing_rate_never_passes_the_cap() -> void:
+	# 攻速 4.0 那一档现在会被 [constant PBAttacker.ATTACK_SPEED_CAP] 压下来 ——
+	# 上一条里它因此只打得出 3 次/秒 的节奏，而不是 4 次。
+	var fast := _shooter(1000.0, 4.0)
+	assert_eq(fast.attack_interval(), PBAttacker.fastest_ticks(_cfg.tick_rate), "该被压到上限")
 
 
 func test_a_shot_is_one_lump_not_a_trickle() -> void:

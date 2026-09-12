@@ -118,6 +118,18 @@ func effective_power(wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
 	return power(cfg) * cfg.damage_multiplier(rel)
 
 
+## 在 [param wave_element] 这一波**一发普攻**打多少 —— 已计入属性克制（M12-c5）。
+##
+## 和 [method effective_power] 是同一个克制倍率的两种口径：
+## 那一条是「每秒多少」（统计量），这一条是「一下多少」（战斗真正用的）。
+## **克制仍然只在一处算**（[method PBElement.relation]）——
+## 两处各算一遍的话，「每秒」和「一下」迟早对不上，
+## 而那不报错，只表现为面板上的战力和战场上的伤害脱节。
+func effective_attack(wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
+	var rel := PBElement.relation(element, wave_element)
+	return stats(cfg).atk * cfg.damage_multiplier(rel)
+
+
 ## 这张卡的唯一身份。仓库字典的键，也是 §12 存档里记「我有哪些卡」的那个值。
 ##
 ## ## 为什么它不再等于角色 id（M5-9）

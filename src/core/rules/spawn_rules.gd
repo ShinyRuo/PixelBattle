@@ -28,9 +28,12 @@ static func fill(
 	var interval: int = maxi(
 		int(round(float(cfg.tick_rate) / maxf(cfg.enemy_attack_speed, 0.001))), 1
 	)
-	var per_shot: float = (
-		wave.atk_each * cfg.enemy_attack_speed * float(interval) / float(cfg.tick_rate)
-	)
+	# **一发就是它的攻击力**（M12-c5，和己方同一把尺子）。
+	# 在它之前这里写的是 `atk_each × 攻速 × 间隔 ÷ tick_rate` —— 由每秒输出反推，
+	# 于是每一发都不等于 `atk_each`，而漏怪那一下扣的**恰恰就是整份 `atk_each`**
+	# （见 [member PBEnemy.atk]）。同一个数在两条路上是两个意思，
+	# 而它不报错：两边各差 ±2%，看数字看不出来。
+	var per_shot: float = wave.atk_each
 	for i: int in wave.count:
 		var enemy := PBEnemy.new()
 		enemy.slot = i

@@ -55,10 +55,53 @@ const STOP_RING: float = 0.9
 ##
 ## 满血复活的话这一组羁绊等于「多一条命」，那比 §09 任何一个功能都值钱；
 ## 而太低（比如一成）会让他在同一 tick 被下一发打死，玩家看不见发生过什么。
+## 出手最快几次每秒（M12-c5，玩家定的）。
+##
+## **它是一道结构性的墙，不是配平。** 攻速加成是乘算的（尾兽光环 × 羁绊 ×
+## 装备 × 科技），几样叠起来会把间隔压到 1 tick —— 那时一个人每秒打 20 下，
+## 而屏幕上只表现为「他怎么这么快」。封在**间隔**上而不是攻速上：
+## 间隔是整数 tick，`round` 过的攻速可以略微超过名义值，
+## 只压攻速的话 3.4 次/秒会 `round` 成 6 tick = 3.33 次/秒，仍然破了上限。
+##
+## 名册里最快的角色是 0.919 次/秒，所以**今天这道墙只会被加成顶到**。
+const ATTACK_SPEED_CAP: float = 3.0
+
 const REVIVE_FRACTION: float = 0.4
 
-## 每秒伤害。属性克制、攻击科技、羁绊、装备**全部已经乘进来了** ——
-## 战斗层不认识那些系统，它只认这个数。
+## **一发普攻打多少**（M12-c5）。属性克制、攻击科技、羁绊、装备全部已经乘进来了
+## —— 和 [member dps] 顶上那句一样，战斗层只认这个数。
+##
+## ## 它取代了「由 dps 反推每一发」
+##
+## 在它之前 [method prime] 写的是 `dps × 间隔 ÷ tick_rate`，
+## 那条反推保证了「平均 DPS 分毫不差」，而代价是**屏幕上两个数都不是真的**：
+## 每一发不等于攻击力、实际攻速不等于面板攻速（实测各偏 ±2%），
+## 而且**建人之后再改攻速会被整个抵消**（见 [member attack_speed_bonus]）。
+##
+## 玩家定的口径是「每次攻击都是实时结算的，就像 RPG 里那样」——
+## 所以现在**一发就是他的攻击力**，出手多快由攻速单独决定，
+## 两者的乘积 [member dps] 降级成一个**统计量**。
+##
+## ## 0 表示「没填」，那时退回旧口径
+##
+## 生产代码三处构造点全部填了（[method PBCombatRules.build_attackers]、
+## [method PBSummonRules.raise_from]、[method PBValuation.leak_threshold_dps] 的复制品），
+## 由 `tests/test_attack_speed.gd` 一条行为断言钉着：
+## **真名册建出来的每一个人 `attack` 都必须大于 0**。
+## 退回那条路只服务于测试夹具里那些「只关心节奏、不关心伤害」的构造。
+var attack: float = 0.0
+
+## 每秒伤害。**M12-c5 起它是一个统计量，不是战斗的输入** ——
+## 真正决定伤害的是 [member attack]（一发多重）和 [member attack_speed]（多久一发）。
+##
+## 属性克制、攻击科技、羁绊、装备**全部已经乘进来了**。
+##
+## ## 它还有一个真身份：退化路径的输入
+##
+## [method whole_field] 造的那个攻击者攻速为 0 —— 那一档是 M3-a 之前
+## 「整队一个标量 DPS」的等价物，要与 [PBCombatRules] 的解析式排队模型
+## **逐位相同**，而那个模型里根本没有「一发」这个概念。
+## 所以 [method prime] 在攻速为 0 时仍然从这个数算每 tick 的伤害。
 var dps: float = 0.0
 
 ## 战场坐标（M4-a 起是二维）。x 与 [member PBEnemy.distance] **同一根轴、
@@ -269,6 +312,27 @@ var hp_bonus: float = 0.0
 ## 两条路和 [method revive] 各读一次，折在建人那一刻只有一个写点。
 var move_speed_bonus: float = 0.0
 
+## 常驻加攻速：出手多快几成（M12-c4）。中性 0.0。
+##
+## ## 它是这批率型键里唯一不在 [method PBPassiveRules.equip] 里折算的
+##
+## 另外两个（[member hp_bonus] / [member move_speed_bonus]）折进的是**字段**，
+## 而这一个折进的是 [method prime] 算出来的 `_interval_ticks` ——
+## 而 `prime` 在建人**之后**才跑（[PBBattleSim] 构造时）。
+## 在 `equip` 里折的话，`prime` 随后会拿基础攻速把它整个盖掉。
+##
+## ## 为什么不能直接加在 [member attack_speed] 上
+##
+## **那样加了等于没加。** `prime` 从 [member dps] 反推每一发的伤害：
+## 攻速抬一倍 → 间隔减半 → 每发伤害**跟着减半** → 总量一位不动。
+## 那条反推是解析式排队模型对拍要的（见 [method prime]），不能动；
+## 所以加成必须走一格自己的数，**只缩间隔、不参与反推**。
+##
+## ## 它只作用在普攻上
+##
+## 同 [member damage_bonus] 顶上那条：技能与大招的伤害在建人那一刻就算死了。
+var attack_speed_bonus: float = 0.0
+
 ## 打出要害那一下顺带挂在目标身上的效果（M12-c2）。
 ## 读点在 [method PBStrikeRules.land] 里面。
 ##
@@ -453,6 +517,7 @@ static func whole_field(team_dps: float, field_diagonal: float) -> PBAttacker:
 func clone() -> PBAttacker:
 	var out := PBAttacker.new()
 	out.dps = dps
+	out.attack = attack
 	out.pos = pos
 	out.reach = reach
 	out.shape = shape
@@ -482,6 +547,7 @@ func clone() -> PBAttacker:
 	# 折算只发生在 [method PBPassiveRules.equip] 里，而复制品不走建人那条路。
 	out.hp_bonus = hp_bonus
 	out.move_speed_bonus = move_speed_bonus
+	out.attack_speed_bonus = attack_speed_bonus
 	out.on_hit_buffs = on_hit_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at
@@ -633,11 +699,22 @@ func ultimate_damage() -> float:
 ## 而它正是这个函数算出来的。给 null 就是不起手，也就是 M9-e 之前的样子。
 func prime(tick_rate: int, cfg: PBSimConfig = null) -> void:
 	var rate: int = maxi(tick_rate, 1)
-	# 攻速为 0 = 连续输出那条退化路径，间隔就是 1 tick（见 [member attack_speed]）。
-	_interval_ticks = 1
-	if attack_speed > 0.0:
-		_interval_ticks = maxi(int(round(float(rate) / attack_speed)), 1)
-	_damage_per_shot = maxf(dps, 0.0) * float(_interval_ticks) / float(rate)
+	if attack_speed <= 0.0:
+		# **连续输出那条退化路径**：每 tick 打 `dps / tick_rate`，溢出无损转移。
+		# [method whole_field] 造的就是它，而它要与解析式排队模型逐位相同。
+		_interval_ticks = 1
+		_damage_per_shot = maxf(dps, 0.0) / float(rate)
+		windup_ticks = 0
+		return
+	# 真单位那一档（M12-c5）：**一发就是他的攻击力**，和 [member dps] 没有关系。
+	var speed: float = attack_speed * maxf(1.0 + attack_speed_bonus, 0.01)
+	_interval_ticks = maxi(int(round(float(rate) / speed)), fastest_ticks(rate))
+	_damage_per_shot = maxf(attack, 0.0)
+	if attack <= 0.0:
+		# 没填攻击力的老构造点（测试夹具）退回旧口径：由 dps 与**基础**攻速反推。
+		# 生产代码不走这条 —— 见 [member attack]。
+		var base_ticks: int = maxi(int(round(float(rate) / attack_speed)), 1)
+		_damage_per_shot = maxf(dps, 0.0) * float(base_ticks) / float(rate)
 	windup_ticks = cfg.windup_ticks(_interval_ticks) if cfg != null else 0
 
 
@@ -738,3 +815,11 @@ func reach_stop_x(at: Vector2) -> float:
 	var gap: float = stop_gap()
 	var budget: float = gap * gap - (at.y - pos.y) * (at.y - pos.y)
 	return at.x - (sqrt(budget) if budget > 0.0 else 0.0)
+
+
+## 上限（[constant ATTACK_SPEED_CAP]）折成最少隔几 tick 出一手。
+##
+## **取上取整**：向下取整或者四舍五入都可能算出一个「略快于上限」的间隔，
+## 而那正是这道墙要挡的东西。
+static func fastest_ticks(tick_rate: int) -> int:
+	return maxi(ceili(float(maxi(tick_rate, 1)) / ATTACK_SPEED_CAP), 1)

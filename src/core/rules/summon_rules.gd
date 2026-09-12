@@ -108,6 +108,9 @@ static func expire(attackers: Array[PBAttacker], tick: int) -> int:
 static func _stand_up(
 	one: PBAttacker, caster: PBAttacker, skill: PBSkill, until: int, cfg: PBSimConfig
 ) -> void:
+	# 一发多重要跟着缩（M12-c5）。只缩 dps 的话召唤物**一点伤害都打不出来** ——
+	# 战斗读的是 `attack`，而它默认 0。
+	one.attack = caster.attack * maxf(skill.summon_power, 0.0)
 	one.dps = caster.dps * maxf(skill.summon_power, 0.0)
 	one.max_hp = caster.max_hp * maxf(skill.summon_hp_share, 0.0)
 	one.defence = caster.defence
