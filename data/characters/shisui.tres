@@ -7,6 +7,7 @@ script = ExtResource("1_vuei8")
 id = &"shisui"
 name_key = "char.shisui"
 icon_key = "shisui"
+actor_key = &"shisui"
 element = 0
 def_element = 0
 primary = 1

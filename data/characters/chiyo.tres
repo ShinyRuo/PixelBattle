@@ -7,6 +7,7 @@ script = ExtResource("1_7rcdc")
 id = &"chiyo"
 name_key = "char.chiyo"
 icon_key = "chiyo"
+actor_key = &"chiyo"
 primary = 2
 agility = 22.0
 intellect = 25.0

@@ -52,12 +52,13 @@ const COL_AGI_GROW: int = 11
 const COL_INT_GROW: int = 12
 const COL_INTERVAL: int = 13
 const COL_ACTOR: int = 14
+const COL_PASSIVE: int = 15
 
 ## 表一共几列。少一列就整行不要 —— 用默认值兜底的表现是
 ## 「那个角色的三围全是 0」，而 0 力量算出来是一个合法的血量。
-const COLUMNS: int = 15
+const COLUMNS: int = 16
 
-## 形象键那一列写这个 = 和角色键同名。
+## 形象键那一列写这个 = 和角色键同名；被动那一列写这个 = 没有被动。
 const SAME_AS_ID := "-"
 
 const PRIMARIES := {
@@ -173,8 +174,39 @@ func _write_one(row: PackedStringArray) -> String:
 	# 属性栏里每个数都对，只是同一稀有度的人打出来的伤害一样多。
 	PBStatRules.apply_original_scale(character, float(row[COL_INTERVAL]))
 
+	var passives: Variant = _parse_passives(row[COL_PASSIVE])
+	if passives is String:
+		return "%s 的被动：%s" % [key, passives]
+	character.passives = passives as Dictionary
+
 	var err := ResourceSaver.save(character, path)
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
+
+
+## 被动那一列：`键=量;键=量`，`-` 或空 = 没有。
+##
+## **不认识的键在这里报错，不静默跳过。** 静默跳过的表现正是「配了不生效」——
+## 数据、界面、日志全部正常，只有那个字段没人写（同 `make_skills.gd`
+## 的 `额外` 那一列，M12-c1 定的）。规则层那边
+## （[method PBPassiveRules.grant_all]）只是不装、不报错：
+## 战斗中途 `push_error` 没有人看得见，而两处各拦一次就是两把尺子。
+##
+## 返回 [Dictionary] = 成功，返回 [String] = 错误信息。
+func _parse_passives(cell: String) -> Variant:
+	var out: Dictionary = {}
+	if cell == "" or cell == SAME_AS_ID:
+		return out
+	for piece: String in cell.split(";", false):
+		var pair: PackedStringArray = piece.split("=")
+		if pair.size() != 2:
+			return "「%s」不是 键=量 的样子" % piece
+		var name := StringName(pair[0].strip_edges())
+		if not PBPassiveRules.is_known(name):
+			return "不认识的键「%s」" % name
+		if out.has(name):
+			return "键「%s」写了两遍" % name
+		out[name] = float(pair[1].strip_edges())
+	return out
 
 
 ## 名册里没有的 `.tres` 一律删掉。

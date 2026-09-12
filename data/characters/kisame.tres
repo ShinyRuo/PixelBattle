@@ -28,3 +28,6 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 skill_ids = Array[StringName]([&"infinite_sharks"])
+passives = {
+&"crit_chance": 0.2
+}

@@ -86,11 +86,11 @@ const GOLD_FLOOR: StringName = &"gold_floor"
 ##
 ## 落点是 [member PBAttacker.crit_chance]，不是效果袋 —— 袋子是同 id
 ## 整份覆盖的，两组羁绊各挂一份会静默吃掉一份。见 [PBCritRules]。
-const CRIT_CHANCE: StringName = &"crit_chance"
+const CRIT_CHANCE: StringName = PBPassiveRules.CRIT_CHANCE
 
 ## 全队暴击伤害光环（§7 的 B21 晓组织全员，M10-c）。落点是
 ## [member PBAttacker.crit_bonus]，理由同 [constant CRIT_CHANCE]。
-const CRIT_DAMAGE: StringName = &"crit_damage"
+const CRIT_DAMAGE: StringName = PBPassiveRules.CRIT_DAMAGE
 
 # ── 触发型（M10-d）─────────────────────────────────────────────
 #
@@ -110,11 +110,11 @@ const CRIT_DAMAGE: StringName = &"crit_damage"
 ## **它是暴击系统真正有意思的那一半**：M10-c 那三组给的是常驻光环，
 ## 而常驻光环本质上仍然是「更大的百分比」—— §09 要的是机制，
 ## 而「打中了才有、停手就没」才是一个玩家能感知、也能主动利用的东西。
-const CRIT_ON_HIT: StringName = &"crit_on_hit"
+const CRIT_ON_HIT: StringName = PBPassiveRules.CRIT_ON_HIT
 
 ## 普攻附带范围伤害（§7 的 B15 神赐予的伤痛）。
 ## 落点是 [member PBAttacker.splash_damage]。
-const SPLASH: StringName = &"splash"
+const SPLASH: StringName = PBPassiveRules.SPLASH
 
 # ── 功能档的量（M3-f 定的数，M12-a 从 [PBSimConfig] 搬过来）───────
 #
@@ -156,7 +156,7 @@ const GOLD_GAIN_SCALE: float = 1.25
 
 ## 对血还很多的敌人额外多打一笔（§7 的 B05 日向兄妹）。
 ## 落点是 [member PBAttacker.heavy_bonus]。
-const HEAVY_HIT: StringName = &"heavy_hit"
+const HEAVY_HIT: StringName = PBPassiveRules.HEAVY_HIT
 
 ## 阵亡时原地重生一次（§7 的 B02 不死二人组）。
 ## 落点是 [member PBAttacker.revives_max]。
@@ -164,7 +164,7 @@ const HEAVY_HIT: StringName = &"heavy_hit"
 ## **判据在 [method PBAttacker.take_damage] 里面，不在调用方** ——
 ## 己方阵亡有两个落点（近战那一记、敌人的子弹命中），各判一次的表现是
 ## 「被子弹打死就复活不了」，而它不报错。
-const REVIVE: StringName = &"revive"
+const REVIVE: StringName = PBPassiveRules.REVIVE
 
 ## 全部合法的功能键。[PBBondTable] 用它拦下拼错的键 ——
 ## 拼错了不会报错，只会静默地什么都不发生，而那种 bug 从现象反推不出来。
@@ -184,6 +184,16 @@ const ALL: Array[StringName] = [
 
 ## [enum Landing] 为 `CARRIER` 的那几个。见 [method apply_to_carrier]。
 const CARRIER_KEYS: Array[StringName] = [CRIT_ON_HIT, SPLASH, HEAVY_HIT, REVIVE]
+
+## 羁绊那一路每个键发多少（M12-c2）。**量在这里，映射在 [PBPassiveRules]** ——
+## 角色自带的被动走同一份映射、各自带自己的量，
+## 两处各写一份映射的表现是「羁绊给的溅射和角色自带的溅射不一样大」。
+const CARRIER_AMOUNTS := {
+	CRIT_ON_HIT: PBStrikeRules.BOND_CRIT_ON_HIT,
+	SPLASH: PBStrikeRules.BOND_SPLASH,
+	HEAVY_HIT: PBStrikeRules.BOND_HEAVY_BONUS,
+	REVIVE: float(PBStrikeRules.BOND_REVIVES),
+}
 
 ## 这个键认不认得。
 static func is_known(key: StringName) -> bool:
@@ -256,10 +266,10 @@ static func apply_to_team(attackers: Array[PBAttacker], functions: Dictionary) -
 			match key:
 				CRIT_CHANCE:
 					for one: PBAttacker in attackers:
-						one.crit_chance += PBCritRules.BOND_CRIT_CHANCE
+						PBPassiveRules.grant(one, key, PBCritRules.BOND_CRIT_CHANCE)
 				CRIT_DAMAGE:
 					for one: PBAttacker in attackers:
-						one.crit_bonus += PBCritRules.BOND_CRIT_DAMAGE
+						PBPassiveRules.grant(one, key, PBCritRules.BOND_CRIT_DAMAGE)
 
 
 ## 把一个 [enum Landing] 为 `CARRIER` 的功能装到**载体本人**身上（M10-d）。
@@ -275,20 +285,9 @@ static func apply_to_team(attackers: Array[PBAttacker], functions: Dictionary) -
 ##
 ## 和 [method apply_to_skill] 同一条：改的是**已经建好的**攻击者。
 static func apply_to_carrier(attacker: PBAttacker, key: StringName) -> bool:
-	if attacker == null:
+	if not CARRIER_KEYS.has(key):
 		return false
-	match key:
-		CRIT_ON_HIT:
-			attacker.crit_on_hit += PBStrikeRules.BOND_CRIT_ON_HIT
-		SPLASH:
-			attacker.splash_damage += PBStrikeRules.BOND_SPLASH
-		HEAVY_HIT:
-			attacker.heavy_bonus += PBStrikeRules.BOND_HEAVY_BONUS
-		REVIVE:
-			attacker.revives_max += PBStrikeRules.BOND_REVIVES
-		_:
-			return false
-	return true
+	return PBPassiveRules.grant(attacker, key, CARRIER_AMOUNTS.get(key, 0.0))
 
 
 ## 这份功能表里有没有人带着 [constant GOLD_FLOOR]。

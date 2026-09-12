@@ -7,6 +7,7 @@ script = ExtResource("1_g7yhg")
 id = &"mei"
 name_key = "char.mei"
 icon_key = "mei"
+actor_key = &"mei"
 element = 4
 def_element = 4
 primary = 1

@@ -7,6 +7,7 @@ script = ExtResource("1_y4unu")
 id = &"karin"
 name_key = "char.karin"
 icon_key = "karin"
+actor_key = &"karin"
 element = 0
 def_element = 0
 primary = 1

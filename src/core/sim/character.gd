@@ -190,6 +190,23 @@ const MAX_SKILLS: int = 2
 @export var skill_ids: Array[StringName] = []
 
 
+## 他自带的常驻被动：键 → 量（M12-c2）。词汇表与落点见 [PBPassiveRules]。
+##
+## ## 被动不是技能，所以它不在 [member skill_ids] 里
+##
+## 原版 56 张卡里有 10 个是「攻击时 X% 触发 Y」这种东西 ——
+## **没有施法、没有冷却、没有蓝，玩家按不出来**。塞进技能表的话只能
+## 降格成一个要手动按的自增益（M12-c1 的佩恩轮回眼就是那么落的，
+## 一个纯被动变成了 30 秒 CD 的按钮），而那改的是玩法不是数值。
+##
+## ## 填上了**不是**一字不差，和 [member skill_ids] 正相反
+##
+## 那一项空着满着都不动任何自动跑出来的数（技能只有玩家放得出），
+## 而被动**他站着就一直在发生** —— 批量扫描、悬崖二分、配平回归全都吃得到。
+## 这是 M12 头一步真的动了自动模拟的输出，归数值回归。
+@export var passives: Dictionary = {}
+
+
 ## 大招实际打什么属性。见 [member ultimate_element_override]。
 func ultimate_element() -> PBElement.Type:
 	if ultimate_element_override < 0:

@@ -7,6 +7,7 @@ script = ExtResource("1_t4nt0")
 id = &"tobirama"
 name_key = "char.tobirama"
 icon_key = "tobirama"
+actor_key = &"tobirama"
 element = 4
 def_element = 4
 primary = 1

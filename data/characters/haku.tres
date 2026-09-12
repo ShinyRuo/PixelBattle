@@ -7,6 +7,7 @@ script = ExtResource("1_1g3sf")
 id = &"haku"
 name_key = "char.haku"
 icon_key = "haku"
+actor_key = &"haku"
 element = 4
 def_element = 1
 primary = 1

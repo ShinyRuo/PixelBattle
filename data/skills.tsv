@@ -67,10 +67,16 @@ hidden_mist	zabuza	雾隐之术	水	不用点	我方	0	0	30	10	on_self=zabuza_mi
 #
 # 缺读点而**整个缓到 c2** 的那些没有出现在下面：飞燕.空穿（每 N 次普攻叠层）、
 # 黏土蜘蛛与傀儡乌鸦与吸血虫与影分身与白绝复制体（召唤物）、
-# 写轮眼与柔拳与风遁.风切与鲛肌.削灭斩与骨拔（概率触发）、
+# 柔拳与骨拔（百分比生命）、
 # 死司凭血与针地藏（反弹）、伊邪那岐与百豪之术与生命的交易与尾兽外衣与
 # 地之咒印（受致命伤/低血量触发）、蜉蝣（闪避）、纸手里剑（直线穿透）、
 # 仙人化与水化之术（属性/形态变化）、金钱管理与赌徒（经济，根本不在战斗里）。
+#
+# 不在这张表里的还有一批：**被动**（M12-c2）。写轮眼、鲛肌·削灭斩、
+# 风遁·风切、轮回眼那几个「攻击时 X% 触发」没有施法、没有冷却、没有蓝，
+# **玩家按不出来**，所以它们不是技能 —— 它们在 `data/roster.tsv`
+# 的「被动」那一列。轮回眼 c1 曾经落在这张表里（一个 30 秒 CD 的自增益），
+# c2 把它改回被动了 —— 那一版是降级，不是设计。
 
 # 自增益
 release_blades	chojuro	鲆鲽·解放	水	不用点	我方	0	0	18	11	on_self=chojuro_release
@@ -132,7 +138,6 @@ susanoo	madara	须佐能乎	火	不用点	敌方	2.2	0.15	18	13	slow=0;slow_secs
 lightning_armor	raikage	雷遁护甲	雷	不用点	我方	0	0	20	10	on_self=raikage_armor
 malice_sense	naruto_sage	恶意感知	风	不用点	我方	0	0	25	10	on_self=sage_sense
 kotoamatsukami	shisui	别天神·光芒	火	不用点	我方	0	0	30	12	on_self=shisui_kotoama
-rinnegan	tendo	轮回眼	仙	不用点	我方	0	0	30	10	on_self=tendo_rinnegan
 
 # 落在友军身上的
 mending_jutsu	kabuto	强力再生术	仙	点队友	我方	0	0	28	8	on_hit=kabuto_mend

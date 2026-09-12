@@ -109,7 +109,6 @@ madara_susanoo	须佐能乎	持续	增益	3	0	damage_taken=0.5
 raikage_armor	雷遁护甲	持续	增益	20	0	damage_scale=1.5
 sage_sense	恶意感知	持续	增益	25	0	damage_taken=0.88
 shisui_kotoama	别天神·光芒	持续	增益	30	0	crit_chance=0.10
-tendo_rinnegan	轮回眼	持续	增益	30	0	crit_chance=0.15
 
 # 落在友军身上的
 kabuto_mend	强力再生术	周期	增益	12	1	heal=125+125

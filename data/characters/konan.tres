@@ -7,6 +7,7 @@ script = ExtResource("1_ssf3f")
 id = &"konan"
 name_key = "char.konan"
 icon_key = "konan"
+actor_key = &"konan"
 element = 4
 def_element = 3
 primary = 1

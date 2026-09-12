@@ -7,6 +7,7 @@ script = ExtResource("1_ioo7n")
 id = &"hashirama"
 name_key = "char.hashirama"
 icon_key = "hashirama"
+actor_key = &"hashirama"
 element = 3
 def_element = 4
 strength = 38.0

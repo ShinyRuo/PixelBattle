@@ -7,6 +7,7 @@ script = ExtResource("1_po2gy")
 id = &"tendo"
 name_key = "char.tendo"
 icon_key = "tendo"
+actor_key = &"tendo"
 element = 6
 primary = 1
 strength = 27.0
@@ -26,4 +27,8 @@ atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 rarity = 2
 reach = 1
-skill_ids = Array[StringName]([&"rinnegan", &"almighty_push"])
+skill_ids = Array[StringName]([&"almighty_push"])
+passives = {
+&"crit_chance": 0.15,
+&"crit_damage": 0.5
+}

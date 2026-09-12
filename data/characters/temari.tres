@@ -29,3 +29,6 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 2
 skill_ids = Array[StringName]([&"gale_dance"])
+passives = {
+&"crit_chance": 0.25
+}

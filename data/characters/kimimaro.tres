@@ -7,6 +7,7 @@ script = ExtResource("1_686mq")
 id = &"kimimaro"
 name_key = "char.kimimaro"
 icon_key = "kimimaro"
+actor_key = &"kimimaro"
 strength = 32.0
 agility = 23.0
 intellect = 18.0

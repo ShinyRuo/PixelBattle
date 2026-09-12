@@ -7,6 +7,7 @@ script = ExtResource("1_akqaw")
 id = &"sasori"
 name_key = "char.sasori"
 icon_key = "sasori"
+actor_key = &"sasori"
 element = 1
 def_element = 1
 primary = 1

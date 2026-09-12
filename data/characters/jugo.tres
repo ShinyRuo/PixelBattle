@@ -7,6 +7,7 @@ script = ExtResource("1_h7wis")
 id = &"jugo"
 name_key = "char.jugo"
 icon_key = "jugo"
+actor_key = &"jugo"
 def_element = 6
 strength = 30.0
 agility = 20.0

@@ -7,6 +7,7 @@ script = ExtResource("1_xk0q5")
 id = &"hidan"
 name_key = "char.hidan"
 icon_key = "hidan"
+actor_key = &"hidan"
 strength = 34.0
 agility = 18.0
 strength_growth = 34.0

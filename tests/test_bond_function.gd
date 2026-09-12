@@ -82,11 +82,23 @@ func test_the_crit_auras_reach_every_attacker_not_just_the_carrier() -> void:
 	}
 	var plain := _squad(units, {})
 	var buffed := _squad(units, functions)
-	for attacker: PBAttacker in plain:
-		assert_eq(attacker.crit_chance, 0.0, "没有光环时谁都不暴击")
-	for attacker: PBAttacker in buffed:
-		assert_eq(attacker.crit_chance, PBCritRules.BOND_CRIT_CHANCE, "光环该发给每一个人")
-		assert_eq(attacker.crit_bonus, PBCritRules.BOND_CRIT_DAMAGE, "暴伤那一份同理")
+	# **量的是差值，不是绝对值。** 上一版断「没光环时该是 0」，
+	# 而 M12-c2 之后有的角色**自带**常驻暴击（写轮眼那一批），
+	# 这条因此在名册填上第一个被动的那天变红 ——
+	# **而它要问的从来就不是那个**，是「光环多给了多少、给了几个人」。
+	for i: int in buffed.size():
+		assert_almost_eq(
+			buffed[i].crit_chance - plain[i].crit_chance,
+			PBCritRules.BOND_CRIT_CHANCE,
+			0.0001,
+			"光环该给每一个人都多加一份"
+		)
+		assert_almost_eq(
+			buffed[i].crit_bonus - plain[i].crit_bonus,
+			PBCritRules.BOND_CRIT_DAMAGE,
+			0.0001,
+			"暴伤那一份同理"
+		)
 
 
 func test_two_bonds_granting_the_same_aura_stack_instead_of_overwriting() -> void:

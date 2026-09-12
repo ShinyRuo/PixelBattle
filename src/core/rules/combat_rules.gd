@@ -228,6 +228,11 @@ static func build_attackers(
 		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
 			if not PBBondFunctionRules.apply_to_skill(skill, key, cfg):
 				PBBondFunctionRules.apply_to_carrier(attacker, key)
+		# 他自带的常驻被动（M12-c2）。**和羁绊那一档走同一份映射**
+		# （[method PBPassiveRules.grant]），只是量由角色表给 ——
+		# 两处各写一份的话「羁绊给的溅射」和「他自带的溅射」会不一样大。
+		# 排在羁绊后面、`+=` 叠加：一个人可以既是载体又自带一个被动。
+		PBPassiveRules.grant_all(attacker, unit.character.passives)
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)
