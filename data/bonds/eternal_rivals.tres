@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_7s38i"]
+
+[resource]
+script = ExtResource("1_7s38i")
+id = &"eternal_rivals"
+name_key = "bond.eternal_rivals"
+member_ids = Array[StringName]([&"might_guy", &"kakashi"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"kakashi": {
+&"pursuing_fangs": {
+&"summon_power_scale": 1.7
+}
+}
+}

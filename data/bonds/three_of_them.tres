@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_dkj7s"]
+
+[resource]
+script = ExtResource("1_dkj7s")
+id = &"three_of_them"
+name_key = "bond.three_of_them"
+member_ids = Array[StringName]([&"obito", &"kakashi", &"rin_nohara"])
+tier_counts = Array[int]([3])
+tier_power = Array[float]([0.28])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"rin_nohara": {
+&"inspire": {
+&"targets_add": 4.0
+}
+}
+}

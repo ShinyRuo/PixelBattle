@@ -45,6 +45,12 @@ const TARGETS_ADD: StringName = &"targets_add"
 ## 多召几个（〔傀儡匠心〕勘九郎「【乌鸦】能够召唤两头」= 1）。
 const SUMMON_ADD: StringName = &"summon_add"
 
+## 召唤物的输出乘几（〔永远的对手〕卡卡西「忍犬的攻击力提升 70%」= 1.7）。
+const SUMMON_POWER_SCALE: StringName = &"summon_power_scale"
+
+## 召唤物在场的时间乘几（〔第十班·集合〕志乃「【吸血虫】的持续时间提升 50%」= 1.5）。
+const SUMMON_SECS_SCALE: StringName = &"summon_secs_scale"
+
 ## 落地时的全场减速**设成**多少（0 = 定住）。
 const SLOW_SET: StringName = &"slow_set"
 
@@ -65,6 +71,8 @@ const ALL: Array[StringName] = [
 	COOLDOWN_SCALE,
 	TARGETS_ADD,
 	SUMMON_ADD,
+	SUMMON_POWER_SCALE,
+	SUMMON_SECS_SCALE,
 	SLOW_SET,
 	SLOW_SECS_SET,
 ]
@@ -107,6 +115,10 @@ static func _one(skill: PBSkill, key: StringName, amount: float, rate: int) -> b
 			skill.max_targets = maxi(skill.max_targets + int(round(amount)), 0)
 		SUMMON_ADD:
 			skill.summon_count = maxi(skill.summon_count + int(round(amount)), 0)
+		SUMMON_POWER_SCALE:
+			skill.summon_power *= amount
+		SUMMON_SECS_SCALE:
+			skill.summon_seconds *= amount
 		SLOW_SET:
 			skill.slow_scale = amount
 		SLOW_SECS_SET:

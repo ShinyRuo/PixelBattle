@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_0qjrw"]
+
+[resource]
+script = ExtResource("1_0qjrw")
+id = &"master_and_pupil"
+name_key = "bond.master_and_pupil"
+member_ids = Array[StringName]([&"orochimaru", &"hiruzen"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"orochimaru": {
+&"great_breakthrough": {
+&"radius_scale": 1.5
+}
+}
+}

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_uic5t"]
+
+[resource]
+script = ExtResource("1_uic5t")
+id = &"child_of_prophecy"
+name_key = "bond.child_of_prophecy"
+member_ids = Array[StringName]([&"naruto", &"jiraiya"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"naruto": {
+&"dodge": 0.2
+}
+}

@@ -81,7 +81,7 @@ vermilion_pair	朱雀与南斗	2			itachi,kisame
 divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo
 masterminds	幕后黑手	5	crit_chance	madara	madara,obito,kabuto,tendo,zetsu
 team_seven	第七班	4	pull	kakashi	naruto,sasuke,sakura,kakashi
-ino_shika_cho	猪鹿蝶	3	root	shikamaru	shikamaru,choji,ino
+ino_shika_cho	第十班	4	root	shikamaru	shikamaru,choji,ino,asuma		ino:mind_transfer:targets_add=1
 sannin	木叶三忍	3	gold_floor	tsunade	jiraiya,orochimaru,tsunade
 konoha_twelve	木叶十二小强	10			naruto,sasuke,sakura,neji_hyuga,hinata,rock_lee,tenten,kiba,shino,ino,choji,shikamaru
 akatsuki_all	晓组织全员	9	crit_damage	tendo	itachi,tendo,konan,deidara,sasori,kakuzu,hidan,kisame,zetsu
@@ -89,3 +89,15 @@ curse_marks	咒印众	3			kimimaro,jugo,orochimaru
 taka	鹰小队	4			sasuke,suigetsu,jugo,karin
 puppet_masters	傀儡匠心	2			chiyo,kankuro		kankuro:puppet_crow:summon_add=1;chiyo:reincarnation:targets_add=1
 leaf_and_root	叶与根	2			hiruzen,danzo		hiruzen:fire_dragon:power_scale=1.4;danzo:root_burial:slow_set=0,slow_secs_set=2
+strategist_couple	军师夫妇	2			temari,shikamaru		shikamaru:shadow_bind:radius_set=0.15
+tsuchikage_guard	土影护卫	2			onoki,kurotsuchi		onoki:dust_release:radius_scale=1.5
+crimson_dusk	夕阳之红	2			asuma,kurenai		kurenai:mirror_ward:targets_add=4
+master_and_pupil	师徒决战	2			orochimaru,hiruzen		orochimaru:great_breakthrough:radius_scale=1.5
+shadow_and_blade	影与玉	2			asuma,shikamaru		shikamaru:strategist:radius_scale=1.5
+truest_friends	最真的挚友	2			itachi,shisui	itachi:crit_chance=0.22	
+mizukage_guard	水影护卫	2			mei,chojuro	chojuro:bite_current=0.08	
+eternal_rivals	永远的对手	2			might_guy,kakashi		kakashi:pursuing_fangs:summon_power_scale=1.7
+power_of_youth	青春的力量	2			might_guy,rock_lee		rock_lee:leaf_whirl:power_scale=1.5,radius_scale=1.5
+child_of_prophecy	预言之子	2			naruto,jiraiya	naruto:dodge=0.20	
+three_of_them	三人的羁绊	3			obito,kakashi,rin_nohara		rin_nohara:inspire:targets_add=4
+team_eight	第八班·集合	4			kurenai,hinata,shino,kiba		kurenai:haze_illusion:targets_add=3;shino:vampire_bugs:summon_add=5,summon_secs_scale=1.5

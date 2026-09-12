@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_snvlh"]
+
+[resource]
+script = ExtResource("1_snvlh")
+id = &"crimson_dusk"
+name_key = "bond.crimson_dusk"
+member_ids = Array[StringName]([&"asuma", &"kurenai"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"kurenai": {
+&"mirror_ward": {
+&"targets_add": 4.0
+}
+}
+}

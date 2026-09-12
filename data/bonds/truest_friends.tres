@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_wqxu0"]
+
+[resource]
+script = ExtResource("1_wqxu0")
+id = &"truest_friends"
+name_key = "bond.truest_friends"
+member_ids = Array[StringName]([&"itachi", &"shisui"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"itachi": {
+&"crit_chance": 0.22
+}
+}

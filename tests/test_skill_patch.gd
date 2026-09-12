@@ -127,6 +127,8 @@ func _skill() -> PBSkill:
 	skill.summon_count = 1
 	skill.slow_scale = 1.0
 	skill.slow_ticks = 0
+	skill.summon_power = 0.5
+	skill.summon_seconds = 4.0
 	return skill
 
 
@@ -139,4 +141,6 @@ func _snapshot(skill: PBSkill) -> Array:
 		skill.summon_count,
 		skill.slow_scale,
 		skill.slow_ticks,
+		skill.summon_power,
+		skill.summon_seconds,
 	]
