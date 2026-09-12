@@ -41,7 +41,7 @@ static func advance(
 		if not shot.alive:
 			continue
 		if shot.at_ally:
-			_hit_ally(shot, attackers, cfg, tick, book, out, rng)
+			_hit_ally(shot, attackers, enemies, cfg, tick, book, out, rng)
 		else:
 			_hit_enemy(shot, enemies, attackers, cfg, tick, book, out)
 
@@ -106,6 +106,15 @@ static func _hit_enemy(
 	shot.retire()
 
 
+## 放这一发的敌人。**[member PBProjectile.source] 存的就是它在池子里的下标**
+## （见 [member PBEnemy.slot]），但那一发飞到的时候它可能已经死了 ——
+## 找不到就是 null，反弹那一句会自己认。
+static func _shooter(shot: PBProjectile, enemies: Array[PBEnemy]) -> PBEnemy:
+	if shot.source < 0 or shot.source >= enemies.size():
+		return null
+	return enemies[shot.source]
+
+
 ## 一发射向己方单位的子弹。
 ##
 ## ## 两种载荷，判据是有没有技能挂在上面
@@ -120,6 +129,7 @@ static func _hit_enemy(
 static func _hit_ally(
 	shot: PBProjectile,
 	attackers: Array[PBAttacker],
+	enemies: Array[PBEnemy],
 	cfg: PBSimConfig,
 	tick: int,
 	book: PBBattleLog,
@@ -136,13 +146,9 @@ static func _hit_ally(
 		PBSkillRules.apply_hit_ally(target, shot.skill, shot.level, cfg, tick)
 		shot.retire()
 		return
-	var hurt: float = PBStatRules.strike_damage(
-		shot.damage, shot.element, target.defence, target.def_element, cfg
+	# 折算、播报、扣血、阵亡、反弹全走 [method PBStrikeRules.hurt_ally]（M12-c2）——
+	# 近战那一路调的是同一个。各写一遍的表现是「被子弹打不反弹」。
+	PBStrikeRules.hurt_ally(
+		target, _shooter(shot, enemies), shot.damage, shot.element, cfg, tick, rng, book, out
 	)
-	if book != null:
-		book.hit(tick, shot.source, target.slot, hurt, true)
-	if target.take_damage(hurt, tick, rng):
-		out.allies_lost += 1
-		if book != null:
-			book.ally_down(tick, target.slot)
 	shot.retire()

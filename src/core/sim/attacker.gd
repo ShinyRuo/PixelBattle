@@ -221,6 +221,16 @@ var bite_current: float = 0.0
 ## 两个是互补的：一个越打越弱，一个越打越强。
 var bite_lost: float = 0.0
 
+## 挨一下就把这一下伤害的几成还给打他的那个敌人（M12-c2）。
+## 0 = 不反弹。读点在 [method PBStrikeRules.hurt_ally] 里面。
+##
+## **原版是「免疫了的那一下才反弹」**（宇智波斩自的
+## 「15% 几率免疫此次伤害，并反弹 30% 的伤害」），而这里做成了
+## **挨每一下都反弹**。降级的理由是「词汇表里每个键要能单独说得清」：
+## 绑在 [member dodge] 上的话，一个没配闪避的角色配上反弹会永远不生效，
+## **而那不报错**。原版那句「每隔 5 秒必定触发一次」同样缺读点（内置 CD）。
+var reflect: float = 0.0
+
 # ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
 
 ## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
@@ -396,6 +406,7 @@ func clone() -> PBAttacker:
 	out.dodge = dodge
 	out.bite_current = bite_current
 	out.bite_lost = bite_lost
+	out.reflect = reflect
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
 	out.slot = slot

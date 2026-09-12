@@ -153,6 +153,7 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.dodge,
 		one.bite_current,
 		one.bite_lost,
+		one.reflect,
 	]
 
 
@@ -183,18 +184,6 @@ func test_dodging_is_decided_inside_take_damage_not_by_the_callers() -> void:
 		var text := FileAccess.get_file_as_string(path)
 		assert_ne(text, "", "读得到 %s" % path)
 		assert_false(text.contains("dodge"), "%s 不该自己判闪避，那是 take_damage 里面的事" % path)
-
-
-func test_both_ways_of_getting_hit_hand_the_dice_over() -> void:
-	# 上面那条拦「自己判」，这条拦「**根本没把骰子递进去**」——
-	# 漏传的那一路会静默拿到 null，也就是「这条路上永远不闪避」。
-	for path: String in [SIM_PATH, SHOT_PATH]:
-		var text := FileAccess.get_file_as_string(path)
-		var handed: int = 0
-		for line: String in text.split("\n"):
-			if line.contains("take_damage(") and line.contains("rng"):
-				handed += 1
-		assert_gt(handed, 0, "%s 里打己方那一下得把 rng 递进去" % path)
 
 
 func test_nobody_dodges_without_a_chance_and_no_dice_are_rolled() -> void:

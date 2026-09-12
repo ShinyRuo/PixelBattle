@@ -193,6 +193,70 @@ static func land(
 	_arm_crit(attacker, cfg, tick)
 
 
+## 一次**敌人的攻击**落在一个忍者身上的唯一落点（M12-c2）。
+## [param raw] 是没折算克制与护甲之前的那个数。
+##
+## ## 它和 [method land] 是对称的两半
+##
+## 那一头答「我方打敌人」，这一头答「敌人打我方」。在它之前，这件事
+## 发生在两处（[PBBattleSim] 的近战、[method PBShotRules._hit_ally] 的子弹），
+## 各写一遍「折算 → 记播报 → 扣血 → 记阵亡」—— 那还只是重复；
+## 往后面接反弹（[member PBAttacker.reflect]）之后，
+## **漏一处的表现是「被子弹打不反弹」**，而它不报错。
+## 同 [method land] 顶上那条，也同重生判在 [method PBAttacker.take_damage] 里面。
+##
+## ## 反弹打死的那一个也要记账，而记账只有一个来源
+##
+## 反弹走 [method PBEnemy.take_damage]（易伤那一层在它里面）并在这里
+## 把 `kills` 加上。放回调用方的话杀敌数就有了第二个来源 ——
+## 同 [method PBBuffRules.advance_enemy] 顶上那条「周期伤害不在规则层当场扣血」。
+static func hurt_ally(
+	target: PBAttacker,
+	source: PBEnemy,
+	raw: float,
+	element: PBElement.Type,
+	cfg: PBSimConfig,
+	tick: int,
+	rng: RandomNumberGenerator,
+	book: PBBattleLog,
+	out: PBCombatOutcome
+) -> void:
+	var hurt: float = PBStatRules.strike_damage(
+		raw, element, target.defence, target.def_element, cfg
+	)
+	if book != null:
+		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true)
+	if target.take_damage(hurt, tick, rng):
+		out.allies_lost += 1
+		if book != null:
+			book.ally_down(tick, target.slot)
+	_reflect(target, source, hurt, tick, book, out)
+
+
+## 把挨的这一下按比例还回去。没配就是 0。
+##
+## **还的是折算之后的那个数**（也就是他实际会掉的血），不是敌人报出来的原始值 ——
+## 后者没有经过护甲与克制，而玩家看到的伤害数字是前者。两者不一致的表现是
+## 「反弹出来的数和挨的那一下对不上」。
+##
+## **闪掉的那一下照样反弹**：[method PBAttacker.take_damage] 里闪避返回 false，
+## 而这一句排在它外面。原版那一条正是「免疫此次伤害**并**反弹」——
+## 两件事一起发生，只是我们把它们拆成了两个能各自单独配的键。
+static func _reflect(
+	target: PBAttacker,
+	source: PBEnemy,
+	hurt: float,
+	tick: int,
+	book: PBBattleLog,
+	out: PBCombatOutcome
+) -> void:
+	if source == null or not source.alive or target.reflect <= 0.0 or hurt <= 0.0:
+		return
+	var back: float = hurt * target.reflect
+	if book != null:
+		book.hit(tick, target.slot, source.slot, back, false)
+	if source.take_damage(back, tick):
+		out.kills += 1
 ## 「命中之后提暴击」的效果定义（B10）。同 [method PBBuffRules.team_damage]：
 ## 它只提供**身份**，数值每次挂的时候另给。
 static func crit_window() -> PBBuff:

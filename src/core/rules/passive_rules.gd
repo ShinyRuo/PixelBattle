@@ -38,6 +38,7 @@ extends RefCounted
 ## | `dodge` | [member PBAttacker.dodge] | [method dodges] |
 ## | `bite_current` | [member PBAttacker.bite_current] | [method PBStrikeRules.land] |
 ## | `bite_lost` | [member PBAttacker.bite_lost] | [method PBStrikeRules.land] |
+## | `reflect` | [member PBAttacker.reflect] | [method PBStrikeRules.hurt_ally] |
 ##
 ## ## 「X% 几率打出更多伤害」就是暴击，不是第七个键
 ##
@@ -76,6 +77,9 @@ const BITE_CURRENT: StringName = &"bite_current"
 ## 同 [constant BITE_CURRENT]，但按目标**已经损失**的生命算。
 const BITE_LOST: StringName = &"bite_lost"
 
+## 挨一下就把这一下伤害的几成还给打他的那个敌人（M12-c2）。
+const REFLECT: StringName = &"reflect"
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
 	CRIT_CHANCE,
@@ -87,6 +91,7 @@ const ALL: Array[StringName] = [
 	DODGE,
 	BITE_CURRENT,
 	BITE_LOST,
+	REFLECT,
 ]
 
 
@@ -143,6 +148,8 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.bite_current += amount
 		BITE_LOST:
 			attacker.bite_lost += amount
+		REFLECT:
+			attacker.reflect += amount
 		_:
 			return false
 	return true

@@ -129,7 +129,7 @@ shino	油女志乃	SR	远程	土	土	智力	21	15	32	21.5	15.0	32.5	1.5	-	-
 
 itachi	宇智波鼬	SSR	远程	火	火	智力	22	18	37	22.5	18.0	37.0	1.5	-	-
 obito	宇智波带土	SSR	近战	火	火	敏捷	26	37	18	26.5	37.0	18.0	1.45	-	-
-madara	宇智波斑	SSR	近战	火	火	力量	36	23	14	35.0	23.0	14.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.25
+madara	宇智波斑	SSR	近战	火	火	力量	36	23	14	35.0	23.0	14.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.40;reflect=0.30
 hashirama	千手柱间	SSR	近战	土	水	力量	38	18	18	38.0	18.0	18.0	1.5	-	-
 tendo	天道佩恩	SSR	近战	仙	物理	敏捷	27	34	15	26.5	34.5	15.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.22
 kabuto	仙人兜	SSR	远程	仙	物理	智力	22	18	36	22.5	18.0	36.0	1.5	-	-

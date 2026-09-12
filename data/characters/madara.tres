@@ -31,5 +31,6 @@ skill_ids = Array[StringName]([&"susanoo"])
 passives = {
 &"crit_chance": 0.15,
 &"crit_damage": 0.5,
-&"dodge": 0.25
+&"dodge": 0.4,
+&"reflect": 0.3
 }

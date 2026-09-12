@@ -785,13 +785,19 @@ func _enemies_attack() -> void:
 					enemy.slot
 				)
 			continue
-		var damage: float = PBStatRules.strike_damage(
-			enemy.damage_per_shot, enemy.element, target.defence, target.def_element, _cfg
+		# 折算、播报、扣血、阵亡、反弹全在那一处（M12-c2）——
+		# 子弹那一路（[method PBShotRules._hit_ally]）回头调的是同一个。
+		PBStrikeRules.hurt_ally(
+			target,
+			enemy,
+			enemy.damage_per_shot,
+			enemy.element,
+			_cfg,
+			_tick,
+			_crit_rng,
+			log_to,
+			_outcome
 		)
-		_note_hit(enemy.slot, target.slot, damage, true)
-		if target.take_damage(damage, _tick, _crit_rng):
-			_outcome.allies_lost += 1
-			_note_down(target.slot)
 
 
 ## 全体前进。**场上还有活忍者就扑向最近的那个，全死光了才走基地。**
