@@ -219,6 +219,11 @@ func test_real_monster_art_is_not_tinted_by_its_element() -> void:
 	var enemies := _spawned(PBWave.Shape.NORMAL, 1)
 	pool.sync_enemies(enemies, 0, Vector2(1.0, 0.44))
 
+	# **两半都显式摆出来。** 上一版只摆了真素材那一半，白模那一半靠
+	# 「这一格默认装的就是白模」—— 而 30 张怪接上之后它默认装的是真素材，
+	# 于是当场变红，红的是「美术做完了」（同 `test_actor_lab` 那条）。
+	var white_skin: PBActorSkin = PBEnemyPool.white_for(enemies[0].element, enemies[0].rank)
+	pool._skins[0] = white_skin
 	var white: Color = pool._color_of(0, enemies[0])
 	var want: Color = PBEnemyPool.ELEMENT_COLORS[PBElement.Type.FIRE]
 	assert_almost_eq(white.r, want.r, 0.01, "白模要染属性色 —— 五系全靠它分")

@@ -55,26 +55,28 @@ func test_the_form_names_line_up_with_the_skin_key_halves() -> void:
 	)
 
 
-func test_a_monster_without_art_falls_back_to_the_enemy_white_model() -> void:
-	# **不是己方那张白模。** 退回错的一张时屏幕上照样站着一个人，
-	# 画布、脚底、坐标全部正确 —— 只是这个工具对「这一种怪在游戏里
-	# 长什么样」这个它唯一要回答的问题给出了一个错的答案。
+func test_a_monster_is_dressed_exactly_like_it_is_on_the_battlefield() -> void:
+	# **两头都要钉。** 有真素材就得和战场查到的是同一张；没有就得退回**怪那张**
+	# 白模 —— 退回己方那张时屏幕上照样站着一个人，画布、脚底、坐标全部正确，
+	# 只是这个工具对「这一种怪在游戏里长什么样」这个它唯一要回答的问题
+	# 给出了一个错的答案。
+	#
+	# **上一版写的是进度不是规则**：它跳过有素材的那几种、只量剩下的，
+	# 于是 30 张怪全接上的那天一种都量不到，当场变红 ——
+	# 而红的是「美术做完了」。同 M10-b 那条从「每个角色都有头像」
+	# 换成「每一张头像都要有主」。
 	var lab := _open()
 	lab._swap_family()
-	var checked: int = 0
 	for i: int in lab._entries.size():
 		var entry: Dictionary = lab._entries[i]
-		if PBActorLibrary.skin_for(entry["key"]) != null:
-			continue
 		lab._choose(i)
-		var element: PBElement.Type = entry["element"]
-		assert_same(
-			lab._skin,
-			PBEnemyPool.white_for(element, entry["rank"]),
-			"「%s」退回的白模得和战场上那只是同一张" % entry["title"]
-		)
-		checked += 1
-	assert_gt(checked, 0, "今天 30 种怪一张真素材都没有，量不到说明遍历那一步坏了")
+		var want: PBActorSkin = PBActorLibrary.skin_for(entry["key"])
+		if want == null:
+			var element: PBElement.Type = entry["element"]
+			var rank: int = entry["rank"]
+			want = PBEnemyPool.white_for(element, rank)
+		assert_same(lab._skin, want, "「%s」穿的得和战场上那只是同一张" % entry["title"])
+	assert_eq(lab._entries.size(), 30, "30 种一种都不许漏 —— 遍历坏了的话上面什么都没量")
 
 
 func test_the_foot_lands_on_the_ground_line() -> void:
