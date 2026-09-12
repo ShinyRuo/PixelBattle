@@ -200,6 +200,27 @@ var revives: int = 0
 ## 同 [member max_hp] / [member hp] 那一对。
 var revives_max: int = 0
 
+## 挨一下普攻时有多大机会一点血都不掉（M12-c2，佩恩轮回眼 22%、
+## 宇智波斑永恒万花筒 25%）。0 = 从不闪避，而且**一次骰子都不掷**。
+##
+## 判据在 [method take_damage] **里面**（走 [method PBPassiveRules.dodges]），
+## 不在调用方。己方挨打有两个落点
+## （敌人近战、敌人子弹），各判一次的表现是「被子弹打就闪不掉」——
+## 同 [member revives] 那条（M10-d），也同 [PBBuffRules] 的 `HURT`。
+var dodge: float = 0.0
+
+## 打出要害那一下额外按目标**当前**生命的几成再打一笔（日向宁次的柔拳）。
+## 0 = 没有。上限见 [constant PBStrikeRules.BITE_CAP]。
+##
+## **它骑在暴击那个掷点上，不另掷一次**（M12-c2）：这一步已经为闪避
+## 开了一个新掷点，而「这一下打中了要害」本来就是暴击在这个游戏里的语义。
+## 代价说清楚：暴击光环会同时提高柔拳的触发率 —— 那是相关不是 bug。
+var bite_current: float = 0.0
+
+## 同 [member bite_current]，但按目标**已经损失**的生命算（长十郎的骨拔）。
+## 两个是互补的：一个越打越弱，一个越打越强。
+var bite_lost: float = 0.0
+
 # ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
 
 ## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
@@ -369,6 +390,12 @@ func clone() -> PBAttacker:
 	out.splash_damage = splash_damage
 	out.heavy_bonus = heavy_bonus
 	out.revives_max = revives_max
+	# M12-c2 那三个同理：漏掉的话悬崖二分探的是一支**不会闪避、
+	# 不吃要害那一笔**的队伍，而真正上场的那支会 —— 探出来的悬崖
+	# 系统性偏保守，且不报错。
+	out.dodge = dodge
+	out.bite_current = bite_current
+	out.bite_lost = bite_lost
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
 	out.slot = slot
@@ -476,8 +503,12 @@ func is_targetable() -> bool:
 ## 同 [method PBEnemy.take_damage] 顶上那条：给了默认值的话，漏传的调用方
 ## 会静默拿到一个「所有效果都已过期」的 tick —— 也就是
 ## 「减伤和护盾在这条路上不生效」，正是这个读点要挡的东西。
-func take_damage(amount: float, at_tick: int) -> bool:
+func take_damage(
+	amount: float, at_tick: int, rng: RandomNumberGenerator = null
+) -> bool:
 	if not is_targetable():
+		return false
+	if PBPassiveRules.dodges(self, rng):
 		return false
 	var hurt: float = amount * buffs.amount(PBBuffRules.DAMAGE_TAKEN, at_tick)
 	hurt = buffs.absorb(hurt, at_tick)

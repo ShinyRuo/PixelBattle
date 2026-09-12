@@ -30,5 +30,6 @@ reach = 1
 skill_ids = Array[StringName]([&"almighty_push"])
 passives = {
 &"crit_chance": 0.15,
-&"crit_damage": 0.5
+&"crit_damage": 0.5,
+&"dodge": 0.22
 }

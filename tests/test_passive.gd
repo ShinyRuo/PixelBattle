@@ -14,9 +14,13 @@ extends GutTest
 ## 2. **词汇表里的键 = 已经接上读点的键**（同 [PBBuffRules] 顶上那条，M7-a）
 ## 3. **不认识的键在装表那一刻报错**，不静默跳过
 
+const SHOT_PATH := "res://src/core/rules/shot_rules.gd"
+const SIM_PATH := "res://src/core/sim/battle_sim.gd"
+
 var _cfg: PBSimConfig
 var _characters: PBCharacterTable
 var _skills: PBSkillTable
+var _rng: RandomNumberGenerator
 
 
 func before_all() -> void:
@@ -26,6 +30,8 @@ func before_all() -> void:
 
 func before_each() -> void:
 	_cfg = PBGameData.config()
+	_rng = RandomNumberGenerator.new()
+	_rng.seed = 20260912
 
 
 # ── 一份映射，两个来源 ────────────────────────────────────────
@@ -144,6 +150,9 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.splash_damage,
 		one.heavy_bonus,
 		one.revives_max,
+		one.dodge,
+		one.bite_current,
+		one.bite_lost,
 	]
 
 
@@ -161,3 +170,160 @@ func _build(characters: Array) -> Array[PBAttacker]:
 	return PBCombatRules.build_attackers(
 		units, PBElement.Type.PHYSICAL, 1.0, 1.0, PackedFloat64Array(), _cfg
 	)
+
+
+# ── 闪避：判在挨打那一侧 ──────────────────────────────────────
+
+
+func test_dodging_is_decided_inside_take_damage_not_by_the_callers() -> void:
+	# **同 M10-d 重生那条。** 己方挨打有两个落点（敌人近战在 `battle_sim`、
+	# 敌人子弹在 `shot_rules`），各判一次的表现是「被子弹打就闪不掉」，
+	# 而它不报错。判据是**扫源码**：那两个文件里不许出现 `dodge`。
+	for path: String in [SIM_PATH, SHOT_PATH]:
+		var text := FileAccess.get_file_as_string(path)
+		assert_ne(text, "", "读得到 %s" % path)
+		assert_false(text.contains("dodge"), "%s 不该自己判闪避，那是 take_damage 里面的事" % path)
+
+
+func test_both_ways_of_getting_hit_hand_the_dice_over() -> void:
+	# 上面那条拦「自己判」，这条拦「**根本没把骰子递进去**」——
+	# 漏传的那一路会静默拿到 null，也就是「这条路上永远不闪避」。
+	for path: String in [SIM_PATH, SHOT_PATH]:
+		var text := FileAccess.get_file_as_string(path)
+		var handed: int = 0
+		for line: String in text.split("\n"):
+			if line.contains("take_damage(") and line.contains("rng"):
+				handed += 1
+		assert_gt(handed, 0, "%s 里打己方那一下得把 rng 递进去" % path)
+
+
+func test_nobody_dodges_without_a_chance_and_no_dice_are_rolled() -> void:
+	# **0 时一次都不掷** —— 同 [method PBCritRules.strike] 顶上那条：
+	# 掷了就算没闪也已经拨动了那条流，而 `whole_field` 那条与解析式
+	# 排队模型逐位对拍的退化路径靠的就是「该掷几次就掷几次」。
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260912
+	var before: int = rng.state
+	var plain := _hurtable(0.0)
+	assert_false(PBPassiveRules.dodges(plain, rng), "没配就不该闪")
+	assert_eq(rng.state, before, "没配就一步都不许走")
+	var lucky := _hurtable(0.6)
+	PBPassiveRules.dodges(lucky, rng)
+	assert_ne(rng.state, before, "配了就该拨动那条流")
+
+
+func test_a_dodged_hit_costs_nothing_at_all() -> void:
+	# 闪避是「一点血都不掉」，不是「少掉一点」—— 后者是减伤
+	# （[constant PBBuffRules.DAMAGE_TAKEN]），两件事。
+	var one := _hurtable(1.0)
+	var full: float = one.hp
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	assert_false(one.take_damage(500.0, 0, rng), "闪掉了就不该死")
+	assert_eq(one.hp, full, "一点都不该掉")
+
+
+func test_without_dice_nobody_ever_dodges() -> void:
+	# 批量扫描、悬崖二分、老的构造点都不给 rng —— 那一路必须
+	# 和没有闪避这件事**完全一样**，否则全部既有配平数字会随这一步漂移。
+	var one := _hurtable(1.0)
+	one.take_damage(10.0, 0)
+	assert_lt(one.hp, one.max_hp, "不给骰子就照常挨打")
+
+
+# ── 按生命百分比那一笔 ────────────────────────────────────────
+
+
+func test_the_bite_only_happens_on_a_telling_blow() -> void:
+	# 它骑在暴击那个掷点上（不另掷一次），所以 `crit` 为 false 时是 0。
+	var attacker := _striker()
+	attacker.bite_current = 0.5
+	var enemies := _pack(1)
+	var out := PBCombatOutcome.new()
+	var before: float = enemies[0].hp
+	PBStrikeRules.land(attacker, enemies[0], 10.0, false, enemies, _cfg, 0, null, out)
+	assert_almost_eq(before - enemies[0].hp, 10.0, 0.001, "没打出要害就只有主伤害")
+
+
+func test_the_two_bites_read_opposite_halves_of_the_health_bar() -> void:
+	# `bite_current` 越打越弱、`bite_lost` 越打越强 —— 两个字段而不是
+	# 一个加方向开关，因为一个人可以两样都带。
+	var now := _striker()
+	now.bite_current = 0.2
+	var lost := _striker()
+	lost.bite_lost = 0.2
+	# 血量故意只有 100：封顶是「这一下伤害的几倍」（这里 10 × 3），
+	# 拿一个十万血的人来量的话两边都被封到同一个数，
+	# 而那正是下一条要问的事。
+	assert_almost_eq(_bite_of(now, _quarter_health()), 5.0, 0.01, "按还剩多少算")
+	assert_almost_eq(_bite_of(lost, _quarter_health()), 15.0, 0.01, "按已经掉了多少算")
+
+
+func test_the_bite_is_capped_so_a_boss_cannot_be_melted_by_a_percentage() -> void:
+	# **封顶不是配平。** [member PBAttacker.heavy_bonus] 顶上早就写着：
+	# BOSS 血量按波次指数长，百分比伤害是那条曲线的常数倍 ——
+	# 不封顶的话这几个角色在后期独占全场，而屏幕上只表现为
+	# 「后面几波好像只有他在输出」。原版自己也封（柔拳 8000、骨拔 5000）。
+	var attacker := _striker()
+	attacker.bite_current = 0.9
+	var enemies := _pack(1)
+	enemies[0].max_hp = 1000000.0
+	enemies[0].hp = 1000000.0
+	assert_almost_eq(
+		_bite_of(attacker, enemies),
+		10.0 * PBStrikeRules.BITE_CAP,
+		0.001,
+		"封在这一下伤害的几倍上"
+	)
+
+
+func _striker() -> PBAttacker:
+	var one := PBAttacker.new()
+	one.slot = 0
+	one.dps = 100.0
+	one.max_hp = 500.0
+	one.attack_speed = 1.0
+	one.reach = 1.0
+	one.prime(_cfg.tick_rate)
+	one.revive()
+	return one
+
+
+## 一个满血、打不死的敌人。量的是「掉了多少」，不是「死没死」。
+func _pack(count: int) -> Array[PBEnemy]:
+	var wave := PBWaveRules.build(3, _cfg, _rng)
+	var out: Array[PBEnemy] = []
+	for i: int in count:
+		var enemy := PBEnemy.new()
+		enemy.spawn(wave, 0.0, _cfg.field_length - float(i) * 0.5, 0, 0.0)
+		enemy.slot = i
+		enemy.max_hp = 100000.0
+		enemy.hp = enemy.max_hp
+		out.append(enemy)
+	return out
+
+
+## 一个只剩四分之一血的敌人。**每次现造** —— [method _bite_of] 会扣血，
+## 两次量共用一个的话第二次看到的是被第一次打过的那个。
+func _quarter_health() -> Array[PBEnemy]:
+	var out := _pack(1)
+	out[0].max_hp = 100.0
+	out[0].hp = 25.0
+	return out
+
+
+func _hurtable(dodge: float) -> PBAttacker:
+	var one := PBAttacker.new()
+	one.max_hp = 1000.0
+	one.hp = 1000.0
+	one.alive = true
+	one.dodge = dodge
+	return one
+
+
+## 打一下要害，量出主伤害之外多打了多少。
+func _bite_of(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
+	var out := PBCombatOutcome.new()
+	var before: float = enemies[0].hp
+	PBStrikeRules.land(attacker, enemies[0], 10.0, true, enemies, _cfg, 0, null, out)
+	return before - enemies[0].hp - 10.0

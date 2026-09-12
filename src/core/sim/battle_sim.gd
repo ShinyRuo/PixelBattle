@@ -516,7 +516,9 @@ func _deal_damage() -> void:
 ##
 ## 目标死了子弹就消失，**不改打别人** —— 理由写在 [PBProjectile] 顶部。
 func _advance_shots() -> void:
-	PBShotRules.advance(_shots, _enemies, _attackers, _cfg, _tick, log_to, _outcome)
+	PBShotRules.advance(
+		_shots, _enemies, _attackers, _cfg, _tick, log_to, _outcome, _crit_rng
+	)
 	_skip_dead()
 
 
@@ -782,7 +784,7 @@ func _enemies_attack() -> void:
 			enemy.damage_per_shot, enemy.element, target.defence, target.def_element, _cfg
 		)
 		_note_hit(enemy.slot, target.slot, damage, true)
-		if target.take_damage(damage, _tick):
+		if target.take_damage(damage, _tick, _crit_rng):
 			_outcome.allies_lost += 1
 			_note_down(target.slot)
 

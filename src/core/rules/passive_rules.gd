@@ -35,6 +35,9 @@ extends RefCounted
 ## | `splash` | [member PBAttacker.splash_damage] | [method PBStrikeRules.land] |
 ## | `heavy_hit` | [member PBAttacker.heavy_bonus] | [method PBStrikeRules.land] |
 ## | `revive` | [member PBAttacker.revives_max] | [method PBAttacker.take_damage] |
+## | `dodge` | [member PBAttacker.dodge] | [method dodges] |
+## | `bite_current` | [member PBAttacker.bite_current] | [method PBStrikeRules.land] |
+## | `bite_lost` | [member PBAttacker.bite_lost] | [method PBStrikeRules.land] |
 ##
 ## ## 「X% 几率打出更多伤害」就是暴击，不是第七个键
 ##
@@ -64,10 +67,46 @@ const HEAVY_HIT: StringName = &"heavy_hit"
 ## 一波能重生几次。**取整** —— 半次重生没有意义。
 const REVIVE: StringName = &"revive"
 
+## 挨一下普攻有多大机会一点血都不掉（M12-c2）。
+const DODGE: StringName = &"dodge"
+
+## 打出要害那一下额外按目标**当前**生命的几成再打一笔（M12-c2）。
+const BITE_CURRENT: StringName = &"bite_current"
+
+## 同 [constant BITE_CURRENT]，但按目标**已经损失**的生命算。
+const BITE_LOST: StringName = &"bite_lost"
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
-	CRIT_CHANCE, CRIT_DAMAGE, CRIT_ON_HIT, SPLASH, HEAVY_HIT, REVIVE
+	CRIT_CHANCE,
+	CRIT_DAMAGE,
+	CRIT_ON_HIT,
+	SPLASH,
+	HEAVY_HIT,
+	REVIVE,
+	DODGE,
+	BITE_CURRENT,
+	BITE_LOST,
 ]
+
+
+## 这一下闪掉了吗（M12-c2）。
+##
+## **它是一条规则，不是一份状态**，所以住在这里不住在 [PBAttacker] 上
+## —— 同 M7-e 那次把 `cast_at` 放进 [PBSkillRules]（那个类贴着
+## gdlint 的 20 个公开方法上限，而上限那条「超了不是错，是该搬了的信号」
+## 这两次指的地方都是对的）。
+##
+## **[member PBAttacker.dodge] 为 0 时一次骰子都不掷** ——
+## 同 [method PBCritRules.strike] 顶上那条：掷了就算没闪也已经拨动了那条流，
+## 而 [method PBAttacker.whole_field] 那条与 [PBCombatRules] 解析式排队模型
+## 逐位对拍的退化路径靠的就是「该掷几次就掷几次」。
+##
+## [param rng] 为 null 时（批量扫描、探测、老的构造点）恒不闪避且不掷骰。
+static func dodges(attacker: PBAttacker, rng: RandomNumberGenerator) -> bool:
+	if attacker == null or rng == null or attacker.dodge <= 0.0:
+		return false
+	return rng.randf() < attacker.dodge
 
 
 ## 这个键认不认得。
@@ -98,6 +137,12 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.heavy_bonus += amount
 		REVIVE:
 			attacker.revives_max += int(round(amount))
+		DODGE:
+			attacker.dodge += amount
+		BITE_CURRENT:
+			attacker.bite_current += amount
+		BITE_LOST:
+			attacker.bite_lost += amount
 		_:
 			return false
 	return true

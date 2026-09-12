@@ -29,3 +29,7 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 skill_ids = Array[StringName]([&"release_blades"])
+passives = {
+&"bite_lost": 0.15,
+&"crit_chance": 0.15
+}

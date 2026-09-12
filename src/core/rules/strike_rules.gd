@@ -47,6 +47,19 @@ const SPLASH_RADIUS: float = 0.06
 ## 血量高过几成算「高血量」（[member PBAttacker.heavy_bonus]，B05 日向兄妹）。
 const HEAVY_THRESHOLD: float = 0.5
 
+## 按目标生命百分比那一笔最多能打这一下伤害的几倍（M12-c2）。
+##
+## **封顶不是配平，是结构上必须有的。** [member PBAttacker.heavy_bonus] 顶上
+## 那条早就写着理由：§04 的 BOSS 血量按波次**指数**长，而百分比伤害是那条
+## 曲线的常数倍 —— 不封顶的话这几个角色在后期独占全场，
+## 而屏幕上只表现为「后面几波好像只有他在输出」。
+##
+## **原版自己也封**（柔拳最大 8000、骨拔最高 5000），只是它封的是绝对值。
+## 这里封成「这一下伤害的几倍」是因为本项目的伤害口径和原版换算不到一起
+## （同 `data/skills.tsv` 顶上那条「倍率是我们的」），
+## 而绝对值上限会在数值回归改一次基数之后整个失效，**且不报错**。
+const BITE_CAP: float = 3.0
+
 ## 命中之后那段暴击率加成持续几秒（[member PBAttacker.crit_on_hit]，B10）。
 ##
 ## 比普攻间隔长是有意的（最慢的攻速约 1.2 秒一下）：短于间隔的话
@@ -169,6 +182,7 @@ static func land(
 	out: PBCombatOutcome
 ) -> void:
 	var total: float = damage + _heavy_extra(attacker, enemy, damage)
+	total += _bite_extra(attacker, enemy, damage, crit)
 	if book != null:
 		book.hit(tick, -1 if attacker == null else attacker.slot, enemy.slot, total, false, crit)
 	if enemy.take_damage(total, tick):
@@ -211,6 +225,43 @@ static func _heavy_extra(attacker: PBAttacker, enemy: PBEnemy, damage: float) ->
 ## **不回头调 [method land]** —— 溅射不再触发溅射，见本类顶部。
 ## 也不记播报：一次普攻在屏幕上是一个数，而溅射打中的那几个会自己掉血、
 ## 由 [PBDamageWatch] 逐帧比出来（同「怪物死亡不记」那条，M6-j）。
+## 打出要害那一下按目标生命百分比再追加的一笔（M12-c2：日向宁次的柔拳、
+## 长十郎的骨拔）。没配就是 0。
+##
+## ## 它骑在暴击那个掷点上，不另掷一次
+##
+## 原版这两个各有自己的概率（18% / 15%），而「这一下打中了要害」
+## **就是暴击在这个游戏里的语义** —— 另开一个骰子的话，同一次出手会掷两遍，
+## 而 M10-c 那条「一个掷点」（[PBCritRules] 顶上）正是为了防这个。
+## 这一步已经为闪避开了一个新掷点，那一个是非开不可的
+## （挨打和出手不在同一条路上），这一个不是。
+##
+## **代价说清楚**：暴击光环会同时提高柔拳的触发率，而原版不会。
+## 那是相关，不是 bug —— 归数值回归。
+##
+## ## 两个方向是互补的，所以是两个字段不是一个
+##
+## `bite_current` 按**还剩多少**算（越打越弱，适合开场那一下），
+## `bite_lost` 按**已经掉了多少**算（越打越强，适合收尾）。
+## 合成一个字段加一个方向开关的话，一个人就带不了两种 —— 而原版的
+## 装备栏里两样都有。
+##
+## ## 加进主伤害，不另打一下
+##
+## 同 [method _heavy_extra]：分开打的话易伤（M7-d）会乘两次，
+## 而且屏幕上一次普攻会飘出两个数。
+static func _bite_extra(
+	attacker: PBAttacker, enemy: PBEnemy, damage: float, crit: bool
+) -> float:
+	if attacker == null or not crit or enemy.max_hp <= 0.0:
+		return 0.0
+	var share: float = enemy.hp * attacker.bite_current
+	share += maxf(enemy.max_hp - enemy.hp, 0.0) * attacker.bite_lost
+	if share <= 0.0:
+		return 0.0
+	return minf(share, damage * BITE_CAP)
+
+
 static func _splash(
 	attacker: PBAttacker,
 	center: PBEnemy,

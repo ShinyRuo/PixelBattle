@@ -34,13 +34,14 @@ static func advance(
 	cfg: PBSimConfig,
 	tick: int,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	rng: RandomNumberGenerator = null
 ) -> void:
 	for shot: PBProjectile in shots:
 		if not shot.alive:
 			continue
 		if shot.at_ally:
-			_hit_ally(shot, attackers, cfg, tick, book, out)
+			_hit_ally(shot, attackers, cfg, tick, book, out, rng)
 		else:
 			_hit_enemy(shot, enemies, attackers, cfg, tick, book, out)
 
@@ -122,7 +123,8 @@ static func _hit_ally(
 	cfg: PBSimConfig,
 	tick: int,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	rng: RandomNumberGenerator
 ) -> void:
 	var target: PBAttacker = attackers[shot.target]
 	if not target.is_targetable():
@@ -139,7 +141,7 @@ static func _hit_ally(
 	)
 	if book != null:
 		book.hit(tick, shot.source, target.slot, hurt, true)
-	if target.take_damage(hurt, tick):
+	if target.take_damage(hurt, tick, rng):
 		out.allies_lost += 1
 		if book != null:
 			book.ally_down(tick, target.slot)
