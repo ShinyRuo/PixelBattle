@@ -103,6 +103,39 @@ static func active_functions(
 	return out
 
 
+## 满档的羁绊给**每个在场成员**各发了什么（M12-d1）。
+## 返回 `{角色 id: {被动键: 量}}`，词汇表见 [PBPassiveRules]。
+##
+## **两组给同一个人同一个键时量相加**，不是后一组盖前一组 ——
+## 盖的话玩家凑满两组只拿到一组的量，**而那不报错**（同 [PBBuffBag]
+## 同 id 整份覆盖那个坑，M10-c 为它把光环挤出了效果袋）。
+##
+## [param bonded] 是算羁绊的名单，[param deployed] 是真的在打这一波的人。
+## **两份名单不能合成一份**：前者决定凑没凑齐，后者决定这一份兑不兑现 ——
+## 同 [method active_functions] 那条。
+static func active_passives(
+	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
+) -> Dictionary:
+	var out: Dictionary = {}
+	if table == null:
+		return out
+	var on_field: Dictionary = {}
+	for unit: PBUnit in deployed:
+		on_field[unit.character.id] = true
+	for bond: PBBond in table.all():
+		if bond.member_functions.is_empty():
+			continue
+		if active_count(bond, bonded) < bond.full_tier_count():
+			continue
+		for who: StringName in bond.member_functions:
+			if not on_field.has(who):
+				continue
+			var mine: Dictionary = out.get(who, {})
+			for key: StringName in bond.member_functions[who]:
+				var more: float = float(bond.member_functions[who][key])
+				mine[key] = float(mine.get(key, 0.0)) + more
+			out[who] = mine
+	return out
 ## 每组羁绊现在到场几个成员，`{ 羁绊 id: 人数 }`。
 ##
 ## 给估值用：**「再抽一张值多少」要对整个卡池问一遍**，

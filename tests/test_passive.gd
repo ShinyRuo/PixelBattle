@@ -38,15 +38,17 @@ func before_each() -> void:
 
 
 func test_the_bond_route_and_the_character_route_write_the_same_field() -> void:
-	# **这是这一步存在的理由。** M10-d 那四个键当时只有羁绊一个来源，
-	# 映射因此写在 `PBBondFunctionRules` 里；c2 来了第二个来源。
-	# 两处各写一份的话「羁绊给的溅射」和「他自带的溅射」迟早不一样大，
+	# **这是被动通道存在的理由。** M10-d 那四个键当时只有羁绊一个来源，
+	# 映射因此写在 `PBBondFunctionRules` 里；c2 来了第二个来源（角色自带），
+	# d1 又把羁绊那一路也改成了走成员表 —— 三条路，**一份映射**。
+	# 分开写的话「羁绊给的溅射」和「他自带的溅射」迟早不一样大，
 	# 而那不报错 —— 屏幕上照样溅射。
-	for key: StringName in PBBondFunctionRules.CARRIER_KEYS:
+	for key: StringName in PBBondFunctionRules.CARRIER_AMOUNTS:
+		var amount: float = PBBondFunctionRules.CARRIER_AMOUNTS[key]
 		var by_bond := PBAttacker.new()
-		PBBondFunctionRules.apply_to_carrier(by_bond, key)
+		PBPassiveRules.grant_all(by_bond, {key: amount})
 		var by_self := PBAttacker.new()
-		PBPassiveRules.grant(by_self, key, PBBondFunctionRules.CARRIER_AMOUNTS[key])
+		PBPassiveRules.grant(by_self, key, amount)
 		assert_eq(
 			_snapshot(by_bond), _snapshot(by_self), "「%s」两条路写出来的必须一样" % key
 		)

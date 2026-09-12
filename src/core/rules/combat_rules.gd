@@ -164,7 +164,8 @@ static func build_attackers(
 	beast: PBBeast = null,
 	beast_level: int = 1,
 	beast_cooldown_ticks: int = 0,
-	bond_functions: Dictionary = {}
+	bond_functions: Dictionary = {},
+	bond_passives: Dictionary = {}
 ) -> Array[PBAttacker]:
 	var team_mult: float = atk_tech_mult * bond_mult
 	var out: Array[PBAttacker] = []
@@ -228,17 +229,21 @@ static func build_attackers(
 		)
 		var skill := _build_skill(unit, wave_element, mult, i < gather_count, cfg)
 		# 羁绊功能档（§09，M3-f）：这个人是不是某组凑满了的羁绊的载体。
-		# 两个落点各管一半（M10-d）：装在大招上的，和装在他本人身上的 ——
+		# 两个落点各管一半：装在大招上的（聚拢 / 定身 / 减速力场，
+		# **一组只出一个载体**），和装在他本人身上的 ——
 		# **后者必须在这个循环里面**，因为只有这里知道这个攻击者是哪个角色。
 		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
-			if not PBBondFunctionRules.apply_to_skill(skill, key, cfg):
-				PBBondFunctionRules.apply_to_carrier(attacker, key)
-		# 他自带的常驻被动（M12-c2）。**和羁绊那一档走同一份映射**
-		# （[method PBPassiveRules.grant]），只是量由角色表给 ——
-		# 两处各写一份的话「羁绊给的溅射」和「他自带的溅射」会不一样大。
-		# 排在羁绊后面、`+=` 叠加：一个人可以既是载体又自带一个被动。
+			PBBondFunctionRules.apply_to_skill(skill, key, cfg)
+		# 落在他本人身上的那一半（M12-d1）：**每个在场成员各拿各的**，
+		# 不再是「一组一个载体拿一份」。原版 45 组里只有 3 组是人人同一句。
+		#
+		# 和角色自带的被动**走同一个 `grant_all`**，只是量的来源不同
+		# （一个来自羁绊表，一个来自名册）—— 另写一份的话
+		# 「羁绊给的溅射」和「他自带的溅射」迟早在叠加方式上分叉，
+		# 而分叉的那一侧静默生效。两份都是 `+=`，一个人可以两边都拿到。
 		PBPassiveRules.grant_all(attacker, unit.character.passives)
-		# 同一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
+		PBPassiveRules.grant_all(attacker, bond_passives.get(unit.character.id, {}))
+		# 名册那一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
 		# 所以直接共用引用不拷贝 —— 同 [member PBSkill.on_hit] 那一条。
 		attacker.on_hit_buffs = unit.character.on_hit_buffs
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：

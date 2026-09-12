@@ -37,6 +37,10 @@ var attackers: Array[PBAttacker] = []
 ## **各算一遍的话，在 `dispatched` 被清零之后再算就会多算一档**，且不报错。
 var bond_functions: Dictionary = {}
 
+## 满档的羁绊给每个在场成员各发了什么（M12-d1）。
+## 见 [method PBBondRules.active_passives]。
+var bond_passives: Dictionary = {}
+
 ## 本波战斗内部的掷骰流（暴击，M10-c）。**null = 从不暴击。**
 ##
 ## ## 为什么它挂在计划上，而不是当 [method PBRunSim.resolve_battle] 的参数

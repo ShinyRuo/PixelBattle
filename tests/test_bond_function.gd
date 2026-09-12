@@ -49,19 +49,25 @@ func test_exactly_twelve_bonds_carry_a_function_and_no_two_share_a_skill_one() -
 	# 兄弟的爱恨和幕后黑手各带一份暴击率是设计上说得通的
 	# （见 [method PBBondFunctionRules.landing_of]）。
 	#
-	# 所以守两件事：**恰好 12 组带功能**（多出来的说明有人给新羁绊硬套了
+	# 所以守两件事：**恰好 12 组带着点什么**（多出来的说明有人给新羁绊硬套了
 	# 一个不对的键），以及**落在大招上的键不许共用**。
 	#
-	# > **剩下 11 组是空着的，而那不是「还没写」。** 它们的机制是
-	# > 「强化某个角色的某个技能」，而 49 个角色里配了技能的是 2 个 ——
-	# > 前置是角色技能表，不是这张表。见《开发路线图》M10-d 那一节。
+	# **两条路都要数**（M12-d1）：`功能键` 那一列，和「每个在场成员各拿
+	# 自己那一份」那张表。只数前者的话，一组搬到成员表之后这里会以为
+	# 它「没有功能了」—— 而它其实变强了。
+	#
+	# > **剩下那些是空着的，而那不是「还没写」。** 它们的机制是
+	# > 「强化某个角色的某个技能」，而那要一套技能补丁词汇 ——
+	# > 前置在 M12-d2，不是这张表。
 	var seen: Array[StringName] = []
 	var total: int = 0
 	for bond: PBBond in _cfg.bonds.all():
 		var key: StringName = bond.function_at(bond.full_tier_count())
-		if key == &"":
+		if key == &"" and bond.member_functions.is_empty():
 			continue
 		total += 1
+		if key == &"":
+			continue
 		if PBBondFunctionRules.landing_of(key) != PBBondFunctionRules.Landing.SKILL:
 			continue
 		assert_false(seen.has(key), "大招档的功能键 %s 被两组羁绊共用了" % key)

@@ -11,3 +11,8 @@ tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&"splash"])
 tier_function_carriers = Array[StringName]([&"konan"])
+member_functions = {
+&"konan": {
+&"splash": 0.35
+}
+}

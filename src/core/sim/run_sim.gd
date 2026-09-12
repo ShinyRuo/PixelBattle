@@ -192,6 +192,9 @@ static func lock_plan(
 	plan.bond_functions = PBBondRules.active_functions(
 		state.bonded_units(cfg), plan.deployed, cfg.bonds
 	)
+	plan.bond_passives = PBBondRules.active_passives(
+		state.bonded_units(cfg), plan.deployed, cfg.bonds
+	)
 	plan.attackers = PBCombatRules.build_attackers(
 		plan.deployed,
 		plan.wave.element,

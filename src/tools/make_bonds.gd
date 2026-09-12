@@ -31,6 +31,7 @@ const COL_FULL: int = 2
 const COL_FUNCTION: int = 3
 const COL_CARRIER: int = 4
 const COL_MEMBERS: int = 5
+const COL_MEMBER_FX: int = 6
 
 ## 满档加成 = 本值 ×（满档人数 − 1）。
 ##
@@ -103,9 +104,49 @@ func _write_one(row: PackedStringArray) -> String:
 	bond.tier_function_carriers = [StringName(row[COL_CARRIER])] as Array[StringName]
 	if row[COL_CARRIER] != "" and not members.has(StringName(row[COL_CARRIER])):
 		return "%s 的载体 %s 不是本组成员" % [key, row[COL_CARRIER]]
+	var trouble := _fill_members(bond, row, members)
+	if trouble != "":
+		return "%s 的成员效果：%s" % [key, trouble]
 
 	var err := ResourceSaver.save(bond, "%s/%s.tres" % [OUT_DIR, key])
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
+
+
+## 「每个在场成员各拿自己那一份」那张表（M12-d1）。**返回错误信息，空串 = 成功。**
+##
+## 两个来源汇进同一张表：
+##
+## - **`功能键` 那一列点到触发型那四个时，翻译成载体本人的一份**
+##   （量取 [constant PBBondFunctionRules.CARRIER_AMOUNTS]，**一个数都没动**）。
+##   M10-d 时它们走的是 `Landing.CARRIER`，那一档 M12-d1 去掉了 ——
+##   留着两条路的话「羁绊给的溅射」会有两个来源，而两个来源迟早不一样大。
+## - **`成员效果` 那一列**：`角色id:键=量,键=量;角色id:...`，
+##   这才是原版的形状（45 组里只有 3 组是人人同一句）。
+func _fill_members(bond: PBBond, row: PackedStringArray, members: Array) -> String:
+	var out: Dictionary = {}
+	var key := StringName(row[COL_FUNCTION])
+	if PBBondFunctionRules.CARRIER_AMOUNTS.has(key):
+		out[StringName(row[COL_CARRIER])] = {key: PBBondFunctionRules.CARRIER_AMOUNTS[key]}
+	var cell: String = row[COL_MEMBER_FX] if row.size() > COL_MEMBER_FX else ""
+	for chunk: String in cell.split(";", false):
+		var half: PackedStringArray = chunk.split(":")
+		if half.size() != 2:
+			return "「%s」不是 角色id:键=量 的样子" % chunk
+		var who := StringName(half[0].strip_edges())
+		if not members.has(who):
+			return "「%s」不是本组成员" % who
+		var mine: Dictionary = out.get(who, {})
+		for pair: String in half[1].split(",", false):
+			var kv: PackedStringArray = pair.split("=")
+			if kv.size() != 2:
+				return "「%s」不是 键=量 的样子" % pair
+			var name := StringName(kv[0].strip_edges())
+			if not PBPassiveRules.is_known(name):
+				return "不认识的键「%s」" % name
+			mine[name] = float(kv[1].strip_edges())
+		out[who] = mine
+	bond.member_functions = out
+	return ""
 
 
 ## 表里没有的 `.tres` 一律删掉 —— 6 组属性型兜底就是这样离场的。

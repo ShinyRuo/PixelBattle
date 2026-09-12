@@ -1,6 +1,23 @@
 # 羁绊表 —— `src/tools/make_bonds.gd` 的输入，一行一组。
 #
-# 字段（Tab 分隔）：羁绊键	显示名	满档人数	功能键	载体	成员（逗号分隔）
+# 字段（Tab 分隔）：羁绊键	显示名	满档人数	功能键	载体	成员（逗号分隔）	成员效果
+#
+# ## 成员效果那一列（M12-d1）
+#
+# `角色id:键=量,键=量;角色id:键=量`，空 = 没有。词汇表见 `PBPassiveRules`，
+# 不认识的键生成器直接报错退出。
+#
+# **这才是原版的形状。** 解包文档 §6 开头那句：「每组羁绊给每个成员各发一份
+# 属于他自己的效果」—— 45 组里只有 3 组是人人同一句。而我们此前是
+# 「一组一个载体拿一份」，表达不了〔军师夫妇〕那种「手鞠改她的气流乱舞、
+# 鹿丸改他的影子模仿术」。
+#
+# **M3-f 那条「一组羁绊只出一个载体」没被推翻**：它针对的是「给每人发同一份
+# 倍率」，而给每人发一个**不同的机制**是相反的事。倍率型仍然不许人手一份，
+# 所以 `功能键` 那一列（聚拢 / 定身 / 减速力场）照旧一组一个载体。
+#
+# **触发型那四个（重生 / 溅射 / 打高血量多打一笔 / 命中后提暴击）不用写在这一列**：
+# 生成器会把 `功能键` 那一列翻译过来，量取 `CARRIER_AMOUNTS`，一个数没动。
 #
 # 数据来源是 `Docs/忍法战场_忍者&羁绊完整数值文档.MD` 第 7 节的 B01~B23，
 # 组成成员一律照抄。**加成数值不是原版的** —— 文档第 10 节自己声明
@@ -51,7 +68,7 @@ haku_and_zabuza	随雪而逝	2			haku,zabuza
 immortal_pair	不死二人组	2	revive	hidan	kakuzu,hidan
 akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu
 kai_squad	凯班	4	gather	rock_lee	might_guy,rock_lee,tenten,neji_hyuga
-hyuga_pair	日向兄妹	2	heavy_hit	neji_hyuga	neji_hyuga,hinata
+hyuga_pair	日向兄妹	2			neji_hyuga,hinata	neji_hyuga:crit_chance=0.09;hinata:crit_chance=0.15,bite_current=0.12
 sand_siblings	砂忍三巨头	3	slow_field	gaara	gaara,temari,kankuro
 earth_curse	地之咒印	2			kimimaro,orochimaru
 my_cage	吾之牢笼	2			kimimaro,jugo

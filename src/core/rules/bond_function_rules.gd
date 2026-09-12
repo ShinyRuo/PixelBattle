@@ -34,10 +34,14 @@ extends RefCounted
 ## 取的是 2 秒这种短窗口，**不是越长越好**。
 
 ## 一个功能兑现在哪儿。M10-c 之前只有其中两种，而且没人问过。
+##
+## **`CARRIER` 那一档 M12-d1 整个去掉了**：它当时的意思是「开波只给载体本人
+## 乘死一份」，而那正是 [member PBBond.member_functions] 的特例 ——
+## 后者是「每个在场成员各拿自己那一份」，一个载体只是「表里只有一个人」。
+## 留着两套的话，「羁绊给的溅射」会有两个来源，而两个来源迟早不一样大。
 enum Landing {
 	SKILL,  ## 装在载体的大招上（聚拢 / 吸附 / 定身 / 减速）
 	TEAM,  ## 开波给全队每个人乘死一份（暴击光环）
-	CARRIER,  ## 开波只给载体本人乘死一份（触发型：重生 / 溅射 / 命中后提暴击）
 	ECONOMY,  ## 不进战斗（金币不再倒扣）
 }
 
@@ -92,17 +96,15 @@ const CRIT_CHANCE: StringName = PBPassiveRules.CRIT_CHANCE
 ## [member PBAttacker.crit_bonus]，理由同 [constant CRIT_CHANCE]。
 const CRIT_DAMAGE: StringName = PBPassiveRules.CRIT_DAMAGE
 
-# ── 触发型（M10-d）─────────────────────────────────────────────
+# ── 触发型（M10-d，M12-d1 起走成员表）────────────────────────
 #
-# 这四个是 [enum Landing] 的 `CARRIER` 档：**只发给载体本人**，
-# 不像暴击光环那样发给全队。M3-f 那条「一组羁绊只出一个载体」因此
-# 原样成立，而且这一档比大招那一档更贴近它 —— 前五个至少还要玩家
-# 手动放一发大招才兑现，这四个是他站在场上就一直在发生的事。
+# 这四个是「他站在场上就一直在发生的事」，不像暴击光环那样发给全队。
+# M10-d 时它们走的是 `Landing.CARRIER`（一组一个载体拿一份），
+# **M12-d1 把那一档整个去掉了** —— 现在它们和别的被动一样写在
+# [member PBBond.member_functions] 里，**每个在场成员各拿各的**。
 #
-# **§7 那 15 组没有功能键的羁绊里，只有这四组做得出来。** 其余的机制
-# 是「强化某个角色的某个技能」（豪火球附带天照、月读控两个目标……），
-# 而 49 个角色里配了技能的是 2 个 —— 卡的不是缺一个键，
-# 是被强化的对象根本不存在。见《开发路线图》M10-d 那一节。
+# 键留在这个文件里是因为羁绊表仍然可以用 `功能键` 那一列点它们
+# （兼容老的写法），而量与映射都在 [PBPassiveRules]。
 
 ## 命中之后短时提暴击（§7 的 B10 绝牛雷犁热刀）。
 ## 落点是 [member PBAttacker.crit_on_hit]。
@@ -182,11 +184,9 @@ const ALL: Array[StringName] = [
 	REVIVE,
 ]
 
-## [enum Landing] 为 `CARRIER` 的那几个。见 [method apply_to_carrier]。
-const CARRIER_KEYS: Array[StringName] = [CRIT_ON_HIT, SPLASH, HEAVY_HIT, REVIVE]
-
-## 羁绊那一路每个键发多少（M12-c2）。**量在这里，映射在 [PBPassiveRules]** ——
-## 角色自带的被动走同一份映射、各自带自己的量，
+## 羁绊表 `功能键` 那一列点到这几个时各发多少（M10-d 定的数）。
+##
+## **量在这里，映射在 [PBPassiveRules]** —— 成员表那条路各自带自己的量，
 ## 两处各写一份映射的表现是「羁绊给的溅射和角色自带的溅射不一样大」。
 const CARRIER_AMOUNTS := {
 	CRIT_ON_HIT: PBStrikeRules.BOND_CRIT_ON_HIT,
@@ -216,8 +216,6 @@ static func landing_of(key: StringName) -> Landing:
 		return Landing.ECONOMY
 	if key == CRIT_CHANCE or key == CRIT_DAMAGE:
 		return Landing.TEAM
-	if CARRIER_KEYS.has(key):
-		return Landing.CARRIER
 	return Landing.SKILL
 
 
@@ -271,23 +269,6 @@ static func apply_to_team(attackers: Array[PBAttacker], functions: Dictionary) -
 					for one: PBAttacker in attackers:
 						PBPassiveRules.grant(one, key, PBCritRules.BOND_CRIT_DAMAGE)
 
-
-## 把一个 [enum Landing] 为 `CARRIER` 的功能装到**载体本人**身上（M10-d）。
-## 返回 false 表示这个键不归它管。
-##
-## ## 为什么它要在建人的循环**里面**，而全队光环在循环外面
-##
-## 两者的判据不同：光环是「这一组羁绊给的」，跟具体哪个人无关；
-## 而这一档要认人 —— 而**只有那个循环里才知道这个攻击者对应哪个角色 id**
-## （[PBAttacker] 上没有、也不该有角色 id，铁律 5）。
-## 搬到循环外面就要再造一份「攻击者 ↔ 角色」的对照表，
-## 而那份表和出战席顺序对不上的表现是「羁绊的机制发到了别人身上」。
-##
-## 和 [method apply_to_skill] 同一条：改的是**已经建好的**攻击者。
-static func apply_to_carrier(attacker: PBAttacker, key: StringName) -> bool:
-	if not CARRIER_KEYS.has(key):
-		return false
-	return PBPassiveRules.grant(attacker, key, CARRIER_AMOUNTS.get(key, 0.0))
 
 
 ## 这份功能表里有没有人带着 [constant GOLD_FLOOR]。

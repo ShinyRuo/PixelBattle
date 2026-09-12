@@ -11,3 +11,8 @@ tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&"crit_on_hit"])
 tier_function_carriers = Array[StringName]([&"raikage"])
+member_functions = {
+&"raikage": {
+&"crit_on_hit": 0.25
+}
+}
