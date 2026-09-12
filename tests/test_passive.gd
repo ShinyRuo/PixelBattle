@@ -74,6 +74,47 @@ func test_every_key_in_the_vocabulary_actually_moves_something() -> void:
 		assert_ne(_snapshot(attacker), before, "「%s」装上了却什么都没改" % key)
 
 
+func test_the_rate_keys_only_take_effect_once_equip_folds_them() -> void:
+	# `hp_bonus` / `move_speed_bonus` 是**累加器**：`grant` 只往累加器上加，
+	# 真正生效要折进 `max_hp` / `move_speed`。
+	# 把折算留给调用方的话，「忘了折」的表现是**那一组羁绊配了不生效** ——
+	# 数据、界面、日志全部正常，只有血条不对。所以折算在 `equip` 里面。
+	var attacker := PBAttacker.new()
+	attacker.max_hp = 1000.0
+	attacker.move_speed = 0.010
+	attacker.defence = 12.0
+	PBPassiveRules.grant(attacker, PBPassiveRules.HP_BONUS, 0.5)
+	assert_almost_eq(attacker.max_hp, 1000.0, 0.0001, "光 grant 还不该动血上限")
+
+	var folded := PBAttacker.new()
+	folded.max_hp = 1000.0
+	folded.move_speed = 0.010
+	folded.defence = 12.0
+	PBPassiveRules.equip(
+		folded,
+		[
+			{PBPassiveRules.HP_BONUS: 0.5},
+			{PBPassiveRules.MOVE_SPEED_BONUS: 0.2, PBPassiveRules.DEFENCE: 30.0},
+		]
+	)
+	assert_almost_eq(folded.max_hp, 1500.0, 0.0001, "折算之后血上限该抬起来")
+	assert_almost_eq(folded.move_speed, 0.012, 0.000001, "移速同理")
+	# **裸名是量型：防御直接加点数**，不走折算那一条（原版写的就是点数，
+	# 而 M12-b 之后我们的护甲和它同一把刻度）。
+	assert_almost_eq(folded.defence, 42.0, 0.0001, "防御是直接加上去的点数")
+
+
+func test_two_rate_sources_add_up_instead_of_compounding() -> void:
+	# 两组各给 +50% 生命该是 **+100%**，不是 1.5 x 1.5 = 2.25。
+	# 边加边折就是连乘，而那不是人会预期的叠加方式 —— 同 `damage_bonus` 那条。
+	var attacker := PBAttacker.new()
+	attacker.max_hp = 1000.0
+	PBPassiveRules.equip(
+		attacker, [{PBPassiveRules.HP_BONUS: 0.5}, {PBPassiveRules.HP_BONUS: 0.5}]
+	)
+	assert_almost_eq(attacker.max_hp, 2000.0, 0.0001, "两份 +50% 该相加成 +100%")
+
+
 func test_a_key_nobody_knows_is_refused_not_silently_dropped() -> void:
 	var attacker := PBAttacker.new()
 	assert_false(PBPassiveRules.is_known(&"no_such_key"), "这个键不该认得")
@@ -101,9 +142,19 @@ func test_an_empty_passive_table_changes_absolutely_nothing() -> void:
 	# 同 M3.5-f 装备那条「空着 = 一字不差」：没人填被动时全部既有配平
 	# 数字一位都不许动。**填上了就不是了** —— 被动是他站着就一直在
 	# 发生的事，批量扫描吃得到，那是 M12 头一次真的动了自动模拟的输出。
+	#
+	# **防御那一格要单独交代**（M12-e2）：`defence` 是词汇表里唯一一个
+	# 写在**三围算出来的基数**上的键（裸名 = 量型，见 [PBPassiveRules] 顶上），
+	# 所以建人那一刻它本来就不是 0 —— 拿它和一个裸 [PBAttacker] 比
+	# 只会量出「这个角色有几点护甲」，和被动一点关系都没有。
+	# 基线里因此照抄它，这一格在这条断言下是空的；
+	# 真正钉住 `defence` 有没有接上读点的是
+	# [method test_every_key_in_the_vocabulary_actually_moves_something]。
 	var built := _build([_character({}), _character({})])
 	for one: PBAttacker in built:
-		assert_eq(_snapshot(one), _snapshot(PBAttacker.new()), "没填就该和裸的一模一样")
+		var bare := PBAttacker.new()
+		bare.defence = one.defence
+		assert_eq(_snapshot(one), _snapshot(bare), "没填就该和裸的一模一样")
 
 
 # ── 名册那张表 ────────────────────────────────────────────────
@@ -157,6 +208,9 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.bite_lost,
 		one.reflect,
 		one.damage_bonus,
+		one.defence,
+		one.hp_bonus,
+		one.move_speed_bonus,
 	]
 
 
@@ -176,52 +230,12 @@ func _build(characters: Array) -> Array[PBAttacker]:
 	)
 
 
-# ── 按生命百分比那一笔 ────────────────────────────────────────
+# ── 被动也能挂一份效果（M12-c2）────────────────────────────────
 
 
-func test_the_bite_only_happens_on_a_telling_blow() -> void:
-	# 它骑在暴击那个掷点上（不另掷一次），所以 `crit` 为 false 时是 0。
-	var attacker := _striker()
-	attacker.bite_current = 0.5
-	var enemies := _pack(1)
-	var out := PBCombatOutcome.new()
-	var before: float = enemies[0].hp
-	PBStrikeRules.land(attacker, enemies[0], 10.0, false, enemies, _cfg, 0, null, out)
-	assert_almost_eq(before - enemies[0].hp, 10.0, 0.001, "没打出要害就只有主伤害")
-
-
-func test_the_two_bites_read_opposite_halves_of_the_health_bar() -> void:
-	# `bite_current` 越打越弱、`bite_lost` 越打越强 —— 两个字段而不是
-	# 一个加方向开关，因为一个人可以两样都带。
-	var now := _striker()
-	now.bite_current = 0.2
-	var lost := _striker()
-	lost.bite_lost = 0.2
-	# 血量故意只有 100：封顶是「这一下伤害的几倍」（这里 10 × 3），
-	# 拿一个十万血的人来量的话两边都被封到同一个数，
-	# 而那正是下一条要问的事。
-	assert_almost_eq(_bite_of(now, _quarter_health()), 5.0, 0.01, "按还剩多少算")
-	assert_almost_eq(_bite_of(lost, _quarter_health()), 15.0, 0.01, "按已经掉了多少算")
-
-
-func test_the_bite_is_capped_so_a_boss_cannot_be_melted_by_a_percentage() -> void:
-	# **封顶不是配平。** [member PBAttacker.heavy_bonus] 顶上早就写着：
-	# BOSS 血量按波次指数长，百分比伤害是那条曲线的常数倍 ——
-	# 不封顶的话这几个角色在后期独占全场，而屏幕上只表现为
-	# 「后面几波好像只有他在输出」。原版自己也封（柔拳 8000、骨拔 5000）。
-	var attacker := _striker()
-	attacker.bite_current = 0.9
-	var enemies := _pack(1)
-	enemies[0].max_hp = 1000000.0
-	enemies[0].hp = 1000000.0
-	assert_almost_eq(
-		_bite_of(attacker, enemies),
-		10.0 * PBStrikeRules.BITE_CAP,
-		0.001,
-		"封在这一下伤害的几倍上"
-	)
-
-
+## 一个出得了手的人。**和 `tests/test_bite.gd` 里那一份是两份夹具**
+## （M12-e2 拆文件时留下的）：两边问的是不同的事，
+## 合并成一处共享的话，一边改夹具会静默动到另一边的结论。
 func _striker() -> PBAttacker:
 	var one := PBAttacker.new()
 	one.slot = 0
@@ -234,7 +248,7 @@ func _striker() -> PBAttacker:
 	return one
 
 
-## 一个满血、打不死的敌人。量的是「掉了多少」，不是「死没死」。
+## 一个满血、打不死的敌人。量的是「挂上了什么」，不是「死没死」。
 func _pack(count: int) -> Array[PBEnemy]:
 	var wave := PBWaveRules.build(3, _cfg, _rng)
 	var out: Array[PBEnemy] = []
@@ -248,25 +262,6 @@ func _pack(count: int) -> Array[PBEnemy]:
 	return out
 
 
-## 一个只剩四分之一血的敌人。**每次现造** —— [method _bite_of] 会扣血，
-## 两次量共用一个的话第二次看到的是被第一次打过的那个。
-func _quarter_health() -> Array[PBEnemy]:
-	var out := _pack(1)
-	out[0].max_hp = 100.0
-	out[0].hp = 25.0
-	return out
-
-
-
-## 打一下要害，量出主伤害之外多打了多少。
-func _bite_of(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
-	var out := PBCombatOutcome.new()
-	var before: float = enemies[0].hp
-	PBStrikeRules.land(attacker, enemies[0], 10.0, true, enemies, _cfg, 0, null, out)
-	return before - enemies[0].hp - 10.0
-
-
-# ── 被动也能挂一份效果（M12-c2）────────────────────────────────
 
 
 func test_a_telling_blow_hangs_the_passives_own_effect_on_the_target() -> void:

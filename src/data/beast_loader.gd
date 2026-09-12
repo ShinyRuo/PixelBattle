@@ -63,6 +63,27 @@ static func load_from(dir_path: String) -> PBBeastTable:
 		if beast == null:
 			push_error("这份尾兽数据装不进来（不是 PBBeast？）：%s" % path)
 			continue
+		var bad := _unknown_aura_keys(beast)
+		if not bad.is_empty():
+			# **不认识的光环键直接拒收，不静默跳过**（M12-e2）。
+			# 静默的表现正是「配了不生效」：表装得进来、界面照样列这只尾兽、
+			# 玩家照样花钱升级，只有光环那一份什么都不发生。
+			# 同 `data/skills.tsv` 那一列「额外」的规矩。
+			push_error("这只尾兽的光环里有认不得的键 %s：%s" % [bad, path])
+			continue
 		if not table_out.add(beast):
 			push_error("这份尾兽数据被拒收（id 空/重复，或减速倍率越界）：%s" % path)
 	return table_out
+
+
+## 这只尾兽的 [member PBBeast.aura_passives] 里有哪些键是词汇表不认得的。
+##
+## **认不认得只有一处**（[method PBPassiveRules.is_known]）——
+## 在这里另抄一份名单的话，「这个键认不认」迟早和规则层分叉，
+## 而分叉的那一侧静默生效。
+static func _unknown_aura_keys(beast: PBBeast) -> Array[StringName]:
+	var bad: Array[StringName] = []
+	for key: StringName in beast.aura_passives:
+		if not PBPassiveRules.is_known(key):
+			bad.append(key)
+	return bad

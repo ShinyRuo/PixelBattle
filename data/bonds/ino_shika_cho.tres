@@ -11,7 +11,17 @@ tier_counts = Array[int]([4])
 tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&"root"])
 tier_function_carriers = Array[StringName]([&"shikamaru"])
+member_functions = {
+&"choji": {
+&"hp_bonus": 0.5
+}
+}
 member_skill_patches = {
+&"choji": {
+&"human_bullet": {
+&"radius_scale": 1.5
+}
+},
 &"ino": {
 &"mind_transfer": {
 &"targets_add": 1.0

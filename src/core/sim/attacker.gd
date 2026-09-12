@@ -249,6 +249,26 @@ var reflect: float = 0.0
 ## 让它也管技能得把顺序倒过来，那是另一笔。**降级记在这里。**
 var damage_bonus: float = 0.0
 
+
+## 常驻加血：最大生命多几成（M12-e2）。中性值 0.0，理由同 [member damage_bonus]。
+##
+## **它是一个累加器，不是读点。** 折算发生在
+## [method PBPassiveRules.equip] 的末尾，一次性乘进 [member max_hp]。
+##
+## ## 为什么不让消费方去乘
+##
+## [member max_hp] 有一大把读点（[method revive]、[method heal] 的封顶、
+## 悬崖二分的缩放……），让它们各自乘一遍的话**漏一处就是一把新尺子**，
+## 而漏掉的那一处不报错 —— 同 [constant PBBuffRules.HURT] 顶上那条。
+## 折在建人那一刻只有一个写点，而 [method revive] 随后把 `hp` 填到新的上限。
+var hp_bonus: float = 0.0
+
+## 常驻加速：移动速度多几成（M12-e2）。中性值 0.0。
+##
+## 理由同 [member hp_bonus]：[member move_speed] 被 [PBMoveRules] 的
+## 两条路和 [method revive] 各读一次，折在建人那一刻只有一个写点。
+var move_speed_bonus: float = 0.0
+
 ## 打出要害那一下顺带挂在目标身上的效果（M12-c2）。
 ## 读点在 [method PBStrikeRules.land] 里面。
 ##
@@ -456,6 +476,12 @@ func clone() -> PBAttacker:
 	out.bite_lost = bite_lost
 	out.reflect = reflect
 	out.damage_bonus = damage_bonus
+	# M12-e2 那两个累加器也要跟过来 —— 它们已经折进 `max_hp` / `move_speed`
+	# 了，拷贝是为了让复制品和本体在**字段上**逐个相同（`assert_eq` 对整个
+	# 对象比的那几条测试靠这个），折算不会因此跑第二遍：
+	# 折算只发生在 [method PBPassiveRules.equip] 里，而复制品不走建人那条路。
+	out.hp_bonus = hp_bonus
+	out.move_speed_bonus = move_speed_bonus
 	out.on_hit_buffs = on_hit_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at

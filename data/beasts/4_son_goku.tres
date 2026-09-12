@@ -6,11 +6,14 @@
 script = ExtResource("1_beast")
 id = &"son_goku"
 name_key = "beast.son_goku"
-aura_power = 0.25
-aura_element = 5
+aura_power = 0.0
+aura_element = -1
 aura_member_ids = Array[StringName]([])
 aura_ultimate_cd_scale = 1.0
 aura_def_reduction = 0.0
+aura_passives = {
+&"reflect": 0.03
+}
 ultimate_cooldown_seconds = 0.0
 ultimate_damage_seconds = 6.0
 ultimate_element = 0

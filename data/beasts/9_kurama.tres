@@ -6,11 +6,14 @@
 script = ExtResource("1_beast")
 id = &"kurama"
 name_key = "beast.kurama"
-aura_power = 0.6
+aura_power = 0.0
 aura_element = -1
-aura_member_ids = Array[StringName]([&"naruto"])
+aura_member_ids = Array[StringName]([])
 aura_ultimate_cd_scale = 1.0
 aura_def_reduction = 0.0
+aura_passives = {
+&"damage_bonus": 0.01
+}
 ultimate_cooldown_seconds = 0.0
 ultimate_damage_seconds = 25.0
 ultimate_element = -1

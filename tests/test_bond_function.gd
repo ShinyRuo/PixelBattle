@@ -31,7 +31,7 @@ func before_each() -> void:
 # ── 数据层 ────────────────────────────────────────────────────
 
 
-func test_exactly_twelve_bonds_carry_a_function_and_no_two_share_a_skill_one() -> void:
+func test_no_two_bonds_share_a_skill_function_key() -> void:
 	# §09 的硬性规范：**羁绊的最高档要解锁一个机制**，不能只是更大的百分比。
 	#
 	# ## M10-b 之前这条断的是「每一组都要有功能」
@@ -51,7 +51,9 @@ func test_exactly_twelve_bonds_carry_a_function_and_no_two_share_a_skill_one() -
 	#
 	# 所以守的是**「落在大招上的键不许共用」**，外加一条「总得有人带着点什么」。
 	#
-	# **不再写死「恰好几组」**（M12-d3 第二次为它变红）：那个数本意是
+	# **不再写死「恰好几组」**（M12-d3 第二次为它变红；M12-e2 把函数名里
+	# 那个 `exactly_twelve` 也一并去掉了 —— 一个和自己函数体对不上的名字
+	# 会让下一个人以为这条还在数数）：那个数本意是
 	# 「多出来的说明有人给新羁绊硬套了一个不对的键」，而它拦不住那件事 ——
 	# **加一组正经的新羁绊也会让它变红**，也就是内容变多就报错。
 	# 真正说得准的是共用那一条：一个大招只有一份，两组配同一个就是少了一个机制。

@@ -25,7 +25,7 @@ extends RefCounted
 ##
 ## 同 [PBBuffRules.ALL] 顶上那条（M7-a）。拼对了却没人读的键比拼错更难查：
 ## 数据、界面、日志全部正常，只有伤害数字不对。所以这里**一个键都不预留**,
-## 要加就连着它的读点一起加。今天这六个的读点全部已经在跑：
+## 要加就连着它的读点一起加。下面每一行的读点都已经在跑：
 ##
 ## | 键 | 落在哪个字段 | 谁读它 |
 ## |---|---|---|
@@ -40,6 +40,32 @@ extends RefCounted
 ## | `bite_lost` | [member PBAttacker.bite_lost] | [method PBStrikeRules.land] |
 ## | `reflect` | [member PBAttacker.reflect] | [method PBStrikeRules.hurt_ally] |
 ## | `damage_bonus` | [member PBAttacker.damage_bonus] | [method PBAttacker.strike_for] |
+## | `defence` | [member PBAttacker.defence] | [method PBStatRules.strike_damage] |
+## | `hp_bonus` | [member PBAttacker.hp_bonus] | [method equip] 折进 `max_hp` |
+## | `move_speed_bonus` | [member PBAttacker.move_speed_bonus] | [method equip] 折进 `move_speed` |
+##
+## ## 裸名 = 量型，`_bonus` 后缀 = 率型
+##
+## 原版自己两种都用：防御一律写点数（羁绊那边是「全队友军提升 30 点防御」，
+## 尾兽那边是「提升 [4x等级] 点防御」），而生命与移速一律写百分比
+## （「提升 [1.5x等级]% 最大生命值」「提升 [10x等级]% 的移动速度」）。
+##
+## **照抄点数是对的，因为刻度是同一把**：M12-b 把换算系数换成了
+## `war3mapMisc.txt` 那一套（护甲 `4 + 敏捷×0.22`、生命 `100 + 力量×80`），
+## 所以 [member PBAttacker.defence] 本来就在原版的刻度上。
+## 发明一个「点数 → 成数」的换算反而会在数值回归改一次基数之后整个失效，
+## **而且不报错**（同 [constant PBStrikeRules.BITE_CAP] 顶上那条）。
+##
+## 统一成一种的话，读表的人得记住哪个字段是哪种，**而记错不报错** ——
+## 同 [PBSkillPatchRules] 那条「每个键自己说清楚是加是乘是设」。
+##
+## ## 忍术抗性没有进来，那是有意的
+##
+## 原版有一大批「提升 N% 忍术抗性」（一只尾兽、好几组羁绊都带着它），
+## 而它要求**敌人的伤害分类型** —— 今天敌人只有一种伤害，
+## 加一个抗性字段之后没有任何一条伤害会去查它。
+## 那正是「配了不生效」，比「配不了」难查得多（同 M7-a 那条
+## 「词汇表里的键 = 已经接上读点的键」）。**降级记在这里。**
 ##
 ## ## 「X% 几率打出更多伤害」就是暴击，不是第七个键
 ##
@@ -84,6 +110,15 @@ const REFLECT: StringName = &"reflect"
 ## 常驻增伤：普攻多打几成（M12-e）。
 const DAMAGE_BONUS: StringName = &"damage_bonus"
 
+## 常驻加防，**点数**（M12-e2）。见本类顶上「裸名 = 量型」。
+const DEFENCE: StringName = &"defence"
+
+## 最大生命多几成（M12-e2）。中性 0.0，折算在 [method equip] 末尾。
+const HP_BONUS: StringName = &"hp_bonus"
+
+## 移动速度多几成（M12-e2）。中性 0.0，折算在 [method equip] 末尾。
+const MOVE_SPEED_BONUS: StringName = &"move_speed_bonus"
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
 	CRIT_CHANCE,
@@ -97,6 +132,9 @@ const ALL: Array[StringName] = [
 	BITE_LOST,
 	REFLECT,
 	DAMAGE_BONUS,
+	DEFENCE,
+	HP_BONUS,
+	MOVE_SPEED_BONUS,
 ]
 
 
@@ -157,6 +195,12 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.reflect += amount
 		DAMAGE_BONUS:
 			attacker.damage_bonus += amount
+		DEFENCE:
+			attacker.defence += amount
+		HP_BONUS:
+			attacker.hp_bonus += amount
+		MOVE_SPEED_BONUS:
+			attacker.move_speed_bonus += amount
 		_:
 			return false
 	return true
@@ -174,3 +218,53 @@ static func grant_all(attacker: PBAttacker, passives: Dictionary) -> int:
 		if grant(attacker, key, float(passives[key])):
 			done += 1
 	return done
+
+
+## 把三份来源一次性装到这个人身上，**装完当场折算**（M12-e2）。
+##
+## [param sources] 按顺序是角色自带 / 羁绊 / 尾兽光环（[PBCombatRules] 的建人
+## 循环里那三行），量各自给、在字段上 `+=` 汇合。返回一共装上了几个。
+##
+## ## 为什么折算必须在这个函数里面，而不是让调用方补一句
+##
+## 率型那两个键（[constant HP_BONUS] / [constant MOVE_SPEED_BONUS]）
+## 是**累加器**：`grant` 只往 [member PBAttacker.hp_bonus] 上加，
+## 真正生效要把它乘进 [member PBAttacker.max_hp]。
+## 把这一步留给调用方的话，「忘了折」的表现是**那一组羁绊配了不生效** ——
+## 数据、界面、日志全部正常，只有血条不对。
+##
+## 收成一个入口之后忘不掉：调用方拿不到「装了但没折」的中间状态。
+## 同 [method PBStrikeRules.land] / [method PBStrikeRules.hurt_ally]
+## 那两个漏斗 —— **一处判，调用方不判**。
+##
+## ## 为什么是「先全加完，再折一次」
+##
+## 两组各给 +50% 生命该是 **+100%**（相加），不是 `1.5 × 1.5 = 2.25`（连乘）。
+## 边加边折就是连乘，而那不是人会预期的叠加方式 ——
+## 同 [member PBAttacker.damage_bonus] 顶上那条。
+##
+## ## 折算排在 [method PBAttacker.revive] 之前，所以血条跟得上
+##
+## [PBBattleSim] 开波对每个人调一次 `revive()`，那一句把 `hp` 填到
+## `max_hp`。建人这一刻抬高上限，开波那一刻自然就是满的 ——
+## 在这里顺手改 `hp` 反而会和 `revive()` 成为两把尺子。
+static func equip(attacker: PBAttacker, sources: Array[Dictionary]) -> int:
+	if attacker == null:
+		return 0
+	var done: int = 0
+	for one: Dictionary in sources:
+		done += grant_all(attacker, one)
+	_settle(attacker)
+	return done
+
+
+## 把率型那几个累加器折进它们真正的字段。只由 [method equip] 调。
+##
+## **下限掐在 −1.0**（同 [method PBAttacker.strike_for] 里那句 `maxf`）：
+## 原版有代价型被动，而 −1.5 会算出负的血上限，
+## 那时 [method PBAttacker.revive] 会让人一站起来就是死的，**而它不报错**。
+static func _settle(attacker: PBAttacker) -> void:
+	if attacker.hp_bonus != 0.0:
+		attacker.max_hp *= 1.0 + maxf(attacker.hp_bonus, -1.0)
+	if attacker.move_speed_bonus != 0.0:
+		attacker.move_speed *= 1.0 + maxf(attacker.move_speed_bonus, -1.0)

@@ -74,19 +74,16 @@ earth_curse	地之咒印	2			kimimaro,orochimaru
 my_cage	吾之牢笼	2			kimimaro,jugo
 five_kage	五影齐聚	5			tsunade,gaara,mei,raikage,onoki
 lightning_blades	绝牛雷犁热刀	2	crit_on_hit	raikage	raikage,killer_bee
-hokage_line	历代火影	4			hashirama,tobirama,hiruzen,minato
+hokage_line	历代火影	5			hashirama,tobirama,hiruzen,minato,tsunade	hashirama:defence=30;tobirama:defence=30;hiruzen:defence=30;minato:defence=30;tsunade:defence=30
 senju_brothers	千手兄弟	2			hashirama,tobirama
-brothers_bond	兄弟的爱恨	2	crit_chance	itachi	itachi,sasuke
+brothers_bond	兄弟的爱恨	2	crit_chance	itachi	itachi,sasuke	itachi:defence=15
 vermilion_pair	朱雀与南斗	2			itachi,kisame
 divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo
 masterminds	幕后黑手	5	crit_chance	madara	madara,obito,kabuto,tendo,zetsu
 team_seven	第七班	4	pull	kakashi	naruto,sasuke,sakura,kakashi
-ino_shika_cho	第十班	4	root	shikamaru	shikamaru,choji,ino,asuma		ino:mind_transfer:targets_add=1
+ino_shika_cho	第十班	4	root	shikamaru	shikamaru,choji,ino,asuma	choji:hp_bonus=0.50	ino:mind_transfer:targets_add=1;choji:human_bullet:radius_scale=1.5
 sannin	木叶三忍	3	gold_floor	tsunade	jiraiya,orochimaru,tsunade
-konoha_twelve	木叶十二小强	10			naruto,sasuke,sakura,neji_hyuga,hinata,rock_lee,tenten,kiba,shino,ino,choji,shikamaru
-akatsuki_all	晓组织全员	9	crit_damage	tendo	itachi,tendo,konan,deidara,sasori,kakuzu,hidan,kisame,zetsu
-curse_marks	咒印众	3			kimimaro,jugo,orochimaru
-taka	鹰小队	4			sasuke,suigetsu,jugo,karin
+taka	鹰小队	4			sasuke,suigetsu,jugo,karin	sasuke:defence=15,damage_bonus=0.20;jugo:defence=15
 puppet_masters	傀儡匠心	2			chiyo,kankuro		kankuro:puppet_crow:summon_add=1;chiyo:reincarnation:targets_add=1
 leaf_and_root	叶与根	2			hiruzen,danzo		hiruzen:fire_dragon:power_scale=1.4;danzo:root_burial:slow_set=0,slow_secs_set=2
 strategist_couple	军师夫妇	2			temari,shikamaru		shikamaru:shadow_bind:radius_set=0.15

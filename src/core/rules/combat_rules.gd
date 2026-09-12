@@ -240,16 +240,25 @@ static func build_attackers(
 		# 落在他本人身上的那一半（M12-d1）：**每个在场成员各拿各的**，
 		# 不再是「一组一个载体拿一份」。原版 45 组里只有 3 组是人人同一句。
 		#
-		# 和角色自带的被动**走同一个 `grant_all`**，只是量的来源不同
+		# 和角色自带的被动**走同一个入口**，只是量的来源不同
 		# （一个来自羁绊表，一个来自名册）—— 另写一份的话
 		# 「羁绊给的溅射」和「他自带的溅射」迟早在叠加方式上分叉，
 		# 而分叉的那一侧静默生效。两份都是 `+=`，一个人可以两边都拿到。
-		PBPassiveRules.grant_all(attacker, unit.character.passives)
-		PBPassiveRules.grant_all(attacker, bond_passives.get(unit.character.id, {}))
-		# 尾兽光环那一份（M12-e）：**和上面两份走同一个 `grant_all`**，
-		# 只是量来自尾兽表并按尾兽等级放大。三个来源在字段上 `+=` 汇合，
-		# 各写一份的话「尾兽给的闪避」和「羁绊给的闪避」迟早不一样大。
-		PBPassiveRules.grant_all(attacker, beast_aura)
+		# 尾兽光环那一份（M12-e）的量来自尾兽表并按尾兽等级放大。
+		# 三个来源在字段上 `+=` 汇合，各写一份的话
+		# 「尾兽给的闪避」和「羁绊给的闪避」迟早不一样大。
+		#
+		# **走 `equip` 不走三行 `grant_all`**（M12-e2）：率型那几个键是累加器，
+		# 装完还要折进 `max_hp` / `move_speed`，而把那一步留在这里的话
+		# 「忘了折」的表现是那一组羁绊配了不生效 —— 见 [method PBPassiveRules.equip]。
+		PBPassiveRules.equip(
+			attacker,
+			[
+				unit.character.passives,
+				bond_passives.get(unit.character.id, {}) as Dictionary,
+				beast_aura,
+			]
+		)
 		# 名册那一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
 		# 所以直接共用引用不拷贝 —— 同 [member PBSkill.on_hit] 那一条。
 		attacker.on_hit_buffs = unit.character.on_hit_buffs

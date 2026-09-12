@@ -6,8 +6,25 @@
 script = ExtResource("1_dju1v")
 id = &"hokage_line"
 name_key = "bond.hokage_line"
-member_ids = Array[StringName]([&"hashirama", &"tobirama", &"hiruzen", &"minato"])
-tier_counts = Array[int]([4])
-tier_power = Array[float]([0.42000000000000004])
+member_ids = Array[StringName]([&"hashirama", &"tobirama", &"hiruzen", &"minato", &"tsunade"])
+tier_counts = Array[int]([5])
+tier_power = Array[float]([0.56])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"hashirama": {
+&"defence": 30.0
+},
+&"hiruzen": {
+&"defence": 30.0
+},
+&"minato": {
+&"defence": 30.0
+},
+&"tobirama": {
+&"defence": 30.0
+},
+&"tsunade": {
+&"defence": 30.0
+}
+}
