@@ -12,7 +12,8 @@ kind = 1
 friendly = false
 duration_seconds = 2.0
 mods = {
-&"enemy_speed_scale": 0.0
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
 }
 
 [sub_resource type="Resource" id="Resource_ffr1v"]

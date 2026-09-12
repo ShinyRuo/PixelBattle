@@ -68,6 +68,30 @@ const HURT: StringName = &"hurt"
 ## 理由同 [constant HURT]。
 const ENEMY_SPEED_SCALE: StringName = &"enemy_speed_scale"
 
+## 晕眩：这个敌人这一 tick 不许出手（M12-c2）。大于 0 就是定住了。
+##
+## **它是 [constant ENEMY_SPEED_SCALE] 差的那一半。** 在它之前，
+## 六份「禁锢」型效果（心转束缚、影子禁锢、追牙束缚、水龙禁锢、
+## 森罗万象缠绕、月读囚）全都只写 `enemy_speed_scale=0`，
+## 而 `data/buffs.tsv` 里就记着那条降级：
+## 「停的是走位，敌人站在原地照样出手」—— 原版那几个写的是
+## 「无法移动**攻击和施法**」。
+##
+## **读点在 [method PBEnemy.ready_to_fire] 里面，不在调用方** ——
+## 近战与远程在那一句之后才分岔，各判一次的表现是
+## 「定住了还会放箭」。同 [constant HURT] 顶上那条。
+const STUN: StringName = &"stun"
+
+## 致盲：这个敌人出手打得中的概率（M12-c2）。0.5 = 一半打空。
+##
+## **写命中率不写丢失率**，因为它要跟
+## [constant ENEMY_SPEED_SCALE] 一样当率型用：多份**连乘**、空的时候是 1.0。
+## 写成丢失率的话两份 50% 相加就是 100%，而那不是人会预期的叠加方式。
+##
+## 读点在 [method misses] 里面，**排在近战/远程分岔之前** ——
+## 分岔之后各判一次的表现是「只有近战会打空」。
+const ENEMY_HIT_SCALE: StringName = &"enemy_hit_scale"
+
 ## 掉血：中毒、灼烧那一类（M7-d）。读点在 [method advance_enemy] 与
 ## [method PBSkillRules.apply_one_enemy]，两条都最终走
 ## [method PBEnemy.take_damage] —— 它才是记账（击杀数）的那道门。
@@ -133,6 +157,8 @@ const ALL: Array[StringName] = [
 	MANA,
 	HURT,
 	ENEMY_SPEED_SCALE,
+	STUN,
+	ENEMY_HIT_SCALE,
 	HARM,
 	CRIT_CHANCE,
 	CRIT_DAMAGE,
@@ -141,7 +167,9 @@ const ALL: Array[StringName] = [
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
-const SCALES: Array[StringName] = [DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE, DAMAGE_TAKEN]
+const SCALES: Array[StringName] = [
+	DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE, ENEMY_HIT_SCALE, DAMAGE_TAKEN
+]
 
 ## 「全队短时增伤」那一份的定义。见 [method team_damage]。
 static var _team_damage: PBBuff = null
@@ -167,6 +195,24 @@ static func team_damage() -> PBBuff:
 		_team_damage.kind = PBBuff.Kind.DURATION
 		_team_damage.friendly = true
 	return _team_damage
+
+
+## 这一下打空了吗（[constant ENEMY_HIT_SCALE]，M12-c2）。
+##
+## **排在近战/远程分岔之前调** —— 分岔之后各判一次的表现是
+## 「只有近战会打空」，而它不报错。同 [constant HURT] 顶上那条。
+##
+## **没被致盲时一次骰子都不掷**（命中率恰好是 1.0）——
+## 同 [method PBCritRules.strike] 顶上那条：掷了就算打中也已经拨动了那条流。
+##
+## [param rng] 为 null 时（批量扫描、探测）恒不打空且不掷骰。
+static func misses(enemy: PBEnemy, at_tick: int, rng: RandomNumberGenerator) -> bool:
+	if enemy == null or rng == null:
+		return false
+	var hit: float = enemy.buffs.amount(ENEMY_HIT_SCALE, at_tick)
+	if hit >= 1.0:
+		return false
+	return rng.randf() >= hit
 
 
 ## 这个键认不认得。

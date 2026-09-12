@@ -766,6 +766,11 @@ func _enemies_attack() -> void:
 		if enemy.begin_swing(_tick):
 			continue
 		enemy.on_fired(_tick)
+		# 致盲（M12-c2）：手抬了、冷却也走了，只是这一下打空。
+		# **排在近战/远程分岔之前** —— 分岔之后各判一次的表现是
+		# 「只有近战会打空」。和晕眩故意不同档：那一档连手都抬不起来。
+		if PBBuffRules.misses(enemy, _tick, _crit_rng):
+			continue
 		# 远程的那一份走弹道（M4-c），减伤与克制在命中时才折算。
 		if enemy.shot_speed > 0.0:
 			var shot := PBShotRules.free_shot(_shots)

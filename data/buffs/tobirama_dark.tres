@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_fkktt"]
+
+[resource]
+script = ExtResource("1_fkktt")
+id = &"tobirama_dark"
+name_key = "buff.tobirama_dark"
+icon_key = "buff.tobirama_dark"
+kind = 1
+friendly = false
+duration_seconds = 3.0
+mods = {
+&"enemy_hit_scale": 0.5
+}

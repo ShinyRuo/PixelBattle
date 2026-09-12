@@ -11,5 +11,6 @@ kind = 1
 friendly = false
 duration_seconds = 5.0
 mods = {
-&"enemy_speed_scale": 0.0
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
 }

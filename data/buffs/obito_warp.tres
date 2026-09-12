@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_oss1m"]
+
+[resource]
+script = ExtResource("1_oss1m")
+id = &"obito_warp"
+name_key = "buff.obito_warp"
+icon_key = "buff.obito_warp"
+kind = 1
+friendly = false
+duration_seconds = 1.5
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}

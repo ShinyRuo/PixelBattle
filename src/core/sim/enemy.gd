@@ -194,8 +194,16 @@ static func rank_of(wave: PBWave) -> Rank:
 
 
 ## 这一 tick 出不出得了手。
+##
+## **晕眩判在这里面**（[constant PBBuffRules.STUN]，M12-c2）：
+## 调用方那一句之后近战与远程才分岔，各判一次的表现是
+## 「定住了还会放箭」。**被定住的那几 tick 冷却不推进**，
+## 因为 [member next_shot_at] 只在 [method on_fired] 里往前走 ——
+## 推进的话，一段 2 秒的禁锢结束那一瞬敌人会把攒下的几下一起打出来。
 func ready_to_fire(current_tick: int) -> bool:
-	return alive and current_tick >= next_shot_at
+	if not alive or current_tick < next_shot_at:
+		return false
+	return buffs.amount(PBBuffRules.STUN, current_tick) <= 0.0
 
 
 ## 出了一手，转入下一次的间隔。**减掉起手那一段**，理由同

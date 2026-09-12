@@ -24,10 +24,12 @@
 # 数据、界面、日志全部正常，只有那个效果这辈子没人读 ——
 # 也就是「配了不生效」，而它比「配不了」难查得多。
 #
-# 今天认的键（10 个）：
+# 今天认的键（12 个）：
 #   damage_scale  伤害倍率        heal          回血（量）
 #   mana          回蓝（量）      hurt          易伤倍率（敌人）
 #   harm          掉血（量/周期） enemy_speed_scale 敌人移速倍率
+#   stun          晕眩（>0 = 这一 tick 不许出手）
+#   enemy_hit_scale 敌人命中率（0.5 = 一半打空）
 #   crit_chance   暴击率          crit_damage   暴击伤害
 #   shield        护盾（量，会被花掉）          damage_taken  受伤倍率（0 = 无敌）
 #
@@ -63,11 +65,13 @@ tenten_tools	忍具操纵	持续	增益	20	0	damage_scale=1.1+0.04
 # 那一档是地面大招的全场效果，子弹技能配了不会生效
 # （`PBSkillLoader.check` 会当场拦下，M8-b 那条）。
 #
-# ⚠ 原版这两个是「无法移动**攻击和施法**」，而我们今天只做得到「不能动」：
-# `enemy_speed_scale=0` 停的是走位，敌人站在原地照样出手。
-# 「不能攻击」缺一个读点，排在 M12-c2。
-ino_seize	心转·束缚	持续	减益	2	0	enemy_speed_scale=0
-shadow_hold	影子禁锢	持续	减益	4	0	enemy_speed_scale=0
+# 原版这两个是「无法移动**攻击和施法**」，M12-c2 把后一半补上了：
+# `enemy_speed_scale=0` 停走位，`stun=1` 停出手（读点在
+# `PBEnemy.ready_to_fire` 里面）。在那之前这六份禁锢都只停得住脚，
+# 敌人站在原地照样放箭。**晕眩期间冷却不推进** —— 推进的话，
+# 一段禁锢结束那一瞬敌人会把攒下的几下一起打出来。
+ino_seize	心转·束缚	持续	减益	2	0	enemy_speed_scale=0;stun=1
+shadow_hold	影子禁锢	持续	减益	4	0	enemy_speed_scale=0;stun=1
 
 # ── M12-c1：SR 档角色技能要用的 ────────────────────────────────
 #
@@ -94,8 +98,8 @@ burn	灼烧	周期	减益	7	1	harm=60+60
 sand_coffin	砂缚柩·磨蚀	周期	减益	2	0.5	harm=50+50
 mei_acid	溶解爆酸	周期	减益	4	1	harm=30+30
 sasori_iron	沙铁界法·磨蚀	周期	减益	4	0.5	harm=20+20
-kakashi_bind	追牙·束缚	持续	减益	5	0	enemy_speed_scale=0
-suigetsu_bind	水龙·禁锢	持续	减益	2	0	enemy_speed_scale=0
+kakashi_bind	追牙·束缚	持续	减益	5	0	enemy_speed_scale=0;stun=1
+suigetsu_bind	水龙·禁锢	持续	减益	2	0	enemy_speed_scale=0;stun=1
 kurenai_haze	幻术·霞	持续	减益	2	0	hurt=2.0;enemy_speed_scale=0.25
 
 # ── M12-c1：SSR 档角色技能要用的 ───────────────────────────────
@@ -114,8 +118,17 @@ shisui_kotoama	别天神·光芒	持续	增益	30	0	crit_chance=0.10
 kabuto_mend	强力再生术	周期	增益	12	1	heal=125+125
 
 # 落在敌人身上的
-hashirama_bind	森罗万象·缠绕	持续	减益	2.5	0	enemy_speed_scale=0
+hashirama_bind	森罗万象·缠绕	持续	减益	2.5	0	enemy_speed_scale=0;stun=1
 hashirama_forest	树界降临·侵蚀	周期	减益	6	1	harm=35+35
-itachi_moon_hold	月读·囚	持续	减益	2	0	enemy_speed_scale=0
+itachi_moon_hold	月读·囚	持续	减益	2	0	enemy_speed_scale=0;stun=1
 itachi_moon_grind	月读·磨蚀	周期	减益	2	0.5	harm=100+100
 obito_embers	火焰阵·余烬	周期	减益	6	1	harm=60+60
+
+# ── M12-c2：晕眩与致盲 ────────────────────────────
+#
+# 带土的扭曲攻击原版是**被动**（攻击时 10~15% 几率晕眩 0.7 秒），
+# 而被动那条通道（`data/roster.tsv` 的「被动」列）今天只能带**数**，
+# 带不了一份效果。所以这一版降级成一个主动技能 ——
+# 降的是「自己会发生」，不是效果本身。
+obito_warp	扭曲·钉住	持续	减益	1.5	0	enemy_speed_scale=0;stun=1
+tobirama_dark	黑暗行之术	持续	减益	3	0	enemy_hit_scale=0.5
