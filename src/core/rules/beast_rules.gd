@@ -60,6 +60,18 @@ static func upgrade_cost(level: int, cfg: PBSimConfig) -> int:
 	return int(floor(cfg.beast_level_cost * pow(cfg.beast_level_mult, float(maxi(level, 1)))))
 
 
+## 常驻光环按等级折算出来的那一份（M12-e）：`{被动键: 量}`。
+##
+## **和羁绊的成员表走同一个 [method PBPassiveRules.grant_all]** ——
+## 表里写的是「每级多少」，这里乘上 [method level_scale] 变成「这一局多少」。
+static func aura_passives(beast: PBBeast, level: int, cfg: PBSimConfig) -> Dictionary:
+	var out: Dictionary = {}
+	if beast == null:
+		return out
+	var scale: float = level_scale(level, cfg)
+	for key: StringName in beast.aura_passives:
+		out[key] = float(beast.aura_passives[key]) * scale
+	return out
 ## 光环给每个上场单位的伤害倍率，与 [param deployed] 同序。
 ##
 ## 形状刻意和 [method PBEquipRules.unit_multipliers] 一模一样 ——

@@ -231,6 +231,24 @@ var bite_lost: float = 0.0
 ## **而那不报错**。原版那句「每隔 5 秒必定触发一次」同样缺读点（内置 CD）。
 var reflect: float = 0.0
 
+## 常驻增伤：这个人的**普攻**多打几成（M12-e）。0 = 不多打。
+##
+## **存「额外多打几成」而不是倍数**，所以中性值是 0.0 —— 和量型键天然对得上，
+## 两份 +40% 相加是 +80% 而不是被连乘成 +96%。同 [member crit_bonus] 顶上那条。
+##
+## ## 和效果袋里那个 [constant PBBuffRules.DAMAGE_SCALE] 是一对
+##
+## 那一份是**临时**的（技能挂上去、过期就没），这一份是**常驻**的
+## （羁绊、尾兽光环给的，一整波都在）。两者在 [method strike_for] 相乘 ——
+## 同 [member crit_chance] 与效果袋那一份在 [method PBCritRules.chance_of] 相加。
+##
+## ## 它只作用在普攻上，而原版写的是「所有伤害」
+##
+## 技能与大招的伤害在建人那一刻就按 [method PBCombatRules.skill_damage] 算死了，
+## 而这一份是**建人之后**才装上去的（羁绊要先知道谁在场）。
+## 让它也管技能得把顺序倒过来，那是另一笔。**降级记在这里。**
+var damage_bonus: float = 0.0
+
 ## 打出要害那一下顺带挂在目标身上的效果（M12-c2）。
 ## 读点在 [method PBStrikeRules.land] 里面。
 ##
@@ -437,6 +455,7 @@ func clone() -> PBAttacker:
 	out.bite_current = bite_current
 	out.bite_lost = bite_lost
 	out.reflect = reflect
+	out.damage_bonus = damage_bonus
 	out.on_hit_buffs = on_hit_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at
@@ -615,7 +634,8 @@ func damage_per_shot() -> float:
 ## 一份、全场、后来者覆盖前者。搬进 bag 之后**每个人身上各一份**，
 ## 而全场增伤只是「给每个人都挂一份」的那种特例。
 func strike_for(at_tick: int) -> float:
-	return _damage_per_shot * buffs.amount(PBBuffRules.DAMAGE_SCALE, at_tick)
+	var lasting: float = 1.0 + maxf(damage_bonus, -1.0)
+	return _damage_per_shot * lasting * buffs.amount(PBBuffRules.DAMAGE_SCALE, at_tick)
 
 
 ## 回血，上限封顶。**死人回不了** —— 复活是另一件事（[method revive]），

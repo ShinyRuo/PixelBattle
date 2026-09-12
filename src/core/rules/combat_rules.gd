@@ -182,6 +182,8 @@ static func build_attackers(
 		round(clampf(cfg.ultimate_gather_share, 0.0, 1.0) * float(deployed.size()))
 	)
 	var cd_scale: float = PBBeastRules.ultimate_cd_scale(beast)
+	# 尾兽光环按等级折算一次就够了 —— 放进循环里等于每个人重算一遍同一个数。
+	var beast_aura: Dictionary = PBBeastRules.aura_passives(beast, beast_level, cfg)
 	for i: int in deployed.size():
 		var unit: PBUnit = deployed[i]
 		var tier := unit.character.reach_tier()
@@ -244,6 +246,10 @@ static func build_attackers(
 		# 而分叉的那一侧静默生效。两份都是 `+=`，一个人可以两边都拿到。
 		PBPassiveRules.grant_all(attacker, unit.character.passives)
 		PBPassiveRules.grant_all(attacker, bond_passives.get(unit.character.id, {}))
+		# 尾兽光环那一份（M12-e）：**和上面两份走同一个 `grant_all`**，
+		# 只是量来自尾兽表并按尾兽等级放大。三个来源在字段上 `+=` 汇合，
+		# 各写一份的话「尾兽给的闪避」和「羁绊给的闪避」迟早不一样大。
+		PBPassiveRules.grant_all(attacker, beast_aura)
 		# 名册那一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
 		# 所以直接共用引用不拷贝 —— 同 [member PBSkill.on_hit] 那一条。
 		attacker.on_hit_buffs = unit.character.on_hit_buffs

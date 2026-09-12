@@ -83,6 +83,21 @@ const ANY_ELEMENT: int = -1
 ## 是因为等敌人会还手之后它就有值了，那时改数据不改代码。
 @export var aura_def_reduction: float = 0.0
 
+## 常驻光环给每个上场的人装的那一份（M12-e）。
+## 形状是 `{被动键: 每级的量}`，词汇表见 [PBPassiveRules]。
+##
+## **和羁绊的成员表走同一套词汇**（[member PBBond.member_functions]）——
+## 另开一套的话「尾兽给的闪避」和「羁绊给的闪避」迟早在叠加方式上分叉，
+## 而分叉的那一侧静默生效。
+##
+## ## 写的是「每级多少」，不是「一共多少」
+##
+## 原版九只的光环全是 `[N x 等级]` 的形状（「提升 [2x等级]% 的普攻闪避率」），
+## 所以表里写 N，发的时候乘 [method PBBeastRules.level_scale]。
+## 写死总量的话，升级这件事对这一档就没有意义了 —— **而它不报错**，
+## 只是玩家花钱升的尾兽什么都没变。
+@export var aura_passives: Dictionary = {}
+
 # ── 大招：手动交的底牌，一局能放几次由 CD 决定 ──────────────────
 ## 冷却（秒）。0 表示用 [member PBSimConfig.beast_ultimate_cooldown_seconds]。
 ##

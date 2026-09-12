@@ -156,6 +156,7 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.bite_current,
 		one.bite_lost,
 		one.reflect,
+		one.damage_bonus,
 	]
 
 
@@ -336,3 +337,38 @@ func _stun() -> PBBuff:
 	buff.duration_seconds = 2.0
 	buff.mods = {PBBuffRules.STUN: 1.0}
 	return buff
+
+
+# ── 常驻增伤与尾兽光环（M12-e）──────────────────────────────
+
+
+func test_a_lasting_damage_bonus_really_multiplies_the_swing() -> void:
+	# 存「额外多打几成」而不是倍数，所以中性值是 0.0 —— 两份 +40% 相加是
+	# +80% 而不是被连乘成 +96%。同 [member PBAttacker.crit_bonus] 那条。
+	var one := PBAttacker.new()
+	one.dps = 100.0
+	one.attack_speed = 1.0
+	one.prime(_cfg.tick_rate)
+	var plain: float = one.strike_for(0)
+	one.damage_bonus = 0.4
+	assert_almost_eq(one.strike_for(0), plain * 1.4, 0.0001, "该多打四成")
+	PBPassiveRules.grant(one, PBPassiveRules.DAMAGE_BONUS, 0.4)
+	assert_almost_eq(one.strike_for(0), plain * 1.8, 0.0001, "两份该相加不是连乘")
+
+
+func test_the_lasting_and_the_temporary_halves_multiply() -> void:
+	# 效果袋里那一份是**临时**的（技能挂上去、过期就没），字段这一份是常驻的。
+	# 两者相乘 —— 同暴击那一对在 [method PBCritRules.chance_of] 相加。
+	var one := PBAttacker.new()
+	one.dps = 100.0
+	one.attack_speed = 1.0
+	one.prime(_cfg.tick_rate)
+	one.damage_bonus = 1.0
+	var buff := PBBuff.new()
+	buff.id = &"probe_scale"
+	buff.kind = PBBuff.Kind.DURATION
+	buff.duration_seconds = 5.0
+	buff.mods = {PBBuffRules.DAMAGE_SCALE: 1.5}
+	one.buffs.add(buff, PBBuffRules.resolve(buff, 1), 0, buff.duration_ticks(_cfg), 0)
+	# 每发 = dps × 间隔 ÷ tick 率 = 100，再乘常驻的 2 和临时的 1.5。
+	assert_almost_eq(one.strike_for(0), 100.0 * 2.0 * 1.5, 0.001, "常驻 ×2、临时 ×1.5，两者相乘")

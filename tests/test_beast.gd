@@ -30,6 +30,39 @@ func before_each() -> void:
 
 
 ## 造一只只有指定字段的尾兽。测试不读 `data/`，免得数据一调这里就红。
+
+
+# ── 常驻光环走被动词汇表（M12-e）─────────────
+
+
+func test_a_beast_aura_is_written_per_level_not_as_a_total() -> void:
+	# 原版九只的光环全是 `[N x 等级]` 的形状。写死总量的话，升级这件事对
+	# 这一档就没有意义了 —— **而它不报错**，只是玩家花钱升的尾兽什么都没变。
+	var beast := PBBeast.new()
+	beast.aura_passives = {PBPassiveRules.DODGE: 0.02}
+	var low: Dictionary = PBBeastRules.aura_passives(beast, 1, _cfg)
+	var high: Dictionary = PBBeastRules.aura_passives(beast, 5, _cfg)
+	assert_almost_eq(float(low[PBPassiveRules.DODGE]), 0.02, 0.0001, "一级就是表里那个数")
+	assert_gt(float(high[PBPassiveRules.DODGE]), float(low[PBPassiveRules.DODGE]), "升级该变多")
+
+
+func test_no_beast_means_no_aura_at_all() -> void:
+	# 没带尾兽是扫描的分母（[PBBeastTable] 顶上那条）—— 那一路必须一位都不动。
+	assert_eq(PBBeastRules.aura_passives(null, 5, _cfg).size(), 0, "没带就什么都不发")
+
+
+func test_every_aura_key_in_the_real_table_is_one_we_know() -> void:
+	# **九只是设计定死的**（§11），不是进度 —— 所以这个数可以写死，
+	# 而且 [constant PBBeastLoader.SPEC_BEASTS] 已经写着它了。
+	# 光环表现在还是空的（按原版重铺是 M12-e2），这条先守住
+	# 「填进去的键必须认得」，以及「九只一只都不许少」。
+	var table := PBBeastLoader.table()
+	assert_eq(table.size(), PBBeastLoader.SPEC_BEASTS, "尾兽该是九只")
+	for beast: PBBeast in table.all():
+		for key: StringName in beast.aura_passives:
+			assert_true(PBPassiveRules.is_known(key), "「%s」这个键没人认得" % key)
+
+
 func _beast(beast_id: StringName) -> PBBeast:
 	var beast := PBBeast.new()
 	beast.id = beast_id

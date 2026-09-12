@@ -101,3 +101,4 @@ power_of_youth	青春的力量	2			might_guy,rock_lee		rock_lee:leaf_whirl:power
 child_of_prophecy	预言之子	2			naruto,jiraiya	naruto:dodge=0.20	
 three_of_them	三人的羁绊	3			obito,kakashi,rin_nohara		rin_nohara:inspire:targets_add=4
 team_eight	第八班·集合	4			kurenai,hinata,shino,kiba		kurenai:haze_illusion:targets_add=3;shino:vampire_bugs:summon_add=5,summon_secs_scale=1.5
+uchiha_clan	宇智波一族	5			madara,obito,itachi,sasuke,shisui	madara:damage_bonus=0.40;obito:damage_bonus=0.40;itachi:damage_bonus=0.40;sasuke:damage_bonus=0.40;shisui:damage_bonus=0.40	
