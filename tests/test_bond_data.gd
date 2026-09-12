@@ -33,9 +33,16 @@ func _named() -> Array[PBBond]:
 
 func test_the_data_directory_actually_loads() -> void:
 	assert_gt(_bonds.size(), 0, "data/bonds/ 里应该装得出羁绊")
-	# **23 = 原版的 B01~B23**（M10-b）。写死是有意的，同名册那条：
-	# 表是照抄的，少一组就是漏抄了一行。
-	assert_eq(_named().size(), 23, "羁绊该照 data/bonds.tsv 铺满 23 组")
+	# **拿表和目录对，不写死一个数**（M12-d2）。写死的本意是「表是照抄的，
+	# 少一组就是漏抄了一行」—— 而它守不住那件事：漏抄一行的时候两边**一起**少，
+	# 只有「有人手改了 `data/bonds/`」才对不上，而那正是这条该拦的。
+	# 写死还有个副作用：加一组新羁绊（内容变多）会让它变红。
+	var rows: int = 0
+	for line: String in FileAccess.get_file_as_string("res://data/bonds.tsv").split("\n"):
+		if line.strip_edges() != "" and not line.begins_with("#"):
+			rows += 1
+	assert_gt(rows, 0, "读得到 data/bonds.tsv")
+	assert_eq(_named().size(), rows, "目录里的组数该和表里的行数一样")
 	assert_eq(_bonds.size(), _named().size(), "M10-b 起没有兜底羁绊，每一组都是点名的")
 
 

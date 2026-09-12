@@ -104,7 +104,7 @@ boil_acid	mei	沸遁·溶解爆酸	水	点地面	敌方	1.4	0.17	20	10	delay=0.5
 # 范围伤害 + 控制
 sand_burial	gaara	砂缚柩	风	点地面	敌方	1.2	0.14	18	10	delay=0.4;slow=0;slow_secs=2;on_hit=sand_coffin
 infinite_sharks	kisame	水遁·无限鲛	水	点地面	敌方	2.8	0.18	20	10	delay=0.5;slow=0;slow_secs=1.5
-root_burial	danzo	木遁·树根爆葬	火	点地面	敌方	2.7	0.15	17	18	delay=2;slow=0;slow_secs=2
+root_burial	danzo	木遁·树根爆葬	火	点地面	敌方	2.7	0.15	17	18	delay=2
 adamantine_chains	kushina	封印术·金刚封锁	水	点地面	敌方	1.0	0.18	20	15	delay=0.5;slow=0.5;slow_secs=3
 rasengan_flame	jiraiya	豪炎螺旋丸	火	点地面	敌方	2.6	0.05	14	5	delay=0.3;slow=0;slow_secs=3;knockback=0.04
 piston_fist	jugo	活塞拳·零式	物理	点地面	敌方	2.4	0.15	16	10	delay=0.4;knockback=0.05;slow=0.5;slow_secs=3

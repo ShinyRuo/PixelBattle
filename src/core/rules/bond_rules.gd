@@ -136,6 +136,43 @@ static func active_passives(
 				mine[key] = float(mine.get(key, 0.0)) + more
 			out[who] = mine
 	return out
+
+
+## 满档的羁绊给**每个在场成员**打了哪些技能补丁（M12-d2）。
+## 返回 `{角色 id: {技能 id: {补丁键: 量}}}`，词汇表见 [PBSkillPatchRules]。
+##
+## **和 [method active_passives] 逐条同构**，只是多一层（改哪一个技能）。
+## 合成一个函数的话，返回值里就要混着两种深度的字典，
+## 而读它的人得先看键名猜自己拿到的是哪一种。
+##
+## 同一个技能被两组各打一份补丁时，**同一个键按后来的那一份覆盖** ——
+## 这和 [method active_passives] 的「相加」不同，因为补丁里有 `*_set`
+## 这种「设成多少」的语义，相加说不通。两组抢同一个技能同一个字段
+## 本来就是设计上该避免的，真出现时至少是确定的（表的顺序）。
+static func active_skill_patches(
+	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
+) -> Dictionary:
+	var out: Dictionary = {}
+	if table == null:
+		return out
+	var on_field: Dictionary = {}
+	for unit: PBUnit in deployed:
+		on_field[unit.character.id] = true
+	for bond: PBBond in table.all():
+		if bond.member_skill_patches.is_empty():
+			continue
+		if active_count(bond, bonded) < bond.full_tier_count():
+			continue
+		for who: StringName in bond.member_skill_patches:
+			if not on_field.has(who):
+				continue
+			var mine: Dictionary = out.get(who, {})
+			for skill_id: StringName in bond.member_skill_patches[who]:
+				var theirs: Dictionary = mine.get(skill_id, {})
+				theirs.merge(bond.member_skill_patches[who][skill_id], true)
+				mine[skill_id] = theirs
+			out[who] = mine
+	return out
 ## 每组羁绊现在到场几个成员，`{ 羁绊 id: 人数 }`。
 ##
 ## 给估值用：**「再抽一张值多少」要对整个卡池问一遍**，

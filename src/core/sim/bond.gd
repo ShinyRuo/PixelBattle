@@ -121,6 +121,19 @@ enum Match {
 ## 同 [member tier_function_carriers] 那条：凑齐人数 **且** 他真的在打这一波。
 @export var member_functions: Dictionary = {}
 
+## 满档时**每个在场成员各自的技能补丁**（M12-d2）。
+## 形状是 `{角色id: {技能id: {补丁键: 量}}}`，词汇表见 [PBSkillPatchRules]。
+##
+## **这是原版羁绊的主形状**：118 条效果里 80 条是「强化本人的某个具名技能」
+## （〔傀儡匠心〕勘九郎的乌鸦召两头、〔叶与根〕三代的火龙炎弹伤害 +40%），
+## 而「全队 +X%」只有 12 条 —— §09 明令那一档不许当机制用。
+##
+## 和 [member member_functions] 分成两个字段，是因为一个改的是**人**、
+## 一个改的是**他那一发**：落点不同（[PBAttacker] vs [PBSkill] 的复制品）、
+## 词汇表不同、连「不在场就不兑现」之外的门槛都不同
+## （补丁还要求他真的配了那个技能）。
+@export var member_skill_patches: Dictionary = {}
+
 
 ## 这个单位算不算本组的成员。
 func counts(unit: PBUnit) -> bool:

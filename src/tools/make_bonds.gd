@@ -32,6 +32,7 @@ const COL_FUNCTION: int = 3
 const COL_CARRIER: int = 4
 const COL_MEMBERS: int = 5
 const COL_MEMBER_FX: int = 6
+const COL_PATCHES: int = 7
 
 ## 满档加成 = 本值 ×（满档人数 − 1）。
 ##
@@ -107,6 +108,9 @@ func _write_one(row: PackedStringArray) -> String:
 	var trouble := _fill_members(bond, row, members)
 	if trouble != "":
 		return "%s 的成员效果：%s" % [key, trouble]
+	var bad := _fill_patches(bond, row, members)
+	if bad != "":
+		return "%s 的技能补丁：%s" % [key, bad]
 
 	var err := ResourceSaver.save(bond, "%s/%s.tres" % [OUT_DIR, key])
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
@@ -149,7 +153,40 @@ func _fill_members(bond: PBBond, row: PackedStringArray, members: Array) -> Stri
 	return ""
 
 
-## 表里没有的 `.tres` 一律删掉 —— 6 组属性型兜底就是这样离场的。
+## 「每个在场成员各自的技能补丁」那张表（M12-d2）。**返回错误信息，空串 = 成功。**
+##
+## 列的写法：`角色id:技能id:键=量,键=量;角色id:技能id:...`
+##
+## **原版羁绊的主形状就是这个**：118 条效果里 80 条是「强化本人的某个具名技能」。
+## 词汇表见 [PBSkillPatchRules]，**不认识的键直接报错退出** ——
+## 静默跳过的表现正是「配了不生效」。
+func _fill_patches(bond: PBBond, row: PackedStringArray, members: Array) -> String:
+	var cell: String = row[COL_PATCHES] if row.size() > COL_PATCHES else ""
+	if cell == "":
+		return ""
+	var out: Dictionary = {}
+	for chunk: String in cell.split(";", false):
+		var part: PackedStringArray = chunk.split(":")
+		if part.size() != 3:
+			return "「%s」不是 角色id:技能id:键=量 的样子" % chunk
+		var who := StringName(part[0].strip_edges())
+		if not members.has(who):
+			return "「%s」不是本组成员" % who
+		var skill_id := StringName(part[1].strip_edges())
+		var mine: Dictionary = out.get(who, {})
+		var theirs: Dictionary = mine.get(skill_id, {})
+		for pair: String in part[2].split(",", false):
+			var kv: PackedStringArray = pair.split("=")
+			if kv.size() != 2:
+				return "「%s」不是 键=量 的样子" % pair
+			var name := StringName(kv[0].strip_edges())
+			if not PBSkillPatchRules.is_known(name):
+				return "不认识的补丁键「%s」" % name
+			theirs[name] = float(kv[1].strip_edges())
+		mine[skill_id] = theirs
+		out[who] = mine
+	bond.member_skill_patches = out
+	return ""## 表里没有的 `.tres` 一律删掉 —— 6 组属性型兜底就是这样离场的。
 func _sweep(wanted: Dictionary) -> void:
 	var dir := DirAccess.open(OUT_DIR)
 	if dir == null:

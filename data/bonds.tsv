@@ -87,3 +87,5 @@ konoha_twelve	木叶十二小强	10			naruto,sasuke,sakura,neji_hyuga,hinata,roc
 akatsuki_all	晓组织全员	9	crit_damage	tendo	itachi,tendo,konan,deidara,sasori,kakuzu,hidan,kisame,zetsu
 curse_marks	咒印众	3			kimimaro,jugo,orochimaru
 taka	鹰小队	4			sasuke,suigetsu,jugo,karin
+puppet_masters	傀儡匠心	2			chiyo,kankuro		kankuro:puppet_crow:summon_add=1;chiyo:reincarnation:targets_add=1
+leaf_and_root	叶与根	2			hiruzen,danzo		hiruzen:fire_dragon:power_scale=1.4;danzo:root_burial:slow_set=0,slow_secs_set=2

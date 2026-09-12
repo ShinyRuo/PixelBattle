@@ -346,12 +346,18 @@ enum Party {
 ## 和 [method PBSimConfig.clone] 同一个写法 —— 那边也是一张长参数表，
 ## 也是同一条理由。M11 要往这个类上加一批新字段，这一改是那批的前提。
 ##
-## 两张效果表（[member on_hit] / [member on_self]）跟着**共享同一份引用**：
-## [PBBuff] 是不可变的定义（谁都不改它的字段），而 [member damage] 那种
-## 会被探测就地改写的标量是值类型，反射拷贝本来就是真复制。
+## **两张效果表（[member on_hit] / [member on_self]）里的 [PBBuff] 仍然共享引用**，
+## 那是对的：一份效果是不可变的**定义**，谁都不改它的字段。
+## **但装它们的那个 [Array] 必须是新的**（M12-d2）—— 反射拷贝给的是同一个
+## 数组对象，而羁绊的技能补丁会往 `on_hit` 里**追加**一份效果
+## （〔叶与根〕团藏那句「爆开后能够晕眩范围敌人 2 秒」）。
+## 追加到共享数组上等于改写 `data/skills/*.tres` 里那一份，
+## **于是这一波挂上去的效果会漏进下一波、漏进别的角色、漏进悬崖二分**，
+## 而它不报错。同 [method PBSimConfig.clone] 顶上那条「别搬成嵌套对象」。
 func clone() -> PBSkill:
 	var out := PBSkill.new()
 	for prop: Dictionary in get_property_list():
 		if prop["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
-			out.set(prop["name"], get(prop["name"]))
+			var value: Variant = get(prop["name"])
+			out.set(prop["name"], value.duplicate() if value is Array else value)
 	return out

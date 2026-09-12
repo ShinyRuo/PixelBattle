@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_kv4iq"]
+
+[resource]
+script = ExtResource("1_kv4iq")
+id = &"leaf_and_root"
+name_key = "bond.leaf_and_root"
+member_ids = Array[StringName]([&"hiruzen", &"danzo"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"danzo": {
+&"root_burial": {
+&"slow_secs_set": 2.0,
+&"slow_set": 0.0
+}
+},
+&"hiruzen": {
+&"fire_dragon": {
+&"power_scale": 1.4
+}
+}
+}

@@ -165,7 +165,8 @@ static func build_attackers(
 	beast_level: int = 1,
 	beast_cooldown_ticks: int = 0,
 	bond_functions: Dictionary = {},
-	bond_passives: Dictionary = {}
+	bond_passives: Dictionary = {},
+	bond_skill_patches: Dictionary = {}
 ) -> Array[PBAttacker]:
 	var team_mult: float = atk_tech_mult * bond_mult
 	var out: Array[PBAttacker] = []
@@ -253,7 +254,10 @@ static func build_attackers(
 		# 而 [PBAttacker] 身上没有也不该有 `level` —— 见
 		# [member PBSkillCast.caster_level]。
 		attacker.ultimate = PBSkillCast.new(skill, unit.level)
-		_equip_skills(attacker, unit, wave_element, mult, cfg)
+		_equip_skills(
+			attacker, unit, wave_element, mult, cfg,
+			bond_skill_patches.get(unit.character.id, {})
+		)
 		out[i] = attacker
 
 	# 预留那几个先空着 —— 它们要等本体放技能才站上来。
@@ -304,7 +308,8 @@ static func _equip_skills(
 	unit: PBUnit,
 	wave_element: PBElement.Type,
 	mult: float,
-	cfg: PBSimConfig
+	cfg: PBSimConfig,
+	patches: Dictionary = {}
 ) -> void:
 	if cfg.skills == null:
 		return
@@ -316,7 +321,12 @@ static func _equip_skills(
 		if skill == null:
 			push_error("角色表里点了一个不存在的技能：%s" % id)
 			continue
+		# **补丁打在复制品上**（M12-d2），不是 `.tres` 那一份 ——
+		# 打在那一份上的话这一波的加成会漏进下一波、漏进别的角色。
+		# **排在伤害换算之前**：`power_scale` 改的就是换算要用的那个倍率，
+		# 排在后面的表现是「那一组翁配了不生效」。
 		var mine := skill.clone()
+		PBSkillPatchRules.apply(mine, patches.get(id, {}), cfg.tick_rate)
 		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
 		attacker.skills.append(PBSkillCast.new(mine, unit.level))
 

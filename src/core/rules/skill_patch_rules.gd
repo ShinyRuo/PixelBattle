@@ -1,0 +1,116 @@
+class_name PBSkillPatchRules
+extends RefCounted
+## 「改这个角色的这个技能的某个数」（M12-d2）。全部 static，零引擎依赖。
+##
+## 和 [PBPassiveRules]（一个常驻效果怎么装到一个人身上）是羁绊的两条腿：
+## 那一条答「他本人变强了什么」，这一条答「**他那一发变强了什么**」。
+##
+## ## 为什么非要有这一层
+##
+## 逐条对完原版 45 组之后：**118 条效果里有 80 条是「强化本人的某个具名技能」**
+## （涉及 38 组），那才是主形状。「全队 +X%」只有 12 条，而 §09 明令那一档
+## 不许当机制用。M10-d 当时卡住不是因为缺一个键，是**被强化的对象根本不存在** ——
+## 那时 49 个角色里配了技能的是 2 个。现在有 63 个技能、82 个被点名的里有 42 个在手。
+##
+## ## 补丁打在**复制品**上，不是 `.tres` 那一份
+##
+## [method PBCombatRules._equip_skills] 每一波按 [method PBSkill.clone] 现造一份，
+## 所以改它是安全的。**而 `clone()` 到 M12-d2 才真的安全** ——
+## 在那之前它反射拷贝，`on_hit` 那个数组是**同一个对象**，
+## 往里追加一份效果等于改写盘上那一份，于是这一波挂上去的效果会漏进下一波、
+## 漏进别的角色、漏进悬崖二分，**而它不报错**。
+##
+## ## 每个键自己说清楚是加是乘是设
+##
+## 原版三种语义都有：「伤害提升 40%」（乘）、「额外影响一个单位」（加）、
+## 「周围 350 码的敌人也束缚」（从没有到有 = 设）。
+## 统一成一种的话，读表的人得记住哪个字段是哪种 —— 而记错**不报错**，
+## 只是那一组的强度差一截。所以键名带后缀，看一眼就知道。
+
+## 伤害倍率乘几（〔叶与根〕三代「【火龙炎弹】的伤害提升 40%」= 1.4）。
+const POWER_SCALE: StringName = &"power_scale"
+
+## 作用半径乘几。
+const RADIUS_SCALE: StringName = &"radius_scale"
+
+## 作用半径**设成**多少（从 0 变成有的那种）。
+const RADIUS_SET: StringName = &"radius_set"
+
+## 冷却乘几（小于 1 = 转得更快）。
+const COOLDOWN_SCALE: StringName = &"cooldown_scale"
+
+## 多打几个目标（〔傀儡匠心〕千代「【己生转生】能够额外影响一个单位」= 1）。
+const TARGETS_ADD: StringName = &"targets_add"
+
+## 多召几个（〔傀儡匠心〕勘九郎「【乌鸦】能够召唤两头」= 1）。
+const SUMMON_ADD: StringName = &"summon_add"
+
+## 落地时的全场减速**设成**多少（0 = 定住）。
+const SLOW_SET: StringName = &"slow_set"
+
+## 那一段减速/定身持续几秒，**设成**多少。
+##
+## 和上一个通常成对出现（〔叶与根〕团藏「【树根爆葬】爆开后能够晕眩范围敌人 2 秒」）。
+## **两个键而不是一个**：原版有「只延长时间不改幅度」的写法，
+## 合成一个的话那种效果表达不了。
+const SLOW_SECS_SET: StringName = &"slow_secs_set"
+
+## 认得的全部键。**同 [constant PBBuffRules.ALL] 顶上那条**：
+## 键跟着读点一起进来，不先把词汇表铺满 —— 拼对了却没人读的键
+## 比拼错更难查（数据、界面、日志全正常，只有那一发的强度不对）。
+const ALL: Array[StringName] = [
+	POWER_SCALE,
+	RADIUS_SCALE,
+	RADIUS_SET,
+	COOLDOWN_SCALE,
+	TARGETS_ADD,
+	SUMMON_ADD,
+	SLOW_SET,
+	SLOW_SECS_SET,
+]
+
+
+## 这个键认不认得。
+static func is_known(key: StringName) -> bool:
+	return ALL.has(key)
+
+
+## 把一份补丁打到**一份复制品**上。返回打上了几条。
+##
+## [param skill] 必须是 [method PBSkill.clone] 出来的那一份 ——
+## 传盘上那一份进来的话，改动会活到下一波去。
+##
+## **不认识的键在这里不报错，只是不打** —— 拦它的地方是生成器
+## （`make_bonds.gd` 读表那一刻，退出码 1）。同 [method PBPassiveRules.grant_all]：
+## 两处各拦一次就是两把尺子，而战斗中途 `push_error` 没有人看得见。
+static func apply(skill: PBSkill, patch: Dictionary, rate: int = 20) -> int:
+	if skill == null:
+		return 0
+	var done: int = 0
+	for key: StringName in patch:
+		if _one(skill, key, float(patch[key]), rate):
+			done += 1
+	return done
+
+
+static func _one(skill: PBSkill, key: StringName, amount: float, rate: int) -> bool:
+	match key:
+		POWER_SCALE:
+			skill.power_mult *= amount
+		RADIUS_SCALE:
+			skill.radius *= amount
+		RADIUS_SET:
+			skill.radius = amount
+		COOLDOWN_SCALE:
+			skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * amount)), 1)
+		TARGETS_ADD:
+			skill.max_targets = maxi(skill.max_targets + int(round(amount)), 0)
+		SUMMON_ADD:
+			skill.summon_count = maxi(skill.summon_count + int(round(amount)), 0)
+		SLOW_SET:
+			skill.slow_scale = amount
+		SLOW_SECS_SET:
+			skill.slow_ticks = maxi(int(round(amount * float(rate))), 1)
+		_:
+			return false
+	return true
