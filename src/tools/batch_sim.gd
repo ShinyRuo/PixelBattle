@@ -1,19 +1,14 @@
 extends SceneTree
-## M-1 批量模拟入口。扫 `GROWTH` × 流派，每格跑 N 局，出 CSV。
-##
-## 跑法（命令行一律用 godot_console.exe，godot.exe 的 stdout 不回传终端）：
+## 批量模拟入口。扫 `GROWTH` × 流派，每格跑 N 局，出 CSV。
 ##
 ## [codeblock]
 ## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --headless --path . \
 ##     --script res://src/tools/batch_sim.gd -- --runs 200 --growth-min 1.10
 ## [/codeblock]
 ##
-## `--` 之后的参数由 [method OS.get_cmdline_user_args] 取到，不会被引擎自己吃掉。
-##
-## 产出两份 CSV：
-##
-## - `m1_runs.csv` —— 每局一行的原始数据，想换个统计口径时不用重跑
-## - `m1_summary.csv` —— 每个（growth, strategy）格子一行，含 p50 / p90
+## 命令行一律用 godot_console.exe（godot.exe 的 stdout 不回传终端）。`--` 之后的参数由
+## [method OS.get_cmdline_user_args] 取到。产出 `m1_runs.csv`（每局一行原始数据）与
+## `m1_summary.csv`（每个（growth, strategy）格子一行，含 p50 / p90）。
 
 const OUT_DIR := "res://build"
 
@@ -40,17 +35,8 @@ var _rarity_slope: float = 0.0
 var _spawn_window: float = 0.0
 var _march_seconds: float = 0.0
 
-## 强行退回解析式排队模型。**平时绝对不要用。**
-##
-## M3-a 之前这里是反过来的：默认解析式，`--tick-battle` 才走逐 tick。
-## 那时两个模型语义一致（都是单目标集火），谁跑哪条都得到同样的结论。
-##
-## **射程进来之后前提没了** —— 解析式装不下射程，它是另一套战斗规则。
-## 而这个开关当时写的是无条件赋值（`cfg.use_tick_battle = _tick_battle`），
-## 于是配置默认值翻成 true 之后，批量模拟**照旧在跑旧模型**，
-## 而且不报任何错：跑出来的数一切正常，只是描述的是一个玩家碰不到的游戏。
-##
-## 现在默认跟随配置，只有显式要对拍时才用它退回去。
+## 强行退回解析式排队模型。**平时绝对不要用** —— 它装不下射程，是另一套战斗规则，
+## 只在显式要对拍时用。默认跟随配置（[member PBSimConfig.use_tick_battle]）。
 var _analytic: bool = false
 
 ## 大招落点策略：`none` / `auto` / `lead`。空表示用 [PBSimConfig] 的默认值。
@@ -63,11 +49,7 @@ var _analytic: bool = false
 var _aim: StringName = &""
 
 ## 一发大招 = 角色基础战力的多少倍。0 表示用默认值。
-##
-## **§02 那对分层验收的成败主要卡在这个数上。** 落点选得准不准，
-## 影响的是大招那一份输出；大招占总输出的比例越低，
-## 这个技巧的影响就被普攻稀释得越厉害，直到测不出来为止。
-## 首次接上时（默认 6.0）实测手动只比自动强 0.6%，而 §02 要 15–25%。
+## §02 那对分层验收（手动比自动强 15–25%）主要卡在这个数上：大招占总输出的比例越低，落点技巧被普攻稀释得越厉害。
 var _ult_power: float = 0.0
 
 ## 多大比例的出战单位带聚拢大招。-1 表示用默认值。
@@ -95,11 +77,7 @@ var _equip_power: float = 0.0
 ## 对价格不敏感，全跑一遍纯属浪费。
 var _only_strategy: StringName = &""
 
-## §07 经济位的收益曲线：`(economy_slot_base + economy_slot_rate × 波次) × k^−1.5`。
-## -1 表示用 [PBSimConfig] 的默认值。
-##
-## 常数版本（`rate = 0`）实测下**每一个不被强制的流派经济位占比都是 0%** ——
-## 它恒为微亏，于是 §07 的「经济位 = 战力空位」等于不存在。
+## §07 经济位的收益曲线：`(economy_slot_base + economy_slot_rate × 波次) × k^−1.5`。-1 表示用默认值。
 ## 扫这两个开关时流派必须挑 `rational`，其余流派根本不会考虑上不上经济位。
 var _economy_slot_base: float = -1.0
 var _economy_slot_rate: float = -1.0

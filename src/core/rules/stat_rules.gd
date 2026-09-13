@@ -1,23 +1,12 @@
 class_name PBStatRules
 extends RefCounted
-## 从角色表 + 等级 + 星级算出 [PBStats]。§03A，M3.5-a。全部 static，零引擎依赖。
+## 从角色表 + 等级 + 星级 + 词条算出 [PBStats]（§03A）。全部 static，零引擎依赖。
 ##
-## ## 唯一一处把二级属性折成基础属性的地方
+## **唯一一处把二级属性折成基础属性的地方** —— 有第二处的话系数迟早对不上，
+## 表现为「信息栏的攻击力和战场上打出来的伤害不一样」。
 ##
-## §03A 的形状是「二级属性只通过系数影响基础属性」，而**只要有第二处
-## 也在做这件事，两处的系数迟早对不上** —— 表现为「信息栏显示的攻击力
-## 和战场上真打出来的伤害不一样」，和 CLAUDE.md 那条
-## 「四块面板与比价同源」防的是同一种病。
-##
-## ## 等级与星级是两条不同的轴
-##
-## - **等级**（§02 的指令卡花金币升）抬**二级属性** —— 力/敏/智各按自己的
-##   成长值涨，所以升级会顺着这张卡的定位放大它已有的偏向
-## - **星级**（§08 的同卡 3 张升 1 星）是一个**乘在基础属性上的整体倍率** ——
-##   它不改变定位，只是整体变强
-##
-## 分开是有意的：合成一条的话，「升级」和「抽到重复卡」会变成同一件事的
-## 两种付款方式，而 §07 的经济张力恰恰建在「这两笔钱抢同一个预算」上。
+## 等级与星级是两条轴：**等级**按各自成长值抬力敏智，放大这张卡已有的偏向；
+## **星级**是乘在基础属性上的整体倍率。
 
 ## 占位属性表的稀有度阶梯，**必须与 [member PBSimConfig.rarity_power] 一致**。
 ##
@@ -26,16 +15,13 @@ extends RefCounted
 ## `test_stats.gd` 里有一条断言把它们钉在一起。
 const PLACEHOLDER_RARITY_DPS: Array[float] = [100.0, 130.0, 169.0]
 
-# ── 原版的换算系数（M12-b）──────────────────────────────────────
+# ── 原版的换算系数 ──────────────────────────────────────────────
 #
-# 全部来自原版地图的 `war3mapMisc.txt`，见
-# `Docs/原版数据_忍法战场v1.5.80.md` §3。它们是引擎默认值，
-# 也就是原版作者**没有改过**这一层 —— 差异全在每个角色的三围上。
+# 全部来自原版 `war3mapMisc.txt`（`Docs/原版数据_忍法战场v1.5.80.md` §3），
+# 是引擎默认值 —— 差异全在每个角色的三围上。
 #
-# **这几个数只给真名册用**（[method apply_original_scale]）。
-# [method fill_placeholder] 那条路仍走它自己的一套 —— 那不是两把尺子：
-# 占位表是一条**声明为替身的曲线**，它的职责是复现稀有度阶梯，
-# 而真角色现在有真三围，两者回答的不是同一个问题。
+# **只给真名册用**（[method apply_original_scale]）。[method fill_placeholder]
+# 是合成表那条声明为替身的曲线，回答的不是同一个问题。
 
 ## 每点力量给多少生命。
 const HP_PER_STRENGTH: float = 80.0
@@ -99,19 +85,17 @@ const ALL_STATS: StringName = &"all_stats"
 ## 表现是「带克制系装备的收益比裸的低一截」，而它不报错。
 const ATTACK: StringName = &"attack"
 
-## 防御加几点。**量型**。M12-h1 从 [PBPassiveRules] 搬过来的。
+## 防御加几点。**量型**。
 const DEFENCE: StringName = &"defence"
 
 ## 最大生命加几点。**量型**（原版的「生命值 +1200」）。
 const MAX_HP: StringName = &"max_hp"
 
-## 最大生命多几成。**率型**，中性 0.0。M12-h1 从 [PBPassiveRules] 搬过来的。
+## 最大生命多几成。**率型**，中性 0.0。
 const HP_BONUS: StringName = &"hp_bonus"
 
-## 攻速多几成。**率型**，中性 0.0。M12-h1 从 [PBPassiveRules] 搬过来的。
-##
-## 搬过来之后 [method PBAttacker.prime] 不再需要一格自己的累加器 ——
-## 它拿到的 [member PBAttacker.attack_speed] 已经是算完加成的那个数。
+## 攻速多几成。**率型**，中性 0.0。
+## [method PBAttacker.prime] 拿到的 [member PBAttacker.attack_speed] 已经是算完加成的数。
 const ATTACK_SPEED: StringName = &"attack_speed"
 
 ## 认得的全部属性词条。见本类顶上「属性 vs 行为」。
@@ -128,23 +112,13 @@ const ALL: Array[StringName] = [
 ]
 
 
-## 把原版那套换算系数铺到一个角色上（M12-b）。
+## 把原版那套换算系数铺到一个角色上。
 ##
-## 三围、成长与攻击间隔由调用方从 `data/roster.tsv` 逐个填 —— 那些是**数据**；
-## 这里只负责那一层**规则**（几点力量换多少血）。
+## 三围、成长与攻击间隔由调用方从 `data/roster.tsv` 填（数据），这里只管规则。
+## **名册那条路不调 [method fill_placeholder]**：它会按稀有度覆盖三围并把 DPS 拉回阶梯，
+## 56 个角色的真三围会在最后一步被抹平，而属性栏里数字全对、不报错。
 ##
-## ## 它和 [method fill_placeholder] 的分工
-##
-## 那个函数的名字就说清楚了：**给一个还没有属性数据的角色**铺占位值。
-## 真角色现在有属性数据了，所以名册那条路不再调它 —— 调了的话，
-## 它会先按稀有度覆盖一遍三围，再反解 `atk_base` 把 DPS 拉回阶梯上，
-## 于是「56 个角色各有各的三围」这件事在最后一步被抹平，
-## **而它不报错**：属性栏里数字全对，只是每个人打出来的伤害一样多。
-##
-## [param interval] 是原版的攻击间隔（秒）。攻速在本项目里是「每秒几次」
-## （[method PBAttacker.prime] 拿 `tick_rate / attack_speed` 换间隔），
-## 所以这里取倒数 —— 直接把 1.5 填进 `attack_speed_base` 的话，
-## 每个人会变成一秒打一点五下，快出一倍还多。
+## [param interval] 是原版的攻击间隔（秒）。本项目的攻速是「每秒几次」，所以取倒数。
 static func apply_original_scale(character: PBCharacter, interval: float) -> void:
 	if character == null:
 		return
@@ -162,19 +136,9 @@ static func apply_original_scale(character: PBCharacter, interval: float) -> voi
 
 ## 给一个还没有属性数据的角色铺一套占位属性（§03A）。
 ##
-## ## 为什么这个函数必须存在
-##
-## `data/characters/*.tres` 的属性块是生成脚本铺的，**但代码里造出来的角色没有** ——
-## [method PBCharacter.make] 只填 id / 属性 / 稀有度，而
-## [method PBCharacterTable.synthetic] 造的那整张合成表全走这条路。
-##
-## 不铺的话，合成表里每个角色都吃 [PBCharacter] 的默认值：
-## **R 和顶档的战力一模一样**，稀有度阶梯在合成表上彻底消失。
-## 那不会让任何断言变红（合成表的用例查的是构成，不是强度），
-## 只会让所有用合成表的整局测试跑在一副「全是白板」的牌上 ——
-## 实测表现为整套测试从 30 秒涨到 120 秒，而没有一条测试报错。
-##
-## 规则与生成脚本逐条相同，改一边就要改另一边。
+## [method PBCharacter.make] 只填 id / 属性 / 稀有度，[method PBCharacterTable.synthetic]
+## 整张合成表走这条路。不铺的话每个角色吃默认值，稀有度阶梯在合成表上消失 ——
+## 不会让断言变红，只会让用合成表的整局测试跑在一副全是白板的牌上。
 static func fill_placeholder(character: PBCharacter) -> void:
 	if character == null:
 		return
@@ -240,15 +204,10 @@ static func fill_placeholder(character: PBCharacter) -> void:
 	)
 
 
-## 算出一个角色在 [param level] 级、[param star] 星时的全部属性。
-##
-## [param star] 走 [method PBUnit.star]，最低 1。
 ## 这个键是不是一条属性词条。
 ##
-## **和 [method PBPassiveRules.is_known] 是互斥的两张表**，分界线是
-## 「什么时候生效」：属性在算三围那一刻注入（**属性克制之前**），
-## 行为在建人之后装到 [PBAttacker] 身上。
-## 一个键同时进两张表的话，它会被算两遍，而那不报错。
+## **和 [method PBPassiveRules.is_known] 是互斥的两张表**（属性在算三围时注入，
+## 行为在建人之后装）。一个键同时进两张表的话会被算两遍，而那不报错。
 static func is_known(key: StringName) -> bool:
 	return ALL.has(key)
 
@@ -273,6 +232,8 @@ static func amount(mods: Dictionary, key: StringName) -> float:
 	return float(mods.get(key, 0.0))
 
 
+## 算出一个角色在 [param level] 级、[param star] 星、带着 [param mods] 词条时的全部属性。
+## [param star] 走 [method PBUnit.star]，最低 1。
 static func of(
 	character: PBCharacter, level: int, star: int, cfg: PBSimConfig, mods: Dictionary = {}
 ) -> PBStats:
@@ -285,8 +246,7 @@ static func of(
 	out.strength = character.strength + character.strength_growth * steps
 	out.agility = character.agility + character.agility_growth * steps
 	out.intellect = character.intellect + character.intellect_growth * steps
-	# **一级属性的词条必须在这儿注入**（M12-h1）：下面每一个二级属性都是从
-	# 这三个数算出来的，事后加等于只加了一个孤立的数字。
+	# **一级属性的词条在这儿注入**：下面每个二级属性都从这三个数算出来。
 	# 空词条时每一句都是 `+= 0.0`，逐位不变。
 	var every: float = amount(mods, ALL_STATS)
 	out.strength += amount(mods, STRENGTH) + every

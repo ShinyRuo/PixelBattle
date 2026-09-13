@@ -1,34 +1,23 @@
 class_name PBSummonRules
 extends RefCounted
-## 召唤物怎么来、怎么散（M12-c3）。全部 static，无状态，零引擎依赖。
+## 召唤物怎么来、怎么散。全部 static，无状态，零引擎依赖。
 ##
-## 和 [PBTargetRules]（敌人该打谁）、[PBMoveRules]（我方该往哪儿走）、
-## [PBStrikeRules]（他这一 tick 打出去了什么）、[PBShotRules]（飞行中那一发到了没有）
-## 对称：**这一层答的是「场上现在站着几个不是卡的人」。**
+## ## 召唤物是真单位（玩家定的）
 ##
-## ## 召唤物是真单位，不是一段增伤
+## 原版「影分身承受 600% 的伤害」说明它站在场上、会挨打、替本体挡刀。
+## 降格成「本体增伤 N 秒」正是 §09 禁止的「只是更大的百分比」。
 ##
-## 玩家定的。原版那句「影分身承受 600% 的伤害」就是在说它们站在场上、
-## 敌人会打它们、它们会替本体挡刀。降格成「本体增伤 N 秒」零结构代价，
-## 但那正是 §09 明令禁止的「**只是更大的百分比**」。
+## ## 位子开波预留，跑动中不往数组里塞人
 ##
-## ## 位子是开波预留的，不在跑动中往数组里塞人
+## 定长是 sim 里一堆东西的隐含前提：[PBSkillOrders] 按人数铺一次、渲染池按人数建节点、
+## [PBCrowdRules] 两两遍历。中途变长会让它们各自失配，而失配基本不报错。
+## **没有召唤技能的队伍一个位子也不留**，配平数字一位不动。
 ##
-## **定长是这个 sim 里一堆东西的隐含前提**：[PBSkillOrders] 开波按人数铺一次、
-## 渲染池按人数建节点、[PBCrowdRules] 两两遍历。中途变长会让它们各自失配，
-## **而失配基本都不报错**。预留是本项目已经用熟的形状（同 [PBProjectile] 池、
-## [PBEnemy] 池：定长 + `alive` 标志）。
+## ## `slot` 不保证对应一张卡
 ##
-## **没有召唤技能的队伍一个位子也不留**，所以全部既有配平数字一位不动 ——
-## 同 M3.5-f 装备那条「空着 = 一字不差」。
-##
-## ## `slot` 从此不保证对应一张卡
-##
-## 在这之前 [member PBAttacker.slot] 同时是两件事：数组下标、出战席第几张卡。
-## 召唤物只满足前一件。三处拿它反查卡的地方因此都要认这条
-## （[PBFormationRules]、`battle_view` 的点选、[PBAllyPool] —— 最后一处
-## 早就带着守卫了）。**尾兽先示范过同一件事**：它是一个 `slot = -1` 的
-## [PBAttacker]，只是它连数组都不在。
+## [member PBAttacker.slot] 对召唤物只是数组下标。拿它反查卡的地方
+## （[PBFormationRules]、`battle_view` 的点选、[PBAllyPool]）都要带守卫 ——
+## 尾兽（`slot = -1`）是同一个形状。
 
 ## 召唤物散场时血条上还剩什么都不算数 —— 它不是「死了」，是「到点了」。
 ## 见 [method dismiss]。
@@ -83,11 +72,7 @@ static func raise_from(
 	return made
 
 
-## 到点的召唤物散场。返回散了几个。
-##
-## **一 tick 扫一遍，而不是每个召唤物自己记一个闹钟** —— 同
-## [PBBuffBag] 那条「过期是查询时比 tick」的反面：那一层漏跑一次不改变任何结果，
-## 而这一层漏跑一次会让一个召唤物多站一会儿，那是能看出来的。
+## 到点的召唤物散场。返回散了几个。**每 tick 扫一遍**。
 static func expire(attackers: Array[PBAttacker], tick: int) -> int:
 	var gone: int = 0
 	for one: PBAttacker in attackers:
@@ -108,8 +93,7 @@ static func expire(attackers: Array[PBAttacker], tick: int) -> int:
 static func _stand_up(
 	one: PBAttacker, caster: PBAttacker, skill: PBSkill, until: int, cfg: PBSimConfig
 ) -> void:
-	# 一发多重要跟着缩（M12-c5）。只缩 dps 的话召唤物**一点伤害都打不出来** ——
-	# 战斗读的是 `attack`，而它默认 0。
+	# 一发多重要跟着缩：战斗读的是 `attack`，只缩 dps 的话召唤物一点伤害都打不出来。
 	one.attack = caster.attack * maxf(skill.summon_power, 0.0)
 	one.dps = caster.dps * maxf(skill.summon_power, 0.0)
 	one.max_hp = caster.max_hp * maxf(skill.summon_hp_share, 0.0)

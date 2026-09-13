@@ -1,23 +1,11 @@
 class_name PBBeastTable
 extends RefCounted
-## 全部尾兽的查表。M3-d。与 [PBBondTable] / [PBEquipTable] 同构。
+## 全部尾兽的查表。与 [PBBondTable] / [PBEquipTable] 同构。
 ##
-## ## 这张表没有「合成表」，和前三张不一样
+## **没有合成表**：它的退化情形是真实局面 —— [member PBRunState.beast_id] 为空 = 不带尾兽，
+## 那是扫描时「选了尾兽比不选强多少」的分母。
 ##
-## [PBCharacterTable] / [PBBondTable] / [PBEquipTable] 各有一条
-## `synthetic()` 替身曲线，用来让「结构层的引入」可以与「换真数据」分开对拍。
-##
-## 尾兽不需要那一步，因为**它的退化情形是一个真实存在的局面**：
-## [member PBRunState.beast_id] 为空 = 这一局没有尾兽。
-## 那不是一条假曲线，是扫描时的**对照组** —— 「选了尾兽比不选强多少」
-## 这个问题必须有一个分母，而这个分母只能是「一只都不带」。
-##
-## （§11 的正式规则是开局必选一只，所以「不带」不是一个可玩的选项，
-## 只是一把尺子。真正上架时默认值要翻成某一只，见路线图的待决策表。）
-##
-## ## 表是只读的
-##
-## 造完就不该再改 —— [method PBSimConfig.clone] 只复制引用而不深拷贝。
+## 表是只读的：[method PBSimConfig.clone] 只复制引用而不深拷贝。
 
 var _all: Array[PBBeast] = []
 var _by_id: Dictionary = {}

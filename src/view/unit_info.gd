@@ -1,25 +1,12 @@
 class_name PBUnitInfo
 extends Control
-## 底部中间的忍者信息栏：**选中谁就显示谁的全部属性**。§02 / §03A，M3.5-e。
+## 底部中间的忍者信息栏：**选中谁就显示谁的全部属性**；没选人时显示整队的账（生效的羁绊）。
 ##
-## ## 它兑现的是 §03 的那条改进
-##
-## 原版最大的短板是信息不透明 —— 一张卡的射程、所属羁绊、装备挂没挂上
-## 全都要背攻略。这一栏把它们摊开：头像、名字、稀有度、等级、
-## 血/蓝、攻/防、力/敏/智、攻元素与防元素、射程、羁绊、装备。
-##
-## ## 血蓝攻防不是装饰
-##
-## §03A 明确否掉了「展示层派生」那条路：这些数字**真的进战斗**
-## （敌人还手、忍者会死、大招耗蓝）。显示一个不参与战斗的数字比不显示更糟 ——
-## 玩家迟早会发现「加了力量没变强」，而那时整套属性表都不可信了。
-##
-## ## 攻元素和防元素要分两行写
-##
-## §03A 把它们拆开，正是为了让一张卡在「它打谁」和「它扛谁」两条线上
-## 指向不同的波次。写成一行「火系」的话，玩家读到的还是旧模型。
+## 兑现 §03 那条改进（原版信息不透明）：头像、名字、稀有度、等级、血/蓝、攻/防、力/敏/智、
+## 攻元素与防元素、射程、羁绊、装备词条。**这些数字真的进战斗**，显示不参与战斗的数字比不显示更糟。
+## **攻元素和防元素分两行写**：它们指向不同的波次。
 
-## 鼠标停在一行羁绊上（M6-j）。参数顺序对齐 [method PBTooltip.show_hint]。
+## 鼠标停在一行羁绊上。参数顺序对齐 [method PBTooltip.show_hint]。
 signal hint_requested(at: Rect2, title: String, body: String)
 
 ## 鼠标从那一行上移开了，把卡收掉。
@@ -39,12 +26,8 @@ const FONT_SIZE: int = 8
 ## 字体度量三样都要复算一遍，而算错的表现是「有时候悬停不出来」。
 const BOND_META := "bond:"
 
-## 血条与蓝条。**先画满血的底再画当前值**，比只画一条读得快。
-##
-## **M7-f 从 96 缩到 76**，腾出右边 44 像素给 buff 图标条
-## （[PBBuffStrip]，那里有这笔几何账）。条是一条**百分比条不是刻度尺**，
-## 缩掉两成仍然读得出比例；而正文那五行一行都动不了
-## （M6-j 刚为第五行上下各收 2 像素买回一整行）。
+## 血条与蓝条。**先画满血的底再画当前值**。宽度让出右边给 buff 图标条（[PBBuffStrip] 有这笔几何账）；
+## 它是百分比条不是刻度尺，窄一点仍然读得出比例。
 const BAR_SIZE := Vector2(76.0, 6.0)
 
 ## 图标条摆在条的右边。x 从 122 起、宽 40，正好接到正文右边界 162。
@@ -54,13 +37,9 @@ const HP_COLOR := Color(0.85, 0.30, 0.30)
 const MP_COLOR := Color(0.35, 0.55, 0.90)
 const BAR_BACK := Color(0.16, 0.17, 0.21)
 
-## 羁绊成员的三色（M6-j，玩家点名要的「场上有的和没有的用颜色区分」）。
-##
-## **三档不是两档**：「在场」「抽到了但不在场上」「压根没抽到」是三种
-## 完全不同的处境 —— 第二档是**这一下就能补上**的，第三档只能等抽卡。
-## 合成两档的话，玩家看到一个灰名字不知道该去仓库找他还是该去抽卡。
-##
-## 这也正是编队页删掉之后一直没找到家的那份三色名单（M3-e 起记在待决策表上）。
+## 羁绊成员的三色（玩家要的「场上有的和没有的用颜色区分」）。
+## **三档不是两档**：在场 / 抽到了但不在场上（这一下就能补上）/ 压根没抽到（只能等抽卡）——
+## 合成两档的话玩家看到灰名字不知道该去仓库找他还是该去抽卡。
 const MEMBER_ON_FIELD := PBSkin.GOOD
 const MEMBER_IN_STASH := PBSkin.WARN
 const MEMBER_MISSING := PBSkin.DIM
@@ -113,11 +92,8 @@ func _ready() -> void:
 	_strip.position = PANEL_RECT.position + STRIP_AT
 	add_child(_strip)
 
-	# **正文要五行**（属性 / 力敏智 / 攻防元素 / 射程装备 / 羁绊），而这个框
-	# 只有 94 高。M6-j 之前顶上留 36、底下留 4，装得下四行半 ——
-	# **第五行（羁绊）被裁掉一半**，而它正是玩家这次点名要看的那一行。
-	# 上下各收 2 像素买回一整行；头像那 34 像素本来就压着正文第一行的顶，
-	# 再往上挪会盖住数字。
+	# **正文要五行**（属性 / 力敏智 / 攻防元素 / 射程装备 / 羁绊），框只有 94 高：上下留白已经收到最紧，
+	# 头像再往上挪会盖住数字。
 	_body = PBSkin.rich(
 		self,
 		Rect2(PANEL_RECT.position + Vector2(6.0, 34.0), PANEL_RECT.size - Vector2(12.0, 36.0)),
@@ -153,18 +129,9 @@ func refresh(
 	_show_unit(unit, selection, state, cfg, wave, deployed)
 
 
-## 战斗中把血蓝条刷成真值（§02，M4-e）。**每渲染帧调一次。**
-##
-## ## 为什么单独开一个入口，不直接每帧调 [method refresh]
-##
-## `refresh` 要重排整块文字，还要跑一次装备分配（[method PBEquipRules.assign]）——
-## 一秒六十次太贵，而那几行字在一波之内根本不变。
-## 会变的只有这两条，所以它们单独有一条便宜的路。
-##
-## [param live] 为 null（没选人、或者选中的人这一波没上场）就把条收掉。
-##
-## 身上挂着的效果也走这一条（M7-f）：它每 tick 都在变（周期触发、到期），
-## 和血蓝同一个量级，而重排整块文字那条路一秒六十次太贵。
+## 战斗中把血蓝条与效果图标刷成真值（§02）。**每渲染帧调一次。**
+## 单独一条便宜的路：[method refresh] 要重排整块文字、跑一次装备分配，一秒六十次太贵，而会变的只有这几样。
+## [param live] 为 null（没选人、或选中的人这一波没上场）就把条收掉。
 func show_live(live: PBAttacker, at_tick: int = 0) -> void:
 	if live == null:
 		return
@@ -174,24 +141,9 @@ func show_live(live: PBAttacker, at_tick: int = 0) -> void:
 		_strip.show_bag(live.buffs, at_tick, _cfg)
 
 
-## 没选人时显示**整队的账**，也就是原来那条羁绊带（M5-5 并进来的）。
-##
-## ## 羁绊带为什么搬进这里
-##
-## 新布局（[PBLayout]）里 A~J 十个框没有一个是给它的，而它压在战场上
-## 又正好占着 M5-2 之后有人站的那一块。搬进这里不是找地方塞：
-## **这一栏没选中人时本来就是空的**，而「整队现在什么样」正是
-## 那个空档该回答的问题 —— 和指令卡「选中谁就显示谁能做的事」是同一条规矩。
-##
-## ## 只写已经生效的那几组（M6-j）
-##
-## 在那之前这里还有第二段「再补就能进：某某 差1 +18%」。删掉是玩家定的，
-## 而它和羁绊改成**全有或全无**（见 [PBBond]）是同一个决定的两半：
-## 分档的时候「差一个人」处处都是，那份提示是导航；
-## 不分档之后**每一组都只有「够」和「不够」两种状态**，
-## 把没凑上的也摊开等于把整张羁绊表抄在一块 168 像素宽的面板上。
-##
-## 「都有谁」搬进了悬停卡 —— 那是问一次就走的信息，不该常驻占三行。
+## 没选人时显示**整队的账**（「整队现在什么样」正是这个空档该回答的问题）。
+## **只写已经生效的那几组**：羁绊只有「够」和「不够」两种状态，没凑上的也摊开等于把整张表抄在面板上。
+## 「都有谁」在悬停卡里。
 func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: bool) -> void:
 	_portrait.visible = false
 	_set_bar(_hp_back, _hp_fill, 0.0)
@@ -211,9 +163,7 @@ func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: b
 	_body.text = "\n".join(lines)
 
 
-## 现在生效的是哪几组。功能缀在后面（M3-f）—— **载体是谁留给选中那个人看**，
-## 这一栏塞不下「要把某某排进出战席」。
-##
+## 现在生效的是哪几组，功能缀在后面（载体是谁留给选中那个人看）。
 ## 每一行都是一个 `[url]`：鼠标停上去弹出成员名单（[method _bond_body]）。
 func _tier_lines(cfg: PBSimConfig, units: Array[PBUnit]) -> PackedStringArray:
 	var out := PackedStringArray()
@@ -252,9 +202,7 @@ func _show_unit(
 	_portrait.visible = true
 	_portrait.set_unit(unit, wave.element)
 
-	# **不写星级**（M6-j，玩家定的）。M5-9 起重复抽到的是**另一个人**，
-	# 「同卡 3 张升 1 星」那条规则随之作废 —— 这个数因此恒为 1，
-	# 而一个永远不变的数字只会让人以为自己漏了一套没做出来的养成系统。
+	# **不写星级**（玩家定的）：重复抽到的是另一个人，这个数恒为 1，一个永远不变的数字只会让人以为漏了一套养成系统。
 	var away: String = "　出任务中" if selection.kind == PBSelection.Kind.DISPATCHED else ""
 	_head.text = "%s　%s　Lv%d%s" % [
 		PBLocale.of_character(unit.character),
@@ -262,9 +210,7 @@ func _show_unit(
 		unit.level,
 		away,
 	]
-	# 准备阶段没有战斗实例，血蓝都是满的 —— 显示满条是诚实的：
-	# 那正是开波时的状态（§03A：每波满血满蓝复活）。
-	# 战斗中由 [method show_live] 每帧覆盖成真值（M4-e）。
+	# 准备阶段没有战斗实例，显示满条是诚实的（开波时每波满血满蓝）。战斗中由 [method show_live] 每帧覆盖。
 	_set_bar(_hp_back, _hp_fill, 1.0)
 	_set_bar(_mp_back, _mp_fill, 1.0)
 
@@ -317,11 +263,7 @@ func _reach_name(unit: PBUnit) -> String:
 			return "远程·中排"
 
 
-## 这个人身上挂着哪几件。**分类匹配意味着「挂不上」是常态**（§10），
-## 所以挂不上要说出来，不能显示成 ×1.00 让人以为是没买。
-##
-## M3.5-f 起把件名逐个列出来，而不只报一个总倍率 —— 装备成了玩家能插手的
-## 东西之后，「他身上是哪几件」才是可以行动的信息（[PBEquipDrawer]）。
+## 这个人身上挂着哪几件、给了什么词条。**分类匹配意味着「挂不上」是常态**（§10），所以挂不上要说出来。
 func _equipment_text(
 	unit: PBUnit, deployed: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
 ) -> String:
@@ -333,8 +275,7 @@ func _equipment_text(
 	)[index]
 	if held.is_empty():
 		return "装备：没挂上"
-	# **列词条，不列倍率**（M12-h2）—— 装备从此给的是属性，
-	# 而「×1.40」在属性栏里找不到对应的数。
+	# **列词条，不列倍率**：玩家要对的是属性栏上的数。
 	var worn := PBEquipRules.unit_mods(deployed, state.equip_parts, cfg, state.equipped)[index]
 	var names := PackedStringArray()
 	for item_id: String in held:
@@ -360,8 +301,7 @@ func _bond_line(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> String:
 		var active: int = PBBondRules.active_count(bond, counted)
 		var need: int = bond.full_tier_count()
 		var text: String = "%s %d/%d" % [PBLocale.of_bond(bond), active, need]
-		# 生效的标一下。不标的话「3/3」和「2/3」在一行小字里几乎分不出来，
-		# 而那正好是这一组值不值钱的全部区别（M6-j：不凑齐就是不生效）。
+		# 生效的标一下：「3/3」和「2/3」在一行小字里几乎分不出来，而那是这一组值不值钱的全部区别。
 		text = PBSkin.tint(text + "✓", PBSkin.GOOD) if active >= need else text
 		parts.append(_link(bond, text))
 	if parts.is_empty():

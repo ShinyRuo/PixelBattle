@@ -1,22 +1,9 @@
 class_name PBEquipRules
 extends RefCounted
-## 装备的合成与分配（§10 的三级树）。M3-c。
+## 装备的合成与分配（§10 的三级树）。
 ##
-## ## 这个类替换掉了什么
-##
-## M-1 到 M3-b 之间，装备是一条**无差别全队倍率**：
-## `1 + 每件加成 × 可用件数 ÷ 出战位数`。那条替身曲线丢掉了三件事，
-## 而三件都不是细节：
-##
-## 1. **配方点名。** 忍具箱随机出配件，配方却要指定的几种 ——
-##    **一定会囤下用不上的配件**。替身曲线里「任意三个换一件」，没有这个损耗
-## 2. **分类匹配。** §10 原话「法术装挂物理角色身上不生效」。
-##    替身曲线里装备对谁都一样有用，于是它成了「阵容深度」的完美替代品，
-##    而阵容深度正是 §03 换人策略需要的东西 —— 这就是装备稀释属性系统的机制
-## 3. **整数分配。** 每人最多 3 件，摊不匀就是摊不匀；平均值抹掉了这一层
-##
-## §10 写着「M3 实现真合成树时这条稀释会自然收窄，**但要复测，不能假定**」。
-## 这个类就是那次复测的被测对象。
+## 三件事让装备不是一条全队倍率：**配方点名**（随机出的配件一定会囤下用不上的）、
+## **分类匹配**（法术装挂物理角色不生效）、**整数分配**（每人最多 3 件）。
 
 
 ## 手上的配件能合出哪些成品，各几件。返回 `{成品 id: 件数}`。
@@ -51,24 +38,13 @@ static func _can_craft(pool: Dictionary, entry: PBEquipItem) -> bool:
 	return true
 
 
-## 每个出战单位身上**实际挂着哪几件**成品（与 [param deployed] 同序）。
+## 每个出战单位身上**实际挂着哪几件**成品（与 [param deployed] 同序），元素是成品 id。
 ##
-## 元素是成品 id。[param pinned] 是玩家手动挂的那份
-## （[member PBRunState.equipped]），**先占位，剩下的空位再自动补满**。
+## [param pinned] 是玩家手动挂的（[member PBRunState.equipped]），**先占位**；
+## 剩下的空位按估值分从高到低发给吃得下、还有空位的人。装不下的压在仓库里。
 ##
-## 分配规则：玩家钦定的优先；其余按加成从高到低，每件发给**吃得下它的、
-## 还有空位的**那个单位。装不下的（分类不匹配、或者所有匹配的人都满 3 件了）
-## 就压在仓库里，一分不产出。
-##
-## **这里是「装备稀释属性系统」那条代价真正收窄的地方**：
-## 一队全是火系的阵容拿到物理装只能干看着，而替身曲线会照单全收。
-##
-## ## 为什么倍率是从这里派生出去的
-##
-## M3-c 时这个函数直接返回倍率，身上挂了什么**只存在于循环变量里**。
-## M3.5-f 的装备栏要把它显示出来，于是只有两条路：把分配再算一遍（两份），
-## 或者把它变成返回值（一份）。两份的表现是「面板上写着挂了某件成品，
-## 战斗里却按没挂算」—— 不报错，而且只在分类匹配的边角上才对不上。
+## **词条从这份名单派生**（[method unit_mods]），不另算一遍 ——
+## 两份的表现是「面板上写着挂了某件，战斗里按没挂算」。
 static func assign(
 	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig, pinned: Dictionary = {}
 ) -> Array[PackedStringArray]:
@@ -126,14 +102,8 @@ static func _can_give(
 	return ignore_category or item.fits(unit.element)
 
 
-## 每个单位身上那几件装备**加起来给了什么**（与 [param deployed] 同序，M12-h2）。
-## **纯派生量**，由 [method assign] 那份名单并出来 —— 见那个方法的说明。
-##
-## 在它之前这里返回的是一个**战力倍率**（`1.0 + Σ power`）。
-## 原版的装备全是属性词条，倍率那个形状表达不了它们 ——
-## 见 [member PBEquipItem.mods]。
-##
-## **同键相加不覆盖**：两件都给攻击力该是两份都算。
+## 每个单位身上那几件装备**加起来给了什么**（与 [param deployed] 同序）。
+## 由 [method assign] 那份名单派生。**同键相加不覆盖**。
 static func unit_mods(
 	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig, pinned: Dictionary = {}
 ) -> Array[Dictionary]:
@@ -152,27 +122,6 @@ static func unit_mods(
 			for key: StringName in item.mods:
 				out[i][key] = float(out[i].get(key, 0.0)) + float(item.mods[key])
 	return out
-
-
-## 合出来了却**没挂在任何人身上**的成品，`{成品 id: 件数}`。
-##
-## 装备栏靠它列出「还能挂上什么」。数出来而不是另写一遍分配 ——
-## 「仓库里还剩什么」必须是「谁挂了什么」的补集，两边各算各的迟早对不上。
-static func unassigned(
-	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig, pinned: Dictionary = {}
-) -> Dictionary:
-	var table: PBEquipTable = cfg.equipment
-	if table == null:
-		return {}
-	var pool := craftable(parts, table)
-	for held: PackedStringArray in assign(deployed, parts, cfg, pinned):
-		for item_id: String in held:
-			var key := StringName(item_id)
-			pool[key] = int(pool.get(key, 0)) - 1
-	for key: StringName in pool.keys():
-		if int(pool[key]) <= 0:
-			pool.erase(key)
-	return pool
 
 
 ## 玩家把一件成品挂到某个人身上。已经满 3 件就挂不上，返回 false。
@@ -209,42 +158,6 @@ static func unpin(pinned: Dictionary, unit_id: StringName, item_id: StringName) 
 ## 这个人身上钦定了哪几件（不含自动补上的那些）。
 static func pinned_of(pinned: Dictionary, unit_id: StringName) -> Array:
 	return pinned.get(unit_id, [])
-
-
-## 整队的平均装备倍率 —— 只给界面和估值报数用，**战斗结算不走这里**。
-##
-## 战斗按 [method unit_multipliers] 逐人结算，因为分类匹配的意义就在于
-## 「谁吃得到」。这个平均值只是把那份逐人结果压成一个可显示的标量，
-## **它是派生量，不是第二份计算**。
-## 逐人的**估值分**（[member PBEquipItem.power]），给比价用 ——
-## **不是效果**，效果在 [method unit_mods] 里。
-static func _worth_each(
-	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig, pinned: Dictionary = {}
-) -> PackedFloat64Array:
-	var out := PackedFloat64Array()
-	out.resize(deployed.size())
-	out.fill(1.0)
-	var table: PBEquipTable = cfg.equipment
-	if deployed.is_empty() or table == null:
-		return out
-	var held := assign(deployed, parts, cfg, pinned)
-	for i: int in deployed.size():
-		for item_id: String in held[i]:
-			var item := table.item(StringName(item_id))
-			if item != null:
-				out[i] += item.power
-	return out
-
-
-static func mean_multiplier(
-	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig
-) -> float:
-	if deployed.is_empty():
-		return 1.0
-	var total: float = 0.0
-	for value: float in _worth_each(deployed, parts, cfg):
-		total += value
-	return total / float(deployed.size())
 
 
 ## 整队还能再吃下几件成品。**「装备买满了没有」靠它判断，不靠件数除以位数** ——

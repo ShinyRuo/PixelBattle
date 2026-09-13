@@ -1,38 +1,14 @@
 class_name PBOfferModal
 extends PBModal
-## 抽卡三选一。§08，M3.5-f；M5-6 从抽屉改成模态。
+## 抽卡三选一（§08）：三张摆开挑一张，另外两张**弃掉，不返金币**（[method PBShopRules.take_offer]）。
 ##
-## ## 为什么三选一要有自己的一块界面
+## 选择要成立，玩家得看得见他在选什么。卡面上这几行不是装饰：**攻元素 / 防元素**（打哪一波、扛哪一波）、
+## **射程档**（站前排还是后排）、**所属羁绊**（补满档的卡和谁都不搭的卡差一个数量级）、**是否已有**。
 ##
-## M3.5-e 之前抽卡是「点一下，一张卡进仓库」——**那里面没有决策**，
-## 只有「钱够不够」。三选一把它变成一次真选择：三张摆开，挑一张，
-## 另外两张**弃掉，不返金币**（[method PBShopRules.take_offer]）。
+## **这一层关不掉**（没有关闭按钮、`Esc` 也收不掉，[method _closable]）：钱在摆牌那一刻就扣了，
+## 给一个「关掉」的出口等于给一个把 300 金币变没的出口。开打前拦在 [method PBBattleView._finish_prepare]。
 ##
-## 而一次选择要成立，玩家得看得见他在选什么。卡面上这几行不是装饰：
-##
-## - **攻元素 / 防元素**（§03A）—— 一张卡打哪一波、扛哪一波是两件事
-## - **射程档**（M3-a）—— 决定他站前排还是后排，也就是要不要挨打
-## - **所属羁绊**（§09）—— 一张能补满档的卡和一张谁都不搭的卡差一个数量级
-## - **重复卡**（§08）—— 抽到已有的只加张数，那和一张新卡完全不是一回事
-##
-## 少了最后一条会出事：三张全是已有的卡时，玩家不看仓库根本不知道
-## 自己在挑一张**只加星级进度**的卡，而界面上三张长得一模一样。
-##
-## ## 掏钱和挑人是分开的两步，所以这一层关不掉
-##
-## 钱在摆牌那一刻就扣了（见 [method PBShopRules.open_offer]），
-## 那一组候选连同那笔钱会随着开打一起蒸发（拦在
-## [method PBBattleView._finish_prepare]）。所以它是本项目唯一一块
-## **没有关闭按钮、`Esc` 也收不掉**的面板（[method _closable]）——
-## 给一个「关掉」的出口等于给一个把 300 金币变没的出口，
-## 而账面上只表现为「金币怎么少了」。
-##
-## ## 卡宽 188 不是随手取的
-##
-## 抽屉那一版是 186，而带子只有 508 宽 —— 三张 186 加步距要 574，
-## **右边那张有整整 65 像素画在屏幕外面**，从 M5-2 一直没人发现
-## （见 [PBLayout] 顶部）。模态层宽 600，这次是算过的：
-## `9 + 2×194 + 188 = 585 ≤ 600`。
+## 卡宽是算过的：`9 + 2×194 + 188 = 585 ≤ 600`（模态层宽）。
 
 ## 玩家挑了第 [param index] 张。
 signal picked(index: int)
@@ -77,11 +53,6 @@ func _build_body() -> void:
 		_tiles.append(tile)
 
 		_texts.append(PBSkin.rich(card, Rect2(44.0, 2.0, CARD_SIZE.x - 50.0, CARD_SIZE.y - 4.0)))
-
-
-## 有没有一组候选正等着挑。开着它的时候不许开打（见类顶部）。
-func has_offer(state: PBRunState) -> bool:
-	return not state.pending_offer.is_empty()
 
 
 func refresh(state: PBRunState, cfg: PBSimConfig, wave: PBWave) -> void:
@@ -147,15 +118,8 @@ func _bond_text(unit: PBUnit, cfg: PBSimConfig) -> String:
 	return PBSkin.tint("羁绊 " + "·".join(parts), PBSkin.ACCENT)
 
 
-## 已经有这个角色的话说一声，**但它不再是一句警告**（M5-9）。
-##
-## 在那之前重复卡只推进星级进度（§08：同卡 3 张升 1 星），也就是说
-## 三张长得一样的卡里有一张几乎等于白抽 —— 那一行是三选一里最容易
-## 被界面吃掉的信息。现在重复抽到的是**另一个人**：他立刻能上场、
-## 能升级、能带装备，作为战力和新卡一样。
-##
-## 仍然写出来，因为它有一处真差别：**羁绊按角色算档**
-## （[method PBBondRules.active_count]），同名的第二个人一组都不多。
+## 已经有这个角色的话说一声。重复抽到的是另一个人（能上场、升级、带装备），
+## 但**羁绊按角色算档**（[method PBBondRules.active_count]），同名的第二个人一组都不多。
 func _owned_text(unit: PBUnit, state: PBRunState) -> String:
 	var have: int = 0
 	for owned: PBUnit in state.roster.values():

@@ -1,63 +1,19 @@
 @tool
 class_name PBActorForgePanel
 extends Control
-## 编辑器底栏那块「战场形象」面板：喂一段视频，**逐帧看、逐帧挑**，
-## 挑完出成品帧和形象表。M6-l。
+## 编辑器底栏那块「战场形象」面板：喂视频或图集，**逐帧看、逐帧挑、逐帧修**，出成品帧和形象表。
 ##
-## ## 它替掉的是命令行那条路的哪一段
+## 挑帧那一环交给人：自动挑帧的算法对得多、错得安静（手比划到一半的帧照样挑中）。算法还在，
+## 按源帧数分两档（[method PBActorForge.frames_for]）：图集那条路正好几格就按顺序全要，视频那条路才走算法。
 ##
-## `make_actor.ps1` 从头到尾没有人插手：挑哪几帧由 [method PBActorForge.select]
-## 按剪影自相关、伸展量这些指标算出来。那套算法**对得多、错得也安静** ——
-## AI 视频里总有一两帧手比划到一半、或者人整个糊掉，算法照样会挑中它，
-## 而唯一能发现的办法是出完之后开预览台一段段看，再回去改参数重跑。
+## 一个新角色的走法（三个按钮）：四段各抽一次帧 → **① 导出四段（帧自动定）** → 逐段翻着看，不对就重挑、
+## **② 只覆盖那一段** → **③ 生成形象表**。① 是从零到有，② 是改 —— 合成一个的话想重调 `attack` 得四段一起重来。
 ##
-## 这块面板把那一环换成人：**帧就在眼前，点哪张要哪张。**
+## 修帧（**先擦再调**）：**擦除**（[PBFrameTouch]）去掉抠不掉的地面阴影（它会让包围盒横贯全图）；
+## **手动锚点**修剩下一两格的左右晃。两者都逐帧记账，都有「套到整段」（镜头不动，阴影在每帧同一个位置）。
 ##
-## ## 它没有替掉的：算法本身
-##
-## [method PBActorForge.select] 还在 —— 从零一帧帧翻 97 帧太贵。
-## **但那是视频那条路的账**：图集进来的就已经是一段的帧数，而算法在那么少的
-## 帧上是坏的。所以 M9-l 之后没人直接调它，三条路（这一栏那颗
-## 「全部选择」、① 、② 的空名单兜底）都走 [method PBActorForge.frames_for]
-## 那条按源帧数分岔的判断。
-##
-## ## 一个新角色的走法（三个按钮，M6-o）
-##
-## 四段各抽一次帧 → **① 导出四段（自动挑帧）**一把全出
-## → 逐段翻着看，某一段不对就重挑、**② 只覆盖那一段**
-## → 都行了 **③ 生成形象表**。
-##
-## ① 和 ② 的分工是**从零到有** vs **改**。合成一个按钮的话，
-## 想重调 `attack` 就得连着另外三段一起重来。
-##
-## ## 修帧那一段（M6-r）
-##
-## 挑帧和导出之间多了一环：**这一帧本身对不对**。两件事，
-## 而它们是同一个根因的两半 ——
-##
-## - **擦除**（[PBFrameTouch]）：AI 视频里人脚下常留一条抠不掉的地面阴影。
-##   整条流水线量人全靠包围盒，一条横贯全图的黑影会同时让脚底中点跑到
-##   画面正中、画布撑到半个屏幕、地面线落在黑影上。
-## - **手动锚点**：擦干净之后剩下的一两格。自动量的那个中点只对
-##   「两只脚并拢」最准，跑动那几帧一前一后总会左右晃。
-##
-## 所以顺序是**先擦再调**，工具条也按这个顺序摆。两者都逐帧记账
-## （[member PBForgeEraser._marks] / [member _nudges]），都配一个「套到整段」——
-## 镜头不动，那条阴影在 97 帧里是同一个位置。
-##
-## ## 为什么整个流水线在 [PBActorForge] 里而不在这儿
-##
-## 命令行那条路还留着（30 个角色批量走一遍时没人想点 120 次按钮）。
-## 两条路各写一份图像处理的话，「命令行出的素材和插件出的素材差一像素」
-## 迟早发生，而它不报错 —— 表现是同一个角色的两段动画高矮不一。
-##
-## ## 为什么做成插件，而不是像预览台那样一个能跑的场景
-##
-## 一条实在的好处：**编辑器能当场重扫资源**。命令行那条路要把
-## 「写 PNG」和「装 SpriteFrames」分成两个进程，中间隔一次 `--import` ——
-## 因为引擎只认导入过的贴图，刚写到磁盘上的 PNG 在同一次进程里
-## `load()` 不出来。插件里一句 `scan()` 就跨过去了，于是
-## 「挑完 → 出图 → 装表」是一个按钮。
+## 图像处理全在 [PBActorForge]，命令行那条路调同一个类。做成插件的实在好处：编辑器能当场重扫资源，
+## 「挑完 → 出图 → 装表」是一个按钮（命令行得分两个进程、中间隔一次 `--import`）。
 
 ## 中间帧放哪儿。`build/` 有 `.gdignore`，所以这些帧**不会被导入** ——
 ## 而预览走的是 [method Image.load_from_file]，它不需要导入。
@@ -66,16 +22,8 @@ const MID_ROOT := "res://build/aires/mid"
 ## 左边那一栏多宽。右边全给预览 —— 这块面板存在的意义就是看清楚一帧。
 const SIDE_WIDTH: float = 264.0
 
-## 「这一段整体缩放」滑块的两头。
-##
-## **下限 M9-j 从 0.60 放到 0.10**（玩家定的）。0.60 那一版的理由是
-## 「够用就行」—— 当时最极端的一次是一张图集里人画大了 16%（0.86 补回来）。
-## 而实测有一套素材的 `attack` 图集比它自己的 `idle` 大 **69%**，
-## 要 `180 ÷ 302 = 0.596` 才补得回来 —— **正好卡在下限上，只差 0.004**。
-##
-## 跨图集尺度不一致这件事没有上界（模型每次出图都可能飘），
-## 所以下限不该按「上一次最极端是多少」定。步长仍是 0.01，
-## 拖不准的那一档由「这一段缩放归 1.00」那个按钮兜着。
+## 「这一段整体缩放」滑块的两头。**下限放得很低**：跨图集尺度不一致没有上界（同一套素材的 `attack` 图集
+## 可能比 `idle` 大七成），不能按「上一次最极端是多少」定。拖不准的由「归 1.00」那个按钮兜着。
 const ZOOM_MIN: float = 0.10
 const ZOOM_MAX: float = 1.60
 
@@ -90,12 +38,8 @@ var _shots: Array = []
 var _nudges: Dictionary = {}
 
 
-## `{段名: 倍率}`。**空 = 每段 1.00 = 一字不差** —— 一个没调过的角色，
-## 出来的帧和没有这个滑块的那一版逐字节相同，那是它敢加在导出这条路上的
-## 全部理由（同 [member _nudges]）。
-##
-## **按段各存各的**：一个数存在面板上的话，切到别的段还留着上一段的倍率，
-## 而导出的时候它会静默地乘上去。
+## `{段名: 倍率}`。**空 = 每段 1.00 = 一字不差**（同 [member _nudges]）。
+## **按段各存各的**：存一个数的话切到别的段还留着上一段的倍率，导出时静默乘上去。
 var _zooms: Dictionary = {}
 
 
@@ -132,24 +76,16 @@ func _ready() -> void:
 	row.add_child(_build_preview())
 	for anim: String in PBActorForge.anim_names():
 		_nudges[anim] = {}
-	# **在 `add_child` 之后接线**：[PBForgeSource] 的控件是它自己在
-	# `_ready` 里建的，进树之前 `bind` / `aim_at` 落不到实处。
+	# **在 `add_child` 之后接线**：[PBForgeSource] 的控件是它在 `_ready` 里建的，进树之前 `bind` 落不到实处。
 	_source.bind(_forge)
 	_source.aim_at(_mid_dir())
 	_use_tool()
 	_say("新角色：四段各抽一次帧 → 按①一把全出 → 逐段翻着看，不满意就重挑再按② → 按③装表。")
 
 
-## 左边那一栏：从上到下就是操作顺序 —— 键、段、视频、翻帧、**修帧**、挑帧、导出。
-##
-## **包一层滚动**（M6-r）：修帧那一段又摆了七八个控件，而这块面板挂在
-## 编辑器底栏上，高度是人拖出来的 —— 装不下的话最底下那三个导出按钮
-## 会被挤到看不见，而它不报错，只表现为「怎么没有导出按钮」。
-##
-## **但状态栏留在滚动区外面**（M8-f）：它原来跟着别的控件一起滚，于是
-## 工具说的每一句话都在屏幕外 —— 实测玩家点了「切图并载入」看不到任何反应，
-## 而那一下其实报了「只切出 1 格」。**报错说了等于没说，比不报还糟**：
-## 人会以为按钮坏了，而不是去看它说了什么。
+## 左边那一栏：从上到下就是操作顺序 —— 键、段、帧来源、翻帧、修帧、挑帧、导出。
+## **包一层滚动**：面板高度是人拖出来的，装不下的话最底下的导出按钮会被挤到看不见。
+## **状态栏留在滚动区外面**：跟着一起滚的话工具说的每一句话都在屏幕外，报错说了等于没说。
 func _build_side() -> Control:
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2(SIDE_WIDTH + 14.0, 0.0)
@@ -170,9 +106,7 @@ func _build_side() -> Control:
 	_anim_pick.item_selected.connect(func(_i: int) -> void: _switch_anim())
 	side.add_child(_titled("这一段", _anim_pick))
 
-	# 「帧从哪来」整块在 [PBForgeSource]（M8-f）：视频抽帧和图集切分两条路，
-	# 下拉框选一条、另一条的按钮收起来。它们写的是同一个目录，
-	# 所以底下那颗「读已有的帧」两条路共用。
+	# 「帧从哪来」整块在 [PBForgeSource]：两条路写同一个目录，所以底下「读已有的帧」两条路共用。
 	_source = PBForgeSource.new()
 	_source.frames_ready.connect(_load_current)
 	_source.said.connect(_say)
@@ -213,8 +147,7 @@ func _build_side() -> Control:
 	side.add_child(_build_tools())
 
 	side.add_child(HSeparator.new())
-	# 挑帧那一块整个在 [PBForgePicks]（M9-l）—— 名单是它的，面板只
-	# 「翻到那一帧」和「说一句」。
+	# 挑帧那一块整个在 [PBForgePicks]，名单是它的，面板只「翻到那一帧」和「说一句」。
 	_picks_ui = PBForgePicks.new()
 	_picks_ui.show_frame.connect(_show)
 	_picks_ui.changed.connect(func() -> void: _show(_index))
@@ -222,10 +155,7 @@ func _build_side() -> Control:
 	side.add_child(_picks_ui)
 
 	side.add_child(HSeparator.new())
-	# **三个按钮，从上到下就是一个新角色的走法**（M6-n / M6-o，玩家定的）：
-	# 先一把全出（帧怎么定见 [method PBActorForge.frames_for]），
-	# 再逐段预览、重挑、覆盖，最后装表。
-	# 合成一个的话，想重调 `attack` 就得连着另外三段一起重来。
+	# **三个按钮，从上到下就是一个新角色的走法**（玩家定的），见类顶部。
 	side.add_child(_button("① 导出四段（帧自动定）", _on_export_all))
 	side.add_child(_button("② 导出（只覆盖这一段）", _on_export))
 	side.add_child(_button("③ 生成形象表", _on_link))
@@ -258,11 +188,7 @@ func _build_tools() -> Control:
 	return box
 
 
-## 橡皮那一块整个在 [PBForgeEraser] 里（M8-g 拆出去的）。
-##
-## **它不自己重量帧**：擦完发一个信号说「这几帧变了」，量帧的是
-## [PBActorForge]，而那本账在这儿。各量各的话，「面板上写的包围盒」和
-## 「导出时量的」迟早分叉，而两个数看起来都很正常。
+## 橡皮那一块整个在 [PBForgeEraser]。它擦完只发信号说「这几帧变了」，量帧在这边 —— 那本账在这儿。
 func _build_eraser() -> Control:
 	_eraser = PBForgeEraser.new()
 	_eraser.said.connect(_say)
@@ -319,16 +245,13 @@ func _build_anchor() -> Control:
 	return box
 
 
-
 func _build_preview() -> Control:
 	var box := VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_canvas = PBForgeCanvas.new()
 	_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	# 背景那把尺子上标哪两条线（M9-j）。**两个数都从流水线拿** ——
-	# 各算一份的话，尺子和导出会对「站姿多高」「上限在哪」说两个数，
-	# 而那正是这块预览要回答的问题。
+	# 尺子上标哪两条线，**两个数都从流水线拿**，否则尺子和导出会对「站姿多高」「上限在哪」说两个数。
 	_canvas.mark_at(
 		_forge.texture_height(), PBActorForge.CANVAS_CEILING * maxi(_forge.scale_up, 1)
 	)
@@ -372,9 +295,7 @@ func _load_current() -> void:
 	_shots = _forge.measure(_mid_dir())
 	_index = 0
 	_slider.max_value = float(maxi(_shots.size() - 1, 0))
-	# **在那个空判断之前重画名单。** 原来它排在后面，于是从挑满的
-	# `idle` 切到还没抽帧的 `run`，列表上照旧摆着 idle 那 6 行 ——
-	# 而那 6 行看起来完全正常，只是属于另一段。
+	# **在那个空判断之前重画名单**，否则从挑满的 `idle` 切到还没抽帧的 `run` 时列表还摆着 idle 那几行。
 	_picks_ui.aim_at(_anim(), _shots, 0)
 	_picks_ui.refresh()
 	if _shots.is_empty():
@@ -415,10 +336,8 @@ func _show(to: int) -> void:
 	# 要等存完盘翻回去才看得出擦错了张。
 	_eraser.aim_at(_anim(), _shots, _index, _texture)
 	_picks_ui.aim_at(_anim(), _shots, _index)
-	# **下标 0 起，而总数是总数。** 原来写的是「第 %d / %d」加 `size() - 1`，
-	# 于是六帧永远显示成「/ 5」—— 一个 0 起的下标配一个「总数减一」的分母，
-	# 读起来就是「5 帧里的第 4 帧」，而那时候人会去找丢掉的那一帧。
-	# 下标不改成 1 起：挑帧列表存的就是这个数（`_picked()`），两处必须是同一个。
+	# **下标 0 起，而总数是总数**（写「/ size-1」的话六帧永远显示成「/ 5」）。
+	# 下标不改成 1 起：挑帧列表存的就是这个数，两处必须同一个。
 	_count_label.text = "第 %d 帧（共 %d 帧）%s" % [
 		_index, _shots.size(), "　✓已选" if _picks_ui.holds(_index) else ""
 	]
@@ -434,9 +353,7 @@ func _refresh_frame() -> void:
 	var nudge := _nudge_now()
 	_canvas.show_frame(_texture, _shots[_index], nudge, _scale)
 	var used: Rect2i = _shots[_index]["used"]
-	# **「成品高」是这一行里唯一能跨段比的数。** 包围盒是源图尺度，
-	# 而四张图集本来就可能画得不一样大（实测差过 16%）——
-	# 拿它和 idle 段那个 180 对，才看得出这一段是不是整体大了一圈。
+	# **「成品高」是这一行里唯一能跨段比的数**：包围盒是源图尺度，拿成品高和 idle 那个 180 对才看得出大了一圈。
 	_measure_label.text = (
 		"包围盒 %d×%d　脚底 x=%.1f　偏移 %d, %d　成品高 %d"
 		% [
@@ -525,20 +442,11 @@ func _remeasure(index: int) -> void:
 # ── 导出 ────────────────────────────────────────────────────────
 
 
-## 只导**当前选中的这一段**。M6-n 之前是四段一起。
+## 只导**当前选中的这一段**。没挑过就替你定一版（[method PBActorForge.frames_for]）。
 ##
-## ## 一段一段导，画布怎么保持一致
-##
-## 规格要求同一个角色**每一帧尺寸完全一致**（[method PBActorSkin.canvas_size]
-## 只读第一帧算锚点），而画布是按内容算的 —— 出拳那一段几乎总是最宽。
-## 所以这里取**这一段需要的**和**已经在盘上的**两者的最大值，
-## 需要变大时把旧帧重新裱一遍（[method PBActorForge.recanvas]，纯补透明边）。
-##
-## 不这么做的话，后导的那一段会带着更大的画布落地而前面几段还是旧尺寸 ——
-## 人在动画之间跳一下，`tests/test_actor_data.gd` 会红。
-##
-## **没挑过就替你定一版**：先给一版再让人改，是这块面板一贯的用法。
-## 定的规矩见 [method PBActorForge.frames_for]（M9-l 起图集那条路按顺序全要）。
+## 同一个角色**每一帧尺寸必须一致**，而画布按内容算（出拳那段最宽）：取这一段需要的和盘上已有的两者最大值，
+## 需要变大时把旧帧重裱一遍（[method PBActorForge.recanvas]，纯补透明边）。否则人在动画之间跳一下，
+## `tests/test_actor_data.gd` 会红。
 func _on_export() -> void:
 	var key: String = _key_edit.text.strip_edges()
 	if key == "":
@@ -587,23 +495,11 @@ func _on_export() -> void:
 	await _relink_if_needed(key)
 
 
-## 已经有形象表的角色，覆盖完一段要**顺手把表重生成一遍**。
+## 已经有形象表的角色，导出完**顺手把表重生成一遍**（两个导出按钮都调这里）。
 ##
-## ## 为什么这一步不能等玩家按③
-##
-## [method PBActorForge.save_frames] 会删掉多出来的旧帧（这次挑 3 帧、
-## 上次挑 4 帧的话 `dead_3.png` 就没了），**而已经存在的图集还指着那一张**。
-## 中间这段时间项目是坏的：[PBActorLibrary] 每次读表都 `push_error`，
-## `tests/test_actor_data.gd` 全红，而屏幕上只是「那个角色还是白模」。
-##
-## 实测就是这么坏的：某个角色的 `dead` 段重导过一次，
-## 图集里留着一个 `ext_resource` 指向已经删掉的 `dead_3.png`。
-##
-## **①那条路原来也漏着**（这段注释以前写的是「四段一起导的那一版没有这个洞」，
-## 那是错的 —— 它只 `_rescan()`，从来没重生成过表）。M8-g 补上了，
-## 两个导出按钮现在都调这一份。所以这里不是「导出偷偷做了③的事」——
-## 是谁弄坏的谁负责补。表还不存在时什么都不做，
-## 那一档归③（那时四段可能还没齐，`link` 本来就该失败）。
+## [method PBActorForge.save_frames] 会删掉多出来的旧帧，而已存在的图集还指着那几张 —— 不补的话项目是坏的：
+## [PBActorLibrary] 读表 `push_error`、`tests/test_actor_data.gd` 全红，屏幕上只是「那个角色还是白模」。
+## 谁弄坏的谁负责补。表还不存在时什么都不做（那一档归 ③，四段可能还没齐）。
 func _relink_if_needed(key: String) -> void:
 	if not ResourceLoader.exists("%s/%s.tres" % [_forge.data_dir, key]):
 		return
@@ -614,22 +510,8 @@ func _relink_if_needed(key: String) -> void:
 	await _rescan()
 
 
-## 新角色的第一趟：四段一把全出，帧全由算法挑（M6-o，玩家定的）。
-##
-## ## 它和 [method _on_export] 的分工
-##
-## 这一个负责**从零到有**：从零开始一帧帧翻 97 帧 × 4 段太贵，而替你定的
-## 那一版八成是对的。那一个负责**改**：预览某一段、重挑、只覆盖它。
-##
-## ## 为什么它的画布算得比逐段那条好
-##
-## 四段一起量，画布一次就定在最终尺寸上（出拳那段最宽、跑动那段最高），
-## 后面逐段覆盖时基本不用再重裱。反过来先导窄的那几段，
-## 等导到 `attack` 时就要把前面几段全部重裱一遍 —— 结果一样，只是多跑几趟。
-##
-## **帧一律现定，不看已经挑过的名单** —— 按钮上写着「帧自动定」，
-## 而「有时候用我挑的、有时候不用」是一个说不清的按钮。定好的名单会填回
-## 各段的列表里，接着改就是了。怎么定见 [method PBActorForge.frames_for]。
+## 新角色的第一趟：四段一把全出，**帧一律现定**，不看已经挑过的名单（按钮上写着「帧自动定」）。
+## 定好的名单填回各段的列表里，接着改。四段一起量，画布一次定在最终尺寸上，后面逐段覆盖基本不用重裱。
 func _on_export_all() -> void:
 	var key: String = _key_edit.text.strip_edges()
 	if key == "":
@@ -672,25 +554,12 @@ func _on_export_all() -> void:
 			% [canvas.x, canvas.y]
 		)
 	await _rescan()
-	# **①也要维持它自己弄坏的那个不变量**（见 [method _relink_if_needed]）。
-	# [method PBActorForge.save_frames] 会删掉多出来的旧帧，而已经存在的图集
-	# 还指着那几张 —— 于是按完①项目就是坏的：`PBActorLibrary` 每次读表都
-	# `push_error`，`tests/test_actor_data.gd` 全红，而屏幕上只是
-	# 「那个角色还是白模」，面板还写着「四段出好了」。
-	#
-	# 那个函数顶上原来写着「四段一起导的那一版没有这个洞」——**写错了**，
-	# 洞一直在，实测踩到过：重导一次之后 `data/actors/<键>.tres` 里留着
-	# 五个 `ext_resource` 指向已经删掉的帧。表还不存在时它什么都不做，
-	# 那一档照旧归③。
+	# **① 也要维持它自己弄坏的那个不变量**（见 [method _relink_if_needed]）。
 	await _relink_if_needed(key)
 
 
-## 把一段缩好、写盘。**两个导出按钮共用这一份** —— 各写一份的话
-## 「①出的帧和②出的帧差一像素」迟早发生，而它不报错。
-##
-## [param nudges] 是 `{帧号: Vector2i}` 的手动锚点偏移（M6-r）。
-## **默认空 = 一字不差**：一个偏移都没调过的角色，出来的帧和 M6-o 那一版
-## 逐字节相同 —— 那是这个参数敢加在这条路上的全部理由。
+## 把一段缩好、写盘。**两个导出按钮共用这一份**，否则「① 出的帧和 ② 出的帧差一像素」迟早发生。
+## [param nudges] 是 `{帧号: Vector2i}` 的手动锚点偏移，**默认空 = 一字不差**。
 func _write_take(
 	key: String, anim: String, shots: Array, picked: Array, scale: float, nudges: Dictionary = {}
 ) -> String:
@@ -700,11 +569,8 @@ func _write_take(
 	return _forge.save_frames(key, anim, images)
 
 
-## 这一段量缩放比要不要把 `idle` 也量进来。**两种情况**：
-##
-## - `dead`：人躺着，包围盒高度不是身高，照自己算他会被放大到站着那么高（M6-o）
-## - **按图集切**：六格全是同一种姿势，`run` 那张最高的一格也还是弓着腰的 ——
-##   照自己量会把跑动的人放大四成（M8-g，见 [method PBActorForge.scales]）
+## 这一段量缩放比要不要把 `idle` 也量进来：`dead`（人躺着，包围盒高度不是身高），
+## 以及**按图集切**的每一段（六格同一种姿势，`run` 最高的一格也是弓着腰的，见 [method PBActorForge.scales]）。
 func _needs_idle(anim: String) -> bool:
 	return anim == "dead" or _source.shares_idle_scale()
 
@@ -803,8 +669,7 @@ func _rescan() -> void:
 		return
 	var files: Object = editor.get_resource_filesystem()
 	files.call("scan")
-	# 扫描是异步的，扫完之前 `load()` 还是拿不到贴图。**轮询而不是等信号**：
-	# `filesystem_changed` 在没有变化时压根不发，那时这里会永远等下去。
+	# 扫描是异步的。**轮询而不是等信号**：`filesystem_changed` 在没有变化时不发，那时会永远等下去。
 	for _tick: int in 600:
 		await get_tree().process_frame
 		if not files.call("is_scanning"):

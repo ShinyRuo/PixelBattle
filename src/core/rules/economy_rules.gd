@@ -1,18 +1,12 @@
 class_name PBEconomyRules
 extends RefCounted
-## 经济、科技、抽卡、任务的结算规则。施工策划案 §06 / §07 / §08。
+## 经济、科技、抽卡、任务的结算规则（§06 / §07 / §08）。
 ##
-## 全部 static、无状态。金币的四条收入流在这里各自成一个函数，
-## 好让 M-1 能单独关掉某一条看差异 —— §07 的核心论断「经济位 = 战力空位」
-## 只有在能分别度量的时候才验得了。
+## 全部 static、无状态。收入流各自一个函数，好单独关掉某一条看差异 ——
+## §07「经济位 = 战力空位」只有分别度量时才验得了。
 
-## §08 抽卡概率表。每行 `[波次上限, R, SR, SSR]`，概率是百分比。
-## 最后一行的波次上限用一个大数兜住 51+ 段。
-##
-## **M10-a 从四档砍成三档**（见 [enum PBUnit.Rarity]）。原来那一列 `USR`
-## 的概率**并进 SSR**，不是丢掉 —— 丢掉的话末段顶档从 45% 掉回 33%，
-## 而 §08 那句「30 波后爆种」的体感正是靠末两行那个陡坡给的。
-## 每一行的四个数字加起来仍然是 100。
+## §08 抽卡概率表。每行 `[波次上限, R, SR, SSR]`，概率是百分比，每行加起来是 100。
+## 最后一行的波次上限用一个大数兜住 51+ 段。末段 SSR 的陡坡是「30 波后爆种」体感的来源。
 const GACHA_TABLE := [
 	[10, 70.0, 27.0, 3.0],
 	[20, 55.0, 36.0, 9.0],
@@ -22,8 +16,7 @@ const GACHA_TABLE := [
 ]
 
 ## §06 任务表。`[权重, 需派遣人数, 金币基数, 金币每波增量]`。
-## 附加掉落（配件、卷轴）M-1 不建模 —— 装备合成树是 M3，
-## 现在把掉落折进金币会让「羁绊 ↔ 金币」这条张力轴的度量失真。
+## 附加掉落（配件、卷轴）不建模，折进金币会让「羁绊 ↔ 金币」这条轴的度量失真。
 const QUEST_TABLE := [
 	[40, 2, 60, 8],
 	[27, 2, 100, 14],
@@ -35,23 +28,14 @@ const QUEST_TABLE := [
 ## 任务等级的显示名，只用于 CSV 输出。
 const QUEST_GRADES: Array[StringName] = [&"C", &"B", &"A", &"S", &"SSS"]
 
-## 任务栏一共几个槽（M5-7）。**等于 [constant QUEST_TABLE] 里最大的那个人数。**
+## 任务栏一共几个槽，等于 [constant QUEST_TABLE] 里最大的那个人数。
 ##
-## ## 它是「能塞几个」，不是「要几个」
-##
-## 界面上那四个槽是**固定的**：本波只要 2 个人时另外两个槽照样收得下人，
-## 而塞多了就是 [member PBWavePlan.quest_accepted] 判不通过。
-## 「要几个」永远走 [method quest_cost_units]，两个数不能混 ——
-## 拿 `quest_cost_units` 当上限的话玩家**塞不进第三个**，
-## 于是「人数不符」这条判定在界面上根本触发不了。
+## **它是「能塞几个」，不是「要几个」**（后者走 [method quest_cost_units]）。
+## 拿要几个当上限的话玩家塞不进多余的人，「人数不符」这条判定就触发不了。
 const QUEST_SLOTS: int = 4
 
-## §07 的五条收入流。顺序即报表列序。
-##
-## 分开记账不是为了好看：§07 的验收「纯战力开局在 20 波左右因缺钱停滞」
-## 实测跑到 39.5 波（均衡的 96%），也就是**不投经济几乎没有代价**。
-## 只看总收入分不出两种解释 —— 是金币科技本身没用，
-## 还是它有用但被别的流盖过去了。分了流才看得出该动哪一条。
+## §07 的收入流。顺序即报表列序。
+## 分开记账才分得出「金币科技本身没用」和「有用但被别的流盖过去了」。
 const GOLD_SOURCES: Array[StringName] = [
 	&"wave", &"passive", &"kill_drop", &"economy_slot", &"quest"
 ]
@@ -67,21 +51,11 @@ static func passive_income(battle_seconds: float, tech_level: int, cfg: PBSimCon
 	return int(floor(ticks * per_tick))
 
 
-## 击杀掉落：按击杀数掷骰。§07 的期望是 +13/击杀，但刻意保留看得见的负收益。
+## 击杀掉落：按击杀数掷骰。§07 的期望是 +13/击杀，但刻意保留看得见的负收益 ——
+## 原版就是这样（「保留不动，别去修」），「打不动就断粮」也是经济位硬下限的来源。
 ##
-## §07 明确写了「原版保留不动，别去修」—— 它稳赚却包装成会扣钱的老虎机，
-## 用体感波动换玩家的注意力投入。M-1 照掷，因为「打不动就断粮」这条
-## 反馈回路正是 §07「经济位 = 战力空位」硬下限的来源。
-##
-## ## [param gold_floor]（§09 木叶三忍的功能档，M3-f）
-##
-## 「负收益不再触发，且金币收益提升」。这不是在**修**上面那台老虎机 ——
-## §07 说了别修。它是把「关掉波动」做成一个要凑齐一组羁绊、还要把载体
-## 排进出战席才拿得到的选项，两条设计同时在场，玩家自己选。
-##
-## **掷骰照掷，只改结果。** 少掷一次会让 `combat` 流错位，
-## 于是「带不带这组羁绊」会改变之后每一波的敌人和掉落 —— 那不是一个功能档
-## 该有的影响半径，而且它会让同种子的对拍失效（铁律 3）。
+## [param gold_floor]（木叶三忍的功能档）：负收益不再触发且收益提升。
+## **掷骰照掷，只改结果** —— 少掷一次会让流错位，同种子对拍失效（铁律 3）。
 static func kill_drop_income(
 	kills: int, cfg: PBSimConfig, rng: RandomNumberGenerator, gold_floor: bool = false
 ) -> int:
@@ -98,14 +72,11 @@ static func kill_drop_income(
 	return total
 
 
-## 经济位：每波结算的回合收入。第 k 个的系数是 `k^−1.5`，递减比原版的减半更陡。
+## 经济位：每波结算的回合收入。第 k 个的系数是 `k^−1.5`。
 ##
-## §07 的改动：经济位取消输出能力，纯经济卡。原版它兼任雷系 AOE 第二，
-## 一个位置交付两份价值 —— 那是原版流派单一的直接原因。
-##
-## **收益随波次走**（`economy_slot_base + economy_slot_rate × n`），和波次奖金、任务奖励
-## 同一个形状。初版是常数 85，实测的后果是它恒为微亏、**没有任何流派会选它** ——
-## 详见 [member PBSimConfig.economy_slot_rate]。
+## 经济位不产出伤害，纯经济卡（原版兼任雷系 AOE 第二，那是原版流派单一的原因）。
+## **收益随波次走**（`economy_slot_base + economy_slot_rate × n`）：常数的话它恒为微亏，
+## 没有流派会选，见 [member PBSimConfig.economy_slot_rate]。
 static func economy_slot_income(count: int, wave_index: int, cfg: PBSimConfig) -> int:
 	var per_unit: float = cfg.economy_slot_base + cfg.economy_slot_rate * float(wave_index)
 	var total: float = 0.0
@@ -124,7 +95,7 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 		&"def":
 			return _cost_or_capped(level, cfg.tech_def_max, cfg.tech_def_cost, cfg.tech_def_mult)
 		_:
-			# 训练科技那四条（M12-h3）的价格曲线在 [PBTechRules] 上，理由见那里。
+			# 训练科技的价格曲线在 [PBTechRules] 上。
 			if PBTechRules.is_branch(branch):
 				return _cost_or_capped(
 					level, PBTechRules.MAX_LEVEL, PBTechRules.COST_BASE, PBTechRules.COST_MULT
@@ -132,39 +103,12 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 			return -1
 
 
-## 抽一张卡：**先掷稀有度（§08 的分段概率表），再在该稀有度的角色里等概率取一个。**
+## 一次抽卡掷出的**一组候选**，玩家从中挑一张（§08）。
 ##
-## [param pity] 是连续未出 SSR 及以上的次数，由调用方维护。
+## 三选一把抽卡从随机变成决策：补羁绊缺的人、补空缺的克制系、还是单纯战力高的那张。
 ##
-## ## 为什么是这个次序（M2-a2 改的）
-##
-## 之前是「掷属性 → 掷变体 → 掷稀有度」，因为那时卡池是
-## 4 稀有度 × 6 属性 × 2 变体 的**满格网格**，随便掷都落得到人。
-##
-## 真角色表不是网格：几十个角色摊到「档数 × 属性数」格上，大部分格子只有
-## 1 个或 0 个（比如没有水系 SSR）。照旧掷法会不停撞空格走退化路径，
-## **实际的属性分布会被那条退化路径悄悄改写**，而估值那边算的是别的分布。
-##
-## 现在这个次序和 [method PBValuation.expected_surplus] 的口径完全一致：
-## 单张卡的概率 = 稀有度概率 ÷ 该稀有度的角色数。
-##
-## 属性因此**不再是等概率的** —— 它由角色表决定。那正是想要的：
-## 「哪一系深、哪一系浅」变成了可以在 `data/` 里调的设计，而不是写死的 1/6。
-## 一次抽卡掷出的**一组候选**，玩家从中挑一张（§08，M3.5-e）。
-##
-## ## 为什么是三选一而不是抽三次
-##
-## 它把抽卡**从随机变成一个决策**：补羁绊缺的那个人、补空缺的克制系、
-## 还是单纯战力更高的那张 —— 那是 §09 和 §03 在准备阶段唯一的交汇点。
-##
-## ## 保底只保第一张
-##
-## 三张一起视为**一次**抽卡：保底触发时第一张走保底，另外两张照常掷。
-## 三张各保各的话，保底会变成刷高档的最优路径 —— 那正是
-## [method roll_gacha] 里「保底只保到次高档」防的同一件事。
-##
-## **消耗 `gacha` 流的次数从 1 变成 `count`。** 铁律 3 说三条流的状态进存档，
-## 次数变了老存档的续跑序列就对不上 —— 这是一次破坏性改动，记在 §08。
+## **保底只保第一张**：三张各保各的话，保底会变成刷高档的最优路径。
+## 消耗 `gacha` 流的次数是 `count`（进存档的流状态依赖这个次数）。
 static func roll_gacha_offer(
 	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator, count: int = 3
 ) -> Array[PBUnit]:
@@ -202,24 +146,20 @@ static func unit_level_cost(level: int, cfg: PBSimConfig) -> int:
 
 ## 保底保的是哪一档 —— 也是**抽到哪一档才清零**（[method PBShopRules.open_offer]）。
 ##
-## ## 这两个数必须是同一个
-##
-## M10-a 砍成三档时我先把发放降到了 `SR`（想保住四档时「只保到次高档、
-## 不直接给顶档」那条原意），而清零门槛留在 `SSR` —— **于是保底永远
-## 兑现不了自己的清零条件，计数一路涨到天上**。它不报错：抽卡照抽、
-## 概率照掷，只是从第 20 抽起每一抽都在走保底分支。
-##
-## 四档时那条原意本来就是靠「发放档 == 清零档 == 第 3 档」成立的，
-## 只是当时两个数恰好一致，没人需要说出来。现在说出来：**顶档**。
-## 三档之下没有别的选择 —— `SR` 太常见（27%~45%），拿它当保底目标的话
-## 计数根本攒不起来，保底等于不存在。
-##
-## 防「攒保底比抽卡划算」的不是发放档，是 [member PBSimConfig.gacha_pity]
-## 那个 20 抽的计数本身。
+## **这两个数必须是同一个**：发放档低于清零档的话，保底永远兑现不了清零条件，
+## 从第 20 抽起每一抽都走保底分支，而它不报错。三档之下只能是顶档 ——
+## SR 太常见，拿它当目标计数根本攒不起来。防「攒保底比抽卡划算」的是
+## [member PBSimConfig.gacha_pity] 那个 20 抽的计数。
 static func pity_rarity() -> PBUnit.Rarity:
 	return (PBUnit.Rarity.size() - 1) as PBUnit.Rarity
 
 
+## 抽一张卡：**先掷稀有度（§08 分段概率表），再在该稀有度的角色里等概率取一个**。
+## [param pity] 是连续未出 SSR 的次数，由调用方维护。
+##
+## 这个次序和 [method PBValuation.expected_surplus] 的口径一致：单张卡的概率 =
+## 稀有度概率 ÷ 该稀有度的角色数。属性因此由角色表决定，不是写死的等概率 ——
+## 真角色表不是满格网格，先掷属性会不停撞空格走退化路径，悄悄改写分布。
 static func roll_gacha(
 	wave_index: int, pity: int, cfg: PBSimConfig, rng: RandomNumberGenerator
 ) -> PBUnit:

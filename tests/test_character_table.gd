@@ -37,7 +37,7 @@ func test_the_synthetic_table_reproduces_the_pre_m2_card_pool() -> void:
 	for rarity: int in PBUnit.Rarity.size():
 		for element: int in PBElement.PICKABLE:
 			assert_eq(
-				table.count_in_cell(element as PBElement.Type, rarity as PBUnit.Rarity),
+				table.cell(element as PBElement.Type, rarity as PBUnit.Rarity).size(),
 				_cfg.characters_per_bucket,
 				"（属性 %d, 稀有度 %d）这一格应该是满的" % [element, rarity]
 			)

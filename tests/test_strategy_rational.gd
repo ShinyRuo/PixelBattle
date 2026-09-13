@@ -70,19 +70,3 @@ func test_a_duplicate_is_worth_the_same_body_but_no_bond() -> void:
 	)
 
 
-func test_bond_prediction_matches_the_real_formula() -> void:
-	# 「再抽一张值多少」有一部分来自羁绊。预测用的公式要是和结算用的不是同一份，
-	# 偏差只会表现为「模拟玩家略微不理性」，不报任何错。
-	var cfg := PBSimConfig.new()
-	var state := PBRunSim.new_state(cfg)
-	# 出战席要开得下 6 个人，不然第 6 张卡挤不进在场名单，两个公式都被上限削平。
-	# M3.5-i 删掉待命台之前初始容量是 4 + 3 = 7，这一行不需要存在。
-	state.tech_pop = 3
-	# 取五个**不同属性**的角色，而不是同一格的五个变体 —— M2-a 之后
-	# 卡是从角色表里取的，一格只有 characters_per_bucket 个，
-	# 拿变体下标凑数会绕回同一个角色，仓库里只进两张卡。
-	for i: int in 5:
-		state.add_unit(PBUnit.of(cfg, i as PBElement.Type, PBUnit.Rarity.R))
-	assert_eq(state.roster.size(), 5, "这五张应该是五个不同角色")
-	assert_eq(state.bond_mult_for(state.roster.size(), cfg), state.bond_mult(cfg), "同一个人数应给出同一个倍率")
-	assert_gt(state.bond_mult_for(6, cfg), state.bond_mult(cfg), "出战席没坐满时多一张卡应该多一份羁绊")

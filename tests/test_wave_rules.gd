@@ -68,7 +68,8 @@ func test_wave_element_rotation_matches_spec_table() -> void:
 		assert_eq(
 			PBWaveRules.element_of(wave), row["enemy"], "第 %d 波敌方属性应为 %s" % [wave, row["mod"]]
 		)
-		assert_eq(PBWaveRules.counter_element_of(wave), row["want"], "第 %d 波需要的输出属性对不上" % wave)
+		var want := PBElement.counter_of(PBWaveRules.element_of(wave))
+		assert_eq(want, row["want"], "第 %d 波需要的输出属性对不上" % wave)
 		if not row.has("dead"):
 			continue
 		assert_eq(
@@ -109,7 +110,7 @@ func test_full_five_element_coverage_needed_per_cycle() -> void:
 	# 而物理重复两次也照样是 6。
 	var needed := {}
 	for wave: int in range(1, PBWaveRules.WAVE_ELEMENTS.size() + 1):
-		needed[PBWaveRules.counter_element_of(wave)] = true
+		needed[PBElement.counter_of(PBWaveRules.element_of(wave))] = true
 	for element: int in PBElement.RING:
 		assert_true(needed.has(element), "一个周期应要求全部五系输出，否则阵容会固化")
 	assert_true(needed.has(int(PBElement.Type.PHYSICAL)), "物理波要求的是物理系输出")

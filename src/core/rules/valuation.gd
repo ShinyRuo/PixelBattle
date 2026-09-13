@@ -54,22 +54,12 @@ static func deployed_for(
 
 ## 现在还能被排上场的卡：**全仓，减掉派出去做任务的**。
 ##
-## ## 为什么候选是全仓而不是在场名单
+## 候选是全仓而不是在场名单：换人是从仓库里换，从在场名单里挑等于从自己里面挑自己，
+## [method deployed_for] 和 [method deployed_by_raw_power] 会返回同一批人，
+## §03 属性系统的估值就此归零。
 ##
-## M2-c 到 M3.5-h 这里读的是 [method PBRunState.field_units]，因为那时
-## 在场名单（出战席 + 待命台）比出战席大一截，「每波换克制系」是在那截
-## 板凳里换的。**M3.5-i 删掉待命台之后在场就是出战席** ——
-## 再从在场名单里挑等于从自己里面挑自己，[method deployed_for] 和
-## [method deployed_by_raw_power] 会返回同一批人，
-## 「换人多赚多少」恒等于 0，而 §03 整套属性系统的估值就此归零。
-## 换人从此是**从仓库里换**，这里跟着改。
-##
-## ## 为什么要减掉派遣
-##
-## 待命台还在的时候派的是不上场的板凳，上场名单不受影响；
-## 现在派的是在场的人，他这一波真的不打了。不减的话
-## 「派了掉多少战力」只量到羁绊那一半，而少掉的那个打手才是大头 ——
-## 卡面上的数会系统性偏乐观，且不报错。
+## 要减掉派遣：派的是在场的人，他这一波真的不打。不减的话「派了掉多少战力」
+## 只量到羁绊那一半，卡面上的数系统性偏乐观。
 static func available_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
 	var away := state.dispatch_picks(cfg)
 	if away.is_empty():
@@ -81,12 +71,8 @@ static func available_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit
 	return out
 
 
-## 面对 [param element] 这一波，**不换人**会派谁上场 —— 按裸战力排，完全不看属性。
-##
-## 它和 [method deployed_for] 的差值就是 §03 整套属性系统在数值上真正值多少。
-## M-1 扫描出来是 1.41 倍（`GROWTH` = 1.10），而那个数字以前只存在于扫描报告里，
-## 玩家看不到。阵容面板把两条并排显示，是为了让「每波换克制系」这件事
-## **在玩的时候就能感觉到**，而不是只能从策划那儿听说。
+## **不换人**会派谁上场 —— 按裸战力排，完全不看属性。
+## 它和 [method deployed_for] 的差值就是 §03 属性系统在数值上值多少。
 static func deployed_by_raw_power(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
 	var pool := available_units(state, cfg)
 	pool.sort_custom(func(a: PBUnit, b: PBUnit) -> bool: return a.power(cfg) > b.power(cfg))
@@ -139,20 +125,12 @@ static func tech_gain(
 
 ## 买**一个忍具箱**能让队伍 DPS 涨百分之几（期望值）。
 ##
-## ## 为什么不能直接问「多三个配件值多少」
+## 不能直接问「多三个配件值多少」：忍具箱随机出货而配方点名要哪几种，
+## 而且梯度是台阶状的 —— 多一个配件十有八九什么也合不出，直接量的收益是 0，
+## 会算账的玩家于是永远不买装备。
 ##
-## M3-c 之前配件不分种类，「凑够 N 个 = 一件成品」，所以加 N 个配件再量一次
-## 就是答案。真合成树上来之后这个问法坏掉了，坏在两处：
-##
-## 1. **忍具箱随机出货，配方却点名要哪几种。** 加三个「配件」这件事不再有定义
-## 2. **梯度是台阶状的。** 多买一个配件，十有八九什么也合不出来，
-##    直接量的话收益是 0 —— 会算账的玩家于是永远不买装备，
-##    而这恰恰是 §10 最怕的那个结论（「一个都不买」= 金币坑不存在）
-##
-## 所以改成算期望：**先看差最少的那件成品还差几个配件**，
-## 每个**指定**种类的配件平均要开 `种类数` 个箱子才出一个，
-## 于是「一箱的价值 = 那件成品的收益 ÷ 期望箱数」。
-## 这个估计是平滑的，玩家因此能看见坡度而不是台阶。
+## 所以算期望：先看差最少的那件成品还差几个配件，每个指定种类平均要开 `种类数`
+## 个箱子才出一个，「一箱的价值 = 那件成品的收益 ÷ 期望箱数」。平滑，看得见坡度。
 static func equip_box_gain(state: PBRunState, cfg: PBSimConfig, base: float) -> float:
 	if base <= 0.0 or cfg.equipment == null:
 		return 0.0
@@ -232,13 +210,10 @@ static func economy_slot_loss(state: PBRunState, cfg: PBSimConfig, base: float) 
 
 ## 派 [param units] 个人出去做任务，队伍 DPS 掉百分之几（§06）。
 ##
-## 代价有**两截**：派出去的人羁绊失效（整队一起降），而且他这一波不上场
-## （少一份输出）。M3.5-i 删掉待命台之前只有前一截 —— 那时派的是板凳，
-## 本来就不上场。两截都由 [method deployed_for] 一处兑现，这里只负责
-## 「把 `dispatched` 改一下、量一次、改回来」。
+## 代价两截：派出去的人羁绊失效，而且他这一波不上场。两截都由 [method deployed_for]
+## 兑现，这里只「把 `dispatched` 改一下、量一次、改回来」。
 ##
-## 返回的是**纯代价**，正数表示损失。收益那一半是金币，币种不同 ——
-## 换算不在这里做，见 [PBQuestCard] 为什么它把两边并排显示而不合成一个数。
+## 返回**纯代价**，正数表示损失。收益是金币，币种不同，不在这里换算（见 [PBQuestCard]）。
 static func dispatch_loss(state: PBRunState, cfg: PBSimConfig, base: float, units: int) -> float:
 	if base <= 0.0 or units <= 0:
 		return 0.0
@@ -273,54 +248,24 @@ static func dps_if_dispatched(
 
 ## 这一波的**悬崖**：DPS 低到多少就开始漏怪。
 ##
-## ## 它是离线量具，不要接进界面
+## **离线量具，不要接进界面**：传了 [param attackers] 的那一路要二分 32 次、
+## 每次跑完一整场仗（约半秒），准备阶段每次点击都会重刷面板。
+## 二分到第 9 次左右就收敛，之后在噪声里翻 —— 离散出手让「战斗对 dps 单调」
+## 在那个精度上不成立。要用它做在线判断，先加收敛判据。
 ##
-## 传了 [param attackers] 的那一路要**二分 32 次、每次跑完一整场仗**，
-## 实测 457 毫秒（第 3 波 / 3 人）。`src/tools/pressure_curve.gd`
-## 一局跑几十次无所谓，界面上不行 —— 准备阶段每一次点击都会重刷面板。
+## 用「离悬崖多远」度量代价而不是「基地掉多少血」：后者在悬崖前恒为 0、
+## 悬崖后一步到底，没有分辨率。二分依赖的单调性由
+## `test_more_dps_never_produces_more_leaks` 锁着。
 ##
-## [PBQuestCard] 曾经拿它写「本波打空要 x DPS」，代价是点一下等半秒。
-## **那不是算得慢，是准备阶段去算了战斗。**
-##
-## 顺带记一条实测：二分到第 9 次就已经收敛，剩下 23 次在小数点后第六位上
-## 反复翻 `漏 / 不漏` —— 离散出手和大招定点落地让「战斗对 dps 单调」
-## 这条前提在那个精度上不成立，那 23 次量的是噪声。要再用它做在线判断，
-## 先加收敛判据。
-##
-## ## 为什么代价要用「离悬崖多远」度量，而不是「基地掉多少血」
-##
-## 任务卡最初写的是「不接 基地 −0 / 接了 基地 −128」——
-## **实测下来那一行在几乎每一波都读作两个相同的 0**：
-## 种子 20260827 那局打到第 40 波（最后一波活着的）两边仍然都是 0，
-## 第 41 波直接团灭。
-##
-## 根因是 M0 已经查明的：这是个**单服务器排队**，ρ<1 一个不漏、ρ>1 全线崩，
-## 中间没有稳定段（路线图 §01 那条缺口，要等 M3 的射程与多目标分配）。
-## 所以基地伤害这个量在悬崖前恒为 0、悬崖后一步到底，**没有分辨率**。
-##
-## 富余倍数有分辨率，而且它正是玩家看不见的那个东西 ——
-## 不给的话整局读起来是「好好好、死」。
-##
-## 二分靠的是战斗结算对 dps 单调，
-## 那条性质由 `test_more_dps_never_produces_more_leaks` 锁着。
-##
-## ## [param attackers] 决定用哪套战斗规则量这个悬崖（M3-a）
-##
-## 给了在场的那批攻击者，就**按真实战斗模型**二分：整队按比例缩放，
-## 射程与站位结构保持不变，看缩到哪一档开始漏怪。
-##
-## 不给就退回解析式排队模型 —— 那是「满射程 · 单体 · 集火」下的闭式解。
-## **两者在有射程之后会给出不同的悬崖**，因为射程决定了敌人在被打之前
-## 要先走多远。所以凡是拿这个数去做判断的地方都该把攻击者传进来，
-## 否则界面上那句「离打不动还差多远」说的是另一套战斗规则里的事。
+## 给了 [param attackers] 就按真实战斗模型二分（整队按比例缩放，站位不变）；
+## 不给就退回解析式排队模型的闭式解。两者在有射程之后给出不同的悬崖。
 static func leak_threshold_dps(
 	wave: PBWave, def_reduction: float, cfg: PBSimConfig, attackers: Array[PBAttacker] = []
 ) -> float:
 	# 探测要反复改 dps，所以复制一份 —— 直接改真正上场的那批会污染本波的计划。
 	var squad: Array[PBAttacker] = []
 	var share := PackedFloat64Array()
-	# **一发多重也要按同一个分母记份额**（M12-c5）：`Σ attack_i × 攻速_i` 恰好
-	# 等于 `squad_dps`，所以按它缩之后整队的每秒输出精确落在 `total` 上。
+	# 一发多重也按同一个分母记份额：`Σ attack_i × 攻速_i` 恰好等于 `squad_dps`。
 	var attack_share := PackedFloat64Array()
 	var ult_share := PackedFloat64Array()
 	var squad_dps: float = PBCombatRules.total_dps(attackers)
@@ -371,8 +316,7 @@ static func _leaks_at(
 	if squad.is_empty():
 		return PBCombatRules.resolve(wave, total, def_reduction, cfg).leaked > 0
 	for i: int in squad.size():
-		# **一发多重也要跟着缩**（M12-c5）：只缩 dps 的话缩放对战斗毫无作用，
-		# 二分会一路收敛到上界，而那不报错 —— 量出来的悬崖是个假数。
+		# 一发多重也要跟着缩：战斗读的是 `attack`，只缩 dps 的话二分会收敛到上界，悬崖是假数。
 		squad[i].attack = total * attack_share[i]
 		squad[i].dps = total * share[i]
 		if squad[i].ultimate != null:
@@ -420,32 +364,14 @@ static func gacha_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 
 ## 再抽一张卡对**羁绊**的期望增益（§09）。
 ##
-## ## 这里踩过一个量纲错误，值得记着
+## 按角色表求期望，和 [method expected_surplus] 同一套路：对每个**还没有的**角色，
+## 问「多这一个成员，各组羁绊各涨多少」，按抽到它的概率加权。
 ##
-## M2-b2 换上真羁绊表之后，这一段原本写的是
-## `bond_mult_for(roster.size() + 1) / bond_mult() - 1`——
-## **分子来自替身曲线（按人头），分母来自真羁绊（按组合）。**
-## 两个口径相除，算出来是「再抽一张涨 32% 战力」这种数，
-## 于是会算账的玩家把钱全砸进抽卡，科技和装备一概不买。
+## **分子分母必须同一个口径**（都是真羁绊表）。混用替身曲线和真羁绊的话会算出
+## 「再抽一张涨 32% 战力」这种数，会算账的玩家把钱全砸进抽卡。
 ##
-## 实测代价：`rational` 从 44.4 波掉到 26.3 波，反而打不过写死优先级的
-## `balanced`（38.5）。而同一批扫描里每个**不用估值**的流派只掉 1–8%，
-## 那个差异正是把原因锁死在这里的证据 —— 曲线下移会一起下移，
-## 只有一个流派塌下去就是估值坏了。
-##
-## ## 现在的算法
-##
-## 按角色表求期望，和 [method expected_surplus] 同一套路：
-## 对每个**还没有的**角色，问「多这一个成员，各组羁绊各涨多少」，
-## 按抽到它的概率加权。已有的角色跳过 —— 重复卡只加星，不增加成员数。
-##
-## ## 一处刻意保守的近似
-##
-## **在场席位满了就返回 0。** 新卡挤不挤得进在场名单，取决于「谁上场」
-## 这个决策，而那个决策现在还不存在（[method PBRunState.bonded_units]
-## 按仓库顺序取前 N）。M2-c 开放选人之后这里要跟着换成「挤掉谁」。
-## 现在取 0 是**低估**而不是高估 —— 宁可让玩家少抽一点，
-## 也不要重蹈上面那个高估的覆辙。
+## **在场席位满了就返回 0**：新卡挤不挤得进在场名单取决于「挤掉谁」，
+## 这里取 0 是低估而不是高估。
 static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 	var units := state.bonded_units(cfg)
 	if units.size() >= state.open_slots(cfg):
@@ -467,9 +393,7 @@ static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 			continue
 		var per_card: float = chance / float(pool.size())
 		for character: PBCharacter in pool:
-			# **已经有这个角色了就不算**：羁绊按角色数不按卡数
-			# （[method PBBondRules.active_count]），再抽一张同名的
-			# 一组都不会多。M5-9 之前这里比的是仓库的键，而那时键就是角色 id。
+			# 已经有这个角色了就不算：羁绊按角色数不按卡数（[method PBBondRules.active_count]）。
 			if owned.has(character.id):
 				continue
 			gain += per_card * PBBondRules.marginal_bonus(counts, cfg.bonds, character)
@@ -478,24 +402,11 @@ static func expected_bond_gain(state: PBRunState, cfg: PBSimConfig) -> float:
 
 ## 面对 [param wave_element] 这一波，抽一张卡能给上场阵容多加多少输出（期望值）。
 ##
-## **重复卡必须单独算。** 卡池只有 48 张（§08），后期手上三十几张，
-## 四分之三的抽卡都是重复卡，只能加星（同卡 3 张升 1 星），收益低一个数量级。
-## 把每一抽都当新卡会系统性高估后期抽卡 —— 而后期正是「该继续抽还是该转装备」
-## 的分界区，偏差刚好落在结论上。
+## 重复抽到的是另一张卡（[method PBUnit.key]），作为战力和新卡一样；
+## 它差的那一份在羁绊那一侧（[method expected_bond_gain]）。
 ##
-## ## M5-9 起没有「重复卡」这一档了
-##
-## 在那之前这里分两步：先按「全是新卡」算一遍，再遍历已有的卡把它们那一格
-## 换成「重复卡只加星级进度」的低值。**重复抽到的现在是另一个人**
-## （[method PBUnit.key]）—— 他立刻能上场、能升级、能带装备，
-## 作为战力和一张新卡一模一样，所以第二步整段没了。
-##
-## 重复卡仍然**比新卡差一点**，但差的那一份在羁绊那一侧
-## （[method expected_bond_gain]：同一个角色不会让任何一组多算一个人）。
-##
-## **概率口径按角色表算，不按「六个属性等概率」硬编码**（M2-a）。
-## 合成表上两者恒等（每个稀有度下六系均分），但真角色表的属性分布是不均匀的 ——
-## 硬编码 1/6 会让估值和抽卡的实际分布悄悄对不上，且不报错。
+## **概率按角色表算，不按「属性等概率」硬编码** —— 真角色表的属性分布不均匀，
+## 硬编码会让估值和抽卡的实际分布悄悄对不上。
 static func expected_surplus(
 	wave_element: PBElement.Type, cutoff: float, state: PBRunState, cfg: PBSimConfig
 ) -> float:

@@ -1,25 +1,10 @@
 class_name PBShotSkin
 extends Resource
-## 一发子弹**长什么样**，以及它命中那一下**炸开长什么样**。M8-a。
+## 一发子弹**长什么样**，以及它命中那一下**炸开长什么样**。
 ##
-## ## 为什么两样放在同一份资源里
-##
-## 分成「子弹表」和「命中特效表」两份的话，「配了子弹忘了配特效」的表现是
-## **打中之后屏幕上什么都不发生** —— 而它不报错。两者本来就是一套美术
-## （火球和火球炸开、苦无和苦无入肉），拆开只会多一处能对不上的地方。
-##
-## ## 和 [PBActorSkin] 同构
-##
-## 一份 [SpriteFrames] 加它和这个游戏之间的约定。换皮的边界画在这个类上：
-## 往 `data/shots/` 丢一份 `.tres`、在角色皮上填一个 [member PBActorSkin.shot_key]，
-## `src/` 一行不动（§14 铁律 5）。
-##
-## ## 空着也能跑
-##
-## `assets/` 里一张子弹图都没有，所以真实情况是**谁都没配**。
-## [method PBWhiteModel.shot] 按同一套字段现造一份：子弹还是今天那个小方块，
-## 命中是一圈很短的火花。**链路因此今天就是通的**，
-## 和 [PBWhiteModel] 顶上那条理由逐字相同。
+## **两样放在同一份资源里**：分开的话「配了子弹忘了配特效」的表现是打中之后什么都不发生，而它不报错。
+## 和 [PBActorSkin] 同构：换皮只往 `data/shots/` 丢一份 `.tres`、填 [member PBActorSkin.shot_key]，`src/` 一行不动。
+## 空着也能跑：[method PBWhiteModel.shot] 按同一套字段现造一份。
 
 ## 查这份子弹用的键，对上 [member PBActorSkin.shot_key]。
 @export var key: StringName = &""
@@ -46,13 +31,8 @@ extends Resource
 @export var spin: bool = true
 
 ## 按**敌我**上色（[member CanvasItem.modulate]）。**白模是 `true`，真素材是 `false`。**
-##
-## 不是按属性 —— 那是给单位用的（§02 的第一层视觉编码）。子弹上属性色的话，
-## 一屏小方块会和敌人抢辨识；而「有几发正朝我飞」才是这一层唯一要说的话
-## （M4-c 定的两个颜色，见 [constant PBShotPool.COLOR]）。
-##
-## 真素材各画各的，再染一层会把美术定的颜色拉偏 ——
-## 同 [member PBActorSkin.tint_by_element]。
+## 不按属性：子弹上属性色会和敌人抢辨识，这一层只说「有几发正朝我飞」（[constant PBShotPool.COLOR]）。
+## 真素材再染一层会把美术定的颜色拉偏。
 @export var tint_by_side: bool = true
 
 

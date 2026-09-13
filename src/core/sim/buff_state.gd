@@ -1,22 +1,13 @@
 class_name PBBuffState
 extends RefCounted
-## **一份正在生效的效果**（M7-a）。对应 UE GAS 的 `ActiveGameplayEffect`。
+## **一份正在生效的效果**。对应 UE GAS 的 `ActiveGameplayEffect`。
 ##
-## [PBBuff] 是定义（不可变、全局一份），本类是「这一份挂在这个单位身上，
-## 什么时候到期、是谁给的、数值算完之后是多少」。
+## [PBBuff] 是定义，本类是「挂在这个单位身上、什么时候到期、谁给的、算完是多少」。
 ##
-## ## 这个类会被 [PBBuffBag] 复用，不要在战斗中 `.new()`
+## **由 [PBBuffBag] 复用，不要在战斗中 `.new()`**（§14 热路径），入口是 [method take]。
 ##
-## 和 [PBEnemy]、[PBProjectile] 同一条规矩（§14）：GDScript 每 tick 创建
-## 大量临时对象会触发频繁的引用计数开销。复用的入口是 [method take]。
-##
-## ## 数值在挂上来之前就算完了
-##
-## [member mods] 存的是**这个施法者、这个等级下的实际数值**，
-## 不是 [member PBBuff.mods] 那份基数。理由和 [member PBAttacker.dps]
-## 顶上那句一样：战斗层不认识等级、稀有度、装备这些系统，它只认这个数。
-## 现算的话，[PBAttacker] 就得带上一个 `level` 字段，而那是把
-## 「已经乘死的倍率」这条约定撕开一个口子。
+## **数值在挂上来之前就算完了**：[member mods] 存的是这个施法者、这个等级下的实际数值，
+## 战斗层不认识等级 —— 现算的话 [PBAttacker] 就得带上一个 `level` 字段。
 
 ## 这份是哪个效果。**null 表示这个槽位是空的** —— 不另开一个 `alive` 布尔：
 ## 多一个字段就是多一份真相，而漏同步一次的表现是「一个空槽位在参与合计」。
@@ -25,9 +16,7 @@ var buff: PBBuff = null
 ## 各个效果键这一份实际是多少（等级已经算进去，见 [method PBBuffRules.resolve]）。
 var mods: Dictionary = {}
 
-## 第几 tick 之后失效。**判据是 `at_tick <= until_tick`（含）** ——
-## 和 [PBBattleSim] 原来那对 `_buff_scale` / `_buff_until` 逐字一致，
-## M7-a 的迁移靠这个等号保持逐位相同。
+## 第几 tick 之后失效。**判据是 `at_tick <= until_tick`（含）**。
 var until_tick: int = -1
 
 ## 每隔几 tick 触发一次。0 = 不是周期型。
@@ -77,9 +66,7 @@ func is_live(at_tick: int) -> bool:
 	return buff != null and at_tick <= until_tick
 
 
-## 还剩几 tick 到期。已经空了或过期了都返回 0。
-##
-## [PBBuffBag] 满了要顶掉**剩余时间最短**的那一个，量的就是这个数。
+## 还剩几 tick 到期。已经空了或过期了都返回 0。[PBBuffBag] 满了顶掉剩余最短的那一个。
 func left(at_tick: int) -> int:
 	if not is_live(at_tick):
 		return 0

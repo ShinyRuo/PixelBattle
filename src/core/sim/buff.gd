@@ -1,8 +1,6 @@
 class_name PBBuff
 extends Resource
-## 一个效果的**定义**（M7-a）。对应 UE GAS 的 `GameplayEffect`。
-##
-## ## 定义 / 一份正在生效的 / 一个单位身上的全部，是三个类
+## 一个效果的**定义**。对应 UE GAS 的 `GameplayEffect`。
 ##
 ## | 本案 | GAS | 是什么 |
 ## |---|---|---|
@@ -10,24 +8,14 @@ extends Resource
 ## | [PBBuffState] | `ActiveGameplayEffect` | 一份正在生效的：到期 tick、谁给的 |
 ## | [PBBuffBag] | `AbilitySystemComponent` 里聚合那一半 | 一个单位身上的全部 |
 ##
-## 混成一个类的代价是现成的：M3-b 的 `PBUltimate`（M7-b 已拆成
-## [PBSkill] + [PBSkillCast]）就把「定义」和「这一波的状态」装在一起，
-## 于是它当时需要一个「只带设定不带状态」的 `clone()` 外加一个 `reset()`，
-## 漏调任何一个都会让上一场的状态漏进下一场
-## （实测：不清冷却时九只尾兽整局各放 28–33 发而不是 7 发）。
+## 定义和状态不混在一个类里：混在一起就需要「只带设定的 clone」加「reset」，
+## 漏调一个就让上一场的状态漏进下一场。
 ##
-## ## 为什么是 Resource
-##
-## 和 [PBCharacter] 一样：效果表要存成 `data/buffs/` 下的 `.tres` ——
-## 检查器里可视化编辑、git diff 可读、**换皮时只改 `data/`**（§14 铁律 5）。
-## `extends Resource` 不违反「core 零引擎依赖」：它不是 Node、不碰场景树、
-## 不读 delta。被 core 纯度检查挡住的是 `ResourceLoader`，
-## 所以「加载 `.tres`」这件事发生在 `src/data/`。
+## 是 Resource：存成 `data/buffs/` 下的 `.tres`，换皮只改数据（铁律 5）。
+## `extends Resource` 不违反 core 纯度 —— 被挡住的是 `ResourceLoader`，加载在 `src/data/`。
 
-## 瞬间 / 持续 / 周期。**这三档不是「时长的三个取值」，是三种机制。**
-##
-## 分不清的话，持续回血会被写成「血上限 +X」那一类修饰符 ——
-## 而它一过期血就掉回去，那不是治疗，那是一个坏护盾。
+## 瞬间 / 持续 / 周期。**这三档是三种机制，不是时长的三个取值** ——
+## 持续回血写成「血上限 +X」的话，一过期血就掉回去，那是一个坏护盾。
 enum Kind {
 	## 当场改一次**量**（血、蓝），然后就没了。**不进 [PBBuffBag]。**
 	INSTANT,

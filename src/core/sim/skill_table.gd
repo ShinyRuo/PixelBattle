@@ -1,27 +1,12 @@
 class_name PBSkillTable
 extends RefCounted
-## 全部逐角色的技能（M7-g）。[member PBCharacter.skill_ids] 按 id 查这张表。
+## 全部逐角色的技能。[member PBCharacter.skill_ids] 按 id 查这张表。
 ##
-## 和 [PBCharacterTable] / [PBBondTable] / [PBEquipTable] 同一个套路：
-## 真表由 core 外面的加载器（[PBSkillLoader]）从 `data/skills/*.tres` 装进来，
-## core 只认这个类型，不知道数据从哪儿来（§14 铁律 1：`ResourceLoader`
-## 被纯度检查挡着）。
+## 真表由 core 外的 [PBSkillLoader] 从 `data/skills/*.tres` 装进来（铁律 1）。
 ##
-## ## 为什么没有对应的「合成表」
-##
-## 那三张都带一份 [code]synthetic()[/code]，因为它们各自是**某条曲线的替身**：
-## 换真数据那一步的数值变化要能和引入结构那一步分开看。
-##
-## 技能表没有这个问题 —— **它的默认值就是「空」，而空表是一个真状态**
-## （没有任何角色配技能，也就是 M7-g 之前的每一天）。
-## 造一张假技能表反而会凭空多出一批没人要的数值。
-##
-## ## 也没有「buff 表」
-##
-## [member PBSkill.on_hit] 存的是**直接引用**（`.tres` 里的 `ext_resource`
-## 指向 `data/buffs/*.tres`），那就是 Godot 原生的外键 ——
-## 再套一层 id 查表等于自己发明一遍资源系统。
-## 所以 buff 跟着技能一起被装进来，校验也在 [PBSkillLoader] 里一起做。
+## **没有合成表**：它的默认值就是空，空表是一个真状态。
+## **也没有 buff 表**：[member PBSkill.on_hit] 存的是直接引用（`ext_resource`），
+## 那就是 Godot 原生的外键；buff 跟着技能一起装进来，校验也在 [PBSkillLoader] 里。
 
 ## id → [PBSkill]。
 var _by_id: Dictionary = {}

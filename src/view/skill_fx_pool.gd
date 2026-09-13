@@ -1,28 +1,10 @@
 class_name PBSkillFxPool
 extends Node2D
-## 施法瞬间从施法者脚下扩散出去的一圈环（技能案 §4.5，M7-f）。
+## 施法瞬间从施法者脚下扩散出去的一圈环。
 ##
-## ## 它补的是哪一格反馈
-##
-## 落点预示圈（[PBTelegraphPool]）说的是「**那儿**要挨打」，
-## 命中白闪（[PBHitFeedback]）说的是「他刚挨了一下」——
-## 中间缺的是「**这个人刚刚放了一个技能**」。
-##
-## 缺了它，一个锁定档的治疗在屏幕上**什么都不会发生**：没有落点圈
-## （M7-c 那个 bug 修掉的正是「给它画一个场外的圈」），
-## 目标身上只是血条悄悄涨了一截。玩家点下去看不到回音。
-##
-## ## 和 [PBTelegraphPool] 同构，但方向相反
-##
-## 那一个是**越接近落地越亮**（还有多久要挨打）；
-## 这一个是**越扩散越淡**（刚才发生过什么）。前者是预告，后者是回音 ——
-## 一个朝未来、一个朝过去，所以两者的透明度曲线必须反着走，
-## 否则同屏两种圈会读成同一句话。
-##
-## ## 它不参与任何判定
-##
-## §4.5 那条：特效一律不进 sim。这一层连 [PBBattleSim] 都不认识 ——
-## 它只收「谁、在哪、什么颜色」，由 [PBBattleView] 在下达那一刻喂进来。
+## 补的是「**这个人刚刚放了一个技能**」这格反馈：锁定档的治疗没有落点圈，没有它的话屏幕上什么都不会发生。
+## 和 [PBTelegraphPool] 方向相反：那一个越接近落地越亮（预告），这一个越扩散越淡（回音），否则两种圈读成同一句话。
+## **不参与任何判定**，连 [PBBattleSim] 都不认识 —— 只收「谁、在哪、什么颜色」。
 
 ## 同屏最多几个。出战席 10 人 + 尾兽，全都同一 tick 下达也就 11 个。
 const CAPACITY: int = 12
@@ -52,11 +34,7 @@ var _left: PackedInt32Array = PackedInt32Array()
 var _warm: Array[bool] = []
 var _live: int = 0
 
-## 播报已经消化到**第几条**（[member PBBattleLog.total]，只增不减）。
-##
-## **不能存 [member PBBattleLog.entries] 的长度**：日志是环形的，写满之后
-## 那个长度恒等于 [constant PBBattleLog.CAP]，于是游标和长度永远相等 ——
-## 回音从此再也不触发，而日志面板一切正常。M8-a 修的就是这一条。
+## 播报已经消化到**第几条**（[member PBBattleLog.total]，只增不减）。不能存 `entries` 的长度，理由见那个字段。
 var _echoed: int = 0
 
 
@@ -99,20 +77,11 @@ func step() -> void:
 	queue_redraw()
 
 
-## 走一帧，并把播报里**新出现**的那几条施法变成圈。
-## [param attackers] 直接来自 [method PBBattleSim.attackers]，**只读**。
+## 走一帧，并把播报里**新出现**的施法变成圈。[param attackers] 来自 [method PBBattleSim.attackers]，**只读**。
+## 游标由本类自己记（[member _echoed]）。
 ##
-## 消化到第几条由本类自己记（[member _echoed]）—— 那是这个池子的账，
-## 放到调用方去存就多一处能对不上的地方。
-##
-## ## 触发读的是播报，不是「谁身上有一发在飞」
-##
-## 后者对不挑目标的那一档**结构上就看不见**：它没有施法延迟，
-## 下达和落地在同一 tick，渲染层永远抓不到那个中间状态 ——
-## 而那正是最需要回音的一档（它连落点预示圈都没有）。
-##
-## 播报记的恰恰是**下达**那一刻（M6-j 定的：玩家点下去就该看见回音），
-## 所以它是这件事唯一说得准的来源。
+## **触发读播报，不读「谁身上有一发在飞」**：不挑目标的那一档下达和落地在同一 tick，渲染层结构上抓不到中间状态，
+## 而那正是最需要回音的一档。播报记的是下达那一刻，所以它是唯一说得准的来源。
 func echo(book: PBBattleLog, attackers: Array[PBAttacker], field: Vector2) -> void:
 	step()
 	if book == null:
@@ -146,9 +115,7 @@ func _draw() -> void:
 		var age: float = 1.0 - float(_left[i]) / float(LIFE_FRAMES)
 		var color: Color = HOSTILE if _warm[i] else FRIENDLY
 		color.a *= 1.0 - age
-		# 战场上的圆在屏幕上是椭圆（M6-a），见 [method PBLayout.ground_disc]。
-		# 这一圈贴着地面，所以它和射程圈、落点圈必须是同一个形状 ——
-		# 画成正圆的话它看起来是浮在半空的。
+		# 贴着地面的圈画成椭圆（[method PBLayout.ground_disc]），和射程圈、落点圈同一个形状；画成正圆会像浮在半空。
 		draw_polyline(
 			PBLayout.ground_disc(_at[i], lerpf(FROM_PX, TO_PX, age), SEGMENTS), color, WIDTH
 		)

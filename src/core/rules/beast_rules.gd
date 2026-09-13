@@ -1,28 +1,17 @@
 class_name PBBeastRules
 extends RefCounted
-## 尾兽的结算规则。施工策划案 §11，M3-d。全部 static、无状态、零引擎依赖。
+## 尾兽的结算规则（§11）。全部 static、无状态、零引擎依赖。
 ##
-## ## 一只尾兽在模型里分成三份，各走各的路
-##
-## 1. **光环** → 逐人的乘算倍率，和装备走同一条路（[method unit_multipliers]）
-## 2. **对角色大招的加速** → 一个冷却倍率，乘在每个角色的大招上
-## 3. **大招** → 一个 `dps = 0` 的 [PBAttacker]，挂着一个 [PBSkillCast]
-##
-## 第 3 条是这次实现里唯一值得解释的地方，见 [method build_ultimate_attacker]。
+## 一只尾兽分成三份：**光环**（[method aura_passives]，走被动词汇表）、
+## **对角色大招的加速**（冷却倍率）、**大招**（一个 `dps = 0` 的 [PBAttacker]，
+## 见 [method build_ultimate_attacker]）。
 ##
 ## ## 等级只放大三样东西
 ##
-## §11 给了升级价格（`400 × 1.6^Lv`）和等级上限（10），**但没说一级值多少**。
-## 这里定的规则是：**光环加成、大招伤害、大招频率**三样按同一个
-## [method level_scale] 放大，其余（半径、聚拢、减速倍率、重置 CD）一概不变。
-##
-## 这条划分不是随手切的。放大「机制」会让机制型尾兽的强度随金币无限膨胀 ——
-## 一个 Lv10 的全屏定身等于游戏结束。放大「频率」则是有意的：
-## 它让六尾、七尾这种零伤害的尾兽也有一条升级曲线，
-## 否则会算账的玩家永远不给它们花钱，而 §11 明写这两只**不能被数值型挤掉**。
-##
-## `beast_level_gain` 是占位值，扫描依据待补 —— 和羁绊档位的数值一样，
-## 现在扫等于白扫：形状还要随 §09 功能档一起变。
+## 光环、大招伤害、大招频率按同一个 [method level_scale] 放大；半径、聚拢、
+## 减速倍率、重置 CD 一概不变。放大机制会让机制型尾兽随金币无限膨胀
+## （Lv10 的全屏定身等于游戏结束）；放大频率则让六尾、七尾这种零伤害的尾兽
+## 也有升级曲线。`beast_level_gain` 是占位值，归数值回归。
 
 ## [member PBAttacker.slot] 上给尾兽留的号。
 ##
@@ -60,10 +49,8 @@ static func upgrade_cost(level: int, cfg: PBSimConfig) -> int:
 	return int(floor(cfg.beast_level_cost * pow(cfg.beast_level_mult, float(maxi(level, 1)))))
 
 
-## 常驻光环按等级折算出来的那一份（M12-e）：`{被动键: 量}`。
-##
-## **和羁绊的成员表走同一个 [method PBPassiveRules.grant_all]** ——
-## 表里写的是「每级多少」，这里乘上 [method level_scale] 变成「这一局多少」。
+## 常驻光环按等级折算出来的那一份：`{被动键: 量}`。
+## 表里写「每级多少」，这里乘上 [method level_scale]。
 static func aura_passives(beast: PBBeast, level: int, cfg: PBSimConfig) -> Dictionary:
 	var out: Dictionary = {}
 	if beast == null:

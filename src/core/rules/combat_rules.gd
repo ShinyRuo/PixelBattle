@@ -1,25 +1,13 @@
 class_name PBCombatRules
 extends RefCounted
-## 单波战斗的结算。施工策划案 §03 的伤害系数 + §04 的波次参数。
+## 单波战斗的建人与结算（§03 的伤害系数 + §04 的波次参数）。
 ##
-## ## 这是一个解析式近似，不是真战斗
+## ## [method resolve] 是解析式排队模型，不是真战斗
 ##
-## M-1 要跑上万局来校准 `GROWTH`，逐单位逐 tick 模拟跑不动
-## （48 单位 × 800 tick × 120 波 × 上万局 ≈ 千亿次更新）。
-## 所以这里用一个**排队模型**代替：敌人按出场顺序排队，队伍以固定 DPS 推进，
-## 每个敌人要么在抵达基地前被清掉，要么漏过去扣基地血。
-##
-## 时长仍然对齐到整 tick（§14 铁律：定帧 20 tick/s），
-## 这样 M0 换成真 tick 模拟时两边的数字可以直接对照。
-##
-## ## 这个近似丢掉了什么（用到结论时要记得）
-##
-## 1. **AOE 与单体输出没有区别** —— 队列是单目标的。所以 §04 那条验收
-##    「纯 AOE 阵容在精英波吃力、纯单体在潮水波吃力」**M-1 回答不了，留给 M0**。
-##    路线图列的四个问题都不依赖它，是有意的取舍。
-## 2. **没有波内动态** —— 前排先死导致输出下降、聚拢大招把敌人拖成一堆，
-##    这些都不在模型里。
-## 3. **敌人不还手** —— 只有漏怪才伤基地，己方单位不会被打死。
+## 敌人按出场顺序排队，队伍以固定 DPS 推进，每个敌人要么被清掉、要么漏过去扣基地血。
+## 真游戏走 [PBBattleSim]；这个模型留着当**对拍锚点**（[method PBAttacker.whole_field]
+## 那条退化路径必须与它逐位相同）。它的前提：AOE 与单体无区别、没有波内动态、
+## 敌人不还手 —— 用它的结论时要记得。
 
 
 ## 结算一波。
@@ -66,21 +54,16 @@ static func resolve(
 	out.cleared = out.leaked == 0
 	out.battle_seconds = clock
 	out.ticks = _to_ticks(clock, cfg)
-	# 时长对齐到 tick 之后再报出去，保证与 M0 的真 tick 模拟可比。
+	# 时长对齐到 tick 之后再报出去，与真 tick 模拟可比。
 	out.battle_seconds = float(out.ticks) / float(cfg.tick_rate)
 	return out
 
 
-## 一队单位对某一波的有效 DPS，属性克制、羁绊、装备与训练科技的词条全部计入。
+## 一队单位对某一波的有效 DPS，属性克制、羁绊、尾兽光环与词条（装备、训练）全部计入。
 ##
-## 这个求和是 §03 成立与否的支点：只有当 [param deployed] 里真的换上了
-## 克制系单位，2.0 的倍率才吃得到。全员固定上场的五系阵容平均只有 1.10，
-## 和物理的 1.05 几乎没差别。
-## [param equip_mults] 是**逐人**的装备倍率（与 [param deployed] 同序）。
-## 空数组表示没有装备，全员按 1.0 算。
-##
-## M3-c 之前这里是一个全队标量 —— §10 的分类匹配（法术装挂不上物理角色）
-## 在标量里表达不出来，而装备对 §03 属性系统的稀释正来自那个「对谁都一样有用」。
+## §03 成立与否的支点：只有 [param deployed] 里真的换上了克制系单位，倍率才吃得到。
+## [param equip_mults] 是逐人倍率（[method unit_multipliers]），[param equip_mods]
+## 是逐人词条（[method unit_mods]），都与 [param deployed] 同序，空数组 = 没有。
 static func team_dps(
 	deployed: Array[PBUnit],
 	wave_element: PBElement.Type,
@@ -98,24 +81,12 @@ static func team_dps(
 	return total * mult
 
 
-## 逐人的**全部**乘算加成：装备（§10）× 尾兽光环（§11）。与 [param units] 同序。
+## 逐人的乘算加成（今天只有尾兽光环那一份，[member PBBeast.aura_power]）。与 [param units] 同序。
 ##
-## ## 为什么要有这么一层
-##
-## [method team_dps] 和 [method build_attackers] 都收一个逐人倍率数组，
-## 而调用它们的地方有四处（战斗、估值两处、任务卡预览）。
-## M3-c 时那四处各写着同一句 `PBEquipRules.unit_multipliers(...)`；
-## M3-d 加了尾兽光环，四处就要各自改成「装备 × 尾兽」。
-##
-## **漏改一处不会报错**，只会让那条路径上的战力比实际低一点 ——
-## 而那四处里有两处是估值，估值偏低的表现是「会算账的玩家做出略差的选择」，
-## 从现象反推几乎不可能。所以折叠只做一次，加第三种加成时也只改这里。
-## **M12-h2 起装备不在这一路了** —— 它给的是词条不是倍率，走
-## [method unit_mods]。这里只剩尾兽光环那一份（[member PBBeast.aura_power]，
-## 今天九只全是 0，但机制留着）。两条路都要走，所以
-## `tests/test_equip_manual.gd` 有一条扫描式断言钉着
-## **每一个调用这一句的地方旁边都得有一句 `unit_mods`** ——
-## 漏掉的那一路表现是「那条路径上装备完全不生效」，而它不报错。
+## 折叠只在这里做一次：调用点有四处（战斗、估值两处、任务卡预览），各写一份的话
+## 漏改一处的表现是那条路径上战力略低，从现象反推几乎不可能。
+## 它和 [method unit_mods] 是两条腿，四处都要拿 —— `tests/test_equip_manual.gd`
+## 有一条扫描式断言钉着两者的出现次数相等。
 static func unit_multipliers(
 	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
 ) -> PackedFloat64Array:
@@ -133,32 +104,19 @@ static func unit_multipliers(
 
 ## 把上场名单摊成一组 [PBAttacker]，交给 [PBBattleSim] 逐 tick 推。
 ##
-## **和 [method team_dps] 必须是同一套算法的两种输出**：这里每个攻击者的
-## `dps` 就是那个求和的一项，两者只差浮点结合律。分成两份各写一遍的话，
-## 「界面上报的战力」和「战场上真打出来的伤害」会慢慢分叉，且不报任何错 ——
-## `test_battle_sim.gd` 里有一条断言把这个恒等式锁住。
+## 每个攻击者的 `dps` 就是 [method team_dps] 那个求和的一项 ——
+## 界面上报的战力和这批对象必须同源，`test_attacker.gd` 锁着这个恒等式。
 ##
-## 射程与站位来自角色（[method PBCharacter.reach_tier]），
-## 具体距离来自配置（[method PBSimConfig.reach_distance]）——
-## 角色表说「这是个远程」，配置说「远程能打多远」，两件事分开才扫得动。
+## 射程档来自角色（[method PBCharacter.reach_tier]），具体距离来自配置
+## （[method PBSimConfig.reach_distance]）—— 分开才扫得动。
 ##
-## ## 尾兽（M3-d）
+## **尾兽**：带了就在末尾多挂一个 `dps = 0` 的攻击者，只有大招。它的伤害以
+## 「全队几秒输出」计量，分母只有全部角色摊开之后才知道。
 ##
-## 带了尾兽就在末尾**多挂一个 `dps = 0` 的攻击者**，它只有大招。
-## 挂在这里而不是让 [PBBattleSim] 自己去查尾兽表，是因为尾兽大招的伤害
-## 以「全队几秒输出」计量（[member PBBeast.ultimate_damage_seconds]），
-## 而那个分母只有在全部角色都摊开之后才知道 —— 正是本函数的返回值。
+## **羁绊功能档**：[param bond_functions] 是 [method PBBondRules.active_functions] 的结果，
+## 装在已经建好的大招上（[method PBBondFunctionRules.apply_to_skill]）。
 ##
-## ## 羁绊功能档（M3-f）
-##
-## [param bond_functions] 是 [method PBBondRules.active_functions] 的结果，
-## `{ 载体角色 id: [功能键…] }`。功能装在**已经建好的**大招上，
-## 理由见 [method PBBondFunctionRules.apply_to_skill]。
-##
-## > 本函数已经到了 `.gdlintrc` 的参数上限（10 个）。**再加一种加成时
-## > 不要接第 11 个参数**，该把「队伍这一波的全部加成」折成一个对象了 ——
-## > 现在还没折，是因为九个参数里有六个是从 M-1 就在的原始量，
-## > 硬折会让一次数据结构改动混进一次功能改动里。
+## > 参数已经很多。**再加一种加成时别接新参数**，该把「队伍这一波的全部加成」折成一个对象了。
 static func build_attackers(
 	deployed: Array[PBUnit],
 	wave_element: PBElement.Type,
@@ -175,10 +133,7 @@ static func build_attackers(
 ) -> Array[PBAttacker]:
 	var team_mult: float = bond_mult
 	var out: Array[PBAttacker] = []
-	# 召唤物的位子在这一刻就留好（M12-c3）—— 理由写在
-	# [member PBAttacker.summoned] 顶上：中途往数组里塞人会让一批
-	# 按人数铺好的东西失配，而失配基本都不报错。
-	# **没有召唤技能就一个不留**，所以既有配平数字一位不动。
+	# 召唤物的位子开波就留好（理由见 [PBSummonRules] 顶部）。没有召唤技能就一个不留。
 	var spare: int = PBSummonRules.reserve(deployed, cfg)
 	out.resize(deployed.size() + spare)
 	# 带聚拢大招的名额按出战席顺序发前 n 个。**按比例而不是按角色表**，
@@ -196,11 +151,9 @@ static func build_attackers(
 		var mult: float = team_mult * (equip_mults[i] if i < equip_mults.size() else 1.0)
 		var attacker := PBAttacker.new()
 		attacker.slot = i
-		# **属性词条先收齐**（M12-h1）：三围、攻击力、防御、生命、攻速全在这一档，
-		# 它们必须在 [method PBStatRules.of] **里面**注入 —— 二级属性是从一级
-		# 派生的，而攻击力还要排在属性克制之前。行为那一档（暴击、闪避、溅射……）
-		# 走下面的 [method PBPassiveRules.equip]。
-		# 装备那一份（M12-h2）：它和羁绊、尾兽、角色被动写的是同一套词条。
+		# **属性词条先收齐**：三围、攻击力、防御、生命、攻速必须在 [method PBStatRules.of]
+		# 里面注入（二级属性从一级派生，攻击力要吃克制）。行为那一档走下面的
+		# [method PBPassiveRules.equip]。装备和训练科技的词条在 `worn` 里。
 		var worn: Dictionary = equip_mods[i] if i < equip_mods.size() else {}
 		var stat_mods: Dictionary = PBStatRules.collect(
 			[
@@ -210,30 +163,23 @@ static func build_attackers(
 				worn,
 			]
 		)
-		# **一发多重**（M12-c5）：战斗真正用的是这个数，见 [member PBAttacker.attack]。
+		# **一发多重**：战斗真正用的是这个数，见 [member PBAttacker.attack]。
 		attacker.attack = unit.effective_attack(wave_element, cfg, stat_mods) * mult
 		# 每秒多少：从此只是统计量与退化路径的输入。**这一行一个字没动** ——
 		# 面板、估值、解析模型读到的仍是它一直以来的那个数。
 		attacker.dps = unit.effective_power(wave_element, cfg) * mult
-		# 挨打这一半（§03A，M3.5-b）。**血与防不吃 `mult`** ——
-		# 装备、羁绊、尾兽光环目前全是进攻向的，把它们乘到防守上
-		# 等于凭空发明一份没人设计过的加成。§10 的两件防御装
-		# 和 §11 一尾的减伤光环接上来时，那才是它们的落点。
+		# 挨打这一半。**血与防不吃 `mult`**：队伍倍率是进攻向的，防守加成走词条。
 		var stats := unit.stats(cfg, stat_mods)
 		attacker.max_hp = stats.hp
 		attacker.defence = stats.def
 		attacker.def_element = unit.def_element
-		# 蓝（M3.5-d）：智力抬池子，回速按池子的比例走 —— 所以它同时抬两样。
+		# 蓝：智力抬池子，回速按池子的比例走。
 		attacker.max_mp = stats.mp
 		attacker.mp_regen = stats.mp * cfg.mp_regen_rate / float(cfg.tick_rate)
 		attacker.reach = cfg.reach_distance(tier)
-		# 站位：x 由射程档派生（§02），y 是泳道 —— **M4-a 之前没有 y**，
-		# 纵向是渲染层自己编的。默认均分，M4-f 之后由玩家拖动决定。
+		# 站位：x 由射程档派生（§02），y 是泳道，玩家拖动过的由 [PBFormationRules] 覆盖。
 		attacker.pos = Vector2(cfg.reach_column(tier), cfg.ally_lane(i, deployed.size()))
-		# 跑动（M3.5-c）：站位从「站在哪一列」变成「从哪一列出发」。
-		# 皮带绳把前压拴在自己那一列附近。**M8-d 起默认不拴**（玩家定的）——
-		# 「放开就会挤到最前面接敌」那条说法实测不成立：忍者最远也只跑到
-		# 离家 0.616，而漏怪一只没多，见 [member PBSimConfig.unit_leash]。
+		# 跑动：站位是「从哪一列出发」，皮带绳默认不拴（见 [member PBSimConfig.unit_leash]）。
 		attacker.home = attacker.pos
 		attacker.leash = cfg.leash_distance()
 		attacker.move_speed = cfg.field_length / maxf(
@@ -241,9 +187,7 @@ static func build_attackers(
 		)
 		attacker.shape = unit.character.attack_shape
 		attacker.max_targets = cfg.aoe_max_targets
-		# 出手节奏与子弹（M4-b）。**攻速第一次被战斗读到** ——
-		# 在这之前它只进 `dps = atk × 攻速` 这个乘积，信息栏上写着
-		# 「攻速 1.11」而战斗里是一条没有边界的连续伤害流。
+		# 出手节奏：间隔由攻速决定，见 [method PBAttacker.prime]。
 		attacker.attack_speed = stats.attack_speed
 		# 近战不发子弹（接触即伤），五系远程才有弹道。
 		attacker.shot_speed = (
@@ -254,26 +198,12 @@ static func build_attackers(
 			)
 		)
 		var skill := _build_skill(unit, wave_element, mult, i < gather_count, cfg)
-		# 羁绊功能档（§09，M3-f）：这个人是不是某组凑满了的羁绊的载体。
-		# 两个落点各管一半：装在大招上的（聚拢 / 定身 / 减速力场，
-		# **一组只出一个载体**），和装在他本人身上的 ——
-		# **后者必须在这个循环里面**，因为只有这里知道这个攻击者是哪个角色。
+		# 羁绊功能档里装在大招上的那一半（一组只出一个载体）。
+		# 装在本人身上的那一半必须在这个循环里 —— 只有这里知道这个攻击者是哪个角色。
 		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
 			PBBondFunctionRules.apply_to_skill(skill, key, cfg)
-		# 落在他本人身上的那一半（M12-d1）：**每个在场成员各拿各的**，
-		# 不再是「一组一个载体拿一份」。原版 45 组里只有 3 组是人人同一句。
-		#
-		# 和角色自带的被动**走同一个入口**，只是量的来源不同
-		# （一个来自羁绊表，一个来自名册）—— 另写一份的话
-		# 「羁绊给的溅射」和「他自带的溅射」迟早在叠加方式上分叉，
-		# 而分叉的那一侧静默生效。两份都是 `+=`，一个人可以两边都拿到。
-		# 尾兽光环那一份（M12-e）的量来自尾兽表并按尾兽等级放大。
-		# 三个来源在字段上 `+=` 汇合，各写一份的话
-		# 「尾兽给的闪避」和「羁绊给的闪避」迟早不一样大。
-		#
-		# **走 `equip` 不走三行 `grant_all`**（M12-e2）：率型那几个键是累加器，
-		# 装完还要折进 `max_hp` / `move_speed`，而把那一步留在这里的话
-		# 「忘了折」的表现是那一组羁绊配了不生效 —— 见 [method PBPassiveRules.equip]。
+		# 行为词条：角色自带 / 羁绊成员效果 / 尾兽光环 / 装备，**走同一个入口**、在字段上 `+=` 汇合。
+		# 走 `equip` 不走几行 `grant_all`：率型键装完还要折算，见 [method PBPassiveRules.equip]。
 		PBPassiveRules.equip(
 			attacker,
 			[
@@ -283,8 +213,7 @@ static func build_attackers(
 				worn,
 			]
 		)
-		# 名册那一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
-		# 所以直接共用引用不拷贝 —— 同 [member PBSkill.on_hit] 那一条。
+		# 名册「被动」列里 `on_hit=<效果键>` 那一半。这份是定义，直接共用引用。
 		attacker.on_hit_buffs = unit.character.on_hit_buffs
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
@@ -307,9 +236,7 @@ static func build_attackers(
 		PBSummonRules.dismiss(spot)
 		out[deployed.size() + i] = spot
 
-	# 全队光环那一档（M10-c）。**排在循环外面**：光环是这一组羁绊给的，
-	# 不是这个人给的 —— 放进循环的话载体之前建好的人拿不到，
-	# 而那只表现为「站前排的忍者暴击率好像高一点」。
+	# 全队光环**排在循环外面**：它是这一组羁绊给的，放进循环的话载体之前建好的人拿不到。
 	PBBondFunctionRules.apply_to_team(out, bond_functions)
 
 	var beast_attacker := PBBeastRules.build_ultimate_attacker(
@@ -320,28 +247,14 @@ static func build_attackers(
 	return out
 
 
-## 把角色表里那几个技能挂到攻击者身上（决策 6，M7-g）。
+## 把角色表里那几个技能挂到攻击者身上，**每人一份自己的拷贝**。
 ##
-## ## 每人一份自己的拷贝，不共享 `data/` 里那一份
+## 共享 `data/` 那一份的话，两个人的冷却是同一个，悬崖二分就地改伤害也会污染正在打的那一份。
+## 拷贝之后当场用 [method skill_damage] 算出 [member PBSkill.damage] —— 同一个技能
+## 在不同的人、不同的波次下是不同的数。
 ##
-## [PBSkillCast] 会记冷却与落点，共享的话两个人的冷却是同一个 ——
-## 而 [method PBSkill.clone] 顶上还有一条更硬的：悬崖二分要能就地改伤害
-## （[method PBValuation._leaks_at]），共享会污染正在真正战斗的那一份。
-##
-## ## 查不到就跳过，而且要报错
-##
-## 拼错一个 id 的表现是「这个角色少了一个技能」—— 指令卡上少一格，
-## 而少的那一格看起来和「他本来就只有一个技能」一模一样。
-## 静默跳过的话没有任何地方说得出发生过什么。
-##
-## 超过两个也只取前两个（决策 6）：指令卡那一行只画得下两格
-## （[constant PBCommandCard.SKILL_COMMANDS]），多出来的放不出去 ——
-## 而「配了却放不出」比「没配」更难查。
-## ## 伤害在这里算，不在 `.tres` 里写死（M11-a）
-##
-## 每人一份拷贝之后**当场把 [member PBSkill.damage] 算出来**，
-## 走的是和大招同一句 [method skill_damage] —— 那正是「每人一份拷贝」
-## 这件事第一次真的被用上：同一个技能在不同的人、不同的波次下是不同的数。
+## **查不到就跳过，而且要报错**：拼错 id 的表现是指令卡少一格，看起来和「他本来就只有一个」一样。
+## 超过两个只取前两个：指令卡只画得下两格（[constant PBCommandCard.SKILL_COMMANDS]）。
 static func _equip_skills(
 	attacker: PBAttacker,
 	unit: PBUnit,
@@ -360,21 +273,15 @@ static func _equip_skills(
 		if skill == null:
 			push_error("角色表里点了一个不存在的技能：%s" % id)
 			continue
-		# **补丁打在复制品上**（M12-d2），不是 `.tres` 那一份 ——
-		# 打在那一份上的话这一波的加成会漏进下一波、漏进别的角色。
-		# **排在伤害换算之前**：`power_scale` 改的就是换算要用的那个倍率，
-		# 排在后面的表现是「那一组翁配了不生效」。
+		# **补丁打在复制品上**，而且**排在伤害换算之前**：`power_scale` 改的就是换算要用的倍率。
 		var mine := skill.clone()
 		PBSkillPatchRules.apply(mine, patches.get(id, {}), cfg.tick_rate)
 		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
 		attacker.skills.append(PBSkillCast.new(mine, unit.level))
 
 
-## 造一个单位这一波的大招（§02，M3-b）。
-##
-## **伤害按大招自己的属性算克制，不按单位的**（§03 铁律 4：element 挂在
-## 伤害事件上）。所以「本体土属性、大招火系」的角色，普攻和大招会在
-## 同一波里吃到不同的倍率 —— 那正是那条铁律想留出来的空间。
+## 造一个单位这一波的大招（§02）。
+## **克制按大招自己的属性算，不按单位的**（铁律 4：element 挂在伤害事件上）。
 static func _build_skill(
 	unit: PBUnit, wave_element: PBElement.Type, mult: float, gather: bool, cfg: PBSimConfig
 ) -> PBSkill:
@@ -390,16 +297,10 @@ static func _build_skill(
 	return skill
 
 
-## 每个上场单位**从局面上**吃到的词条：装备（M12-h2）+ 训练科技（M12-h3）。
-## 与 [param units] 同序。
+## 每个上场单位**从局面上**吃到的词条：装备 + 训练科技。与 [param units] 同序。
 ##
-## 和 [method unit_multipliers] 是**同一件事的两条腿**：那一条答「乘几倍」，
-## 这一条答「加了什么词条」。四个调用点（战斗、估值两处、任务卡预览）
-## 两条都要拿 —— 见那一条顶上那段。
-##
-## **科技并在这里而不是另开一个参数**：这是唯一一个手上有 [PBRunState]
-## 又已经接到全部折叠点的地方。在它之前攻击科技是 `build_attackers` /
-## `team_dps` 的第三个参数，23 个调用点各传一遍 —— 换成词条之后那个参数没有意义了。
+## 和 [method unit_multipliers] 是两条腿，四个调用点两条都要拿。
+## 这是唯一一个手上有 [PBRunState] 又已经接到全部折叠点的地方，局面给的词条都并在这里。
 static func unit_mods(
 	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
 ) -> Array[Dictionary]:
@@ -413,23 +314,12 @@ static func unit_mods(
 	return out
 
 
-## 一发技能打多少（M11-a）。**大招和角色技能共用这一句。**
-##
+## 一发技能打多少。**大招和角色技能共用这一句**：
 ## `战力 × 属性克制 × 队伍倍率 × 这一发的倍率`。
 ##
-## ## 为什么必须只有一处
-##
-## M11-a 之前大招走这个式子、角色技能直接用 `.tres` 里的字面量，
-## 于是**属性克制、装备、羁绊、科技对角色技能一律不生效**，
-## 而且那个常数在第 50 波等于 0 —— 三条全部不报错，
-## 见 [member PBSkill.power_mult]。
-##
-## **克制按技能自己的属性算，不按单位的**（§03 铁律 4：element 挂在
-## 伤害事件上）。所以「本体土属性、大招火系」的角色，普攻和技能会在
-## 同一波里吃到不同的倍率 —— 那正是那条铁律想留出来的空间。
-##
-## [param mult] 是队伍这一波的倍率（羁绊 × 尾兽光环），
-## 也就是 [method build_attackers] 里乘进 [member PBAttacker.dps] 的那一份。
+## 只能有一处：技能伤害写成 `.tres` 里的字面量的话，克制、羁绊对技能一律不生效，
+## 而且它不随波次涨（见 [member PBSkill.power_mult]）。
+## **克制按技能自己的属性算**（铁律 4）。[param mult] 是队伍倍率（羁绊 × 尾兽光环）。
 static func skill_damage(
 	unit: PBUnit,
 	skill: PBSkill,

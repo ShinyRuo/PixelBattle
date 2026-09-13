@@ -1,35 +1,17 @@
 extends SceneTree
-## 按 `data/buffs.tsv` + `data/skills.tsv` 重铺技能与效果（M12-c1）。
+## 按 `data/buffs.tsv` + `data/skills.tsv` 重铺技能与效果。
 ##
 ## ```powershell
 ## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --headless --path . -s src/tools/make_skills.gd
 ## ```
 ##
-## ## 为什么要有这个工具
+## 手写一百多个 `.tres` 等于抄一百多遍样板，少一个字段就是取默认值，表现是「这个技能好像没什么用」。
+## 和 `make_roster.gd` / `make_bonds.gd` 同一套：表在 `data/`，生成器只认列号，名字不进 `src/`（铁律 5）。
 ##
-## M7-g 到 M11 之间技能只有 2 个，手写 `.tres` 还看得过来。原版有 **113 个**
-## （56 张卡，一人 1~4 个，见 `Docs/原版数据_忍法战场v1.5.80.md` §5），
-## 手写等于把同样的十几行样板抄一百多遍，而抄错**不报错** ——
-## `.tres` 里少一个字段就是取默认值，表现是「这个技能好像没什么用」。
+## **它是「谁有哪几个技能」的唯一来源**：表里的角色键反写进 `data/characters/<键>.tres` 的 `skill_ids`，
+## **表里没有的角色会被清空** —— 只写不清的话，删掉的技能格子还在，按下去查一个不存在的 id。
 ##
-## 和 `make_roster.gd` / `make_bonds.gd` 同一套路子：表在 `data/`，
-## 生成器只认列号，**名字一个字都不进 `src/`**（铁律 5）。
-##
-## ## 它同时是「谁有哪几个技能」的唯一来源
-##
-## 表里那一列角色键会被反着写进 `data/characters/<键>.tres` 的 `skill_ids`。
-## 两处各记一份的话，「表里挂了技能、指令卡上没有那一格」迟早发生，
-## 而它不报错 —— 指令卡是按 `skill_ids` 排格子的。
-##
-## **它对 `skill_ids` 是权威的**：表里没有的角色会被清空。
-## 只写不清的话，从表里删掉一个技能之后那个角色的格子还在，
-## 按下去会去查一个已经不存在的 id。
-##
-## ## 不认识的额外键直接报错，不静默跳过
-##
-## `额外` 那一列是 `键=值`。拼错一个键如果只是跳过，表现正是
-## 「配了不生效」—— 数据、界面、日志全部正常，只有那个字段没人写。
-## 这个项目为这种形状的 bug 付过好几次代价，所以这里一律 `quit(1)`。
+## **不认识的额外键直接 `quit(1)`**：跳过的表现正是「配了不生效」。
 
 const BUFFS := "res://data/buffs.tsv"
 const SKILLS := "res://data/skills.tsv"
@@ -350,8 +332,7 @@ func _attach(owned: Dictionary) -> void:
 	print("角色表更新了 ", touched, " 个的 skill_ids")
 
 
-## 表里没有的 `.tres` 一律删掉 —— 只写不删的话，从表里拿走一个技能之后
-## 那个文件会一直躺在目录里被加载器扫进来。
+## 表里没有的 `.tres` 一律删掉，否则拿走的技能文件会一直被加载器扫进来。
 func _sweep(folder: String, wanted: Dictionary) -> void:
 	var dir := DirAccess.open(folder)
 	if dir == null:

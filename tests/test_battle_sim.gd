@@ -145,15 +145,6 @@ func test_damage_cannot_reach_enemies_that_have_not_spawned() -> void:
 	assert_eq(sim.result().kills, 1, "第 1 tick 只有一个敌人出场，再高的伤害也只能打死它")
 
 
-func test_render_progress_stays_normalised() -> void:
-	# sim 层不知道屏幕多宽，只给 0–1 的进度，渲染层自己乘像素。
-	var sim := _sim(_wave(18), 0.0)
-	for _i: int in 40:
-		sim.step()
-	for enemy: PBEnemy in sim.active_enemies():
-		assert_between(enemy.progress(_cfg.field_length), 0.0, 1.0, "进度应落在 0–1")
-
-
 func test_battle_always_terminates() -> void:
 	# 敌人每 tick 都在前进，迟早抵达基地，所以战斗必定结束。
 	# 撞上安全阀说明配置错了（比如速度配成 0），那是要立刻发现的事。

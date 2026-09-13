@@ -1,25 +1,14 @@
 extends SceneTree
-## 按 `aires/ninja_art.tsv` + `aires/prompts/_ninja_template.md` 铺提示词（M10-b）。
+## 按 `aires/ninja_art.tsv` + `aires/prompts/_ninja_template.md` 铺出图提示词。
 ##
 ## ```powershell
 ## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --headless --path . -s src/tools/make_prompts.gd
 ## ```
 ##
-## ## 为什么要生成而不是手写
+## **生成而不是手写**：一份提示词大部分是四段图集共用的死文本（一字不差是有意的，差一个字模型就可能换手），
+## 手抄的话抄错不报错。每个角色只有几处不同，表里就只有那几栏。
 ##
-## 一份提示词 250 行，其中约 230 行是**四段图集共用的死文本** ——
-## 【图集】【角色】【画风】【背景】那四节「一字不差是有意的」，
-## 差一个字都可能让模型换一次手。24 份手写等于把那 230 行抄 96 遍
-## （四段 × 24 人），而抄错不报错：出来的图看着都对，只是这一张的
-## 方块比那一张细一点、这一段的人比那一段高一点。
-##
-## 每个角色只有三处不同：角色键、原型、外观段落。表里就只有这三栏。
-##
-## ## `aires/` 对 `res://` 是不可见的
-##
-## 那个目录有 `.gdignore`，所以要走
-## [method ProjectSettings.globalize_path]（同 [PBPortraitForge] 读
-## `aires/headshots.txt` 那一条）。
+## `aires/` 有 `.gdignore`，对 `res://` 不可见，要走 [method ProjectSettings.globalize_path]。
 
 const TABLE := "aires/ninja_art.tsv"
 const TEMPLATE := "aires/prompts/_ninja_template.md"
@@ -29,18 +18,12 @@ const COL_KEY: int = 0
 const COL_ORIGIN: int = 1
 const COL_LOOK: int = 2
 
-## 跑姿与出手（玩家提的：24 个人共用一套跑法和出手，屏幕上会像一队复制人）。
+## 跑姿与出手（玩家提的：共用一套跑法和出手的话，屏幕上像一队复制人）。
 ##
-## 这两栏落进 `run` / `attack` 那张图集的【这个人的跑法】/【这个人的出手】，
-## 而模板里那六格骨架**只剩时序和腿的循环** —— 姿态以这两栏为准。
-## 第一版不是这样：骨架里写着「出手的那只手收到腰侧 → 完全伸直」，
-## 那本身就是一记直拳的分镜，而这两栏排在它后面还自称「只改用什么打」，
-## 于是 24 个人全部回到拳上（玩家报的：「每个人都是出拳」）。
-##
-## 骨架里剩下的是流水线的硬要求，不是文风：
-## `attack` 第 4 格必须是伸得最远的那一格（[method PBActorForge._pick_reach]
-## 按它排出手帧，错了游戏里就是「先掉血、后出手」）、`run` 六格要接得回去、
-## 不许有和身体断开的碎块（切图会把它当成独立的一格）。
+## 这两栏落进 `run` / `attack` 图集的【这个人的跑法】/【这个人的出手】，**模板骨架只剩时序和腿的循环** ——
+## 骨架里写死某种出手姿态的话，所有人都会回到那一种上。
+## 骨架里剩下的是流水线的硬要求：`attack` 第 4 格必须伸得最远（[method PBActorForge._pick_reach] 按它排出手帧）、
+## `run` 六格要接得回去、不许有和身体断开的碎块（切图会把它当成独立的一格）。
 const COL_RUN: int = 3
 const COL_ATTACK: int = 4
 

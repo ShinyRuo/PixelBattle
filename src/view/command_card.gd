@@ -1,21 +1,9 @@
 class_name PBCommandCard
 extends Control
-## 右下角的指令卡：**选中谁，就显示谁能做的事**。§02 的战场直接操作，M3.5-e。
+## 右下角的指令卡：**选中谁，就显示谁能做的事**（§02 的战场直接操作）。
 ##
-## ## 它取代了什么
-##
-## M1-b 的花钱面板（`PBPreparePanel`）是一块常驻在左半屏的按钮列。
-## 那块面板和「在战场界面就能操作一切」直接冲突：它挡着战场，
-## 而且**只有一种上下文** —— 忍者、尾兽、大本营各自能做什么，它一个都表达不了。
-##
-## 指令卡是原版（War3 RPG 地图）的骨架：一个 3×3 的格子网格，
-## 内容随选中的东西整体换掉。玩家的视线不离开战场。
-##
-## ## 「买下去战力涨多少」搬到了提示条
-##
-## 那句话是 CLAUDE.md 点名的核心信息，**没有丢**，但格子里写不下
-## 「忍具箱 300（配件 14，每箱战力 +0.6%）」。所以：格子上写短的，
-## 鼠标停上去在下面那条提示里写长的。两截都出自 [PBShopLabels] 同一份计算。
+## 原版（War3 RPG 地图）的骨架：一个 3×3 的格子网格，内容随选中的东西整体换掉，视线不离开战场。
+## 格子里写不下长句，所以格子上写短的，悬停时提示条上写长的（「买下去战力涨多少」），两截都出自 [PBShopLabels]。
 
 ## 玩家点了某一格。[param command] 是下面那几组常量里的一个。
 signal command(command_id: StringName)
@@ -24,14 +12,11 @@ signal command(command_id: StringName)
 const CMD_REROLL_QUEST: StringName = &"reroll_quest"
 const CMD_START: StringName = &"start"
 
-## 「科技 ▸」进二级页、「◂ 返回」回首页（M12-h3）。
+## 「科技 ▸」进二级页、「◂ 返回」回首页。
 ##
-## **这两条不往外发**（[signal command] 收不到）：翻页是指令卡自己的事，
-## 不改任何局面。发出去的话 [PBBattleView] 那条「不认识的都当科技买」的兜底
-## 会拿它去买一条叫 `page` 的科技 —— 买不到，也不报错。
-##
-## 为什么要翻页：原版的训练分近战三条、远程一条，而首页九格已经满了
-## （[constant COLUMNS] × [constant ROWS]，那一段写着「多了就该拆界面了」）。
+## **这两条不往外发**（[signal command] 收不到）：翻页不改任何局面；发出去的话 [PBBattleView] 那条
+## 「不认识的都当科技买」的兜底会拿它去买一条科技，买不到也不报错。
+## 要翻页是因为首页九格已经满了，而训练分近战三条、远程一条。
 const CMD_TECH_PAGE: StringName = &"tech_page"
 const CMD_BACK: StringName = &"back"
 
@@ -46,37 +31,21 @@ const CMD_DISPATCH: StringName = &"dispatch"
 const CMD_BEAST_UP: StringName = &"beast_up"
 const CMD_BEAST_PICK: StringName = &"beast_pick"
 
-## 战斗中的指令（§02，M4-e）。**只有这两条在打起来之后还能点。**
-##
-## 「攻击」按下去不是立刻打谁，而是**进入指定状态**：这时候点战场上的
-## 一个敌人，这个忍者就改打他。分两步是 War3 那套（先按 A 再点地面），
-## 而且它让「点错人」有一个可以后悔的中间态 ——
-## 一步到位的话，手一抖就把主力指到一个残血杂兵身上。
+## 战斗中的指令（§02）。**只有这两条在打起来之后还能点。**
+## 「攻击」按下去是**进入指定状态**，再点敌人才改打他 —— 点错人有一个可以后悔的中间态。
 const CMD_ATTACK: StringName = &"attack"
 const CMD_CLEAR_TARGET: StringName = &"clear_target"
 
-## 大招那一格的键。**M7-h 起没有按钮了** —— 它只是下标 0 的占位，
-## 好让 `SKILL_COMMANDS.find(id)` 恒等于 [method PBSkillRules.cast_at] 的下标。
+## 大招那一格的键。**没有按钮** —— 它只是下标 0 的占位，让 `SKILL_COMMANDS.find(id)` 恒等于
+## [method PBSkillRules.cast_at] 的下标。
 ##
-## ## 为什么把「忍术」这一格删了（玩家定的）
-##
-## 每个忍者都有一发大招，是因为它由 [PBSimConfig] 现造、不是角色表里的一条 ——
-## 也就是说**它谁都有，谁都一样**，屏幕上那一格因此不表达任何角色差异。
-## 没配技能的忍者现在就只会普攻，而「配了技能的人多一格按钮」才是
-## §09 技能阶梯要玩家看见的东西。
-##
-## **[member PBAttacker.ultimate] 本身没有删**：批量扫描走
-## [constant PBAimRules.Policy.AUTO]，§02 那对分层验收（手动比自动强 15–25%）
-## 量的就是它，删了等于把验收删了。而游戏里那一路是 `NONE`
-## （见 [PBBattleView]），本来就不会自己放 —— 所以「没配技能就只能普攻」
-## 在游戏里成立，同时全部既有配平数字一个不动。
+## 不摆忍术格（玩家定的）：大招由 [PBSimConfig] 现造、谁都一样，那一格不表达任何角色差异；
+## 「配了技能的人多一格按钮」才是技能阶梯要玩家看见的东西。**[member PBAttacker.ultimate] 本身没删**：
+## 批量扫描走 [constant PBAimRules.Policy.AUTO]，§02 的分层验收量的就是它。
 const CMD_ULTIMATE: StringName = &"ultimate"
 
-## 角色自己表里的那两个技能（决策 6，M7-e）。M7-h 起它们排在
-## 「攻击 / 自动选敌」后面那一格起，忍术让出来的位置就是这里。
-##
-## 两个常量而不是一个带下标的键：指令那一路（[signal commanded]）传的是
-## `StringName`，而拼字符串出来的键在 `match` 里对不上是一个静默失败。
+## 角色自己表里的那两个技能，排在「攻击 / 自动选敌」后面。
+## 两个常量而不是一个带下标的键：拼字符串出来的键在 `match` 里对不上是一个静默失败。
 const CMD_SKILL_1: StringName = &"skill_1"
 const CMD_SKILL_2: StringName = &"skill_2"
 
@@ -84,11 +53,8 @@ const CMD_SKILL_2: StringName = &"skill_2"
 ## （0 = 大招），所以按钮和施放入口不可能对不上。
 const SKILL_COMMANDS: Array[StringName] = [CMD_ULTIMATE, CMD_SKILL_1, CMD_SKILL_2]
 
-## 指令卡上摆出来的第一格技能，对应 `cast_at` 的哪个下标（M7-h）。
-##
-## **只是不摆，不是重新编号。** 换一套只给角色技能用的下标的话，
-## 按钮、瞄准状态机、施放入口三处就又各有一套编号了 —— 而 M7-e
-## 花了一整步才把它们收成同一个数。
+## 指令卡上摆出来的第一格技能对应 `cast_at` 的哪个下标。**只是不摆，不是重新编号** ——
+## 否则按钮、瞄准状态机、施放入口三处又各有一套编号。
 const FIRST_SKILL: int = 1
 
 ## 3×3。和原版一致 —— 九格装得下任何一种上下文，多了就该拆界面了。
@@ -97,14 +63,8 @@ const ROWS: int = 3
 
 const PANEL_RECT := PBLayout.J_COMMAND
 
-## 一格多大，以及格与格之间的步距。
-##
-## **两个数必须一起改。** M5-2 把面板从 548 缩到 174 时只改了框，
-## 格子还是 74×26 —— 第三列从 614 画到 688，**出界 48 像素**，
-## 而它不报错（见 [PBLayout] 顶部）。`test_layout.gd` 现在钉着这一条。
-##
-## 算式：`4 + 2 × 60 + 58 = 182 ≤ 188 − 4`，
-## 纵向 `10 + 2 × 24 + 23 = 81`，底下留 13 给提示行。
+## 一格多大，以及格与格之间的步距。**两个数必须一起改**，只改一个的话格子会画出面板（`test_layout.gd` 钉着）。
+## 算式：`4 + 2 × 60 + 58 = 182 ≤ 188 − 4`，纵向 `10 + 2 × 24 + 23 = 81`，底下留 13 给提示行。
 const CELL := Vector2(58.0, 23.0)
 const CELL_STEP := Vector2(60.0, 24.0)
 
@@ -148,22 +108,15 @@ var _tech_page: bool = false
 ## 这一波**真会打**的人。派出去做任务的已经不在里面了（见 [member _away]）。
 var _deployed: Array[PBUnit] = []
 
-## 这一波去做任务的人。
-##
-## 单独收一份而不是从 `_deployed` 反推：这一格要显示「出任务中」，
-## 而那和「在仓库里」是两回事。
-##
-## **他们不占人口**（M5-9）：门槛因此是 [method PBRunState.field_slots]
-## 而不是 `open_slots`，两份加起来跟它比。这一侧和
-## [method PBCardMoves.set_on_field] 必须读同一个数 ——
-## 差一个的表现是「按钮说行、点下去没反应」，而它不报错。
+## 这一波去做任务的人（要显示「出任务中」，和「在仓库里」是两回事）。
+## **他们不占人口**：门槛是 [method PBRunState.field_slots]，和 [method PBCardMoves.set_on_field] 读同一个数 ——
+## 差一个的表现是「按钮说行、点下去没反应」。
 var _away: Array[PBUnit] = []
 
 ## 本波任务的等级。「派去任务」那一格要靠它算**要派几个人**。
 var _grade: int = 0
 
-## 现在是战斗中（M4-e）。**指令卡整块换一套** ——
-## 升级、装备、派任务全是准备阶段的事，打起来之后一条都不该点得到。
+## 现在是战斗中。**指令卡整块换一套** —— 升级、装备、派任务打起来之后一条都不该点得到。
 var _battle_mode: bool = false
 
 ## 战场上正在等玩家点什么（[enum PBFieldPicker.Aim]）。
@@ -175,18 +128,12 @@ var _aim_skill: int = -1
 ## 选中那个忍者现在点名打谁（敌人下标）。-1 = 没点名。
 var _target: int = -1
 
-## 他手上攒着的是第几格技能（[method PBBattleSim.order_of]，M7-h）。-1 = 没有。
-##
-## **暂停里下的令不当场生效**（见 [PBSkillOrders]），所以那一格必须写出
-## 「已下令」—— 否则玩家在暂停下点完，屏幕上和什么都没做一模一样。
+## 他手上攒着的是第几格技能（[method PBBattleSim.order_of]）。-1 = 没有。
+## 暂停里下的令不当场生效（[PBSkillOrders]），所以那一格必须写出「已下令」。
 var _queued: int = -1
 
-## 选中那个忍者每一格技能的名字、这一刻放不放得出、还差几秒（M7-e）。
-## 三条平行数组，下标就是 [method PBSkillRules.cast_at] 那一套（0 = 大招）。
-##
-## **传进来而不是自己算**：指令卡手上没有 [PBBattleSim]，而冷却和蓝
-## 只有那儿知道。自己照着 [PBSkillCast] 再算一遍就是第二把尺子 ——
-## 「按钮亮着点了没反应」正是这种分叉的标准表现。
+## 选中那个忍者每一格技能的名字、这一刻放不放得出、还差几秒。三条平行数组，下标同 [method PBSkillRules.cast_at]。
+## **传进来而不是自己算**：冷却和蓝只有 [PBBattleSim] 知道，自己再算一遍就是第二把尺子。
 var _skill_names: PackedStringArray = PackedStringArray()
 var _skill_ready: Array[bool] = []
 var _skill_wait: PackedInt32Array = PackedInt32Array()
@@ -276,17 +223,11 @@ func refresh(
 			_hint.text = "点谁，这里就换成谁能做的事。"
 
 
-## 切到战斗中那一套指令（M4-e / M7-e）。[param aim] 是战场正在等玩家点什么
-## （[enum PBFieldPicker.Aim]），[param aim_skill] 是那一档下正在放第几格，
-## [param target] 是选中那个忍者现在点名打谁（-1 = 没点名）。
+## 切到战斗中那一套指令。[param aim] 是战场正在等玩家点什么（[enum PBFieldPicker.Aim]），
+## [param aim_skill] 是那一档下正在放第几格，[param target] 是选中那个忍者点名打谁（-1 = 没点名）。
+## [param names] / [param ready] / [param wait] 是每一格技能的名字、放不放得出、还差几 tick。
 ##
-## [param names] / [param ready] / [param wait] 是**每一格技能**的名字、
-## 放不放得出、还差几 tick，三条平行数组，下标同 [method PBSkillRules.cast_at]。
-##
-## 全部状态一起传，不让指令卡自己去问：**它手上没有 [PBBattleSim]**，
-## 而「谁被点名了」「冷却好没好」只有那儿知道。让它自己去拿就要给它一条
-## 通往战斗实例的路，而那条路一开，界面离「直接改 sim」只剩一步
-## （§14：渲染层只读）。
+## **全部状态一起传**：指令卡手上没有 [PBBattleSim]，给它一条通往战斗实例的路，界面离「直接改 sim」就只剩一步。
 func set_battle(
 	battle: bool,
 	aim: int = PBFieldPicker.Aim.OFF,
@@ -314,27 +255,14 @@ func command_at(index: int) -> StringName:
 	return _bound[index]
 
 
-## 这一格现在亮着还是灰着。**「按钮亮 ⇔ 放得出」那条验收量的就是它**
-## （M7-e）—— 灰着不等于没绑，冷却中的技能格照样写着还差几秒。
+## 这一格现在亮着还是灰着（「按钮亮 ⇔ 放得出」那条验收量的就是它）。灰着不等于没绑。
 func enabled_at(index: int) -> bool:
 	if index < 0 or index >= _slots.size():
 		return false
 	return _slots[index].visible and not _slots[index].disabled
 
 
-## 现在一共摆着几个可点的指令。
-func command_count() -> int:
-	var count: int = 0
-	for id: StringName in _bound:
-		if id != &"":
-			count += 1
-	return count
-
-
-## 战斗中的那一套（M4-e）。**只有「打谁」这一件事**。
-##
-## 升级、装备、派任务、抽卡全是准备阶段的决策，打起来之后一条都不该点得到 ——
-## 留着它们的话玩家会在战斗中花钱，而那笔钱本该是上一个准备阶段的取舍。
+## 战斗中的那一套：**只有「打谁」这一件事**。花钱是上一个准备阶段的取舍，打起来之后不该点得到。
 func _fill_battle(selection: PBSelection) -> void:
 	_title.text = "战斗中"
 	var unit: PBUnit = selection.unit_of(_state)
@@ -352,8 +280,7 @@ func _fill_battle(selection: PBSelection) -> void:
 		PBSkin.Tone.PRIMARY if picking else PBSkin.Tone.PLAIN
 	)
 	_bind(1, CMD_CLEAR_TARGET, "自动选敌", _target >= 0)
-	# 角色自己那几个技能从第 2 格起（M7-h 起忍术不摆了，见 [constant CMD_ULTIMATE]）。
-	# **格子仍按 `cast_at` 的下标走**，和施放入口是同一套编号。
+	# 角色自己那几个技能从第 2 格起，**格子仍按 `cast_at` 的下标走**。
 	# 从 [constant FIRST_SKILL] 起而不是留一个空格：网格里的洞看起来像 bug。
 	for i: int in range(FIRST_SKILL, mini(_skill_names.size(), SKILL_COMMANDS.size())):
 		_bind_skill(2 + i - FIRST_SKILL, i)
@@ -361,17 +288,13 @@ func _fill_battle(selection: PBSelection) -> void:
 
 
 ## 第 [param index] 格技能画在第 [param slot] 格上。
-##
-## **冷却没好就是灰的**，而不是按下去没反应 —— 后者玩家分不清是
-## 「还没好」还是「我点歪了」（M5-9 的原话）。灰着的那一格照样写秒数，
-## 因为「还要多久」正是他这时候唯一想知道的事。
+## **冷却没好就是灰的**（而不是按下去没反应），灰着的那一格照样写秒数 —— 「还要多久」正是这时候想知道的事。
 func _bind_skill(slot: int, index: int) -> void:
 	var live: bool = _aim == PBFieldPicker.Aim.SKILL and _aim_skill == index
 	var title: String = _skill_names[index]
 	var wait: int = _skill_wait[index] if index < _skill_wait.size() else 0
 	var ready: bool = index < _skill_ready.size() and _skill_ready[index]
-	# 手上攒着这一格（M7-h）：**格子照样亮着，再按一次就是收回** ——
-	# 暂停里下的令还没生效，而「反悔」正是暂停操作的一半意义。
+	# 手上攒着这一格：**格子照样亮着，再按一次就是收回**（反悔是暂停操作的一半意义）。
 	if _queued == index:
 		_bind(slot, SKILL_COMMANDS[index], "已下令\n%s" % title, true, PBSkin.Tone.PRIMARY)
 		return
@@ -403,7 +326,7 @@ func _battle_hint(picking: bool, casting: bool) -> String:
 		# 「不会站着发呆」那半句删了 —— 它讲的是**没发生的事**，
 		# 而一行只有 22 个字（见 [constant HINT_BUDGET]）。
 		return "点名中。够不着或目标死了就自动接管。"
-	# 没配技能的忍者只会普攻（M7-h）。说出来，否则那一行空着看起来像没加载出来。
+	# 没配技能的忍者只会普攻，说出来，否则那一行空着看起来像没加载出来。
 	if _skill_names.size() <= FIRST_SKILL:
 		return "他没有忍术，普攻会自己找目标。"
 	return "按「攻击」再点敌人，可以指定他打谁。"
@@ -483,16 +406,11 @@ func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 			"派上场",
 			_deployed.size() + _away.size() < state.field_slots(cfg)
 		)
-	# **「装备」那一格 M5-5 删了**：装备栏（[PBEquipBay]）现在跟着选中常驻显示，
-	# 一个「打开一直开着的东西」的按钮只会让人以为自己漏了一步。
+	# 没有「装备」格：装备栏（[PBEquipBay]）跟着选中常驻显示，打开一直开着的东西的按钮只会让人以为漏了一步。
 	_fill_dispatch(unit, state, cfg)
 
 
-## 「派去任务」那一格（§06，M3.5-g）。
-##
-## **代价的大小完全取决于派的是谁** —— 派一个谁的档都不顶的板凳末尾是白捡的钱，
-## 派一个正撑着满档的成员要掉一整档。所以这一格必须存在：
-## 自动按末尾派的话，玩家只能接受或不接受一个系统替他算好的价格。
+## 「派去任务」那一格（§06）。代价大小完全取决于派的是谁，所以派谁必须是玩家能点的。
 func _fill_dispatch(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	var need: int = PBEconomyRules.quest_cost_units(_grade)
 	var chosen: int = state.dispatch_manual.size()

@@ -1,19 +1,13 @@
 extends SceneTree
-## 命令行：把一张头像表切成一人一张的卡面头像。M9-g。
+## 命令行：把一张头像表切成一人一张的卡面头像。
 ##
 ## ```powershell
 ## .\scripts\make_portraits.ps1
 ## .\scripts\make_portraits.ps1 -Sheet aires\headshots.png -Order aires\headshots.txt
 ## ```
 ##
-## ## 顺序表为什么是一个外部文件
-##
-## 切出来的第 k 格是谁，只有画图的人知道 —— 那是一份**排版**，不是一条规则。
-## 而且 §14 铁律 5 是「代码里不出现角色名」，[PBCharacterTable] 的测试
-## 会扫整个 `src/`（注释也算，实测拦下过）。所以那份名单只能住在
-## `aires/` 里的一个文本文件里：一行一个键，空行和 `#` 开头的行跳过。
-##
-## 重新出一版表、换一个排法，改的是那个文本文件，这里一行不动。
+## **顺序表是外部文件**（`aires/` 里一行一个键，空行和 `#` 开头的行跳过）：第 k 格是谁是排版不是规则，
+## 而且铁律 5 不许 `src/` 出现角色名（扫描连注释也算）。换一版表只改那个文本文件。
 
 const DEFAULT_SHEET := "res://aires/headshots.png"
 const DEFAULT_ORDER := "res://aires/headshots.txt"

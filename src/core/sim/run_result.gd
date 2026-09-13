@@ -31,17 +31,13 @@ var waves_in_target_duration: int = 0
 ## 终局的科技等级快照，用来看不同策略把钱花到哪去了。
 var final_tech_gold: int = 0
 var final_tech_pop: int = 0
-## 训练科技四条线的等级之和（M12-h3，取代 `final_tech_atk`）。
+## 训练科技四条线的等级之和。
 var final_training: int = 0
 var final_tech_def: int = 0
 var final_roster_size: int = 0
 
-## 结束时的羁绊倍率，与出战席的裸战力之和。M2-c 加的。
-##
-## 加这两列是因为 M2 的核心验收（羁绊贡献的技能阶梯）只看波次读不出**为什么**：
-## 会凑羁绊的玩家羁绊更高，但为了凑羁绊要带上战力较低的成员，出战席战力更低。
-## 阶梯是这两个量的乘积，只记波次的话就分不清是「羁绊涨得不够」
-## 还是「羁绊涨了但被战力损失吃掉了」—— 而这两种情况的修法完全相反。
+## 结束时的羁绊倍率，与出战席的裸战力之和。
+## 技能阶梯是这两个量的乘积，只记波次的话分不清「羁绊涨得不够」还是「涨了但被战力损失吃掉了」。
 var final_bond_mult: float = 0.0
 var final_deployed_power: float = 0.0
 
@@ -52,10 +48,7 @@ var final_equip_parts: int = 0
 
 var gold_spent: int = 0
 
-## 五条收入流各自赚了多少（§07）。键见 [constant PBEconomyRules.GOLD_SOURCES]。
-##
-## §07 的验收「纯战力开局在 20 波左右因缺钱停滞」实测跑到 96%，
-## 也就是不投经济几乎没有代价。这一列是诊断那件事的入口 ——
+## 各条收入流各自赚了多少（§07）。键见 [constant PBEconomyRules.GOLD_SOURCES]。
 ## 光看 [member gold_earned] 分不出「金币科技没用」和「它被别的流盖过」。
 var gold_by_source: Dictionary = {}
 

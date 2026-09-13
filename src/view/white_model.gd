@@ -1,64 +1,25 @@
 class_name PBWhiteModel
 extends RefCounted
-## 代码画出来的**白模帧**。M6-b。
+## 代码画出来的**白模帧**。
 ##
-## ## 它存在的理由是「这条链路今天就要是通的」
+## 让动画链路在没有素材时也是通的：脚底锚点、朝向翻转、攻击段压进攻击间隔，全是「差一点点也不报错」的东西。
+## 这里按 [PBActorSkin] 的同一套字段现造一份图，真素材进来时换掉的只是 `data/actors/*.tres`。
 ##
-## §14 说白模阶段不动 `assets/`，所以真素材一张都没有。而一套动画系统
-## 如果要等素材才跑得起来，它就得在**没有任何反馈**的情况下写完 ——
-## 脚底锚点、朝向翻转、攻击段压进攻击间隔，这三样全是「差一点点也不报错」
-## 的东西，光看代码看不出对不对。
-##
-## 所以这里按 [PBActorSkin] 的同一套字段现造一份图：真素材进来时
-## 换掉的只是 `data/actors/*.tres`，[PBAllyPool] 与 [PBEnemyPool] 一行不动。
-## **白模就是第一个「换皮」的样本**，铁律 5 因此从第一天起就被走过一遍。
-##
-## ## 敌我为什么长得不一样
-##
-## §02 的验收项是「去色后仍能仅凭剪影区分五系」，敌人的多边形剪影是
-## 唯一的载体（[constant PBEnemyPool.ELEMENT_SIDES]）。所以敌人的白模是
-## **一个会动的多边形**，不是小人 —— 换成小人的话那条验收当场作废。
-## 己方是方头方脑的人形：形状类别不同，去色之后照样敌我分得开
-## （[PBAllyPool] 类顶部那条）。
-##
-## 两份都只画纯白 + 底部一道暗边，颜色一律交给
-## [member CanvasItem.modulate]（[member PBActorSkin.tint_by_element]）——
-## 把属性色烤进图里的话，五系就要各存一份一模一样的图。
+## **敌我长得不一样**：敌人的白模是会动的多边形（§02 要求去色后凭剪影分五系，[constant PBEnemyPool.ELEMENT_SIDES]），
+## 己方是方头方脑的人形。两份都只画纯白 + 底部暗边，颜色交给 [member CanvasItem.modulate] ——
+## 把属性色烤进图里的话五系要各存一份。
 
-## 己方白模的画布与身高。画布 54 见方正是素材规格里的默认档，
-## 头顶留白由 [constant PBLayout.SPRITE_HEADROOM] 兜着（= 画布 + 2）。
+## 己方白模的画布（54 见方）与身高（41）。头顶留白由 [constant PBLayout.SPRITE_HEADROOM] 兜着。
 ##
-## ## 这个数和泳道间距是抢同一块地方
+## **身高和泳道间距抢同一块地方**：[member PBSimConfig.ally_lane] 把全部上场的人平铺在 155 像素的纵深里，
+## 身高超过道距的话后面的人会被前面挡掉一截 —— 这是几何，y 排序保证挡的关系是对的。真要不挡只能抬
+## `field_height` 或让 `ally_lane` 按列分摊，两条都改配平。
 ##
-## 战场的纵深在屏幕上只有 155 像素（`field_height × px_per_lane`），
-## 而 [member PBSimConfig.ally_lane] 把**全部上场的人**平铺在这一段里 ——
-## 站满 10 个人时每两条道只隔 **15.6 像素**。也就是说身高一旦超过它，
-## 后面那个人就会被前面那个挡掉一截，这是几何，不是可以调好的东西。
-##
-## 27 是**故意超出去的**（M6-c，玩家定的「正式资源是白模的 1.5 倍」）：
-## 挡住一截换来的是脸认得出来 —— 18 高的画布上画不出一个认得出的角色，
-## 而 y 排序保证挡的关系永远是对的（近的挡远的）。
-## 真要不挡，只有两条路，两条都改配平：把 [member PBSimConfig.field_height]
-## 抬上去，或者让 `ally_lane` 按列分摊而不是全队平铺。**归数值回归。**
-##
-## **M6-g 又抬了一次 1.5 倍**（27 → 41，画布 36 → 54，玩家试玩后定的）。
-## 这一次买的是「战场上看得清」——40 像素的人物在 640×360 里才和界面
-## 那些面板一个量级。代价照旧全在遮挡上：泳道间距没动，
-## 站 7 个人时每两条道仍然只隔 22 像素，而人比那高了快一倍。
-## **归数值回归的那两条路一条没变。**
-## **M6-m 真素材抬到了 60，白模没跟**（玩家定的「白模先不动」），
-## 所以现在白模比真素材矮一截 —— 那是已知的，不是 bug。
-##
-## 跟不了的原因是几何：这块画布是**方的**（手臂要摆得开），
-## 按同样比例放到 60 要 79 见方，而上限是
-## [constant PBLayout.SPRITE_HEADROOM] = 64 —— 装不进去。
-## 白模能到的最高是 64 × 41/54 ≈ 48。真要抬平只有改白模自己的比例
-## （少留一点头顶余量），而那就是「动白模」了。
+## **白模比真素材（60）矮一截，是已知的**：画布是方的，按比例放到 60 要 79 见方，装不进 64 的上限。
 const ALLY_CANVAS: int = 54
 const ALLY_HEIGHT: int = 41
 
-## 画白模用的那一套坐标是按 **36 见方**写死的（上面那一版画布）。
-## 改大小时不去逐个改那些字面量，而是整体按比例缩 —— 见 [method _s]。
+## 画白模的坐标是按 **36 见方**写的，改大小时整体按比例缩（[method _s]），不逐个改字面量。
 const ALLY_BASE_CANVAS: float = 36.0
 
 ## 敌人白模的画布与多边形半径。比己方小一圈 ——
@@ -71,22 +32,8 @@ const ENEMY_RADIUS: float = 11.25
 const SHADE_ROWS: int = 4
 const SHADE: float = 0.72
 
-## 描边色。**这不是装饰，是「几个人」这个读数的唯一载体。**
-##
-## ## 为什么必须有它
-##
-## [member PBSimConfig.ally_lane] 把全部上场的人平铺在 155 像素的纵深里，
-## 站 7 个人时每两条道只隔 22 像素 —— 而一个 41 高的小人比那高出快一倍。
-## 于是同一列里几个同系的人**在屏幕上叠成一根实心色条**：
-## 玩家看不出那是五个人，也点不中中间那个（实测截图，M6-c）。
-##
-## 描边把「一个人的边界」画了出来，叠起来也数得清。它是这个问题
-## **唯一不动 sim 的解** —— 另外两条（抬 `field_height`、让泳道按列分摊）
-## 都会改开战站位，也就是改配平。
-##
-## 白模尤其需要它：白模一系只有一个形状一个颜色，五个火系忍者长得一模一样，
-## 而真素材各画各的，本来就分得开。**规格里仍然要求真素材带描边** ——
-## 因为「五个不同角色挤在一起」和「一个角色」的边界一样需要被画出来。
+## 描边色。**「几个人」这个读数的唯一载体**：同一列几个同系的人在屏幕上会叠成一根实心色条，
+## 数不出几个人也点不中中间那个。描边是这个问题唯一不动 sim 的解。规格里真素材也要求带描边。
 const OUTLINE := Color(0.06, 0.06, 0.09, 1.0)
 
 ## 待机 / 跑动 / 攻击各自的播放帧率。攻击那一段的实际速度会被
@@ -99,9 +46,7 @@ const FPS_ATTACK: float = 12.0
 ## 画布上向外扩散，而 [AnimatedSprite2D] 一段一段共用同一个原点。
 const SHOT_CANVAS: int = 13
 
-## 飞行那一帧是几像素的方块。**3 就是 M4-b 起屏幕上那个方块**（`PBShotPool.SIZE`）——
-## 换成白模之后大小一个像素都不变，这样「接上了美术管线」和「子弹变样了」
-## 是两件分得开的事。
+## 飞行那一帧是几像素的方块（和白模子弹原来的大小一致，「接上美术管线」和「子弹变样了」分得开）。
 const SHOT_DOT: int = 3
 
 ## 命中那一圈火花扩散几帧，以及帧率。**短** —— 它是一次「刚才打中了」的回音，
@@ -138,10 +83,8 @@ static func ally() -> PBActorSkin:
 		&"attack",
 		FPS_ATTACK,
 		false,
-		# **六帧，伸得最远那一帧排在第 4 格**（M9-e）：出手落在
-		# [member PBSimConfig.attack_hit_frame]，前三帧是起手、后两帧是收招。
-		# 白模是代码画的，所以直接画到 6 帧 —— 不靠
-		# [method PBActorSkin.hold_last_to] 补，那条是给人手挑的素材兜底的。
+		# **六帧，伸得最远那一帧排在第 4 格**（出手落在 [member PBSimConfig.attack_hit_frame]），
+		# 前三帧起手、后两帧收招。白模直接画到 6 帧，不靠 [method PBActorSkin.hold_last_to] 补。
 		[
 			_ally_frame(1, -2, 2),
 			_ally_frame(1, -1, 3),
@@ -159,17 +102,8 @@ static func ally() -> PBActorSkin:
 
 
 ## 某一系、某一档敌人的白模。[param sides] 走 [constant PBEnemyPool.ELEMENT_SIDES]，
-## [param bulk] 走 [constant PBEnemyPool.RANK_BULK]（M9-c）。
-##
-## ## 为什么白模也要按档次分大小
-##
-## 30 种真素材要一张张接进来，而在那之前**屏幕上必须已经分得出档次** ——
-## 否则「这一波是精英波」这件事今天没有任何一处看得见，
-## 接素材时也就没有东西可以对照着验。
-##
-## 大小是这里唯一能表达档次的东西：形状那一维已经被属性占满了
-## （[constant PBEnemyPool.ELEMENT_SIDES]，§02 要求去色后仍能凭剪影分五系），
-## 再拿它区分档次就会和属性撞车。
+## [param bulk] 走 [constant PBEnemyPool.RANK_BULK]。
+## **按档次分大小**：形状那一维已经被属性占满了，大小是白模唯一能表达档次的东西。
 static func enemy(sides: int, bulk: float = 1.0) -> PBActorSkin:
 	# **画布尺寸进缓存键。** 只用 `sides` 的话，先取到的那一档会把后面
 	# 全部档次都变成它自己的大小 —— 而每一帧看起来都完全正常。
@@ -177,8 +111,7 @@ static func enemy(sides: int, bulk: float = 1.0) -> PBActorSkin:
 	if _enemies.has(key):
 		return _enemies[key]
 	var span: int = maxi(roundi(float(ENEMY_CANVAS) * bulk), ENEMY_CANVAS)
-	# 画布必须是偶数：脚坐在底边**中点**上，奇数宽的话中点落在半个像素上，
-	# 而人会永远偏半格（同 [method PBActorForge.fit_canvas] 最后那一步）。
+	# 画布必须是偶数：脚坐在底边**中点**上，奇数宽的话人永远偏半格（同 [method PBActorForge.fit_canvas]）。
 	span += span % 2
 	var radius: float = ENEMY_RADIUS * bulk
 	var frames := SpriteFrames.new()
@@ -206,7 +139,7 @@ static func enemy(sides: int, bulk: float = 1.0) -> PBActorSkin:
 		&"attack",
 		FPS_ATTACK,
 		false,
-		# **六帧，扑得最开那一帧排在第 4 格**（M9-e），同己方那一段。
+		# **六帧，扑得最开那一帧排在第 4 格**，同己方那一段。
 		[
 			_enemy_frame(key.x, span, radius, 1, 0.86),
 			_enemy_frame(key.x, span, radius, 1, 0.92),
@@ -216,12 +149,8 @@ static func enemy(sides: int, bulk: float = 1.0) -> PBActorSkin:
 			_enemy_frame(key.x, span, radius, 0, 1.0),
 		]
 	)
-	# **倒地那一段以前根本不存在**（M9-b 补的）：敌人一死节点当帧就藏了，
-	# 所以没有东西可播。现在死亡要演完才消失，缺这一段的表现是
-	# 「怪死了之后原地站着不动几帧再凭空消失」——
-	# [method PBActorSkin.anim_for] 会退回 `idle`，而那不报错。
-	#
-	# 三帧越压越扁、最后一帧不循环停住（[method PBActorPose.holds_last]）。
+	# **倒地段**：死亡要演完才消失，缺这一段的话 [method PBActorSkin.anim_for] 退回 `idle`，
+	# 怪死了原地站几帧再凭空消失。三帧越压越扁，最后一帧停住（[method PBActorPose.holds_last]）。
 	_add(
 		frames,
 		&"dead",
@@ -240,12 +169,8 @@ static func enemy(sides: int, bulk: float = 1.0) -> PBActorSkin:
 	return skin
 
 
-## 子弹的白模：飞行是一个小方块，命中是一圈扩散的火花。全局一份。M8-a。
-##
-## **不描边也不压暗**（[method _outline] / [method _shade]）：那两样是给
-## 「一个站在地上的人」用的 —— 描边买的是「同一列里有几个人」这个读数
-## （见 [constant OUTLINE]），而子弹不会挤成一列；压暗买的是体积感，
-## 而子弹不站在地上。给一个 3 像素的方块描边等于把它变成 5 像素的方块。
+## 子弹的白模：飞行是一个小方块，命中是一圈扩散的火花。全局一份。
+## **不描边也不压暗**：那两样是给站在地上的人用的，给 3 像素的方块描边等于把它变成 5 像素。
 static func shot() -> PBShotSkin:
 	if _shot != null:
 		return _shot

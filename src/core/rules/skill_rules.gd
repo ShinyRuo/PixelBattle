@@ -1,34 +1,16 @@
 class_name PBSkillRules
 extends RefCounted
-## 一发技能落地时结算什么（M7-b）。全部 static，无状态，零引擎依赖。
+## 一发技能落地时结算什么。全部 static，无状态，零引擎依赖。
 ##
-## 和 [PBTargetRules]（敌人该打哪个己方单位）、[PBMoveRules]（己方该往哪儿走）
-## 对称：**这一层答的是「这一发落在谁身上、他们身上发生了什么」。**
-## [PBBattleSim] 只留「什么时候调它」——排在哪个 tick、要不要放、
-## 冷却与蓝够不够，那些是战斗节奏的事，不是「落地结算」本身的事。
-##
-## ## 为什么从 `battle_sim.gd` 搬出来
-##
-## 直接的触发是那个文件贴着 gdlint 的 1000 行上限。那条上限
-## 「超了不是错，是该拆了的信号」，这次它指的地方也是对的：
-## 圈人、挂 buff、重置冷却这一整段和「什么时候能放」是两件独立的事，
-## 混在一起写会让 [PBBattleSim] 的 `step()` 越来越难读。
+## 和 [PBTargetRules] / [PBMoveRules] 对称：这一层答「这一发落在谁身上、
+## 他们身上发生了什么」。[PBBattleSim] 只管什么时候放、冷却与蓝够不够。
 
 
-## 一个单位的第 [param index] 个技能（M7-e）。**0 是大招，1.. 是他自己表里的。**
+## 一个单位的第 [param index] 个技能。**0 是大招，1.. 是他自己表里的。**
 ## 越界或者压根没有就返回 null。
 ##
-## ## 为什么要一个统一的下标
-##
-## [member PBAttacker.ultimate] 和 [member PBAttacker.skills] 是两个字段
-## （来源不同，见那里），但**指令卡、瞄准状态机、施放入口三处只该认一个数**。
-## 各自去判「这一格是大招还是技能表里的」就是同一句话写三遍，
-## 而漏改一处的表现是「第二个技能的按钮点了放出第一个」，不报错。
-##
-## ## 为什么在这里，不做成 [PBAttacker] 的方法
-##
-## 那个类已经贴着 gdlint 的 20 个公开方法上限。而这件事本来就是**规则**
-## 不是**状态** —— 「第 0 个是大招」是一条约定，和「一发落在谁身上」同层。
+## 指令卡、瞄准状态机、施放入口三处只认这一个下标 —— 各自判「这一格是大招还是
+## 技能表里的」的话，漏改一处的表现是「第二个技能的按钮放出第一个」。
 static func cast_at(unit: PBAttacker, index: int) -> PBSkillCast:
 	if unit == null or index < 0:
 		return null
@@ -57,20 +39,13 @@ static func can_cast(unit: PBAttacker, index: int, at_tick: int) -> bool:
 	return cast.is_ready(at_tick) and unit.can_pay(cast.skill.mp_cost)
 
 
-## 这份技能的数据合不合法。返回空串表示没问题，否则是给人看的原因（M7-c）。
+## 这份技能的数据合不合法。返回空串表示没问题，否则是给人看的原因。
 ##
-## 三条都是**静默生效**的错，所以必须在装表那一刻拦下来：
+## 拦的都是**静默生效**的错：
 ##
-## - **`ALLY` 却打敌人 / `ENEMY` 却打自己人** —— 点谁和打谁在这两档上
-##   不可能是两个方向，写反了不会报错，只会「点了一个队友然后他掉血」
-## - **非 `GROUND` 却配了施法延迟** —— 见下
-##
-## ## 为什么施法延迟只对 `GROUND` 有意义
-##
-## 延迟存在的**全部理由**是 §02 的预判窗口（见 [PBSkill] 顶部），
-## 而锁定单体的技能没有预判可言：目标跟着走，落点也跟着走。
-## 允许非 0 的话，「飞行途中目标死了怎么办」「跑出射程怎么办」
-## 两个问题要现在回答，而它们没有依据 —— 玩家已经拍了「单体技能不要飞行体」。
+## - **`ALLY` 却打敌人 / `ENEMY` 却打自己人** —— 表现是「点了一个队友然后他掉血」
+## - **非 `GROUND` 却配了施法延迟** —— 延迟存在的全部理由是 §02 的预判窗口，
+##   锁定单体的技能目标跟着走，没有预判可言
 static func validate(skill: PBSkill) -> String:
 	if skill == null:
 		return "技能是空的"
@@ -83,18 +58,12 @@ static func validate(skill: PBSkill) -> String:
 	return _check_shot(skill)
 
 
-## 子弹那几条（M8-b）。见 [member PBSkill.shot_cross_seconds]。
+## 子弹那几条。见 [member PBSkill.shot_cross_seconds]。静默生效的错：
 ##
-## ## 三条都是静默生效的错
-##
-## - **地面档配了飞行速度**：那一档的飞行时间是 [member PBSkill.delay_ticks]
-##   （预判窗口），再来一个就是两把尺子 —— 而两者不会打架，只会有一个生效
-## - **不挑目标的那一档配了飞行速度**：它没有目标可飞，那一发不知道往哪去
-## - **子弹技能配了位置操纵与全场效果**：那五个字段
-##   （[member PBSkill.gather] 那一批）是 §11 尾兽与 §09 功能档的词汇，
-##   全部挂在地面档的大招上。子弹这一发只结算「打中的那一个」
-##   （[method PBShotRules._hit_enemy]），配了**不会生效** ——
-##   而「配了不生效」比「配不了」难查得多
+## - **地面档配了飞行速度**：那一档的飞行时间是 [member PBSkill.delay_ticks]，两把尺子
+## - **不挑目标的那一档配了飞行速度**：没有目标可飞
+## - **子弹技能配了位置操纵与全场效果**（[member PBSkill.gather] 那一批）：
+##   子弹只结算打中的那一个（[method PBShotRules._hit_enemy]），配了不会生效
 static func _check_shot(skill: PBSkill) -> String:
 	if skill.shot_cross_seconds <= 0.0:
 		return ""
@@ -107,18 +76,16 @@ static func _check_shot(skill: PBSkill) -> String:
 	return ""
 
 
-## 一发**子弹**打在敌人身上（M8-b）。返回它有没有被这一下打死。
-##
-## 伤害由 [method PBShotRules._hit_enemy] 先结算（那本账在它手上），
-## 这里只挂 [member PBSkill.on_hit] —— 拆成两半是因为「打死了几个」
-## 必须只有一个来源。
+## 一发**子弹**打在敌人身上。返回它有没有被这一下打死。
+## 伤害由 [method PBShotRules._hit_enemy] 先结算，这里只挂 [member PBSkill.on_hit] ——
+## 「打死了几个」只有一个来源。
 static func apply_hit(
 	enemy: PBEnemy, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
 ) -> bool:
 	return apply_all_enemy(enemy, skill.on_hit, level, cfg, tick)
 
 
-## 一发**子弹**落在己方单位身上（M8-b，治疗那一类）。
+## 一发**子弹**落在己方单位身上（治疗那一类）。
 static func apply_hit_ally(
 	unit: PBAttacker, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
 ) -> void:
@@ -152,8 +119,7 @@ static func land(
 		if enemy.take_damage(skill.damage, tick):
 			kills += 1
 			continue
-		# **命中之后才挂 [member PBSkill.on_hit]**（M7-d）：给一具尸体
-		# 挂减速没有意义，而且它会让「这一发定住了几个」虚高。
+		# 命中之后才挂 [member PBSkill.on_hit]：给尸体挂减速会让「定住了几个」虚高。
 		if apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
 			kills += 1
 			continue
@@ -171,20 +137,11 @@ static func land(
 	return kills
 
 
-## 落在一个**锁定的己方单位**身上（[constant PBSkill.Target.ALLY]，M7-c）。
+## 落在一个**锁定的己方单位**身上（[constant PBSkill.Target.ALLY]）。
 ##
-## ## 目标没了就空放，不崩也不改打别人
-##
-## 下达和落地之间隔着一个 tick（下达发生在 [method PBBattleSim._resolve_ultimates]
-## 那一趟的后半，而落地的检查在**下一趟**的开头），那一 tick 里目标可能
-## 被敌人打死。这时候正确的行为是**什么都不做**：
-##
-## - 改打别人 → 玩家点的那个人和实际受益的人不是同一个，而他不会知道
-## - 硬治一具尸体 → [method PBAttacker.heal] 自己拦着（死人回不了血），
-##   但那是它的兜底，不是这里可以不判的理由
-##
-## 「一发打空」和 [PBProjectile] 那条「目标死了子弹就消失，不改打别人」
-## 是同一条规矩。
+## **目标没了就空放，不改打别人**：下达和落地之间隔着一个 tick，目标可能已经死了。
+## 改打别人的话，玩家点的人和实际受益的人不是同一个，而他不会知道。
+## 同 [PBProjectile] 那条「目标死了子弹就消失」。
 static func land_on_ally(
 	cast: PBSkillCast, attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int
 ) -> void:
@@ -196,15 +153,8 @@ static func land_on_ally(
 	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick)
 
 
-## 落在一个**锁定的敌人**身上（[constant PBSkill.Target.ENEMY]，M8-b）。
-## 返回这一下打死了几个（0 或 1）。
-##
-## 和 [method land_on_ally] 对称，连「目标没了就空放」那条也一样：
-## 下达和落地之间隔着一个 tick，那一 tick 里他可能已经死了 ——
-## 这时改打别人的话，玩家点的那个和实际挨打的那个不是同一个，而他不会知道。
-##
-## **这一档 M7-c 只做了合法形状，没有入口**；M8-b 接上操作层之后
-## 它才真的落得到（火球术那一类）。
+## 落在一个**锁定的敌人**身上（[constant PBSkill.Target.ENEMY]）。返回打死了几个（0 或 1）。
+## 和 [method land_on_ally] 对称，目标没了就空放。
 static func land_on_enemy(
 	cast: PBSkillCast, enemies: Array[PBEnemy], cfg: PBSimConfig, tick: int
 ) -> int:
@@ -219,11 +169,8 @@ static func land_on_enemy(
 
 
 ## 打全场：伤害发给**每一个已出场且还活着的敌人**，不看位置
-## （[constant PBSkill.Target.NONE] + [constant PBSkill.Party.ENEMIES]，M7-c）。
-## 返回打死了几个。
-##
-## 和 [method land] 的区别只有一条：那一个按半径圈人，这一个不圈 ——
-## 所以 [member PBSkill.max_targets] 在这里仍然管用（0 = 不限）。
+## （[constant PBSkill.Target.NONE] + [constant PBSkill.Party.ENEMIES]）。返回打死了几个。
+## 和 [method land] 只差「不按半径圈人」，[member PBSkill.max_targets] 仍然管用（0 = 不限）。
 static func land_on_field(
 	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, cfg: PBSimConfig, tick: int
 ) -> int:
@@ -247,7 +194,7 @@ static func land_on_field(
 	return kills
 
 
-## 下达那一刻挂给施法者自己的效果（[member PBSkill.on_self]，M7-c）。
+## 下达那一刻挂给施法者自己的效果（[member PBSkill.on_self]）。
 static func apply_on_self(
 	attacker: PBAttacker, cast: PBSkillCast, cfg: PBSimConfig, tick: int
 ) -> void:
@@ -282,13 +229,10 @@ static func apply_one(
 	unit.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
 
 
-## 把一组效果挂到一个敌人身上。返回这一下有没有把它打死。
-##
-## **M12-c2 转成公开的**：角色自带的被动也要挂效果
-## （[method PBStrikeRules.land] 里那一句），而它不经过技能。
-## 另写一份的话，「技能挂的减速」和「被动挂的减速」迟早在
-## 叠加方式或者「死了还挂不挂」上分叉，而分叉的那一侧静默生效。
 ## 把一串效果挂到一个**敌人**身上。返回它有没有被这一串里的瞬间伤害打死。
+##
+## 技能与角色被动（[method PBStrikeRules.land]）共用这一处 —— 各写一份的话，
+## 两者迟早在叠加方式或「死了还挂不挂」上分叉。
 static func apply_all_enemy(
 	enemy: PBEnemy, buffs: Array[PBBuff], level: int, cfg: PBSimConfig, tick: int
 ) -> bool:
@@ -298,17 +242,10 @@ static func apply_all_enemy(
 	return false
 
 
-## 把**一份**效果挂到一个敌人身上（M7-d）。返回这一下有没有把它打死。
+## 把**一份**效果挂到一个敌人身上。返回这一下有没有把它打死。
 ##
-## ## 敌方的词汇表不是己方那张照搬
-##
-## 己方那一档（[method apply_one]）的瞬间效果是回血回蓝，
-## 敌方这一档是[b]掉血[/b]（[constant PBBuffRules.HARM]）——
-## 而掉血必须走 [method PBEnemy.take_damage]，因为「打死了几个」这本账
-## 只有它数得对（易伤也在它里面乘）。所以两档的瞬间分支不可能共用一份实现。
-##
-## 持续那两档倒是完全一样（往袋子里放一份），可 [PBBuffBag] 收的是裸值、
-## 两边的袋子是同一个类 —— 共用的那一半已经共用了。
+## 瞬间分支和己方（[method apply_one]）不能共用：己方是回血回蓝，敌方是掉血，
+## 而掉血必须走 [method PBEnemy.take_damage]（杀敌数和易伤都在它里面）。
 static func apply_one_enemy(
 	enemy: PBEnemy, buff: PBBuff, mods: Dictionary, cfg: PBSimConfig, tick: int
 ) -> bool:
@@ -321,12 +258,8 @@ static func apply_one_enemy(
 	return false
 
 
-## 落地时给全队挂一份短时增伤（§11 二尾、§09 定身档的控制期增伤）。
+## 落地时给全队挂一份短时增伤（给每个人各挂一份 [PBBuff]）。
 ## 没配这一项（`buff_ticks <= 0` 或倍率不大于 1）什么都不做。
-##
-## M7-a 起这是「给每个人都挂一份 [PBBuff]」，不再是场上的一份标量 ——
-## 见 [method PBBuffRules.team_damage] 顶上那句「全队增伤于是变成
-## 给每个人都挂一份的特例」。
 static func apply_team_buff(skill: PBSkill, attackers: Array[PBAttacker], tick: int) -> void:
 	if skill.buff_ticks <= 0 or skill.team_damage_scale <= 1.0:
 		return
@@ -349,9 +282,7 @@ static func reset_other_cooldowns(
 	if not skill.reset_cooldowns:
 		return
 	for attacker: PBAttacker in attackers:
-		# **每一格都清，不只是大招那一格**（M7-e）。只清大招的话，
-		# 这一条的强度会在角色配上技能的那一天悄悄缩水一半 ——
-		# 它的价值本来就与队伍里技能的**总量**成正比（见上）。
+		# **每一格都清，不只是大招那一格**：这一条的价值与队伍里技能的总量成正比。
 		for i: int in cast_count(attacker):
 			var other := cast_at(attacker, i)
 			if other != null and other != caster and not other.is_pending():

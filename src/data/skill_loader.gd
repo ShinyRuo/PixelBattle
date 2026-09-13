@@ -1,31 +1,11 @@
 class_name PBSkillLoader
 extends RefCounted
-## 把 `data/skills/*.tres` 装成一张 [PBSkillTable]（M7-g）。
+## 把 `data/skills/*.tres` 装成一张 [PBSkillTable]。与 [PBCharacterLoader] 同构。
 ##
-## 和 [PBCharacterLoader] / [PBBondLoader] 同构，两条理由也一样：
+## **顺带校验每一份 buff**，没有单独的 buff 加载器：[member PBSkill.on_hit] / [member PBSkill.on_self] 存直接引用，
+## buff 跟着技能一起读进来。校验必须在这一刻做 —— [method PBBuffRules.validate] 拦的错全部静默生效。
 ##
-## - `ResourceLoader` 被 core 纯度检查明令挡住（§14）。core 只认
-##   [PBSkillTable] 这个类型，不知道技能数据从哪来。
-## - 报错只能在这一层做 —— 只有这里手上有 `.tres` 的路径，
-##   能指出是**哪一份数据**写错了。
-##
-## ## 它顺带校验每一份 buff，而且没有单独的 buff 加载器
-##
-## [member PBSkill.on_hit] / [member PBSkill.on_self] 存的是**直接引用**
-## （`ext_resource` 指向 `data/buffs/*.tres`）—— 那就是 Godot 原生的外键，
-## 再套一层 id 查表等于自己发明一遍资源系统。所以 buff 是跟着技能
-## 一起被读进来的，没有第二个目录要扫。
-##
-## 但**校验必须在这一刻做**：[method PBBuffRules.validate] 拦的两条
-## （拼错的键、只写成长不写基数）**全部静默生效** ——
-## 数据、界面、日志都正常，只有数字不对。装表那一刻不拦，
-## 就只剩「这个技能好像没用」这一个现象可查。
-##
-## ## 目录不存在**不是错**
-##
-## 和 [PBActorLibrary] 同一条：没有 `data/skills/` 时正确的行为是
-## 「一个技能都没有」，而那正是 M7-g 之前的每一天。
-## 角色表打不开要 `push_error`（那一局根本没法玩），技能表打不开不用。
+## **目录不存在不是错**：没有 `data/skills/` 就是「一个技能都没有」。
 
 const DIR := "res://data/skills"
 
@@ -45,8 +25,7 @@ static func install(cfg: PBSimConfig) -> PBSimConfig:
 	return cfg
 
 
-## 从指定目录装一张表。坏数据会报错并跳过那一份 —— **跳过而不是整表作废**：
-## 一份写坏的技能不该让另外几个也放不出来。
+## 从指定目录装一张表。坏数据报错并跳过那一份 —— **不整表作废**，一份写坏的技能不该让别的也放不出来。
 static func load_from(dir_path: String) -> PBSkillTable:
 	var out := PBSkillTable.new()
 	var dir := DirAccess.open(dir_path)
@@ -72,26 +51,19 @@ static func load_from(dir_path: String) -> PBSkillTable:
 	return out
 
 
-## 这份技能连同它挂的每一份 buff 合不合法。空串 = 没问题。
-##
-## 两层分开报：技能自己的形状（点谁 / 打谁 / 施法延迟）由
-## [method PBSkillRules.validate] 管，效果的键与成长由
-## [method PBBuffRules.validate] 管。合成一句话的话，
-## 报错指不出是技能写错了还是它挂的那份 buff 写错了。
-## 另外两条只对 `.tres` 成立，所以拦在这一层而不是
-## [method PBSkillRules.validate] 里 —— 大招是代码现造的，
-## 它**必须**直接写 `damage`（那一份没有 `.tres`）。
-## 放出去屏幕上真的什么都不会发生吗。
-##
-## **召唤是第三种「会发生的事」**（M12-c3）。不把它算进来的话，
-## 一个纯召唤技能（多重影分身：不打伤害、不挂效果）会被这条拦下来 ——
-## 而它守的规矩从来不是「必须有伤害」，是「放出去要有事发生」。
+## 放出去屏幕上真的什么都不会发生吗。伤害、效果、**召唤**都算「有事发生」——
+## 这条守的是「放出去要有事发生」，不是「必须有伤害」。
 static func _does_nothing(skill: PBSkill) -> bool:
 	if skill.power_mult > 0.0 or skill.summon_count > 0:
 		return false
 	return skill.on_hit.is_empty() and skill.on_self.is_empty()
 
 
+## 这份技能连同它挂的每一份 buff 合不合法。空串 = 没问题。
+##
+## 两层分开报：技能的形状由 [method PBSkillRules.validate] 管，效果的键与成长由 [method PBBuffRules.validate] 管 ——
+## 合成一句话的话指不出是技能写错了还是 buff 写错了。只对 `.tres` 成立的几条拦在这一层
+## （大招是代码现造的，必须直接写 `damage`）。
 static func check(skill: PBSkill) -> String:
 	var why: String = PBSkillRules.validate(skill)
 	if why != "":

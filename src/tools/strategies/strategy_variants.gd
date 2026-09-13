@@ -28,14 +28,8 @@ class NoRotation:
 		return pick_by_raw_power(state, cfg, open_slots(state, cfg))
 
 
-## 纯物理：只上物理位，恒定吃 `MULT_PHYSICAL`，永不吃克制也永不被克。
-##
-## §03 的验收标准：**全物理阵容的极限波次 < 五系均衡阵容的 70%。**
-## 这个流派就是那条验收线的度量工具。
-##
-## 注意它天然还吃另一重亏：抽卡属性是六选一等概率，物理只占 1/6，
-## 所以它可用的卡池本来就小。这两重劣势在 M-1 里是混在一起的，
-## 要拆开看就对比 `no_rotation`（卡池完整但不换人）。
+## 纯物理：只上物理位。§03 的验收线「全物理阵容的极限波次 < 五系均衡阵容的 70%」的度量工具。
+## 它还天然吃另一重亏（物理卡池小），要拆开看就对比 `no_rotation`（卡池完整但不换人）。
 class PurePhysical:
 	extends PBStratBalanced
 
@@ -46,13 +40,8 @@ class PurePhysical:
 	func deploy(state: PBRunState, _wave: PBWave, cfg: PBSimConfig) -> Array[PBUnit]:
 		return pick_by_element(state, PBElement.Type.PHYSICAL, cfg, open_slots(state, cfg))
 
-	## 纯物理流当然会把物理卡带上场。
-	##
-	## M2-c 之后 `pick_by_element` 是在**在场名单**里筛的，而默认的在场名单
-	## 按裸战力选 —— 那样这个流派会因为「带错人」而变弱，
-	## 而「带错人」不是它要度量的东西（它度量的是 §03 的物理保底补丁值多少）。
-	## [param _wave_element] 用不上：这个流派**永远**先带物理，
-	## 「换克制系」正是它要放弃的那个变量。
+	## 纯物理流当然会把物理卡带上场 —— 按默认的裸战力挑在场名单会让它「带错人」，而那不是它要度量的东西。
+	## [param _wave_element] 用不上：「换克制系」正是它要放弃的变量。
 	func bring_to_field(
 		state: PBRunState, cfg: PBSimConfig, _wave_element: int = -1
 	) -> Array[PBUnit]:
@@ -95,18 +84,10 @@ class DispatchAlways:
 		dispatch_policy = Dispatch.ALWAYS
 
 
-## 和 [PBStratRational] **只差一个变量：不会凑羁绊。** M2-c 的度量工具。
+## 和 [PBStratRational] **只差一个变量：不会凑羁绊**（[member PBStrategy.field_policy]）。
 ##
-## §01 要求三档玩家拉开 15–25 / 40–60 / 100+ 波，而 M1 实测整条技能阶梯
-## 只有 1.30×（新手代理 33.9 波 → `rational` 44.2 波）。根因是加法杠杆
-## 在指数难度曲线上只换得到对数级的波次差 —— 与 §07 的经济张力同一条。
-##
-## 羁绊是本案第一个**乘法级**杠杆，但它只有在「带谁上场」是个真决策时
-## 才提供杠杆。所以要量它，就得有一个除此之外一模一样的对照组。
-##
-## `rational` 与本流派的比值就是**羁绊贡献的技能阶梯**，
-## M2 的验收要求它到 2× 以上。两者的花钱逻辑、派遣逻辑、换人逻辑
-## 全部相同，唯一的差别是 [member PBStrategy.field_policy]。
+## 羁绊是乘法级杠杆，只有「带谁上场」是真决策时才提供杠杆 —— 要量它就得有一个除此之外一模一样的对照组。
+## `rational` 与本流派的比值就是**羁绊贡献的技能阶梯**（§09 验收）。
 class BondBlind:
 	extends PBStratRational
 

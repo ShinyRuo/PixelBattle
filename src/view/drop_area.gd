@@ -1,30 +1,12 @@
 class_name PBDropArea
 extends Control
-## 一块**能接住拖过来的卡**的矩形。§02 的拖放三区，M5-4。
+## 一块**能接住拖过来的卡**的矩形（§02 的拖放三区）。
 ##
-## ## 为什么需要它
+## 引擎的拖放协议只认 [Control]，而战场是一堆 [Node2D] 对象池、仓库的空位是藏起来的格子（收不到拖放）——
+## 一块透明矩形盖在那个区上面，只回答「拖到我这儿了」，具体做什么由 [PBBattleView] 决定。
 ##
-## 引擎的拖放协议（`_get_drag_data` / `_can_drop_data` / `_drop_data`）
-## 只认 [Control]。而三个区里有两个不是：
-##
-## - **战场**是一堆 [Node2D] 对象池，忍者是画出来的方块，不是节点树上的控件
-## - **仓库**里的空位是**藏起来的**格子，藏起来的控件收不到拖放 ——
-##   于是「往空仓库里拖一个人」这条最自然的操作会没有反应
-##
-## 一块透明的矩形把这两件事一起解决：它盖在那个区上面，
-## 负责回答「拖到我这儿了」，具体要做什么由 [PBBattleView] 决定。
-##
-## ## 为什么坐标发的是屏幕坐标
-##
-## 战场那块要把落点换成战场坐标（[method PBLayout.to_field]），
-## 另外两块根本不在乎落在哪。**换算放在收件人那边做**，
-## 这一层只报「在屏幕的这个点松手了」—— 它不知道战场有多大，也不该知道。
-##
-## ## `MOUSE_FILTER_PASS`
-##
-## 战场那块盖住了整个战斗区域，而战斗中的点选（M4-e）走的是
-## [method PBBattleView._unhandled_input]。`STOP` 会把那些点击全吃掉，
-## 表现是「打起来之后点谁都没反应」。`PASS` 收得到拖放，又不挡后面的路。
+## **发屏幕坐标**：换算成战场坐标（[method PBLayout.to_field]）是收件人的事。
+## **`MOUSE_FILTER_PASS`**：`STOP` 会把战斗中的点选全吃掉，表现是「打起来之后点谁都没反应」。
 
 ## 玩家按住本区里的某个单位开始拖。**只有给了 [member unit_at] 的区才发** ——
 ## 格子（[PBUnitTile]）自己会拖，不需要这一层代劳。
@@ -36,11 +18,8 @@ signal hovered(from_zone: StringName, unit_id: StringName, at: Vector2)
 ## 在本区松手了。[param at] 是**屏幕坐标**。
 signal card_dropped(from_zone: StringName, unit_id: StringName, at: Vector2)
 
-## 松手的是一件**装备**（M5-5）。
-##
-## 和卡分成两条信号，不是一条带类型标记的：同一块面板上两种东西
-## 要做的事完全不同（挂装备 vs 换人），合成一条的话每个收件人
-## 第一行都得先分流，而漏掉那一行不报错 —— 只表现为「拖过去没反应」。
+## 松手的是一件**装备**。和卡分两条信号：挂装备和换人是完全不同的事，合成一条的话每个收件人都得先分流，
+## 漏掉那一行的表现只是「拖过去没反应」。
 signal item_dropped(from_zone: StringName, item_id: StringName)
 
 ## 本区的名字，会进拖放载荷。见 [PBUnitTile] 那三个 `ZONE_` 常量。
@@ -81,8 +60,7 @@ func _can_drop_data(at: Vector2, data: Variant) -> bool:
 	var card := PBUnitTile.card_of(data)
 	if card.is_empty():
 		return false
-	# **每帧发一次**，不是松手才发：拖动过程中战场上那个方块要跟着鼠标走，
-	# 否则玩家会以为没拖起来（M4-f 那一版的原话）。
+	# **每帧发一次**，不是松手才发：拖动过程中战场上那个方块要跟着鼠标走。
 	hovered.emit(StringName(card["zone"]), StringName(card["unit"]), at + position)
 	return true
 

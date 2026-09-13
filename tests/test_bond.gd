@@ -53,9 +53,13 @@ func test_the_synthetic_table_reproduces_the_stand_in_curve() -> void:
 		assert_eq(state.roster.size(), i + 1, "第 %d 张应该是新卡，不是重复卡" % i)
 		for dispatch: int in 5:
 			state.dispatched = dispatch
+			var counted: int = mini(
+				maxi(mini(state.roster.size(), state.open_slots(_cfg)) - dispatch, 0),
+				_cfg.bond_unit_cap
+			)
 			assert_almost_eq(
 				state.bond_mult(_cfg),
-				state.bond_mult_for(state.roster.size(), _cfg),
+				1.0 + _cfg.bond_power_per_unit * float(counted),
 				0.000001,
 				"查表结算与旧公式不一致：%d 张卡、派 %d 人" % [state.roster.size(), dispatch]
 			)
@@ -136,7 +140,6 @@ func test_tier_and_distance_are_both_readable() -> void:
 
 	assert_eq(bond.tier_at(0), 0, "没人到场是 0 档")
 	assert_eq(bond.tier_at(3), 2, "3 个人是第 2 档")
-	assert_eq(PBBondRules.to_next_tier(bond, members), 1, "2 个人时离第 2 档差 1 人")
 	assert_eq(PBBondRules.active_tiers(members, _cfg.bonds).size(), 1, "合成表只有一组羁绊")
 
 

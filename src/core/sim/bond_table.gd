@@ -1,17 +1,11 @@
 class_name PBBondTable
 extends RefCounted
-## 全部羁绊的查表。M2-b。与 [PBCharacterTable] 同构，理由也一样。
+## 全部羁绊的查表。与 [PBCharacterTable] 同构。
 ##
-## ## 两种表
+## - [method synthetic] 造的**合成表**：数值上精确复现「每人 +6%、封顶 12 人」那条替身曲线。
+## - `data/bonds/*.tres` 装载出来的**真羁绊表**（加载在 core 外面）。
 ##
-## - [method synthetic] 造的**合成表**：一组「所有人都算成员」的羁绊，
-##   数值上精确复现 M-1 那条「每人 +6%、封顶 12 人」的替身曲线。
-##   **它存在的唯一理由是让结构层的引入可以对拍。**
-## - `data/bonds/*.tres` 装载出来的**真羁绊表**（M2-b2）。加载发生在 core 外面。
-##
-## ## 表是只读的
-##
-## 造完就不该再改 —— [method PBSimConfig.clone] 只复制引用而不深拷贝。
+## 表是只读的：[method PBSimConfig.clone] 只复制引用而不深拷贝。
 
 ## 合成表那组羁绊的 id。前缀 `syn_` 和合成角色表一致，一眼看得出不是内容。
 const SYNTHETIC_ID: StringName = &"syn_headcount"
@@ -20,11 +14,8 @@ var _all: Array[PBBond] = []
 var _by_id: Dictionary = {}
 
 
-## 造一张合成表：一组匹配所有人的羁绊，第 k 档要 k 个人、给 `per_unit × k` 加成，
-## 一共 [param cap] 档。
-##
-## 这样 N 个人到场时激活第 `min(N, cap)` 档，加成 `per_unit × min(N, cap)` ——
-## **和 M-1 的 `bond_power_per_unit × min(在场 − 派遣, bond_unit_cap)` 逐位相同。**
+## 造一张合成表：一组匹配所有人的羁绊，第 k 档要 k 个人、给 `per_unit × k` 加成，共 [param cap] 档。
+## N 个人到场时加成是 `per_unit × min(N, cap)`。
 static func synthetic(per_unit: float, cap: int) -> PBBondTable:
 	var bond := PBBond.new()
 	bond.id = SYNTHETIC_ID
@@ -89,10 +80,7 @@ func _tiers_are_sane(bond: PBBond) -> bool:
 	return true
 
 
-## 功能档那两条数组说得通吗（§09，M3-f）。
-##
-## 两条数组都允许**比档位少**（含完全空着）—— 纯数值档的羁绊不用为了
-## 通过检查去填一排 `&""`，属性型兜底那六组正是这种。
+## 功能档那两条数组说得通吗（§09）。两条都允许**比档位少**（含完全空着）。
 func _functions_are_sane(bond: PBBond) -> bool:
 	for i: int in bond.tier_function_keys.size():
 		var key: StringName = bond.tier_function_keys[i]

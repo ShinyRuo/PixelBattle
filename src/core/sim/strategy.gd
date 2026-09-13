@@ -1,22 +1,12 @@
 class_name PBStrategy
 extends RefCounted
-## 玩家决策的接口。M-1 用写死的脚本代替真人，跑出不同玩法流派的极限波次。
+## 玩家决策的接口。脚本玩家实现它，跑出不同玩法流派的极限波次。
 ##
-## ## 这是一个「端口」，不是游戏逻辑
+## 这是一个「端口」：[PBRunSim] 每波向它要三个答案 —— **钱怎么花、谁上场、接不接任务**。
+## 接口在 `src/core/`，具体流派在 `src/tools/strategies/`，**方向不能反**。
 ##
-## 真实游戏里这些决策由玩家在准备阶段做出。[PBRunSim] 每波会向本接口
-## 要三个答案：**钱怎么花、谁上场、接不接任务**。
-##
-## 接口定义在 `src/core/`，具体流派实现在 `src/tools/strategies/`。
-## 方向不能反 —— core 引用 tools 就等于把模拟脚手架焊进了游戏逻辑，
-## M0 接真 UI 时会拆不掉。
-##
-## ## 为什么 deploy 默认按克制排序
-##
-## §03 的 2.0 倍克制加成，**只有玩家每波真的换上克制系单位才吃得到**。
-## 全员固定上场的五系阵容平均倍率只有 1.10，和纯物理的 1.05 几乎没差别。
-## 所以「按有效战力排序取前 N」就是这个模型下的最优打法，作为基类默认值；
-## 想测「不换人会怎样」的流派去覆盖它（见 tools/strategies 里的 no_rotation）。
+## `deploy` 默认按有效战力（含克制）取前 N：§03 的克制加成只有每波真的换上克制系才吃得到，
+## 这是模型下的最优打法。想测「不换人会怎样」的流派去覆盖它。
 
 ## 派遣策略。§06 的「这一波我要羁绊，还是要钱」。
 enum Dispatch {
@@ -25,12 +15,7 @@ enum Dispatch {
 	SMART,  ## BOSS 波前一波收手，其余照接
 }
 
-## 带谁上场。M2-c 之后这是**技能阶梯的主要来源**。
-##
-## §01 要求三档玩家拉开 15–25 / 40–60 / 100+ 波，而 M1 实测整条技能阶梯
-## 只有 1.30× —— 根因是加法杠杆在指数曲线上换不到波次差。
-## 羁绊是第一个乘法级杠杆，但它只有在「带谁」是个真决策时才提供杠杆：
-## M2-b 之前在场名单按仓库顺序取，会玩的和不会玩的拿到的羁绊一样多。
+## 带谁上场。**技能阶梯的主要来源**：羁绊是乘法级杠杆，只有「带谁」是个真决策时才提供杠杆。
 enum Field {
 	## 只按裸战力带人。**不会凑羁绊的玩家** —— 羁绊全靠撞上。
 	RAW_POWER,
@@ -66,16 +51,9 @@ var beast_level_target: int = 0
 
 ## 默认不会凑羁绊 —— 大多数流派是「某种打法」的对照组，不是「会玩的玩家」。
 ##
-## ## 界面上没有入口，这是有意的（M6-h）
-##
-## 它原来挂在 `B` 键上（M2-d 加的），理由是「不加的话羁绊那几行是不可操作的
-## 信息」。**删掉是因为它按一下就换掉半支队伍** —— 玩家看到的是
-## 「我什么都没干，场上的人自己变了」，而屏幕上没有任何地方说明发生了什么。
-## 凑羁绊现在有一条更直白的路：**看着信息栏里的羁绊账，自己把人拖上去。**
-##
-## **字段本身留着，它是批量扫描的仪器**：`bond_blind` 和 `rational`
-## 只差这一个字段（会不会凑羁绊），两者的比值就是羁绊贡献的技能阶梯
-## （§09 的验收项，M2 量到 1.27×）。删了这个字段等于把那条验收删了。
+## **界面上没有入口，这是有意的**：一键换半支队伍而屏幕上什么都不解释。
+## **字段本身是批量扫描的仪器**：`bond_blind` 和 `rational` 只差这一个字段，
+## 两者的比值就是羁绊贡献的技能阶梯（§09 验收），删了等于把验收删了。
 var field_policy: Field = Field.RAW_POWER
 
 
@@ -134,9 +112,8 @@ func deploy(state: PBRunState, wave: PBWave, cfg: PBSimConfig) -> Array[PBUnit]:
 ## 上一波钦定的六人名单就装不下了。截掉是唯一不会静默出错的做法。
 func lineup_units(state: PBRunState, cfg: PBSimConfig) -> Array[PBUnit]:
 	var out: Array[PBUnit] = []
-	# 上限是 [method PBRunState.field_slots]：**出任务的那几个不占人口**（M5-9）。
-	# 用 `open_slots` 的话，派两个人出去之后玩家钦定的六人名单会被截掉两个 ——
-	# 而被截掉的不一定是出任务的那两个。
+	# 上限是 [method PBRunState.field_slots]（出任务的人不占人口）。用 `open_slots` 的话，
+	# 派两个人出去之后钦定名单会被截掉两个，而被截掉的不一定是出任务的那两个。
 	var slots: int = state.field_slots(cfg)
 	for key: StringName in state.lineup:
 		if out.size() >= slots:
@@ -199,41 +176,21 @@ func dispatch_available(state: PBRunState, cfg: PBSimConfig) -> int:
 
 ## 挑出这一波**带上场**的卡，并记进 [member PBRunState.field]。
 ##
-## **全部 `pick_by_*` 都从这里取候选**，所以覆盖了 `deploy` 的流派也自动
-## 走同一套在场规则。玩家钦定的人**优先占位**，剩下的格子才按策略补 ——
-## 否则会出现「点上场了但羁绊不算他」：在场名单是按战力/羁绊挑的，
-## 钦定一个战力低的人就会被挤出去。
+## 全部 `pick_by_*` 都从这里取候选。玩家钦定的人**优先占位**，剩下的格子才按策略补 ——
+## 否则会出现「点上场了但羁绊不算他」。
 ##
-## **M3.5-i 之后容量就是出战席**（待命台删了，见 [member PBRunState.field]），
-## 于是「在场」与「上场」是同一批人。
-##
-## ## 这一层现在必须知道本波属性
-##
-## [param wave_element] 传负数表示「按裸战力排」（对照组走这条）。
-##
-## 待命台还在的时候这里按裸战力排就够了：在场名单比出战席大一截，
-## [method pick_by_effect] 还能在那截板凳里按属性换人。**现在在场就是出战席，
-## 这一步不看属性的话「每波换上克制系」（§03）就没有发生的余地** ——
-## 换人和不换人会挑出同一批人，而那不报错，只表现为
-## 「属性系统在扫描里突然一分钱都不值」。
+## [param wave_element] 传负数表示「按裸战力排」（对照组）。**必须看本波属性**：
+## 在场就是出战席，这一步不看属性的话「每波换上克制系」就没有发生的余地，
+## 属性系统在扫描里一分钱都不值，而它不报错。
 func bring_to_field(
 	state: PBRunState, cfg: PBSimConfig, wave_element: int = -1
 ) -> Array[PBUnit]:
-	# 同 [method lineup_units]：出任务的那几个不占人口（M5-9）。
-	# `dispatch_manual` 空着时它等于 `open_slots`，脚本流派那一路一个字节不动。
+	# 同 [method lineup_units]：出任务的那几个不占人口。
 	var capacity: int = state.field_slots(cfg)
 	var chosen: Array[PBUnit] = lineup_units(state, cfg)
-	# **玩家亲手排过之后就不再往空位里补人**（M6-i）。
-	#
-	# 补进来的那几个只进 `field`，进不了 [method deploy] 返回的名单
-	# （手排那一支只认 [member PBRunState.lineup]）—— 于是**羁绊会算上一个
-	# 根本不上场的人**，而屏幕上没有任何地方显示他。不报错，只是倍率虚高。
-	#
-	# 「空位要不要补」这个问题两种模式各有一个答案，正是
-	# [member PBRunState.lineup_by_hand] 存在的意义：系统还在替他维护时补，
-	# 他自己动过手之后那个空位就是他留的。**新抽到的卡另有一条路**
-	# （[method PBCardMoves.set_on_field]，走「派上场」那一支）——
-	# 它只填空位，和这里按战力补人不是一回事。
+	# **玩家亲手排过之后就不再往空位里补人**：补进来的只进 `field`、进不了 [method deploy]
+	# 返回的名单，羁绊会算上一个根本不上场的人。空位是他自己留的。
+	# 新抽到的卡另有一条路（[method PBCardMoves.set_on_field]），只填空位。
 	if state.lineup_by_hand:
 		state.set_field(chosen)
 		return chosen
@@ -243,14 +200,8 @@ func bring_to_field(
 
 	var rest: Array[PBUnit]
 	if field_policy == Field.BOND_AWARE:
-		# 两个参数现在恒等（容量就是出战席）。留着第二个不是冗余：
-		# `choose_field` 的契约是「挑 capacity 个，其中前 deploy_slots 个算输出」，
-		# 待命台没了只是让调用方两个都传同一个数。
-		#
-		# **这一支仍然不看本波属性**，那是 M2 的设计（在场名单是整局带着的队伍）。
-		# 待命台没了之后它的后果变重了：凑羁绊的玩家等于放弃了换克制系。
-		# CLAUDE.md 记着的那条张力（§03 换人 vs §09 凑羁绊抢同一批位子）
-		# 现在是全额对撞，归数值回归。
+		# 这一支不看本波属性（在场名单是整局带着的队伍），所以凑羁绊的玩家等于放弃了换克制系 ——
+		# §03 换人与 §09 凑羁绊抢同一批位子，归数值回归。
 		rest = PBBondRules.choose_field(state.all_units(), capacity, capacity, cfg)
 	elif wave_element >= 0:
 		rest = state.all_units()
@@ -301,11 +252,8 @@ func pick_by_element(
 	return pool.slice(0, maxi(slots, 0))
 
 
-## 抽一张卡并入库 —— **掏钱摆出三张，再自己挑一张**（§08，M3.5-e）。
-##
-## 规则那一半在 [PBShopRules]（花多少、掷什么、进不进得了仓库），
-## 这里只剩决定那一半：**挑第几张**。那正是三选一新增的东西，
-## 也是脚本玩家和真人玩家真正不同的地方。
+## 抽一张卡并入库 —— **掏钱摆出三张，再自己挑一张**（§08）。
+## 规则那一半在 [PBShopRules]，这里只剩决定：挑第几张。
 func pull_once(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> bool:
 	if not PBShopRules.open_offer(state, wave, cfg, rng):
 		return false
@@ -356,30 +304,16 @@ func spend_on_power(
 
 ## 抽卡是否仍然比装备划算。
 ##
-## 判据是**位置坐不坐得满**，不是卡池抽没抽完 —— 两者差很远。
-## 出战席最多 10 人，多出来的卡只在「换克制系」时轮换用，
-## 手上有两倍席位容量的卡之后，再多一张几乎不可能挤进当前的上场名单，
-## 边际收益断崖式下跌。而装备是按人头加成的，只要席位没装满就一直有效。
-##
-## **M3.5-i 删掉待命台把这个门槛砍了一半**（原来数的是出战席 + 待命台）。
-## 那是「席位」这个词的含义变了，不是判据变了 —— 归数值回归复核。
-##
-## 早先这里写的是「卡池抽到 80% 才转装备」，结果玩家到死卡池才 36/48，
-## 门槛从来没打开过，装备平均只买到 0.5 个（满装要 90 个）——
-## 于是金币坑形同虚设，经济系统被误判成「不重要」。
+## 判据是**位置坐不坐得满**，不是卡池抽没抽完：手上有两倍席位容量的卡之后，
+## 再多一张几乎挤不进上场名单，边际收益断崖式下跌；而装备只要席位没装满就一直有效。
 func gacha_still_pays(state: PBRunState, cfg: PBSimConfig) -> bool:
 	return state.roster.size() < state.deploy_capacity(cfg) * 2
 
 
-## 开一个忍具箱（§10：300 金，7 种配件等概率出 1）。买不起返回 false。
+## 开一个忍具箱（§10）。买不起返回 false。
 ##
-## 这是后期金币的主要去处。抽卡在卡池抽满后边际收益趋近于零，
-## 而装备在装满整队之前每一件都实打实 —— 两者的边际曲线正好相反，
-## 所以「该抽卡还是该买装备」在中后期是个真决策。
-##
-## **出货走 `gacha` 流**（§14 铁律 3 只有三条流，花钱买的随机归它）。
-## M3-c 之前配件不分种类、开箱不掷骰，所以这是一个**新增的随机消费点** ——
-## 它会移动 `gacha` 流后面全部抽卡的结果，M3-c 之前的波次数字因此不可直接对比。
+## 后期金币的主要去处：抽卡在卡池抽满后边际收益趋近于零，装备在装满整队前每件都实打实。
+## **出货走 `gacha` 流**（铁律 3：花钱买的随机归它）。
 func buy_equip_part(state: PBRunState, cfg: PBSimConfig, rng: PBRngStreams) -> bool:
 	var pool: Array[StringName] = cfg.equipment.parts
 	if pool.is_empty():

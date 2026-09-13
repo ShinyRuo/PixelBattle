@@ -1,92 +1,42 @@
 @tool
 class_name PBActorForge
 extends RefCounted
-## 视频帧 → 成品战场形象的那条流水线本身。M6-f 写在 `make_actor.gd` 里，
-## **M6-l 抽出来**，好让命令行和编辑器插件走同一条。
+## 视频帧 / 图集 → 成品战场形象的那条流水线本身：抠背景 → 量 → 挑帧 → 定画布 → 缩 → 坐到底边 → 描边。
 ##
-## ## 为什么必须只有一份
+## **只有一份**：命令行（[method PBActorForgeCli._run_frames]）和编辑器插件（[PBActorForgePanel]）都是调用方，
+## 否则「两条路出的素材差一像素」迟早发生（两段动画高矮不一、脚陷进地里半格），而它不报错。
 ##
-## 两条路要做的事一模一样：抠背景→量→挑帧→定画布→缩→坐到底边→描边。
-## 各写一份的话，「命令行出的素材和插件出的素材尺寸差一像素」这种事迟早发生，
-## 而它**不报错** —— 表现是同一个角色的两段动画高矮不一，
-## 或者脚陷进地里半格。这个项目为「同一件事两把尺子」付过很多次代价。
+## **脏活分给 ffmpeg**：GDScript 逐像素扫几百帧要几分钟，所以抠洋红、预乘 alpha、粗缩全在 ffmpeg 里做完
+## （[constant FILTER]），剩下的走 [Image] 的 C++ 接口，逐像素循环只发生在最后那张小画布上。
 ##
-## 所以这里是唯一的实现：[method PBActorForgeCli._run_frames]（命令行）
-## 和 [PBActorForgePanel]（编辑器插件）都只是它的调用方。
-##
-## ## 为什么脏活分给 ffmpeg
-##
-## 一帧 1280×720 是 92 万像素，四段共 388 帧 —— GDScript 逐像素扫一遍要几分钟。
-## 所以**抠洋红、预乘 alpha、粗缩**三件事全在 ffmpeg 里做完（[constant FILTER]），
-## 这边拿到的已经是 [constant MID] 的 RGBA。剩下的重活也一律走 [Image] 的
-## C++ 接口，真正的逐像素循环只发生在**最后那张几十像素见方的画布上**。
-##
-## ## 为什么中间那一趟必须是「预乘」的
-##
-## 抠完背景之后背景像素是全透明的，但它的 RGB 仍然是洋红。缩放会把相邻像素
-## 平均起来 —— 于是人物边缘会渗出一圈粉色，**而 alpha 看起来完全正常**。
-## 预乘（`rgb *= a`）让透明像素的 RGB 归零，插值因此只会稀释、不会染色；
-## 缩完再除回来（[method _unpremultiply]）。
+## **中间那一趟必须预乘**：抠完背景的透明像素 RGB 仍是洋红，缩放一平均人物边缘就渗粉，而 alpha 看起来正常。
+## 预乘让透明像素 RGB 归零，缩完再除回来（[method _unpremultiply]）。
 
-## 目标身高（**屏幕像素**，脚底到头顶）。M6-m 从 41 抬到 60，玩家定的。
+## 目标身高（**屏幕像素**，脚底到头顶）。**B 框放得下的极限**：站着的人加留白要塞进
+## [constant PBLayout.SPRITE_HEADROOM] = 64，再高就要压地面带或撑大 B，两条都改配平。
 ##
-## **这是 B 这个框放得下的极限，不是一个还能再调的数**：站着的人加一点留白
-## 要塞进 [constant PBLayout.SPRITE_HEADROOM] = 64。再高就要压地面带或者
-## 撑大 B，两条都改配平。
-##
-## **「一帧最高能画多高」是另一个数**（[constant CANVAS_CEILING]，M9-i 拆开的）
-## —— 抬手、跳起来那几帧本来就比站姿高，那件事和这个数无关。
-##
-## **白模没有跟着抬**（玩家定的「白模先不动」）—— 它的画布是方的
-## （手臂要摆得开），按同样比例放到 60 要 79 见方，装不进 64。
-## 所以真素材和白模现在**差一截**，那是已知的、暂时的，
-## 见 [constant PBWhiteModel.ALLY_HEIGHT]。
-##
-## 高清档（[member scale_up]）里这个数仍然是「屏幕上多大」，
-## 「一张图有多少像素」由 [method texture_height] 回答 —— M6-l 之前两者是一回事。
+## 「一帧最高能画多高」是另一个数（[constant CANVAS_CEILING]）。高清档里「一张图有多少像素」由
+## [method texture_height] 回答。白模矮一截是已知的（见 [constant PBWhiteModel.ALLY_HEIGHT]）。
 const TARGET_HEIGHT: int = 60
 
-## 一帧最高能画多高（**屏幕像素**）。M9-i 从 64 抬到 96，玩家定的。
+## 一帧最高能画多高（**屏幕像素**）。
 ##
-## ## 它和 [constant PBLayout.SPRITE_HEADROOM] 是两个数，不是一个
+## **和 [constant PBLayout.SPRITE_HEADROOM] 是两个数**：那个是排版（地面带从 B 框上沿让出多少，动它就动配平），
+## 这个是素材。契约是「**站姿保证不越界，抬手那几帧允许探出去一点**」—— 两者相等的话抬手的帧会被切头。
 ##
-## M9-i 之前这里直接读那个常量，因为一开始立的约束是最强的那条：
-## **任何一帧都不许越过 B 框上沿。** 但那两个数回答的是两个不同的问题：
-##
-## - `SPRITE_HEADROOM` = 地面带从 B 框上沿让出多少。这是**排版**，
-##   和 [member PBSimConfig.field_height] 抢同一块地方 —— 动它就是动配平
-## - 这一个 = 一帧最高能画多高。这是**素材**
-##
-## 两者相等意味着「抬手、跳起来那几帧也不许越界」，而那几帧本来就比站姿高：
-## 实测 29 套素材里 **10 套顶到了旧上限**，其中 3 套是真把头切了
-## （两个忍者 + 一只土系远程怪 —— 怪的体型更容易顶天）。
-##
-## 放宽成「**站姿保证不越界，抬手那几帧允许探出去一点**」之后，
-## 这个数就能独立抬起来，**一分配平都不用动**。
-##
-## ## 为什么是 96 而不是 128
-##
-## 最上面那条泳道的脚落在 [constant PBLayout.GROUND_TOP] = 98。
-## 画布上限就是「头最高能到脚上方多少」，所以最坏情况下头在 `98 − 本值`：
+## 硬上限是 [constant PBLayout.GROUND_TOP] = 98（最上面那条泳道的脚），头最高在 `98 − 本值`：
 ##
 ## [codeblock]
-## 上限  64（旧）→ 头在 34，正好贴着 B 框上沿
-## 上限  96（现）→ 头在  2，还在屏幕里，抬手那两帧会压住顶栏的字
-## 上限 128      → 头在 −30，**戳出屏幕外**，顶栏整个被盖住
+## 上限  64 → 头在 34，正好贴着 B 框上沿
+## 上限  96 → 头在  2，还在屏幕里，抬手那两帧会压住顶栏的字
+## 上限 128 → 头在 −30，戳出屏幕外
 ## [/codeblock]
 ##
-## 所以 `GROUND_TOP` 就是这个数的硬上限，`test_actor_forge.gd` 钉着它。
-## 玩家原话要的是「加倍」，实测 128 越界，最后定在 1.5 倍。
+## `test_actor_forge.gd` 两头都钉着（不许超过 `GROUND_TOP`，也不许低于 `SPRITE_HEADROOM`）。
 const CANVAS_CEILING: int = 96
 
-## 画布上下左右各留几格。**顶上这个不是余量，是给描边和抗锯齿留的**。
-##
-## M6-m 从 6 压到 2 是因为当时上限只有 64，而身高已经 60。
-## **M9-i 把上限抬到 96 之后这条约束松了**，但没跟着调大 ——
-## [method fit_canvas] 里那个 `tall` 已经取了**挑中的全部帧**的最大值
-## （跑动的起伏、出拳的伸展都在里面），再加留白只会让人在屏幕上更矮一点点。
-##
-## 左右那个不受上限管（画布宽度没有天花板），所以从来没动过。
+## 画布上下左右各留几格。**顶上这个是给描边和抗锯齿留的**，不是余量 ——
+## [method fit_canvas] 里的 `tall` 已经取了挑中的全部帧的最大值。左右那个不受上限管。
 const PAD_TOP: int = 2
 const PAD_SIDE: int = 5
 
@@ -113,11 +63,8 @@ const ALPHA_CUT: float = 0.45
 ## 剩下的半透明照原样留着 —— 软边正是这一档买的东西。
 const SOFT_CUT: float = 0.08
 
-## 高清档把贴图做到屏幕尺寸的几倍。**3 = 1080p**：坐标系恒为 640×360，
-## 1080p 是它的 3 倍（M6-c），所以 41 逻辑像素在那儿正好占 123 个真实像素 ——
-## 贴图做到 123 高，1080p 下就是 1:1，一个像素都不浪费也一个都不缺。
-##
-## 再大只有 4K 用得上，而代价是贴图面积翻倍。见 [member PBActorSkin.smooth]。
+## 高清档把贴图做到屏幕尺寸的几倍。**3 = 1080p**：坐标系恒为 640×360，1080p 是它的 3 倍，贴图 1:1 不浪费。
+## 再大只有 4K 用得上，代价是贴图面积翻倍。见 [member PBActorSkin.smooth]。
 const HD_FACTOR: int = 3
 
 ## 描边：把剪影最外圈那一层压暗多少、压向哪个色。
@@ -134,9 +81,8 @@ const TRIM: int = 8
 
 ## 五段的播放参数。`want` 是自动挑要几帧，`pick` 是挑帧策略，见 [method select]。
 const ANIMS: Array = [
-	# **四段都是 6 帧**（M9-e，玩家定的）。出图那一侧是六格图集，正好一格一帧；
-	# 而攻击段尤其不能少：出手落在第 [member PBSimConfig.attack_hit_frame] 帧，
-	# 只导 3 帧的话那一帧根本不存在。
+	# **四段都是 6 帧**（玩家定的）：出图是六格图集，一格一帧；出手落在第 [member PBSimConfig.attack_hit_frame] 帧，
+	# 少于这个数的话那一帧根本不存在。
 	{"name": &"idle", "fps": 4.0, "loop": true, "want": 6, "pick": "breath"},
 	{"name": &"run", "fps": 10.0, "loop": true, "want": 6, "pick": "cycle"},
 	{"name": &"attack", "fps": 12.0, "loop": false, "want": 6, "pick": "reach"},
@@ -152,13 +98,9 @@ const MASK := Vector2i(16, 24)
 var assets_dir: String = "res://assets/actors"
 var data_dir: String = "res://data/actors"
 
-## 贴图做到屏幕尺寸的几倍。**默认就是高清档** —— M6-n 起像素档不再出新素材
-## （玩家定的），这个字段留着是因为 `1` 那一档是整条流水线的退化参照，
-## 测试还在两档之间对拍；真要把像素档请回来，改的是这个默认值。
-##
-## 它同时改四件事，而这四件缺一不可：目标身高、留白、画布上限、
-## 以及**边缘要不要硬切**。只放大不改后三样的话，人会被头顶那道上限压回去，
-## 边缘会被切成锯齿 —— 而两样都不报错。
+## 贴图做到屏幕尺寸的几倍。**默认就是高清档**；`1` 那一档是退化参照，测试在两档之间对拍。
+## 它同时改四件事，缺一不可：目标身高、留白、画布上限、边缘要不要硬切 —— 只放大不改后三样的话，
+## 人会被上限压回去、边缘被切成锯齿，都不报错。
 var scale_up: int = HD_FACTOR
 
 ## 上一次 [method fit_canvas] 定下来的画布。[method compose] 读它。
@@ -270,9 +212,8 @@ func measure_one(path: String) -> Dictionary:
 		return {}
 	return {
 		"path": path,
-		# 这一帧整张画布多大。**不等于 [code]used[/code]** —— 视频路线上它恒是
-		# [constant MID]，而图集路线上每一格是切出来多大就多大（M8-g）。
-		# 预览拿它当固定的缩放基准，见 [method PBForgeCanvas.fit_to]。
+		# 这一帧整张画布多大，**不等于 `used`**：视频路线恒是 [constant MID]，图集路线每格各有大小。
+		# 预览拿它当固定的缩放基准（[method PBForgeCanvas.fit_to]）。
 		"size": image.get_size(),
 		"used": used,
 		"feet_x": _feet_x(image, used),
@@ -282,30 +223,14 @@ func measure_one(path: String) -> Dictionary:
 
 ## 每一段的缩放比。
 ##
-## **默认逐段归一化**（视频路线）：AI 视频每一条里人物大小都不完全一样，
-## 用同一个比的话玩家会看到「他一跑起来就长高两像素」——
-## 而那比「跑动和待机的身高差一点」难看得多。
+## **默认逐段归一化**（视频路线）：每条视频里人物大小都不完全一样，共用一个比的话「他一跑起来就长高两像素」。
+## `dead` 永远借 `idle` 的比（人躺着，包围盒高度不是身高）。
 ##
-## `dead` 永远借用 `idle` 的比：人躺着，包围盒高度不是身高。
+## [param share_idle]：**四段全部借 `idle`**（图集路线）。逐段归一化的前提是这一段里总有一帧人是站直的
+## （[method _reference_height] 量包围盒高度）—— 几十帧的跑动视频里有，六格的跑动图集里没有（全是弓腰），
+## 照自己量的话跑动的人大四成。同一次生成的四张图之间大小本来就一致。
 ##
-## ## [param share_idle]：四段全部借 `idle` 的（图集路线，M8-g）
-##
-## 逐段归一化成立的前提是**这一段里总得有一帧人是站直的** ——
-## [method _reference_height] 量的是包围盒高度，而它只有在人站直时才等于身高。
-## 97 帧的跑动视频里有那么一帧（迈步中间那个直立的瞬间正好落在
-## [constant REF_PERCENTILE] 上），**6 格的跑动图集里没有**：六格全是同一种弓腰姿势，
-## 取最大值也还是弓着的。
-##
-## 实测卡卡西那四张（2048 尺度）：站姿 880，而 `run` 那张最高的一格只有 615。
-## 照自己量的话跑动的他被放大 **43%** —— 而每一帧看起来都很正常，
-## 只是他一跑起来就变大只。
-##
-## 图集那条路因此全部借 `idle`：四张图是同一次生成、同一张参考图，
-## 之间的大小本来就一致（实测跨图集漂移 ±6%，而这里差的是 43%）。
-##
-## **借不到就返回空字典**（[param takes] 里没有 `idle`）：调用方那句
-## `.get(anim, 0.0)` 会拿到 0，而「返回 0 = 说过话了、别往下走」这条路已经在了。
-## 悄悄退回逐段的话，`run` 那一段会不声不响地大四成。
+## **借不到就返回空字典**（没有 `idle`）：调用方 `.get(anim, 0.0)` 拿到 0 就停，悄悄退回逐段的话 `run` 会大四成。
 func scales(takes: Dictionary, share_idle: bool = false) -> Dictionary:
 	var out: Dictionary = {}
 	var idle_scale: float = 1.0
@@ -351,13 +276,8 @@ func fit_canvas(takes: Dictionary, scale_of: Dictionary, chosen: Dictionary) -> 
 			tall = maxf(tall, float(used.size.y) * scale)
 	var width: int = (ceili(half) + PAD_SIDE * scale_up) * 2
 	var height: int = ceili(tall) + PAD_TOP * scale_up
-	# 高度撞上上限就压回去。**那个上限是 [constant CANVAS_CEILING]，
-	# 不是 [constant PBLayout.SPRITE_HEADROOM]** —— 两者 M9-i 拆开了，
-	# 理由写在那个常量上。
-	#
-	# **上限也要乘 [member scale_up]**：那道墙量的是**逻辑像素**，
-	# 而高清档的画布是贴图像素 —— 忘了乘的话人会被压掉三分之二，
-	# 而画布、坐标、锚点全部看起来完全正确。
+	# 高度撞上上限就压回去。上限是 [constant CANVAS_CEILING]（不是 `SPRITE_HEADROOM`），
+	# **而且要乘 [member scale_up]**：那道墙量的是逻辑像素，高清档的画布是贴图像素，忘了乘的话人被压掉三分之二。
 	var ceiling: int = CANVAS_CEILING * scale_up
 	# **压回去这一下要留个话。** 被压掉的那一截是**头**（脚坐在底边上，
 	# 见 [method _seat]），而画布、坐标、锚点全部看起来完全正确 ——
@@ -370,22 +290,11 @@ func fit_canvas(takes: Dictionary, scale_of: Dictionary, chosen: Dictionary) -> 
 
 ## 把一帧摆进画布：脚底中点落在**画布底边中点**上，然后缩到位。
 ##
-## ## 对齐做两遍，最后一遍在成品分辨率上
+## **对齐做两遍，最后一遍在成品分辨率上**（[method _seat]）：只在缩之前对齐的话，最底那排鞋底太薄，
+## 面积平均之后 alpha 掉到 [constant ALPHA_CUT] 以下被整排切掉，人悬空一像素，而数字看起来都正确。
 ##
-## 先在中间分辨率上粗摆一次，只为了别把人裁掉；**真正的对齐在缩完之后**
-## （[method _seat]）。只在缩之前对齐的话，人会浮在地面上方一像素 ——
-## 最底那排鞋底只有薄薄一条，面积平均之后 alpha 掉到 [constant ALPHA_CUT]
-## 以下，整排被切掉了，**而所有数字看起来都完全正确**
-## （实测：预览台上画布框贴着地面线，人却悬空）。
-##
-## ## 手动偏移（[param nudge]）
-##
-## 单位是**成品像素**，含义是「把人在画布里再挪这么多」（正 x 往右、正 y 往下）。
-## 自动量出来的脚底中点只对「两只脚并拢站着」最准，跑动那几帧一前一后
-## 会左右晃一两格 —— 那一两格靠这个补。
-##
-## **不用中间帧像素**：那边一格到了成品上不足半格，按一下方向键屏幕上
-## 可能一动不动，表现是「这个按钮好像是坏的」。
+## [param nudge] 是手动偏移，单位**成品像素**（正 x 往右、正 y 往下）：自动量的脚底中点只对并拢站着最准，
+## 跑动那几帧会左右晃一两格。不用中间帧像素：那边一格到成品上不足半格，按一下屏幕上可能不动。
 func compose(shot: Dictionary, scale: float, nudge := Vector2i.ZERO) -> Image:
 	var factor: float = 1.0 / maxf(scale, 0.0001)
 	var work := Vector2i(
@@ -398,12 +307,8 @@ func compose(shot: Dictionary, scale: float, nudge := Vector2i.ZERO) -> Image:
 	var source := Image.load_from_file(shot["path"])
 	if source == null:
 		return image
-	# **按源帧自己的尺寸取，不是按 [constant MID]**（M8-f）。
-	# 那个常量是**视频**那条路中间帧的尺寸（960×540），而图集切出来的格子
-	# 各有各的大小 —— 照 MID 裁的话，比它高的那些帧下半截会被直接丢掉，
-	# 也就是**脚没了**，而画布、对齐、坐标全部看起来完全正确。
-	#
-	# 对视频那条路这一句**逐位等价**：那边的源帧本来就正好是 MID。
+	# **按源帧自己的尺寸取，不按 [constant MID]**：图集格子各有大小，照 MID 裁的话比它高的帧下半截被丢掉（脚没了）。
+	# 视频那条路逐位等价（源帧本来就是 MID）。
 	image.blit_rect(source, Rect2i(Vector2i.ZERO, source.get_size()), at)
 	# 缩放仍在**预乘**空间里做，见类顶部那段。
 	image.resize(canvas.x, canvas.y, Image.INTERPOLATE_LANCZOS)
@@ -413,26 +318,12 @@ func compose(shot: Dictionary, scale: float, nudge := Vector2i.ZERO) -> Image:
 	return image
 
 
-## 这一段该用哪几帧。**没人直接调 [method select]**，都走这里（M9-l）。
+## 这一段该用哪几帧。**没人直接调 [method select]**，都走这里。
 ##
-## ## 判据是源帧数
-##
-## [method select] 是按「从几十上百帧的视频里挑 6 帧」写的：[constant TRIM]
-## 头尾各掐掉 8 帧，再在中间找呼吸的最高点、跑动的循环、伸得最远那一格。
-## **图集那条路（M9-b / M9-h）切出来的就是 6 格，6 全在掐掉的范围里** ——
-## 实测（`build/probe_pick.gd`）它在 6 格上给出：
-## `idle` → `[5, 5]`（只有两帧，而且都是最后一格）、
-## `run` / `attack` → `[…, 5, 5, 5, 5]`（末格重复四次、中间几格丢掉）、
-## `dead` → `[0, 2, 4, 5, 5, 0]`（**最后一格回到了站姿**）。
-## **四条一条都不报错**：名单是满的、导出照跑、成品帧数也对，
-## 表现只是「这一段做出来一顿一顿的」「人死了又站起来」。
-##
-## 源帧数正好等于这一段要的帧数时，答案是**按顺序全要** ——
-## 那 6 格本来就是按顺序画好的一段动画，不排序、不去重、不挑。
-##
-## **判的是帧数，不是「用户从图集还是从视频进来的」。** 后者要回头去问界面
-## 的状态，而那不是这条流水线该知道的；而且视频恰好抽出 6 帧时，
-## 按顺序全要同样是对的答案。
+## **判据是源帧数**：[method select] 是为「从几十帧视频里挑 6 帧」写的（[constant TRIM] 头尾各掐 8 帧），
+## 放在正好 6 格的图集上会给出重复的末格、丢掉中间几格、倒地段最后一格回到站姿 —— 全部不报错。
+## 源帧数正好等于要的帧数时**按顺序全要**（那几格本来就是按顺序画好的一段动画）。
+## 判帧数而不是「从图集还是视频进来」：流水线不该知道界面状态，而视频恰好抽出 6 帧时按顺序全要同样对。
 func frames_for(shots: Array, anim: String) -> Array[int]:
 	var spec := spec_of(anim)
 	var want: int = int(spec["want"])
@@ -480,20 +371,10 @@ func canvas_on_disk(key: String) -> Vector2i:
 	return Vector2i.ZERO
 
 
-## 把这个角色已经在盘上的帧重新裱到 [param to] 这个画布上。
-## **返回错误信息，空串 = 成功。**
+## 把这个角色已经在盘上的帧重新裱到 [param to] 这个画布上。**返回错误信息，空串 = 成功。**
 ##
-## ## 为什么这是安全的
-##
-## **纯补透明边，一个像素都不重采样。** 脚坐在底边中点上（[method _seat]），
-## 所以变高就在**顶上**补、变宽就**两边各补一半** —— 两个画布尺寸都是偶数
-## （[method fit_canvas] 最后那一步凑的），所以一半是整数，脚不会偏半格。
-##
-## ## 什么时候要它
-##
-## 一段一段导的时候，后导的那一段可能比前面几段宽（出拳那一段几乎总是最宽）。
-## 不裱的话同一个角色的帧尺寸就不一致了 —— 锚点只对得上第一帧，
-## 人会在动画之间上下跳，而 `tests/test_actor_data.gd` 会红。
+## **纯补透明边，一个像素都不重采样**：脚坐在底边中点，变高在顶上补、变宽两边各补一半（画布尺寸都是偶数，
+## 一半是整数）。一段一段导时后导的那段可能更宽，不裱的话同一角色帧尺寸不一致，人在动画之间跳。
 func recanvas(key: String, to: Vector2i) -> String:
 	var dir_path: String = "%s/%s" % [assets_dir, key]
 	var dir := DirAccess.open(dir_path)
@@ -518,13 +399,8 @@ func recanvas(key: String, to: Vector2i) -> String:
 
 ## 把一段的成品帧写进 `assets/actors/<key>/`。**返回错误信息，空串 = 成功。**
 ##
-## **多出来的旧帧要删掉。** 这次挑了 3 帧、上次挑了 5 帧的话，
-## `attack_3/4` 会留在原地，而 [method link] 是**一直数到断号为止**的 ——
-## 于是上一次那两帧会跟着进游戏，不报错。
-##
-## **只删多出来的那几张，前面的原地覆盖。** 全删再重写的话，
-## 每一张的 `.import` 都会重新生成一个新的 `uid` —— 素材一个像素没变，
-## `git diff` 里却是十个文件都改了，而真正改了什么就淹在里面了。
+## **多出来的旧帧要删掉**：[method link] 一直数到断号为止，上一次多出来的帧会跟着进游戏。
+## **前面的原地覆盖，不全删重写**：否则每张的 `.import` 重新生成 `uid`，`git diff` 里一片改动淹没真正改了什么。
 func save_frames(key: String, anim: String, images: Array) -> String:
 	var out_dir: String = "%s/%s" % [assets_dir, key]
 	DirAccess.make_dir_recursive_absolute(out_dir)
@@ -628,14 +504,9 @@ func _mask(image: Image, used: Rect2i) -> PackedByteArray:
 	return bits
 
 
-## 这一段里人物「站直了」有多高。取 [constant REF_PERCENTILE] 分位数。
-##
-## **片子太短就不掐头去尾。** 原来那版无条件掐 [constant TRIM] 帧，
-## 于是一段只有几帧的素材会掐出一个**空**区间，函数返回 1.0 —— 缩放比
-## 因此变成 41 倍，人被放大到撑爆画布再被压回头顶余量。
-## AI 视频是 97 帧，这条路上永远走不到；**插件里人可以自己剪一段短的**，
-## 而那时的表现是「出来的人糊成一团」，没有任何一句报错
-## （`test_actor_forge.gd` 那条 3 帧的用例就是抓这个的）。
+## 这一段里人物「站直了」有多高，取 [constant REF_PERCENTILE] 分位数。
+## **片子太短就不掐头去尾**：无条件掐 [constant TRIM] 帧的话短片会掐出空区间，缩放比变成几十倍
+## （`test_actor_forge.gd` 那条 3 帧的用例抓这个）。
 func _reference_height(shots: Array) -> float:
 	var trim: int = TRIM if shots.size() > TRIM * 3 else 0
 	var heights: Array[float] = []
@@ -698,16 +569,10 @@ func _unpremultiply(image: Image) -> void:
 			)
 
 
-## 把剪影最外圈压暗一档。
+## 把剪影最外圈压暗一档。**这不是装饰**：同一列叠着好几个人，没有描边的话同系角色是一根实心色条。
 ##
-## **这不是装饰。** 同一列会叠着七八个人，没有描边的话几个同系角色在屏幕上
-## 是一根实心色条 —— 数不出几个人，也点不中中间那个（M6-c 实测）。
-## 素材本身画了描边，但从 360 像素缩到 41 之后那一圈基本没了。
-##
-## **压暗现有像素，不往外扩**：扩一圈等于把身高抬高 2 像素。
-## **高清档这一圈要加粗到 [member scale_up] 像素**，而且「外面」的判据要从
-## 「完全透明」抬到「半透明以下」—— 软边那一圈的 alpha 是连续的，
-## 照旧只认 0 的话压暗的是最外面那几乎看不见的一层，等于没描。
+## **压暗现有像素，不往外扩**（扩一圈等于抬高身高）。高清档这一圈加粗到 [member scale_up] 像素，
+## 「外面」的判据从「完全透明」抬到「半透明以下」—— 软边的 alpha 是连续的，只认 0 等于没描。
 func _rim(image: Image) -> void:
 	var solid: float = 0.0 if scale_up <= 1 else 0.5
 	var edge: Array[Vector2i] = []
@@ -780,24 +645,11 @@ func _pick_cycle(shots: Array, want: int) -> Array[int]:
 	return out
 
 
-## 攻击：**手伸得最远那一帧排在第 [member PBSimConfig.attack_hit_frame] 格**
-## （M9-e 反过来的），前面留出起手。
+## 攻击：**手伸得最远那一帧排在第 [member PBSimConfig.attack_hit_frame] 格**，前面留出起手。
 ##
-## ## 这条规矩 M9-e 之前是反的
-##
-## 原来是「最远那一帧当第 0 帧」，理由写在规格第 8 节：起手占了前两帧的话，
-## 伤害结算比画面早半拍，玩家看到的是「先掉血、后挥手」。
-##
-## **那个理由只在「出手了才开始播」的前提下成立。** M9-e 之后 sim 那边
-## 真的有了起手（[member PBAttacker.windup_ticks]）：冷却好只是抬手，
-## 伤害要等到第 4 帧才落地。于是前提没了 —— 而把起手全扔掉的代价一直都在：
-## 子弹在动画第一帧出膛，画面上是凭空射出来的。
-##
-## **第几格出手向 [PBSimConfig] 要，不在这里再写一个数** ——
-## 两处各填一个的话，挑帧挑中的那一格和 sim 出手的那一 tick 会对不上，
-## 而画面上一切正常。
-##
-## 「伸得最远」量的是从脚底中点往右到剪影右沿有多远，所以抬腿不算数。
+## sim 有起手（[member PBAttacker.windup_ticks]）：冷却好只是抬手，伤害到那一帧才落地 —— 所以最远那一帧不能当第 0 帧，
+## 否则子弹在动画第一帧凭空射出来。**第几格向 [PBSimConfig] 要**，不在这里再写一个数。
+## 「伸得最远」量的是从脚底中点往右到剪影右沿，所以抬腿不算数。
 func _pick_reach(shots: Array, want: int) -> Array[int]:
 	var hit: int = mini(TRIM, shots.size() - 1)
 	var far: float = -1.0
@@ -821,10 +673,7 @@ func _pick_reach(shots: Array, want: int) -> Array[int]:
 	return out
 
 
-## 倒地：**以躺稳那一帧结尾**，前面留出倒下的过程（M9-e 起要 6 帧）。
-##
-## 「躺稳」取最后二十帧里包围盒最矮的那个 —— 人趴下去了，「最矮」就是「躺平了」。
-## 只挑那一帧的话（M9-e 之前）倒地段只有一帧，屏幕上是「站着的人瞬间变成一具尸体」。
+## 倒地：**以躺稳那一帧结尾**，前面留出倒下的过程。「躺稳」取最后二十帧里包围盒最矮的那个。
 func _pick_settle(shots: Array, want: int = 1) -> Array[int]:
 	var best: int = shots.size() - 1
 	for i: int in range(maxi(shots.size() - 20, 0), shots.size()):
@@ -901,8 +750,7 @@ func wipe_frames(dir_path: String) -> void:
 			dir.remove(file_name)
 
 
-## 删掉这一段第 [param keep] 帧起的旧成品帧（连 `.import` 一起）。
-## 见 [method save_frames]。
+## 删掉这一段第 [param keep] 帧起的旧成品帧（连 `.import` 一起）。见 [method save_frames]。
 func _drop_extra(dir_path: String, anim: String, keep: int) -> void:
 	var dir := DirAccess.open(dir_path)
 	if dir == null:

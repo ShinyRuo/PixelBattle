@@ -1,22 +1,12 @@
 class_name PBCharacterTable
 extends RefCounted
-## 全部角色的查表。M2-a。
+## 全部角色的查表。抽卡、估值、羁绊共用一份索引 ——
+## 各处各写遍历的话，「抽卡的分布」和「估值假设的分布」会慢慢对不上，且不报错。
 ##
-## 抽卡、估值、羁绊都要问同一批问题（这个稀有度有哪些角色？这一格有几个？），
-## 索引建一次、各处共用 —— 每处各写一遍遍历，慢是其次，
-## **真正的风险是「抽卡的分布」和「估值假设的分布」慢慢对不上，且不报错**。
+## - [method synthetic] 造的**合成表**：`稀有度 × 属性 × per_bucket` 个无名角色，慢档整局扫描用的那副牌。
+## - `data/characters/*.tres` 装载出来的**真角色表**（加载在 core 外面）。
 ##
-## ## 两种表
-##
-## - [method synthetic] 造的**合成表**：`4 稀有度 × 6 属性 × per_bucket` 个无名角色，
-##   完全复现 M-1/M0/M1 的卡池。**它存在的唯一理由是让身份层的引入可以对拍**——
-##   接真角色表是下一步，那一步的数值变化必须能和这一步的重构分开看。
-## - `data/characters/*.tres` 装载出来的**真角色表**（M2-a2）。加载发生在 core 外面。
-##
-## ## 表是只读的
-##
-## 造完就不该再改。[PBSimConfig.clone] 只复制引用而不深拷贝，
-## 靠的就是这条 —— 破坏它会让批量扫描的各个格子互相串味。
+## 表是只读的：[method PBSimConfig.clone] 只复制引用，改了会让批量扫描的格子互相串味。
 
 var _all: Array[PBCharacter] = []
 var _by_id: Dictionary = {}
@@ -29,18 +19,12 @@ var _by_rarity: Dictionary = {}
 
 
 ## 造一张合成表：每个（稀有度, 属性）格子 [param per_bucket] 个无名角色。
-##
-## **这是 M-1 至 M1 一直在用的那个卡池**，只是现在每张卡有了 id。
-## id 前缀 `syn_` 是有意的 —— 一眼看得出它不是真角色，
-## 免得将来有人拿它当内容用。
+## id 前缀 `syn_` 让人一眼看出它不是真角色。
 static func synthetic(per_bucket: int) -> PBCharacterTable:
 	var table := PBCharacterTable.new()
 	for rarity: int in PBUnit.Rarity.size():
-		# 铺的是 [constant PBElement.PICKABLE]，**不是 `Type.size()`**。
-		# 照枚举个数铺等于宣称「每个枚举值都是一个可以随便发牌的属性」，
-		# 而 M12-a 加进仙之后那句话不成立 —— 合成卡池会凭空多出一批
-		# **克制一切**的仙系角色，而它不报错，只是所有拿合成表跑出来的
-		# 配平结论一起失真（这张表正是慢档整局扫描用的那副牌）。
+		# 铺 [constant PBElement.PICKABLE]，**不是 `Type.size()`** —— 否则合成卡池会多出一批
+		# 克制一切的仙系角色，配平结论一起失真。
 		for element: int in PBElement.PICKABLE:
 			for variant: int in maxi(per_bucket, 1):
 				table.add(
@@ -53,14 +37,9 @@ static func synthetic(per_bucket: int) -> PBCharacterTable:
 	return table
 
 
-## 收一个角色进表。**收下了返回 true，被拒返回 false。**
+## 收一个角色进表。**收下了返回 true，被拒返回 false**（缺 id 或 id 重复）。
 ##
-## 拒收的两种情况：缺 id，或 id 重复。重复 id 会让仓库把两个角色
-## 当成同一张卡去升星，而那种错误在结果里完全看不出来。
-##
-## **这里只返回状态，不打日志。** 报错要留给装载器（M2-a2，在 core 外面）——
-## 它手上有 `.tres` 的文件路径，能指出是哪份数据写错了；
-## core 里只能打出一个没有出处的 id，对排查毫无帮助。
+## **这里只返回状态，不打日志**：装载器手上有 `.tres` 的文件路径，报错要留给它。
 func add(character: PBCharacter) -> bool:
 	if character == null or character.id == &"":
 		return false
@@ -95,11 +74,6 @@ func by_id(character_id: StringName) -> PBCharacter:
 ## 见 [method PBValuation.expected_surplus]。
 func of_rarity(rarity: PBUnit.Rarity) -> Array[PBCharacter]:
 	return _by_rarity.get(int(rarity), [] as Array[PBCharacter]) as Array[PBCharacter]
-
-
-## 这一格（属性 × 稀有度）里有几个角色。
-func count_in_cell(element: PBElement.Type, rarity: PBUnit.Rarity) -> int:
-	return cell(element, rarity).size()
 
 
 func cell(element: PBElement.Type, rarity: PBUnit.Rarity) -> Array[PBCharacter]:

@@ -1,28 +1,12 @@
 class_name PBActorSkin
 extends Resource
-## 一个战场形象：一份 [SpriteFrames] + 它和这个游戏之间的全部约定。M6-b。
+## 一个战场形象：一份 [SpriteFrames] + 它和这个游戏之间的全部约定。
 ##
-## ## 换皮的边界就画在这个类上
+## **换皮的边界画在这个类上**（铁律 5）：脚底在画布哪一点、源图朝哪边、要不要按属性染色、身高……
+## 全是「这份素材的性质」，不是渲染层的常量 —— 写在渲染层的话换一套素材就得改代码。
 ##
-## §14 铁律 5 是「换皮 = 改表，`src/` 一行不动」。角色数值那一半
-## M2-a 就交给 [PBCharacter] 了，**形象这一半一直没有承载体** ——
-## 白模方块的颜色、大小、血条挂多高全写死在 [PBAllyPool] 里。
-##
-## 所以这里存的不只是图：**脚底在画布的哪一点、源图朝哪边、要不要按属性染色**
-## 全是「这份素材的性质」，不是渲染层的常量。写在渲染层的话，
-## 换一套画得高一点的素材就得回去改代码，而那正是铁律 5 要避免的事。
-##
-## ## 为什么是 [AnimatedSprite2D] 而不是 [AnimationTree]
-##
-## 需要的只有「一次播一段、按状态切」（§这一步只有 idle / run / attack
-## 三段通用 + 逐角色的忍术段）。[AnimationTree] 解决的是混合与过渡，
-## 那一套的配置成本要摊在 30 个角色上，而它换来的东西这里一个都用不上。
-##
-## ## 空着也能跑
-##
-## `assets/` 现在一个素材都没有，所以真实情况是**每个角色都没有皮**。
-## [PBWhiteModel] 按同一套字段现造一份白模，于是这条链路从今天起就是通的 ——
-## 真素材进来时改的是 `data/actors/*.tres`，[PBAllyPool] 一行不动。
+## 用 [AnimatedSprite2D] 不用 [AnimationTree]：需要的只有「一次播一段、按状态切」，混合与过渡用不上。
+## 空着也能跑：[PBWhiteModel] 按同一套字段现造一份白模。
 
 ## 源图里的人朝哪边。**只有这一个字段决定要不要 `flip_h`**，
 ## 而问它的路只有一条：[method flips_for]。
@@ -65,60 +49,25 @@ enum Facing { RIGHT, LEFT }
 
 ## 高清档：贴图比它在屏幕上占的地方**大好几倍**，缩小交给 GPU。
 ##
-## ## 它换到的是什么
-##
-## `stretch/mode` 是 `canvas_items`（M6-d），也就是**坐标系恒为 640×360，
-## 但光栅化发生在窗口的真实分辨率上** —— 文字在 1080p 上清晰正是这条。
-## 于是一个「41 逻辑像素高」的精灵在 1080p 上实际占 123 个真实像素。
-## 贴图只有 41 像素高的话，那 123 个像素里只装得下 41 个色块的信息；
-## 贴图做到 123 像素高，GPU 就能在渲染时把全部细节铺满。
-##
-## ## 代价
-##
-## **它不是像素画了。** 边缘是软的、颜色是连续的，而屏幕上其余全部东西
-## （面板、卡面、白模、克制亮边）都是硬边像素。混着放看得出来 ——
-## 这是一个美术方向的取舍，不是一个可以两边都要的开关。
-##
-## 打开的那一档**必须配 mipmap**（[member PBActorForge.scale_up] 会把
-## 贴图的 `.import` 改掉）：720p 下这张图是缩小采样的，没有 mipmap
-## 的表现是人一走动身上就闪，而静止截图完全看不出来。
+## `stretch/mode` 是 `canvas_items`：坐标系恒为 640×360，光栅化发生在窗口的真实分辨率上。
+## 贴图做到真实像素那么高，GPU 才能把细节铺满。**代价是它不再是像素画**（软边、连续色），是美术方向的取舍。
+## **必须配 mipmap**（导出流水线会改 `.import`）：720p 下是缩小采样，没有 mipmap 的话人一走动身上就闪。
 @export var smooth: bool = false
 
-## **脚底在画布上的位置**（像素，画布左上角为原点）。
-##
-## 这是整份规格里最要紧的一个数：y 排序按节点的 y 排，而节点的位置
-## 恒等于落脚点（M6-a 立的）。脚底记错一格，这个人和别人的前后关系就错一格，
-## **而所有坐标看起来都完全正确**。
-##
-## 留 [constant Vector2.ZERO] 表示「画布底边中点」，也就是规格里的默认锚。
+## **脚底在画布上的位置**（像素，画布左上角为原点）。[constant Vector2.ZERO] 表示「画布底边中点」。
+## 整份规格里最要紧的一个数：y 排序按节点的 y 排，节点位置恒等于落脚点，脚底记错一格前后关系就错一格，
+## 而所有坐标看起来都正确。
 @export var foot_offset: Vector2 = Vector2.ZERO
 
-## 这个人的普攻子弹用哪一份 [PBShotSkin]（M8-a）。空着退回
-## [method PBWhiteModel.shot]（今天那个小方块）。
-##
-## 挂在**形象**上而不是角色数值上：一发苦无长什么样是「这份素材的性质」，
-## 和脚底锚点、源图朝向同一类东西 —— 换一套美术就该跟着换。
-## 技能自己的子弹另配（[member PBSkill.shot_key]）：那是技能的性质，不是人的。
+## 这个人的普攻子弹用哪一份 [PBShotSkin]，空着退回 [method PBWhiteModel.shot]。
+## 挂在**形象**上：一发苦无长什么样是这份素材的性质。技能自己的子弹另配（[member PBSkill.shot_key]）。
 @export var shot_key: StringName = &""
 
 ## **枪口在哪**（像素，相对脚底，**向上为负 y**；未乘 [member pixel_scale]）。
+## [constant Vector2.ZERO] 表示按 [member height_px] 派生（约六成身高）。**x 跟着朝向翻转**，填正数就是「身前」。
 ##
-## ## 为什么它只在渲染层生效，绝不进 sim
-##
-## 两条，第二条更硬：
-##
-## - sim 是一个**平面**，[member PBAttacker.pos] 的 y 是泳道深度不是高度 ——
-##   「枪口在胸口」这句话在那边没有地方表达。
-## - 进 sim 会改飞行距离 → 改命中时刻 → **改配平**。
-##
-## 屏幕上那条弹道因此是同一次飞行的**重新参数化**：进度还是 sim 算的
-## （从 [member PBProjectile.from] 到目标走了几成），只是把两个端点
-## 从脚底换成枪口和胸口。
-##
-## 留 [constant Vector2.ZERO] 表示按 [member height_px] 派生（约六成身高）——
-## M6-m 之后人有 60 像素高，而在这之前子弹是**从脚踝射向脚踝**的。
-##
-## **x 会跟着朝向翻转**（由 [PBShotPool] 按飞行方向做）：填正数就是「身前」。
+## **只在渲染层生效，绝不进 sim**：sim 是平面，「枪口在胸口」没有地方表达；进 sim 还会改飞行距离、命中时刻，
+## 也就是改配平。屏幕上的弹道是同一次飞行的重新参数化（见 [PBShotPool]）。
 @export var muzzle_offset: Vector2 = Vector2.ZERO
 
 ## **子弹打在身上哪个高度**（同 [member muzzle_offset] 的坐标约定）。
@@ -142,19 +91,8 @@ enum Facing { RIGHT, LEFT }
 @export var height_px: float = 41.0
 
 ## 这一帧要不要水平翻转。[param facing] 走 [member PBActorPose.facing]。
-##
-## ## 敌我共用这一处（M9-m）
-##
-## 在这之前两个池子各写了一份两行的判断，而且**符号是反的**：己方是
-## `facing == FACE_LEFT`（对），敌人是 `facing == FACE_RIGHT`（错）。
-## 敌人那一份的注释写着「白模画的是朝右的剪影，而敌人默认朝左，
-## 所以这里的翻转是常态」—— **那句话把「敌人通常朝左」数了两遍**，
-## 一遍已经在 `facing` 里了。
-##
-## **白模看不出来**：那是个正多边形，左右翻过来几乎一模一样。所以这条
-## 从 M6-b 起一直错着，直到第一张真怪素材进来才现形 ——
-## 表现是「从右往左走，人却朝着右边，像在倒着走」（玩家报的）。
-## 同 M6-e 查出的那条 `draw_offset` 平方 bug：都是白模恰好取不到的那个值。
+## **敌我共用这一处**：各写一份的话符号迟早写反一边（左右对称的白模看不出来，真素材一进来就「倒着走」）。
+## `tests` 里一条扫描式断言要求给 `flip_h` 赋值的地方都走这里。
 func flips_for(facing: int) -> bool:
 	var flip: bool = facing == PBActorPose.FACE_LEFT
 	return not flip if source_faces == Facing.LEFT else flip
@@ -176,27 +114,11 @@ func anim_for(state: int) -> StringName:
 	return resolve(wanted)
 
 
-## 把一段**非循环**动画用最后一帧补到 [param count] 帧。M9-e。
+## 把一段**非循环**动画用最后一帧补到 [param count] 帧。
 ##
-## ## 为什么要补
-##
-## 出手落在第 [member PBSimConfig.attack_hit_frame] 帧，而整段被压进一个
-## 攻击间隔里（[method PBAllyPool._fit]）—— 也就是说「第几帧」这句话
-## **只有在每一段都是同样多帧的时候才是同一个意思**。
-##
-## 库里的素材是人手挑的，3 到 6 帧都有。一段 4 帧的挥击摊在同一个间隔上，
-## 出手那一刻落在它的第 3 帧 —— 手还在挥出去的路上，子弹已经飞了。
-##
-## 补**最后一帧**是短素材唯一不改动已有姿势的补法：等于把收招停久一点，
-## 前面那几帧的时序一格都不挪。
-##
-## ## 只补非循环段
-##
-## 循环段（待机、跑动）补上去的表现是「跑两步顿一下」——
-## 多出来的那几帧会在循环的接缝上停住，而它不报错。
-##
-## **补过一次就不再补**：资源是缓存的，[method PBActorLibrary.reload]
-## 拿回来的是同一个实例，不挡住的话每重载一次就长 2 帧。
+## 出手落在第 [member PBSimConfig.attack_hit_frame] 帧，整段压进一个攻击间隔 ——「第几帧」只有在每段帧数相同时
+## 才是同一个意思。补**最后一帧**是唯一不改动已有姿势的补法（等于收招停久一点）。
+## **只补非循环段**：循环段补上去是「跑两步顿一下」。**补过一次就不再补**：资源是缓存的，重载拿回同一个实例。
 func hold_last_to(anim: StringName, count: int) -> void:
 	if frames == null or not frames.has_animation(anim):
 		return
@@ -245,15 +167,9 @@ func anim_seconds(anim: StringName) -> float:
 	return float(frames.get_frame_count(anim)) / fps
 
 
-## 精灵该怎么摆才能让**画布上的脚底落在节点原点上**。
-## 配合 `centered = false` 用（[member Sprite2D.centered]）。
-##
-## **这里不乘 [member pixel_scale]。** [member Sprite2D.offset] 是在节点缩放
-## **之前**作用的，而放大是靠 [member Node2D.scale] 做的 —— 两处各乘一遍
-## 等于把偏移平方，人会浮在地面上方一整个身高。
-##
-## `pixel_scale` 恒为 1 的时候看不出来（1 的平方还是 1），而白模正好是 1，
-## 所以这一条要等真素材填 2 的那天才发作，**且不报错**。
+## 精灵该怎么摆才能让**画布上的脚底落在节点原点上**。配合 `centered = false` 用。
+## **这里不乘 [member pixel_scale]**：[member Sprite2D.offset] 在节点缩放之前作用，两处各乘一遍等于把偏移平方，
+## 人会浮在地面上方一整个身高（`pixel_scale` 为 1 时看不出来）。
 func draw_offset() -> Vector2:
 	return -anchor()
 

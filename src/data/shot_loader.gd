@@ -1,15 +1,7 @@
 class_name PBShotLibrary
 extends RefCounted
-## 把 `data/shots/*.tres` 装成一张「键 → [PBShotSkin]」的表。M8-a。
-##
-## 和 [PBActorLibrary] 逐条同构，理由也一样：`ResourceLoader` 被 core 纯度检查
-## 明令挡住（§14），所以「读盘」这件事只能发生在 core 外面。
-##
-## ## 目录不存在不是错
-##
-## `assets/` 里一张子弹图都没有，所以 `data/shots/` 长期是空的。
-## 打不开时正确的行为是退回 [method PBWhiteModel.shot]，不是每帧刷一条错 ——
-## 同 [PBActorLibrary] 顶上那条「**空 = 白模**」。
+## 把 `data/shots/*.tres` 装成一张「键 → [PBShotSkin]」的表。与 [PBActorLibrary] 同构。
+## **目录不存在不是错**：打不开时退回 [method PBWhiteModel.shot]（空 = 白模）。
 
 const DIR := "res://data/shots"
 

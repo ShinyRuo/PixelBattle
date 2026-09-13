@@ -2,30 +2,15 @@ class_name PBPassiveRules
 extends RefCounted
 ## 一个**常驻效果**怎么装到一个人身上。全部 static，无状态，零引擎依赖。
 ##
-## 和 [PBBuffRules]（一份会过期的效果）对着看：那一层管的是「这一波暂时怎么样」，
-## 这一层管的是「他站在场上就一直是这样」——
-## 后者不进效果袋，直接乘死在 [PBAttacker] 的字段上。
+## 和 [PBBuffRules]（会过期的效果）对着看：这一层管「他站在场上就一直是这样」，
+## 不进效果袋，直接加在 [PBAttacker] 的字段上。
 ##
-## ## 为什么它从羁绊里抽出来
-##
-## M10-d 的 `Landing.CARRIER` 档（重生 / 溅射 / 打高血量多打一笔 / 命中后提暴击）
-## 当时只有羁绊一个来源，所以那套映射写在 [PBBondFunctionRules] 里。
-## M12-c2 来了第二个来源：**角色自带的被动**（原版 56 张卡里有 10 个是
-## 「攻击时 X% 触发 Y」这种没有施法、没有冷却、没有蓝的东西 ——
-## 玩家按不出来，它不是技能）。
-##
-## 两处各写一份映射的话，「羁绊给的溅射」和「角色自带的溅射」迟早在
-## **叠加方式**上分叉（一个 `=` 一个 `+=` 就够了），
-## 而分叉的那一侧静默生效：屏幕上照样溅射，只是量不对。
-##
-## **键认不认得也只有一处**（[method is_known]）—— 同 [method PBBuffRules.validate]
-## 那条：两处各判各的话，「这个键认不认」迟早分叉。
+## 来源有几个（角色自带被动 / 羁绊成员效果 / 尾兽光环 / 装备），**走同一个 [method grant]** ——
+## 各写一份映射的话，叠加方式迟早分叉（一个 `=` 一个 `+=`），而分叉的那一侧静默生效。
 ##
 ## ## 词汇表里的键 = 已经接上读点的键
 ##
-## 同 [PBBuffRules.ALL] 顶上那条（M7-a）。拼对了却没人读的键比拼错更难查：
-## 数据、界面、日志全部正常，只有伤害数字不对。所以这里**一个键都不预留**,
-## 要加就连着它的读点一起加。下面每一行的读点都已经在跑：
+## 拼对了却没人读的键比拼错更难查，所以**一个键都不预留**，要加就连着读点一起加：
 ##
 ## | 键 | 落在哪个字段 | 谁读它 |
 ## |---|---|---|
@@ -42,39 +27,18 @@ extends RefCounted
 ## | `damage_bonus` | [member PBAttacker.damage_bonus] | [method PBAttacker.strike_for] |
 ## | `move_speed_bonus` | [member PBAttacker.move_speed_bonus] | [method equip] 折进 `move_speed` |
 ##
-## ## 属性不在这张表里（M12-h1）
+## **属性（力敏智、攻击力、防御、生命、攻速）不在这张表里**，在 [PBStatRules]：
+## 属性在算三围那一刻注入，行为建人之后装。**移速留在这里**：它是全队一个数，
+## 由 [member PBSimConfig.unit_move_seconds] 派生，不是角色属性。
 ##
-## 力量 / 敏捷 / 智力 / 全属性 / 攻击力 / 防御 / 最大生命 / 攻速 **搬去了
-## [PBStatRules]**，分界线是「什么时候生效」：**属性在算三围那一刻注入**
-## （属性克制之前，而且二级属性是从一级属性派生的，事后加只是加了个孤立的数），
-## **行为建人之后装**。这张表从此只管行为。
+## **裸名 = 量型，`_bonus` 后缀 = 率型**，每个键自己说清楚是哪一种。
 ##
-## **移速留在这里**：它在我们的模型里不是角色属性 —— 全队同一个数，
-## 由 [member PBSimConfig.unit_move_seconds] 派生（见 [member PBAttacker.move_speed]）。
+## ## 两件有意不做的事
 ##
-## ## 裸名 = 量型，`_bonus` 后缀 = 率型
-##
-## 原版两种都用（「提升 30 点防御」是量型，「提升 [10x等级]% 的移动速度」是率型），
-## 所以**每个键自己说清楚是哪一种**，同 [PBSkillPatchRules] 那条。
-## 统一成一种的话，读表的人得记住哪个字段是哪种，**而记错不报错**。
-##
-## ## 忍术抗性没有进来，那是有意的
-##
-## 原版有一大批「提升 N% 忍术抗性」（一只尾兽、好几组羁绊都带着它），
-## 而它要求**敌人的伤害分类型** —— 今天敌人只有一种伤害，
-## 加一个抗性字段之后没有任何一条伤害会去查它。
-## 那正是「配了不生效」，比「配不了」难查得多（同 M7-a 那条
-## 「词汇表里的键 = 已经接上读点的键」）。**降级记在这里。**
-##
-## ## 「X% 几率打出更多伤害」就是暴击，不是第七个键
-##
-## 原版那 10 个被动里有 4 个是这个形状（写轮眼 20% 两倍、削灭斩 20% 额外伤害、
-## 风切 [5+等级x4]% 额外伤害、轮回眼 15% 两倍）。它们**用前两个键就写得出来** ——
-## 另开一个 `proc_chance` 的话，屏幕上会有两套各自掷骰的暴击，
-## 而 M10-c 那条「一个掷点」（[PBCritRules] 顶上）正是为了防这个：
-## 掷两次就等于同一条 RNG 流被拨动两次，
-## 而 [method PBAttacker.whole_field] 那条与解析式排队模型逐位对拍的
-## 退化路径靠的就是「该掷几次就掷几次」。
+## - **忍术抗性**：要求敌人的伤害分类型，今天敌人只有一种伤害，
+##   加了字段也没有任何一条伤害会去查它 —— 配了不生效。
+## - **「X% 几率打出更多伤害」不另开键**：那就是暴击（前两个键写得出来）。
+##   另开一个概率键等于同一次出手掷两遍骰，破了 [PBCritRules] 那条「一个掷点」。
 
 ## 暴击率（常驻那一份）。
 const CRIT_CHANCE: StringName = &"crit_chance"
@@ -94,22 +58,22 @@ const HEAVY_HIT: StringName = &"heavy_hit"
 ## 一波能重生几次。**取整** —— 半次重生没有意义。
 const REVIVE: StringName = &"revive"
 
-## 挨一下普攻有多大机会一点血都不掉（M12-c2）。
+## 挨一下普攻有多大机会一点血都不掉。
 const DODGE: StringName = &"dodge"
 
-## 打出要害那一下额外按目标**当前**生命的几成再打一笔（M12-c2）。
+## 打出要害那一下额外按目标**当前**生命的几成再打一笔。
 const BITE_CURRENT: StringName = &"bite_current"
 
 ## 同 [constant BITE_CURRENT]，但按目标**已经损失**的生命算。
 const BITE_LOST: StringName = &"bite_lost"
 
-## 挨一下就把这一下伤害的几成还给打他的那个敌人（M12-c2）。
+## 挨一下就把这一下伤害的几成还给打他的那个敌人。
 const REFLECT: StringName = &"reflect"
 
-## 常驻增伤：普攻多打几成（M12-e）。
+## 常驻增伤：普攻多打几成。
 const DAMAGE_BONUS: StringName = &"damage_bonus"
 
-## 移动速度多几成（M12-e2）。中性 0.0，折算在 [method equip] 末尾。
+## 移动速度多几成。中性 0.0，折算在 [method equip] 末尾。
 const MOVE_SPEED_BONUS: StringName = &"move_speed_bonus"
 
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
@@ -129,19 +93,12 @@ const ALL: Array[StringName] = [
 ]
 
 
-## 这一下闪掉了吗（M12-c2）。
+## 这一下闪掉了吗。
 ##
-## **它是一条规则，不是一份状态**，所以住在这里不住在 [PBAttacker] 上
-## —— 同 M7-e 那次把 `cast_at` 放进 [PBSkillRules]（那个类贴着
-## gdlint 的 20 个公开方法上限，而上限那条「超了不是错，是该搬了的信号」
-## 这两次指的地方都是对的）。
+## **[member PBAttacker.dodge] 为 0 时一次骰子都不掷**（同 [method PBCritRules.strike]）：
+## 掷了就算没闪也拨动了那条流，对拍退化路径靠「该掷几次就掷几次」。
 ##
-## **[member PBAttacker.dodge] 为 0 时一次骰子都不掷** ——
-## 同 [method PBCritRules.strike] 顶上那条：掷了就算没闪也已经拨动了那条流，
-## 而 [method PBAttacker.whole_field] 那条与 [PBCombatRules] 解析式排队模型
-## 逐位对拍的退化路径靠的就是「该掷几次就掷几次」。
-##
-## [param rng] 为 null 时（批量扫描、探测、老的构造点）恒不闪避且不掷骰。
+## [param rng] 为 null 时（批量扫描、探测）恒不闪避且不掷骰。
 static func dodges(attacker: PBAttacker, rng: RandomNumberGenerator) -> bool:
 	if attacker == null or rng == null or attacker.dodge <= 0.0:
 		return false
@@ -207,34 +164,19 @@ static func grant_all(attacker: PBAttacker, passives: Dictionary) -> int:
 	return done
 
 
-## 把三份来源一次性装到这个人身上，**装完当场折算**（M12-e2）。
+## 把几份来源一次性装到这个人身上，**装完当场折算**。
 ##
-## [param sources] 按顺序是角色自带 / 羁绊 / 尾兽光环（[PBCombatRules] 的建人
-## 循环里那三行），量各自给、在字段上 `+=` 汇合。返回一共装上了几个。
+## [param sources] 按顺序是角色自带 / 羁绊 / 尾兽光环 / 装备，在字段上 `+=` 汇合。
+## 返回一共装上了几个。
 ##
-## ## 为什么折算必须在这个函数里面，而不是让调用方补一句
+## **折算必须在这里面**：率型键是累加器，要乘进真正的字段才生效。
+## 留给调用方的话，「忘了折」的表现是那一份配了不生效。收成一个入口之后，
+## 调用方拿不到「装了但没折」的中间状态 —— 一处判，调用方不判。
 ##
-## 率型那两个键（[constant HP_BONUS] / [constant MOVE_SPEED_BONUS]）
-## 是**累加器**：`grant` 只往 [member PBAttacker.hp_bonus] 上加，
-## 真正生效要把它乘进 [member PBAttacker.max_hp]。
-## 把这一步留给调用方的话，「忘了折」的表现是**那一组羁绊配了不生效** ——
-## 数据、界面、日志全部正常，只有血条不对。
+## **先全加完再折一次**：两份 +50% 该是 +100%，边加边折就成了连乘。
 ##
-## 收成一个入口之后忘不掉：调用方拿不到「装了但没折」的中间状态。
-## 同 [method PBStrikeRules.land] / [method PBStrikeRules.hurt_ally]
-## 那两个漏斗 —— **一处判，调用方不判**。
-##
-## ## 为什么是「先全加完，再折一次」
-##
-## 两组各给 +50% 生命该是 **+100%**（相加），不是 `1.5 × 1.5 = 2.25`（连乘）。
-## 边加边折就是连乘，而那不是人会预期的叠加方式 ——
-## 同 [member PBAttacker.damage_bonus] 顶上那条。
-##
-## ## 折算排在 [method PBAttacker.revive] 之前，所以血条跟得上
-##
-## [PBBattleSim] 开波对每个人调一次 `revive()`，那一句把 `hp` 填到
-## `max_hp`。建人这一刻抬高上限，开波那一刻自然就是满的 ——
-## 在这里顺手改 `hp` 反而会和 `revive()` 成为两把尺子。
+## 折算在 [method PBAttacker.revive] 之前：开波那一句把 `hp` 填到 `max_hp`，
+## 这里不要顺手改 `hp`，否则两处成了两把尺子。
 static func equip(attacker: PBAttacker, sources: Array[Dictionary]) -> int:
 	if attacker == null:
 		return 0

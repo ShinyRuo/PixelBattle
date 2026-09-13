@@ -1,42 +1,17 @@
 class_name PBTelegraphPool
 extends Node2D
-## 大招的落点预示。§02 / M3-b 的施法延迟，M3.5-h；M4-a 从竖带改回圆。
+## 地面技能的落点预示圈（§02）。
 ##
-## ## 这是施法延迟存在的理由
+## 这是施法延迟存在的理由：落点在下达时定死、伤害若干 tick 之后才落地，那段窗口让玩家能预判走位 ——
+## 前提是**看得见落点**。
 ##
-## M3-b 给大招加了 `delay_ticks`：落点在下达时定死，伤害在若干 tick 之后
-## 才落地（[PBSkill] 顶部）。那段窗口的**全部意义**是让玩家能预判走位 ——
-## 而预判的前提是他**看得见落点**。在这之前那个窗口只存在于数据里，
-## 玩家能观测到的只有「伤害有时候延迟一下才出现」。
-##
-## ## 为什么先画成带子、现在又改回圆
-##
-## M3.5-h 画的是一条**竖带**，理由写得很硬：
-## [member PBSkill.radius] 那时只作用在推进轴上，纵向散布是渲染层
-## 为了不让 48 个敌人挤成一条线才编的，一点都不算数 ——
-## 画成圆会让玩家去躲一个根本不存在的纵向判定，那比不画更糟。
-##
-## **M4-a 把纵向搬进了 sim**（[member PBEnemy.lane]），那条理由随之反转：
-## 半径现在是真圆，带子才是谎话。它会让玩家以为整条道都会挨到，
-## 于是根本不去躲 —— 而躲得开。
-##
-## 圆是**真圆**，不是椭圆：两轴共用同一个像素比例
-## （[method PBLayout.px_per_unit]）。不共用的话画出来的形状
-## 和判定的形状不是一回事，而那正是这一整块要兑现的东西。
-##
-## ## 越接近落地越亮
-##
-## 一个恒定亮度的圈读不出「还有多久」，而那正是预判要的那一格信息。
+## 画成地面上的圆（屏幕上是椭圆，[method PBLayout.ground_disc]）：半径是真圆，画的形状必须和判定的形状一致。
+## **越接近落地越亮**：恒定亮度读不出「还有多久」，而那正是预判要的信息。
 
 ## 同屏最多几个。出战席 10 人 + 尾兽，全都同时下达也就 11 个。
 const CAPACITY: int = 12
 
-## 填充要**很淡**，亮的是那圈边。
-##
-## 带子那一版填充可以浓一点：它只有 2×radius 宽，压着战场一小条。
-## 圆的面积是那条带子的好几倍（半径 0.12 换算过来是 134 像素直径），
-## 同样的透明度画出来是一大块盖住半个战场的色块 —— 玩家看到的不是
-## 「这儿要挨打」，而是「屏幕脏了」。
+## 填充要**很淡**，亮的是那圈边 —— 圆的面积很大，同样的透明度会盖住半个战场，读起来是「屏幕脏了」。
 const FILL := Color(0.98, 0.72, 0.32, 0.05)
 const EDGE := Color(0.98, 0.85, 0.45, 0.75)
 
@@ -77,11 +52,7 @@ func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector
 	var scale: float = PBLayout.px_per_unit(field)
 	_shown = 0
 	for attacker: PBAttacker in attackers:
-		# **每一格都要扫，不只大招那一格**（M7-h 补的）。M7-e 给了玩家自己的
-		# 技能格，而这里一直只看 [member PBAttacker.ultimate] ——
-		# 于是玩家手放的地面技能在飞的那几 tick 没有落点预示圈，
-		# 也就是 §02 那个预判窗口对**唯一由玩家下达的那一发**不存在。
-		# 和 M7-e 修的「落地那一趟只扫大招那一格」是同一个形状。
+		# **每一格都要扫，不只大招那一格**：玩家手放的地面技能在飞的那几 tick 也要有预示圈。
 		for i: int in PBSkillRules.cast_count(attacker):
 			if _shown >= CAPACITY:
 				break
@@ -89,12 +60,8 @@ func sync_pending(attackers: Array[PBAttacker], current_tick: int, field: Vector
 	queue_redraw()
 
 
-## 一发待落地的技能，够格就收进池子。
-##
-## **只有地面档有落点预示**（M7-c）。锁定队友的治疗、不挑目标的自增益
-## 照样是「一发在路上」（[method PBSkillCast.is_pending]），但它们
-## 没有落点 —— 不拦的话这里会照着 [constant PBSkillCast.NO_SPOT]
-## 在场外画一个半径 0 的圈，而且白占一个池子槽位。
+## 一发待落地的技能，够格就收进池子。**只有地面档有落点预示**：锁定档和不挑目标的
+## 也是「一发在路上」，但没有落点，不拦的话会在场外画一个半径 0 的圈、白占一个池子槽位。
 func _add(cast: PBSkillCast, current_tick: int, field: Vector2, scale: float) -> void:
 	if cast == null or not cast.is_pending() or cast.lands_at <= current_tick:
 		return
@@ -130,11 +97,7 @@ func radius_of(index: int) -> float:
 	return _radii[index] if index >= 0 and index < _shown else 0.0
 
 
-## 直接画，不再养一池 `ColorRect`。
-##
-## 带子那一版是两条竖边加一块填充，三个矩形拼得出来；圆拼不出来。
-## `draw_circle` / `draw_arc` 每帧重画，而这个节点本来就只在
-## [method sync_pending] 变了之后 `queue_redraw`。
+## 直接画（`draw_circle` / `draw_arc`），只在 [method sync_pending] 变了之后 `queue_redraw`。
 func _draw() -> void:
 	for i: int in _shown:
 		# **重合的圈只画一次。**
@@ -149,9 +112,7 @@ func _draw() -> void:
 		if _merged_into_earlier(i):
 			continue
 		var near: float = _closeness[i]
-		# 战场上的圆在屏幕上是椭圆（M6-a），见 [method PBLayout.ground_disc]。
-		# 这一处尤其不能自己画正圆：**它就是「这儿要挨打」那句话本身**，
-		# 画错形状等于让玩家往一个安全的地方躲。
+		# 这一处尤其不能画正圆：**它就是「这儿要挨打」那句话本身**，画错形状等于让玩家往安全的地方躲。
 		var ring := PBLayout.ground_disc(_centers[i], _radii[i], SEGMENTS)
 		draw_colored_polygon(ring, Color(FILL.r, FILL.g, FILL.b, FILL.a + near * FILL_RAMP))
 		draw_polyline(

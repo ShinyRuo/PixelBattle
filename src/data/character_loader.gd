@@ -1,24 +1,12 @@
 class_name PBCharacterLoader
 extends RefCounted
-## 把 `data/characters/*.tres` 装成一张 [PBCharacterTable]。M2-a2。
+## 把 `data/characters/*.tres` 装成一张 [PBCharacterTable]。
 ##
-## ## 为什么它不在 `src/core/` 里
+## 不在 `src/core/`：`ResourceLoader` 被纯度检查挡住。core 只认表的类型，批量模拟喂合成表、测试现造、
+## 真游戏喂 `.tres`，共用同一套规则。报错只能在这一层做（只有这里手上有文件路径）。
 ##
-## `ResourceLoader` 被 core 纯度检查明令挡住（§14）。这不是麻烦，是分工：
-## **core 只认 [PBCharacterTable] 这个类型，不知道角色从哪来。**
-## 于是批量模拟可以喂它一张合成表、测试可以现造一张、真游戏喂它 `.tres`，
-## 三者共用同一套规则代码。
-##
-## 报错也只能在这一层做 —— 只有这里手上有 `.tres` 的文件路径，
-## 能指出是**哪一份数据**写错了。core 里只能打出一个没有出处的 id。
-##
-## ## 排序不是洁癖，是确定性
-##
-## [method DirAccess.get_files] 的顺序由文件系统决定，跨平台不保证一致。
-## 而抽卡是「掷稀有度 → 在该稀有度的角色里掷下标」——
-## **顺序一变，同一个种子在另一台机器上就抽到别的角色**，
-## 而 §12 的存档回放和 §13 的每日种子挑战全都要求逐位一致。
-## 所以这里强制按文件名排序，和 §14 的三条 RNG 流是同一类约束。
+## **排序是确定性**：[method DirAccess.get_files] 的顺序跨平台不保证一致，而抽卡是
+## 「掷稀有度 → 在该稀有度的角色里掷下标」—— 顺序一变，同一个种子在另一台机器上抽到别的角色。
 
 const DIR := "res://data/characters"
 

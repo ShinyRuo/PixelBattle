@@ -1,22 +1,10 @@
 class_name PBFieldRoster
 extends RefCounted
-## 「屏幕上这三档各是谁」——在场 / 出任务 / 名单转卡。全部 static。M6-j。
-##
-## ## 为什么从 [PBBattleView] 里搬出来
-##
-## 直接的触发是那个文件顶到了 gdlint 的 1000 行上限，而战斗日志（M6-j）
-## 还要往里接线。那条上限「超了不是错，是该拆了的信号」——
-## 这次它指的地方是对的：这三个函数一个字都不碰画面，
-## 它们回答的是**「这一波谁在哪一档」**，而那是 state + plan 的派生量。
-##
-## 三档的分法和 [PBCardMoves] 的三个区是同一套（战场 / 仓库 / 任务栏），
-## 仓库那一档在 [method PBRosterBay.idle_units]（它是前两档的补集）。
+## 「屏幕上这几档各是谁」—— 在场 / 出任务 / 名单转卡。全部 static，不碰画面，是 state + plan 的派生量。
+## 三档和 [PBCardMoves] 的三个区是同一套；仓库那一档在 [method PBRosterBay.idle_units]（前两档的补集）。
 
 ## 这一波谁去做任务：锁过了照 `dispatched_ids` 念，准备阶段就是任务栏里站着的那几个。
-##
-## **M5-7 少了一种口径**：「接了任务但一个人都没挑」跟着那个按钮一起没了 ——
-## 接不接现在**就是**任务栏里站着几个人（见 [PBQuestCard] 顶部）。
-## 脚本玩家仍走末尾规则，但那条路在 `lock_plan` 里，不经过这里。
+## 脚本玩家的末尾规则在 `lock_plan` 里，不经过这里。
 static func dispatch_preview(state: PBRunState) -> Array[PBUnit]:
 	if not state.dispatched_ids.is_empty():
 		return units_of(state, state.dispatched_ids)

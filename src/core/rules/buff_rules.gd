@@ -1,48 +1,28 @@
 class_name PBBuffRules
 extends RefCounted
-## 效果的词汇表、合并规则与数值解析（M7-a）。全部 static，无状态，零引擎依赖。
+## 效果的词汇表、合并规则与数值解析。全部 static，无状态，零引擎依赖。
 ##
-## ## 这一层是「一个 buff 到底改了什么」的唯一真相
+## 「一个 buff 到底改了什么」的唯一真相。**拼错的键加载时当场报错**。
 ##
-## 和 [PBBondFunctionRules] 同一套写法：一份 const 键表，加载时校验，
-## **拼错的键当场报错**。静默什么都不发生的话，从现象反推不出来 ——
-## 玩家看到的只是「这个技能好像没用」。
+## ## [constant ALL] 里的键 = 已经接上读点的键
 ##
-## ## [constant ALL] 里的键 = **已经接上读点的键**
+## 拼错的键有报错拦着，**拼对了却没人读**的键什么都不会说 —— 数据、界面、日志
+## 全都正常，只有伤害数字不对。所以键跟着读点一起进来，不预留。
 ##
-## 这条比「先把词汇表铺满，读点以后再接」重要得多。一个**拼错**的键有报错拦着，
-## 而一个**拼对了却没人读**的键什么都不会说 —— 它比拼错更难查，
-## 因为数据、界面、日志全都正常，只有伤害数字不对。
-##
-## 所以键是跟着读点一起进来的：M7-a 只有三个（[constant DAMAGE_SCALE] /
-## [constant HEAL] / [constant MANA]），M7-d 连同 [PBEnemy] 的效果袋
-## 一起加了敌方那三个（[constant HURT] / [constant ENEMY_SPEED_SCALE] /
-## [constant HARM]）。护盾那几个还没进来。
-##
-## ## 敌方那张词汇表**不是己方那张照搬**
-##
-## [PBEnemy] 压根没有 `defence` 字段（[method PBEnemy.take_damage] 直接扣血），
-## 也没有蓝、没有射程档 —— 照搬过去的键会是「拼对了却没人读」的那一种，
-## 而那正是上面这条规矩要挡的东西。
+## 敌方那张词汇表**不是己方那张照搬**：[PBEnemy] 没有 `defence`、没有蓝、没有射程档，
+## 照搬过去的键就是「拼对了却没人读」。
 ##
 ## ## 两类键，合并方式不同
 ##
 ## **率型**（`*_scale`、[constant HURT]）无量纲，多份**连乘**，空的时候是 1.0；
 ## **量型**（血、蓝、盾、[constant HARM]）有量纲，多份**累加**，空的时候是 0.0。
-## 这条区分同时决定了「数值怎么随等级长」，见 [method resolve]。
+## 这条区分同时决定了数值怎么随等级长，见 [method resolve]。
 ##
-## ## 每 tick 推进也在这一层
-##
-## [method advance_ally] / [method advance_enemy] 是「一个单位身上挂着的东西
-## 过了一个 tick」——周期载荷该触发的触发、过期的槽位腾出来。
-## 它和 [PBSkillRules]（一发技能落地时发生什么）、[PBMoveRules]（该往哪儿走）
-## 一样是纯规则：[PBBattleSim] 只留「什么时候调它」。
+## 每 tick 推进（[method advance_ally] / [method advance_enemy]）也在这一层，
+## [PBBattleSim] 只管什么时候调。
 
 ## 出手伤害倍率。读点在 [method PBAttacker.strike_for]。
-##
-## M3-d 的「全队短时增伤」（§11 二尾、§09 定身档的控制期增伤）
-## **M7-a 起就是这个键** —— 在那之前它是 [PBBattleSim] 上的一对
-## `_buff_scale` / `_buff_until`，一份、全场、后来者覆盖前者。
+## 「全队短时增伤」就是给每个人各挂一份这个键。
 const DAMAGE_SCALE: StringName = &"damage_scale"
 
 ## 立刻回血。读点在 [method PBAttacker.heal]。
@@ -51,103 +31,69 @@ const HEAL: StringName = &"heal"
 ## 立刻回蓝。读点在 [method PBAttacker.restore_mana]。
 const MANA: StringName = &"mana"
 
-## 易伤：这个敌人挨的每一下乘多少（M7-d）。
+## 易伤：这个敌人挨的每一下乘多少。
 ##
-## **读点在 [method PBEnemy.take_damage] 里面，不在调用方。**
-## 调用方有六处（单体、连续输出、范围、子弹命中、技能落地、周期载荷），
-## 而漏乘一处的表现是「某一种攻击方式吃不到易伤」——
-## 要盯着日志看很久才发现。放进类里就只有一个读点，
-## 和 [method PBAttacker.strike_for] 顶上那条是同一条理由。
+## **读点在 [method PBEnemy.take_damage] 里面，不在调用方** —— 调用方有六处，
+## 漏乘一处的表现是「某一种攻击方式吃不到易伤」。
 const HURT: StringName = &"hurt"
 
-## 个体减速：这个敌人自己走多快（M7-d）。0 = 定身。
+## 个体减速：这个敌人自己走多快。0 = 定身。
 ##
-## **和 [PBBattleSim] 那份「全场减速」是两个东西，两者相乘。**
-## 那一份是**场**的属性（新出场的敌人也吃得到），这一份挂在单位上。
-## 读点在 [method PBEnemy.advance] / [method PBEnemy.march_to] 里面，
-## 理由同 [constant HURT]。
+## **和 [PBBattleSim] 的全场减速是两个东西，两者相乘**：那一份是场的属性
+## （新出场的敌人也吃得到），这一份挂在单位上。读点在
+## [method PBEnemy.advance] / [method PBEnemy.march_to] 里面，理由同 [constant HURT]。
 const ENEMY_SPEED_SCALE: StringName = &"enemy_speed_scale"
 
-## 晕眩：这个敌人这一 tick 不许出手（M12-c2）。大于 0 就是定住了。
+## 晕眩：这个敌人这一 tick 不许出手。大于 0 就是定住了。
 ##
-## **它是 [constant ENEMY_SPEED_SCALE] 差的那一半。** 在它之前，
-## 六份「禁锢」型效果（心转束缚、影子禁锢、追牙束缚、水龙禁锢、
-## 森罗万象缠绕、月读囚）全都只写 `enemy_speed_scale=0`，
-## 而 `data/buffs.tsv` 里就记着那条降级：
-## 「停的是走位，敌人站在原地照样出手」—— 原版那几个写的是
-## 「无法移动**攻击和施法**」。
+## 「禁锢」型效果要同时配它和 [constant ENEMY_SPEED_SCALE] —— 后者只停走位，
+## 敌人站在原地照样出手。
 ##
-## **读点在 [method PBEnemy.ready_to_fire] 里面，不在调用方** ——
-## 近战与远程在那一句之后才分岔，各判一次的表现是
-## 「定住了还会放箭」。同 [constant HURT] 顶上那条。
+## **读点在 [method PBEnemy.ready_to_fire] 里面**：近战与远程在那一句之后才分岔，
+## 各判一次的表现是「定住了还会放箭」。
 const STUN: StringName = &"stun"
 
-## 致盲：这个敌人出手打得中的概率（M12-c2）。0.5 = 一半打空。
+## 致盲：这个敌人出手打得中的概率。0.5 = 一半打空。
 ##
-## **写命中率不写丢失率**，因为它要跟
-## [constant ENEMY_SPEED_SCALE] 一样当率型用：多份**连乘**、空的时候是 1.0。
-## 写成丢失率的话两份 50% 相加就是 100%，而那不是人会预期的叠加方式。
+## **写命中率不写丢失率**：要当率型用（多份连乘、空的时候 1.0）。
+## 写成丢失率的话两份 50% 相加就是 100% 全空。
 ##
-## 读点在 [method misses] 里面，**排在近战/远程分岔之前** ——
-## 分岔之后各判一次的表现是「只有近战会打空」。
+## 读点在 [method misses] 里，**排在近战/远程分岔之前**。
 const ENEMY_HIT_SCALE: StringName = &"enemy_hit_scale"
 
-## 掉血：中毒、灼烧那一类（M7-d）。读点在 [method advance_enemy] 与
-## [method PBSkillRules.apply_one_enemy]，两条都最终走
-## [method PBEnemy.take_damage] —— 它才是记账（击杀数）的那道门。
+## 掉血：中毒、灼烧那一类。读点在 [method advance_enemy] 与
+## [method PBSkillRules.apply_one_enemy]，都最终走 [method PBEnemy.take_damage]（记账的门）。
 ##
-## 己方那一侧**故意没有对应的键**：忍者掉血要走
-## [method PBAttacker.take_damage] 那一整套（阵亡记账、日志、`allies_lost`），
-## 而 v1 没有任何一个技能要给自己人上 DoT。
+## 己方**故意没有对应的键**：忍者掉血要走 [method PBAttacker.take_damage] 那一整套
+## （阵亡记账、日志、`allies_lost`），而没有技能要给自己人上 DoT。
 const HARM: StringName = &"harm"
 
-## 暴击率**临时**加多少（M10-c）。读点在 [method PBCritRules.chance_of]。
+## 暴击率**临时**加多少。读点在 [method PBCritRules.chance_of]。
 ##
-## ## 为什么它是量型（累加、空 = 0.0）而不是率型
+## **量型不是率型**：概率是加法量，+15% 和 +10% 摞起来是 +25%；
+## 塞进率型的话两份 +15% 会算成 +32%，而它不报错。
 ##
-## 「+15% 暴击」和「+10% 暴击」摞在一起要得到 +25%，不是 ×1.15×1.10。
-## 概率本来就是加法量，把它塞进率型的话两份 +15% 会算成 +32%，
-## **而它不报错** —— 只表现为「凑得越多暴得越离谱」。
-##
-## ## 常驻的那一份不在这里
-##
-## 羁绊的暴击光环整波常驻、没有施法者、也不该占袋子的槽位，
-## 它落在 [member PBAttacker.crit_chance] 上（同「装备、羁绊已经乘死」那一档）。
-## 这个键是**临时**那一份：命中后短时提暴击、技能给的暴击窗口。
-## 两者在 [method PBCritRules.chance_of] 相加 —— 一个读点。
+## 常驻那一份（羁绊光环）在 [member PBAttacker.crit_chance] 上，两者在
+## [method PBCritRules.chance_of] 相加。
 const CRIT_CHANCE: StringName = &"crit_chance"
 
-## 暴击时**额外**多打几成，临时那一份（M10-c）。读点在 [method PBCritRules.bonus_of]。
-##
-## **存的是「额外」不是「倍数」**，所以中性值 0.0 就是「不额外多打」，
-## 和量型那条规矩天然对得上。存倍数的话中性值得是 1.0，
-## 而那要么把它挪进 [constant SCALES] 变成连乘（两份 +50% 算成 +125%），
-## 要么给量型开一个例外 —— 两条都比换一个语义贵。
+## 暴击时**额外**多打几成，临时那一份。读点在 [method PBCritRules.bonus_of]。
+## **存「额外」不存「倍数」**，中性值 0.0，和量型规矩天然对得上。
 const CRIT_DAMAGE: StringName = &"crit_damage"
 
-## 护盾：还能替他挡下多少伤害（M11-b）。读点在 [method PBAttacker.take_damage]。
+## 护盾：还能替他挡下多少伤害。读点在 [method PBAttacker.take_damage]。
 ##
-## ## 它是**会被消耗**的那一份，所以走 [method PBBuffBag.absorb]
-##
-## 别的键都是「查一下现在是多少」，护盾是「花掉一点就少一点」——
-## 那笔账只能记在挂着的那一份上（[member PBBuffState.mods]），
-## 而扣减必须只有一个入口，否则「同一发伤害被两处各扣一次护盾」不报错。
-##
-## **量型（累加）**：两份护盾摞起来是两份都能挡。而它有时限 ——
-## 「一段时间内吸收 N 点伤害」这两个维度正好是一份 buff 的形状，
-## 挂在 [PBAttacker] 上一个裸字段的话，到期该减多少没有地方记。
+## 它是**会被消耗**的那一份，走 [method PBBuffBag.absorb]：账记在挂着的那一份上
+## （[member PBBuffState.mods]），扣减只有一个入口，否则同一发伤害会被两处各扣一次。
+## **量型**，而且有时限 —— 「一段时间内吸收 N 点」正好是一份 buff 的形状。
 const SHIELD: StringName = &"shield"
 
-## 挨打的倍率：这个人受到的每一下乘多少（M11-b）。**0 = 无敌。**
+## 挨打的倍率：这个人受到的每一下乘多少。**0 = 无敌。**
 ##
-## 读点在 [method PBAttacker.take_damage] **里面**，不在调用方 ——
-## 己方挨打有两条路（敌人近战、敌人的子弹），漏乘一处的表现是
-## 「被子弹打就吃不到减伤」，而它不报错。同 [constant HURT] 顶上那条。
+## 读点在 [method PBAttacker.take_damage] **里面** —— 己方挨打有两条路，
+## 漏乘一处的表现是「被子弹打就吃不到减伤」。
 ##
-## **和敌方那边的 [constant HURT] 是相反方向的同一件事**，但故意是两个键：
-## 一个挂在忍者身上（我扛得住多少），一个挂在怪身上（他挨得更疼），
-## 合成一个键的话「给敌人上易伤」和「给自己上减伤」会共用一份数值，
-## 而那两件事的合理取值范围完全不同。
+## 和敌方的 [constant HURT] 方向相反，**故意是两个键**：两件事的合理取值范围完全不同。
 const DAMAGE_TAKEN: StringName = &"damage_taken"
 
 ## 全部**已经接上读点**的键。见本类顶部。
@@ -197,14 +143,9 @@ static func team_damage() -> PBBuff:
 	return _team_damage
 
 
-## 这一下打空了吗（[constant ENEMY_HIT_SCALE]，M12-c2）。
+## 这一下打空了吗（[constant ENEMY_HIT_SCALE]）。
 ##
-## **排在近战/远程分岔之前调** —— 分岔之后各判一次的表现是
-## 「只有近战会打空」，而它不报错。同 [constant HURT] 顶上那条。
-##
-## **没被致盲时一次骰子都不掷**（命中率恰好是 1.0）——
-## 同 [method PBCritRules.strike] 顶上那条：掷了就算打中也已经拨动了那条流。
-##
+## **排在近战/远程分岔之前调**。没被致盲时（命中率恰好 1.0）一次骰子都不掷。
 ## [param rng] 为 null 时（批量扫描、探测）恒不打空且不掷骰。
 static func misses(enemy: PBEnemy, at_tick: int, rng: RandomNumberGenerator) -> bool:
 	if enemy == null or rng == null:
@@ -305,17 +246,11 @@ static func to_ticks(seconds: float, cfg: PBSimConfig) -> int:
 
 ## 一个己方单位身上的效果过了一个 tick：周期载荷该触发的触发，过期的腾出来。
 ##
-## ## 清扫和触发合在一个循环里是安全的
+## 清扫和触发合在一个循环里是安全的：过期是**每次查询时比 tick**
+## （[method PBBuffState.is_live]），[method PBBuffBag.sweep] 只回收槽位，
+## 漏跑、早跑、晚跑都不改变结算结果。
 ##
-## 过期的判据是 [method PBBuffState.is_live] **每次查询时比 tick**，
-## [method PBBuffBag.sweep] 只是回收槽位 —— 漏跑、早跑、晚跑都不可能
-## 改变任何结算结果（见 [PBBuffBag] 顶部）。所以它不必单独占一趟遍历。
-##
-## ## 这一支只做回复，不做伤害
-##
-## 回血回蓝改的是自己的量，结算完就完了；而忍者**掉血**要走
-## [method PBAttacker.take_damage] 那一整套（阵亡记账、日志、`allies_lost`），
-## 而 v1 没有任何一个技能要给自己人上 DoT（见 [constant HARM]）。
+## 这一支只做回复，不做伤害（理由见 [constant HARM]）。
 static func advance_ally(unit: PBAttacker, at_tick: int) -> void:
 	for state: PBBuffState in unit.buffs.states():
 		if not state.is_due(at_tick):

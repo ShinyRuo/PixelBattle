@@ -1,26 +1,12 @@
 extends SceneTree
-## 按 `data/bonds.tsv` 重铺整张羁绊表（M10-b）。同 [i]make_roster.gd[/i]。
+## 按 `data/bonds.tsv` 重铺整张羁绊表。同 [i]make_roster.gd[/i]。
 ##
 ## ```powershell
 ## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --headless --path . -s src/tools/make_bonds.gd
 ## ```
 ##
-## ## 兜底羁绊全删了
-##
-## 原来 11 组里有 6 组是**属性型兜底**（同系 4 人 +16%）。玩家定的「羁绊全部
-## 按原版文档来」把它们一起删了 —— 而那顺带拆掉了 CLAUDE.md 排第一的那条
-## 结构性冲突：§09 的兜底档「按属性匹配，随便带 16 张卡也会每系摊到 2–3 个，
-## **不会凑的玩家白拿 1.705×**」，而技能阶梯的定义恰恰是「会玩才拿得到」。
-## 两者从同一个数值池子两头拉，删掉兜底就是把池子拆开。
-##
-## 所以 [enum PBBond.Match] 的属性档从此**没有数据走**。枚举值留着
-## （`PBBondTable.synthetic` 的对拍曲线还在用 `EVERYONE` 档），
-## 但真表里一条都不会有。
-##
-## ## 名字不在这个文件里
-##
-## 同 [i]make_roster.gd[/i]：§14 铁律 5 不许 `src/` 出现角色名，
-## 而羁绊 id 另有一条 `test_no_bond_id_leaks_into_src` 钉着。
+## 真表里没有属性型兜底羁绊：[enum PBBond.Match] 的属性档没有数据走，枚举值留着给合成表。
+## 名字不在这个文件里（铁律 5），羁绊 id 另有 `test_no_bond_id_leaks_into_src` 钉着。
 
 const TABLE := "res://data/bonds.tsv"
 const OUT_DIR := "res://data/bonds"
@@ -34,12 +20,8 @@ const COL_MEMBERS: int = 5
 const COL_MEMBER_FX: int = 6
 const COL_PATCHES: int = 7
 
-## 满档加成 = 本值 ×（满档人数 − 1）。
-##
-## **从既有的两组反推出来的**：M6-j 塌成一档之后，猪鹿蝶（3 人）是 0.28、
-## 凯班（4 人）是 0.42 —— 差 0.14。所以重铺时那两组一个数都不动，
-## 新加的 18 组落在同一条线上。拍一个新斜率的话，此前所有扫描结论
-## （GROWTH 1.10 的锚点、装备 300 的定价）都要跟着重扫。
+## 满档加成 = 本值 ×（满档人数 − 1）。斜率从既有数据反推（3 人 0.28、4 人 0.42），
+## 拍一个新斜率的话此前所有扫描结论都要重扫。
 const POWER_PER_MEMBER: float = 0.14
 
 
@@ -116,16 +98,11 @@ func _write_one(row: PackedStringArray) -> String:
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
 
 
-## 「每个在场成员各拿自己那一份」那张表（M12-d1）。**返回错误信息，空串 = 成功。**
+## 「每个在场成员各拿自己那一份」那张表。**返回错误信息，空串 = 成功。** 两个来源汇进同一张表：
 ##
-## 两个来源汇进同一张表：
-##
-## - **`功能键` 那一列点到触发型那四个时，翻译成载体本人的一份**
-##   （量取 [constant PBBondFunctionRules.CARRIER_AMOUNTS]，**一个数都没动**）。
-##   M10-d 时它们走的是 `Landing.CARRIER`，那一档 M12-d1 去掉了 ——
-##   留着两条路的话「羁绊给的溅射」会有两个来源，而两个来源迟早不一样大。
-## - **`成员效果` 那一列**：`角色id:键=量,键=量;角色id:...`，
-##   这才是原版的形状（45 组里只有 3 组是人人同一句）。
+## - **`功能键` 那一列点到触发型那几个时，翻译成载体本人的一份**（量取 [constant PBBondFunctionRules.CARRIER_AMOUNTS]）——
+##   只有一条路，否则「羁绊给的溅射」有两个来源，迟早不一样大。
+## - **`成员效果` 那一列**：`角色id:键=量,键=量;角色id:...`（原版的形状）。
 func _fill_members(bond: PBBond, row: PackedStringArray, members: Array) -> String:
 	var out: Dictionary = {}
 	var key := StringName(row[COL_FUNCTION])
@@ -153,13 +130,9 @@ func _fill_members(bond: PBBond, row: PackedStringArray, members: Array) -> Stri
 	return ""
 
 
-## 「每个在场成员各自的技能补丁」那张表（M12-d2）。**返回错误信息，空串 = 成功。**
-##
-## 列的写法：`角色id:技能id:键=量,键=量;角色id:技能id:...`
-##
-## **原版羁绊的主形状就是这个**：118 条效果里 80 条是「强化本人的某个具名技能」。
-## 词汇表见 [PBSkillPatchRules]，**不认识的键直接报错退出** ——
-## 静默跳过的表现正是「配了不生效」。
+## 「每个在场成员各自的技能补丁」那张表。**返回错误信息，空串 = 成功。**
+## 列的写法：`角色id:技能id:键=量,键=量;角色id:技能id:...`。词汇表见 [PBSkillPatchRules]，
+## **不认识的键直接报错退出** —— 静默跳过的表现正是「配了不生效」。
 func _fill_patches(bond: PBBond, row: PackedStringArray, members: Array) -> String:
 	var cell: String = row[COL_PATCHES] if row.size() > COL_PATCHES else ""
 	if cell == "":

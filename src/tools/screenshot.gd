@@ -32,10 +32,9 @@ const PRESS_FRAME: int = 20
 
 ## `--press` 认得的键名。只列准备阶段真的会按的那几个。
 const KEY_NAMES := {
-	# `b`（换带人方式）M6-h 从界面上删了，按它不再有任何反应 ——
-	# 留一个按不出效果的开关只会让人以为截图工具坏了。
+	# 没有 `b`：换带人方式那个键从界面上删了，留一个按不出效果的开关只会让人以为截图工具坏了。
 	"a": KEY_A,  # 自动推进
-	# `q`（接/不接任务）M5-7 没了 —— 接不接现在等于任务栏里站着几个人。
+	# 没有 `q`：接不接任务等于任务栏里站着几个人。
 	"escape": KEY_ESCAPE,  # 收说明卡 / 收弹层 / 取消选中
 	"space": KEY_SPACE,  # 暂停（战斗阶段）。截图前一刻按用 `--pause`
 }
@@ -59,20 +58,12 @@ var _hover: int = -1
 ## 摆出「正在等你点」的那一档：`attack` / `skill`。空 = 不摆。
 var _aim: String = ""
 
-## 截图前一刻按下暂停（M5-12）。**A 线在暂停时画全场**，
-## 而那一屏正是要看的东西 —— 不暂停只画选中那一条。
-##
-## 和 `--press space` 不是一回事：那个按在第 20 帧，战斗还没打起来，
-## 于是接下来一百帧都是同一张静止画面。这个按在**截图前两帧**。
+## 截图前一刻按下暂停。**A 线在暂停时画全场**，不暂停只画选中那一条。
+## 和 `--press space` 不同：那个按在第 20 帧（战斗还没打起来），这个按在截图前几帧。
 var _pause: bool = false
 
 ## 强行摊开一层模态（`offer` / `beasts`）。空 = 不开。
-## 仓库、忍具、装备栏都不在里面 —— M5-3 到 M5-5 之后它们是常驻面板。
-##
-## 和 `--pick` 同一个理由：这两层**只在特定操作之后才出现**
-## （三选一要先掏钱、选尾兽要先点指令），而截图工具送不出那串操作。
-## 没有这个开关的话，「这两层排得下吗」只能靠手开游戏回答 ——
-## 而抽屉那一版恰恰是这么伸出屏幕 65 像素而没人发现的（见 [PBLayout]）。
+## 这两层只在特定操作之后才出现，截图工具送不出那串操作 —— 没有它的话「这两层排得下吗」只能手开游戏回答。
 var _modal: String = ""
 
 ## 强行选中 C 或 D（`beast` / `base`）。空 = 不选。
@@ -82,12 +73,8 @@ var _modal: String = ""
 ## 而格子宽度放不放得下正是靠这张图判断的。
 var _select: String = ""
 
-## 局种子。**0 = 每次都换一局**，也就是默认行为。
-##
-## 给一个固定值，同一条命令就永远出同一张图 —— 于是排版改动可以
-## **逐字节对拍**：改之前截一张、改之后截一张，哈希一样就是「只搬了代码
-## 没动画面」。不给种子的话两张图连波次和金币都不一样，
-## 「这块面板是不是挪了两像素」只能靠肉眼猜。
+## 局种子。**0 = 每次都换一局**。给固定值的话同一条命令永远出同一张图，
+## 排版改动可以逐字节对拍（改前改后哈希一样就是「只搬了代码没动画面」）。
 var _seed: int = 0
 
 ## 强行把这几个角色塞进这一局并推上场（按 [member PBCharacter.id]）。
@@ -130,9 +117,8 @@ func _process(_delta: float) -> bool:
 	if _frames == PRESS_FRAME and not _press.is_empty():
 		for keycode: int in _press:
 			_key(keycode)
-	# 暂停按在最后 —— 前面那些帧要让战斗真的打起来（见 [member _pause]）。
-	# **留六帧**，不是两帧：按下去到画面上写着「暂停」中间隔着一次输入派发
-	# 和一次 `_physics_process`，两帧的余量实测会漏（截出来还在跑）。
+	# 暂停按在最后，前面的帧让战斗真的打起来。**留六帧**：按下到画面写着「暂停」隔着一次输入派发
+	# 和一次 `_physics_process`，两帧的余量会漏。
 	if _pause and _frames == maxi(_warmup - 6, PRESS_FRAME + 3):
 		_key(KEY_SPACE)
 	# 选中排在按键之后一帧，让面板先摆好。
@@ -161,13 +147,9 @@ func _process(_delta: float) -> bool:
 
 ## 把 [member _actors] 里那几个角色发到手上并推上场。
 ##
-## **先清空阵容再一个个塞。** [method PBCardMoves.set_on_field] 在出战席满了时
-## 什么都不做（那条规矩是对的：挤掉谁玩家不知道），所以不清的话
-## 后面几个会静默落空 —— 截出来的图少一个人，而命令行没有任何报错。
-##
-## 走 [method PBCardMoves.set_on_field] 而不是直接改 `state.lineup`：
-## 那个函数才带着 `field_slots` 那道门槛和「先记派遣再安排座位」的顺序
-## （M5-13），绕过去的话截图验的就不是玩家走的那条路了。
+## **先清空阵容再一个个塞**：[method PBCardMoves.set_on_field] 在出战席满了时什么都不做，不清的话后面几个静默落空。
+## 走那个函数而不是直接改 `state.lineup`：它带着 `field_slots` 门槛和「先记派遣再安排座位」的顺序，
+## 绕过去的话截图验的就不是玩家走的那条路。
 func _seed_actors() -> void:
 	var state: PBRunState = _scene._state
 	var strategy: PBStrategy = _scene._strategy
@@ -200,9 +182,7 @@ func _key(keycode: int) -> void:
 func _hover_tile() -> void:
 	var bay := _scene.get_node_or_null("HUD/Stash") as PBRosterBay
 	if bay == null or not bay.visible:
-		# 战斗阶段仓库是收起来的，而**战斗中的指令卡也要看得见**
-		# （M4-e 的攻击 / 自动选敌、M5-9 的忍术）—— 那时选中的入口
-		# 是战场上的忍者，不是仓库里的卡。
+		# 战斗阶段仓库收起来了，而战斗中的指令卡也要看得见 —— 那时选中的入口是战场上的忍者。
 		_pick_fighter()
 		return
 	var seen: int = 0
@@ -216,15 +196,11 @@ func _hover_tile() -> void:
 	printerr("场上没有第 %d 个忍者" % _hover)
 
 
-## 摆出「正在等你点」的那一档（M5-11），好让 B / C 两条虚线入镜。
-##
-## 鼠标要**真的挪过去**（`warp_mouse`）—— 那两条线的终点读的是
-## [method Viewport.get_mouse_position]，不挪的话终点是屏幕左上角。
+## 摆出「正在等你点」的那一档，好让 B / C 两条虚线入镜。
+## 鼠标要**真的挪过去**（`warp_mouse`）：那两条线的终点读的是 [method Viewport.get_mouse_position]。
 func _aim_at() -> void:
-	# **`ultimate` 这一档 M7-h 没了**：忍术格从指令卡上删掉了，
-	# 而 [method PBSkillBar.begin] 连带堵死了下标 0 那条路 ——
-	# 留着这个名字的话它会静默什么都不发生。`skill` 指的是选中那个人的第 1 格，
-	# 他没配技能就什么都不摆（那正是现在的默认情况）。
+	# 没有 `ultimate` 这一档：指令卡上不摆忍术格，[method PBSkillBar.begin] 也堵死了下标 0。
+	# `skill` 指选中那个人的第 1 格，他没配技能就什么都不摆。
 	if _aim != "attack" and _aim != "skill":
 		printerr("--aim 只认 attack / skill，收到：%s" % _aim)
 		return
@@ -234,11 +210,8 @@ func _aim_at() -> void:
 	Input.warp_mouse(PBLayout.B_FIELD.position + PBLayout.B_FIELD.size * Vector2(0.62, 0.45))
 
 
-## 战斗中假装玩家点了场上第 [member _hover] 个忍者（M5-9）。
-##
-## 走 `_select` 而不是伪造一次战场点击：点击要先换算屏幕坐标再做命中测试，
-## 而那两样各自都已经有测试钉着（`test_battle_control.gd`）。
-## 这里要的只是「指令卡在有人选中时长什么样」。
+## 战斗中假装玩家点了场上第 [member _hover] 个忍者。
+## 走 `_select` 而不是伪造一次战场点击：坐标换算和命中测试各自已有测试（`test_battle_control.gd`）。
 func _pick_fighter() -> void:
 	var deployed: Array[PBUnit] = _scene._plan.deployed
 	if _hover >= deployed.size():

@@ -1,20 +1,11 @@
 class_name PBActorLibrary
 extends RefCounted
-## 把 `data/actors/*.tres` 装成一张「键 → [PBActorSkin]」的表。M6-b。
+## 把 `data/actors/*.tres` 装成一张「键 → [PBActorSkin]」的表。
 ##
-## ## 和 [PBCharacterLoader] 同一条分工线
+## 读盘只能在 core 外面（铁律 1）。角色数值走 [PBCharacterLoader]、形象走这里，两张表用
+## [member PBCharacter.actor_key] 对上，谁都不知道对方存在 —— 批量模拟一张图都不加载照样跑。
 ##
-## `ResourceLoader` 被 core 纯度检查明令挡住（§14），所以「读盘」这件事
-## 只能发生在 core 外面。角色数值走 [PBCharacterLoader]，形象走这里 ——
-## 两张表用同一个键（[member PBCharacter.actor_key]）对上，
-## 但**谁都不知道对方存在**：批量模拟一张图都不加载照样跑。
-##
-## ## 目录不存在不是错
-##
-## `assets/` 现在一个素材都没有，`data/actors/` 因此长期只有一份说明。
-## [PBCharacterLoader] 那边目录打不开要 `push_error`（没有角色表就没有游戏），
-## 这里不能 —— 每帧刷一条「形象目录打不开」的错，而正确的行为
-## 恰恰是退回白模（[PBWhiteModel]）。**空 = 白模**，这是这一步敢落地的前提。
+## **目录不存在不是错**：素材大部分不进版本控制，打不开的正确行为是退回白模（[PBWhiteModel]）。
 
 const DIR := "res://data/actors"
 
@@ -52,10 +43,8 @@ static func load_from(dir_path: String) -> Dictionary:
 		return out
 	var names := dir.get_files()
 	names.sort()
-	# **攻击段一律补到 6 帧**（M9-e），见 [method PBActorSkin.hold_last_to]。
-	# 在这儿补而不是在流水线里补：库里 27 个角色是按老规矩导的（3~6 帧不等），
-	# 而「第 4 帧出手」只有在每一段帧数相同时才是同一句话。
-	# 改盘上的素材要人手重导 27 遍，载入时补一下不用动任何一张图。
+	# **攻击段一律补到 6 帧**（见 [method PBActorSkin.hold_last_to]）：「第 4 帧出手」只有在每段帧数相同时
+	# 才是同一句话。载入时补，不必重导盘上的素材。
 	var want: int = PBSimConfig.new().anim_frames
 	for file_name: String in names:
 		if not file_name.ends_with(".tres"):

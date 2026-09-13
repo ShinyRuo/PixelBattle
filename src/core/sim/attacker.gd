@@ -1,28 +1,12 @@
 class_name PBAttacker
 extends RefCounted
-## 战场上的**一个己方攻击者**。M3-a 起，战斗从「整队一个标量 DPS」换成一组攻击者。
+## 战场上的**一个己方攻击者**：这一波战斗里那张卡在场上的样子（一波一份，打完就扔）。
 ##
-## ## 为什么必须把标量拆开
+## 整队一个标量 DPS 集火最前面那个的话，数学上不存在「场上稳定有几个人」的中间态 ——
+## 清得比出得快就是空场，慢就是雪崩。多个单位**按各自的射程各打各的**，敌人才会在行军里被慢慢磨。
 ##
-## M0 已经证明：**单目标集火在数学上不存在「场上稳定有几个人」的中间态** ——
-## 清得比出得快就是空场，慢就是雪崩。三条设计缺口（战场长期没有敌人 /
-## 单波只有 12 秒 / BOSS 波比精英波还轻松）是同一个根因的三种表现。
-##
-## 真塔防看得见一群敌人，是因为多个单位**按各自的射程各打各的**，
-## 敌人在整段行军里被慢慢磨。而「谁打谁」需要一个承载体 ——
-## 标量 DPS 里既没有位置也没有射程，那件事无处可写。
-##
-## ## 站位是射程的派生量，不是独立字段
-##
-## §02 的前中后三列映射到屏幕的右中左，与敌人推进方向一致：
-## 射程短的必须站前排才够得着，射程长的站后排照样打得到。
-## 两者本来就是同一件事的两种说法，**存两份迟早对不上**。
-## 玩家手动排阵型是后续的 UI 步骤，那时站位才成为一个独立决策。
-##
-## ## 与 [PBUnit] 的分工
-##
-## [PBUnit] 是玩家手上的那张卡（跨波存在，进存档）；本类是**这一波战斗里
-## 那张卡在场上的样子**（一波一份，倍率已经乘死）。战斗结束就扔掉。
+## **站位是射程的派生量，不是独立字段**：射程短的站前排才够得着，射程长的站后排照样打得到。
+## 玩家拖动过的由 [PBFormationRules] 覆盖。[PBUnit] 是跨波存在、进存档的那张卡。
 
 ## 攻击型。§02 那条乘法关系 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`
 ## 里的中间那个因子，就是靠这个枚举存在的。
@@ -34,105 +18,55 @@ enum Shape {
 	AOE,  ## 范围：对射程内最多 [member max_targets] 个目标各打一份，不结算溢出
 }
 
-## 走过去的时候停在射程的**九成**上，不是踩着边界停（M6-q）。
+## 走过去的时候停在射程的**九成**上，不是踩着边界停。
 ##
-## ## 为什么不能停在射程本身上
-##
-## 停在正好 `reach` 处之后，[method can_reach] 量回来的那个距离
-## 是浮点算出来的 —— 实测经常是 `0.020000000000000018 > 0.02`，
-## 于是**他站在自己的射程边上却判定够不着，一枪不放**。
-##
-## 表现是「离怪一点点距离原地跑」：够不着 → 每 tick 重走
-## [method PBMoveRules.close_in] → 目标被防挤推得一直在动 → 落脚点跟着抖，
-## 而净位移是零。实测第 20 波那个近战 **125/271 tick 卡在这个边界上**。
-##
-## **敌人那一侧 M5-10 就修过同一个 bug**（[constant PBCrowdRules.SIEGE_RING]），
-## 当时只改了敌人那半边 —— 又一次「同一件事两把尺子」。
+## 停在正好 `reach` 处的话，[method can_reach] 量回来的浮点距离经常略大于 `reach`，
+## 他站在射程边上却判定够不着 —— 表现是「离怪一点点距离原地跑」。
+## 敌人那一侧（[constant PBCrowdRules.SIEGE_RING]）引用的是同一个数。
 const STOP_RING: float = 0.9
 
-## 重生之后剩几成血（[member revives]，M10-d）。§7 的原话是
-## 「重生保留部分血量」，没有数字。
+## 出手最快几次每秒（玩家定的）。
 ##
-## 满血复活的话这一组羁绊等于「多一条命」，那比 §09 任何一个功能都值钱；
-## 而太低（比如一成）会让他在同一 tick 被下一发打死，玩家看不见发生过什么。
-## 出手最快几次每秒（M12-c5，玩家定的）。
-##
-## **它是一道结构性的墙，不是配平。** 攻速加成是乘算的（尾兽光环 × 羁绊 ×
-## 装备 × 科技），几样叠起来会把间隔压到 1 tick —— 那时一个人每秒打 20 下，
-## 而屏幕上只表现为「他怎么这么快」。封在**间隔**上而不是攻速上：
-## 间隔是整数 tick，`round` 过的攻速可以略微超过名义值，
-## 只压攻速的话 3.4 次/秒会 `round` 成 6 tick = 3.33 次/秒，仍然破了上限。
-##
-## 名册里最快的角色是 0.919 次/秒，所以**今天这道墙只会被加成顶到**。
+## **结构性的墙，不是配平**：攻速加成叠起来会把间隔压到 1 tick（每秒 20 下）。
+## **封在间隔上而不是攻速上**：间隔是整数 tick，只压攻速的话 3.4 次/秒会 round 成 6 tick = 3.33 次/秒，
+## 仍然破了上限。名册里最快的是 0.919 次/秒，所以今天只会被加成顶到。
 const ATTACK_SPEED_CAP: float = 3.0
 
+## 重生之后剩几成血（[member revives]）。原版只说「保留部分血量」。
+## 满血的话等于多一条命；太低会在同一 tick 被下一发打死，玩家看不见发生过什么。
 const REVIVE_FRACTION: float = 0.4
 
-## **一发普攻打多少**（M12-c5）。属性克制、攻击科技、羁绊、装备全部已经乘进来了
-## —— 和 [member dps] 顶上那句一样，战斗层只认这个数。
+## **一发普攻打多少**。属性克制、羁绊、尾兽光环、装备与训练的词条全部已经算进来了，战斗层只认这个数。
 ##
-## ## 它取代了「由 dps 反推每一发」
+## 玩家定的口径：**每次攻击实时结算**，一发就是他的攻击力，出手多快由 [member attack_speed] 单独决定，
+## 两者的乘积 [member dps] 只是统计量。
 ##
-## 在它之前 [method prime] 写的是 `dps × 间隔 ÷ tick_rate`，
-## 那条反推保证了「平均 DPS 分毫不差」，而代价是**屏幕上两个数都不是真的**：
-## 每一发不等于攻击力、实际攻速不等于面板攻速（实测各偏 ±2%），
-## 而且**建人之后再改攻速会被整个抵消**（见 [member attack_speed_bonus]）。
-##
-## 玩家定的口径是「每次攻击都是实时结算的，就像 RPG 里那样」——
-## 所以现在**一发就是他的攻击力**，出手多快由攻速单独决定，
-## 两者的乘积 [member dps] 降级成一个**统计量**。
-##
-## ## 0 表示「没填」，那时退回旧口径
-##
-## 生产代码三处构造点全部填了（[method PBCombatRules.build_attackers]、
-## [method PBSummonRules.raise_from]、[method PBValuation.leak_threshold_dps] 的复制品），
-## 由 `tests/test_attack_speed.gd` 一条行为断言钉着：
-## **真名册建出来的每一个人 `attack` 都必须大于 0**。
-## 退回那条路只服务于测试夹具里那些「只关心节奏、不关心伤害」的构造。
+## **0 表示「没填」**，那时 [method prime] 退回由 dps 反推，只服务于只关心节奏的测试夹具。
+## 生产代码的构造点全部填了，`tests/test_attack_speed.gd` 钉着「真名册建出来的每个人 `attack` > 0」。
 var attack: float = 0.0
 
-## 每秒伤害。**M12-c5 起它是一个统计量，不是战斗的输入** ——
-## 真正决定伤害的是 [member attack]（一发多重）和 [member attack_speed]（多久一发）。
+## 每秒伤害。**统计量，不是战斗的输入**（面板、估值读它）。
 ##
-## 属性克制、攻击科技、羁绊、装备**全部已经乘进来了**。
-##
-## ## 它还有一个真身份：退化路径的输入
-##
-## [method whole_field] 造的那个攻击者攻速为 0 —— 那一档是 M3-a 之前
-## 「整队一个标量 DPS」的等价物，要与 [PBCombatRules] 的解析式排队模型
-## **逐位相同**，而那个模型里根本没有「一发」这个概念。
-## 所以 [method prime] 在攻速为 0 时仍然从这个数算每 tick 的伤害。
+## 它还是**退化路径的输入**：[method whole_field] 造的攻击者攻速为 0，要与 [PBCombatRules] 的
+## 解析式排队模型逐位相同，而那个模型里没有「一发」这个概念 —— [method prime] 在攻速为 0 时从这个数算每 tick 的伤害。
 var dps: float = 0.0
 
-## 战场坐标（M4-a 起是二维）。x 与 [member PBEnemy.distance] **同一根轴、
-## 同一个单位**：0 是基地，[member PBSimConfig.field_length] 是敌人的出生点；
-## y 是泳道，0 到 [member PBSimConfig.field_height]。
-##
-## M4-a 之前这是一个 float，纵向只存在于渲染层 —— 见 [member PBEnemy.lane]。
+## 战场坐标。x 与 [member PBEnemy.distance] 同一根轴、同一个单位（0 是基地，
+## [member PBSimConfig.field_length] 是敌人的出生点）；y 是泳道，0 到 [member PBSimConfig.field_height]。
 var pos: Vector2 = Vector2.ZERO
 
-## 射程，**以 [member pos] 为圆心的一个真圆**（M4-a 起）。
-##
-## 之前是一段区间 `[position - reach, position + reach]`。对称而不是只朝
-## 出生点那侧，是因为敌人会**走过头** —— 一个已经越过前排的敌人仍然在
-## 前排的攻击范围里，直到它走出射程。升成圆之后这条性质原样保留。
+## 射程，**以 [member pos] 为圆心的一个真圆**。对称而不是只朝出生点那侧：
+## 敌人会走过头，越过前排的敌人仍然在前排的攻击范围里。
 var reach: float = 0.0
 
 var shape: Shape = Shape.SINGLE
 
-# ── 挨打这一半（§03A，M3.5-b）─────────────────────────────────
+# ── 挨打这一半（§03A）──────────────────────────────────────────
 
-## 血量上限。**0 表示「这不是一个真单位，只是一个标量」——敌人看不见它。**
+## 血量上限。**0 表示「这不是一个真单位，只是一个标量」—— 敌人看不见它。**
 ##
-## ## 这条约定守着一个对拍锚点
-##
-## [method whole_field] 造出来的退化攻击者就是 0：它是 M3-a 之前那个
-## 整队标量 DPS 的等价物，而那条退化路径要与 [PBCombatRules] 的解析式
-## 排队模型**逐字段一致**（「敌人不还手」是那个模型的前提之一）。
-##
-## 用「血是不是 0」而不是加一个 `cfg.enemies_fight_back` 开关，
-## 是因为开关会有人忘了设：一个没血的东西挨不了打，这件事不需要配置，
-## 它就是那个对象的性质。
+## [method whole_field] 造的退化攻击者就是 0，那条路要与排队模型（前提之一是敌人不还手）逐位一致。
+## 用「血是不是 0」而不是配置开关：一个没血的东西挨不了打，这是对象的性质，不需要有人记得去设。
 var max_hp: float = 0.0
 
 var hp: float = 0.0
@@ -153,8 +87,7 @@ var def_element: PBElement.Type = PBElement.Type.PHYSICAL
 ## （[method revive]），一波之内的失误有真实代价但不会毁掉整局。
 var alive: bool = true
 
-## 蓝量上限（§03A，M3.5-d）。智力抬的就是这一项。**0 表示不用蓝**——
-## 尾兽的大招攻击者就是 0，它的稀缺性靠跨波冷却而不是蓝。
+## 蓝量上限（§03A），智力抬的就是这一项。**0 表示不用蓝**（尾兽的大招攻击者就是 0）。
 var max_mp: float = 0.0
 
 var mp: float = 0.0
@@ -164,58 +97,35 @@ var mp: float = 0.0
 ## 那个属性就只在连放时有意义，平时等于没有。
 var mp_regen: float = 0.0
 
-# ── 跑动（§02 / §03A，M3.5-c）─────────────────────────────────
+# ── 跑动（§02 / §03A）───────────────────────────────────────────
 
 ## 出生站位。x 由射程档派生（§02），y 是泳道。
 ## **跑动是围着它做的，不是取代它。**
 var home: Vector2 = Vector2.ZERO
 
-## 每 tick 能挪多远。**0 表示这东西不动** —— [method whole_field] 造的
-## 退化标量就是 0，所以 M3-a 那条对拍路径不受跑动影响。
+## 每 tick 能挪多远。**0 表示这东西不动**（退化标量就是 0，对拍路径不受跑动影响）。
 var move_speed: float = 0.0
 
 ## 最多能离开 [member home] 多远（往敌人那侧）。
-##
-## ## 为什么必须有这根皮带绳
-##
-## 「自由跑向敌人」会**推翻 §02 的射程梯度**：所有人都跑到最前面接敌，
-## 战斗退回成 M3-a 之前的单点集火，而那条梯度正是「场上稳定有人」的
-## 唯一来源（实测场上平均人数 1.7 → 6.0）。
-##
-## 拴住之后跑动是**围着自己那一列的小幅前压**：射程内没目标就往前挪，
-## 有目标就站住开火，清干净了慢慢退回原位。看得见在跑，结构不变。
+## 「自由跑向敌人」会让所有人挤到最前面，§02 的射程梯度就没了；拴住之后是围着自己那一列的小幅前压。
 var leash: float = 0.0
 
 ## AOE 一次能命中几个。单体型不读这个字段。
 var max_targets: int = 1
 
-## **整波常驻**的暴击率（M10-c）。羁绊的暴击光环乘死在这里。
+## **整波常驻**的暴击率（羁绊光环、被动、尾兽光环）。
 ##
-## 和 [member dps] 顶上那句「属性克制、攻击科技、羁绊、装备全部已经乘进来了」
-## 是同一档：战斗层不认识羁绊，它只认这个数。
-##
-## ## 为什么不放进 [member buffs]
-##
-## 袋子是**同 id 整份覆盖**的（[method PBBuffBag.add] 顶上那条「刷新时长」），
-## 两组羁绊各挂一份暴击光环时后一份会静默吃掉前一份；而且袋子只有六个槽、
-## 有时长、有清扫，这三样对「整波不变、没有施法者」的光环全是错的。
-## 临时那一份仍然走袋子，两者在 [method PBCritRules.chance_of] 相加。
-##
-## **0 = 从不暴击，而且一次骰子都不掷** —— 见 [PBCritRules] 顶部。
+## 不放进 [member buffs]：袋子同 id 整份覆盖，两份光环会静默吃掉一份；而且袋子有槽位上限、有时长、有清扫，
+## 对「整波不变、没有施法者」的东西全是错的。临时那一份走袋子，两者在 [method PBCritRules.chance_of] 相加。
+## **0 = 从不暴击，而且一次骰子都不掷**（见 [PBCritRules] 顶部）。
 var crit_chance: float = 0.0
 
-## **整波常驻**的暴击伤害加成，「额外多打几成」（M10-c）。理由同
-## [member crit_chance]，中性值是 0.0 不是 1.0。
+## **整波常驻**的暴击伤害加成，「额外多打几成」。理由同 [member crit_chance]，中性值是 0.0。
 var crit_bonus: float = 0.0
 
-# ── 触发型羁绊（§7 的 B02 / B05 / B10 / B15，M10-d）──────────
+# ── 触发型 ──────────────────────────────────────────────────────
 #
-# 这四个和上面那两个暴击字段是同一档：开波就乘死、整波不变。
-# 差别只在**发给谁** —— 暴击那两个是全队光环，这四个只发给**载体本人**
-# （[constant PBBondFunctionRules.Landing.CARRIER]）。
-# 「一组羁绊只出一个载体」那条 M3-f 的规矩因此原样成立。
-#
-# 全部默认 0 = 什么都不发生，所以没有任何羁绊配它们时**一位都不动**。
+# 和上面两个暴击字段同一档：开波就装好、整波不变。全部默认 0 = 什么都不发生，没人配时一位都不动。
 
 ## 命中之后给自己挂多久的暴击率加成（B10 绝牛雷犁热刀）。0 = 不挂。
 ##
@@ -243,111 +153,58 @@ var revives: int = 0
 ## 同 [member max_hp] / [member hp] 那一对。
 var revives_max: int = 0
 
-## 挨一下普攻时有多大机会一点血都不掉（M12-c2，佩恩轮回眼 22%、
-## 宇智波斑永恒万花筒 25%）。0 = 从不闪避，而且**一次骰子都不掷**。
-##
-## 判据在 [method take_damage] **里面**（走 [method PBPassiveRules.dodges]），
-## 不在调用方。己方挨打有两个落点
-## （敌人近战、敌人子弹），各判一次的表现是「被子弹打就闪不掉」——
-## 同 [member revives] 那条（M10-d），也同 [PBBuffRules] 的 `HURT`。
+## 挨一下普攻时有多大机会一点血都不掉。0 = 从不闪避，而且**一次骰子都不掷**。
+## 判据在 [method take_damage] **里面**（[method PBPassiveRules.dodges]）—— 己方挨打有两个落点，
+## 各判一次的表现是「被子弹打就闪不掉」。
 var dodge: float = 0.0
 
-## 打出要害那一下额外按目标**当前**生命的几成再打一笔（日向宁次的柔拳）。
-## 0 = 没有。上限见 [constant PBStrikeRules.BITE_CAP]。
-##
-## **它骑在暴击那个掷点上，不另掷一次**（M12-c2）：这一步已经为闪避
-## 开了一个新掷点，而「这一下打中了要害」本来就是暴击在这个游戏里的语义。
-## 代价说清楚：暴击光环会同时提高柔拳的触发率 —— 那是相关不是 bug。
+## 打出要害那一下额外按目标**当前**生命的几成再打一笔。0 = 没有。上限见 [constant PBStrikeRules.BITE_CAP]。
+## **骑在暴击那个掷点上，不另掷一次**（代价：暴击光环会同时提高它的触发率）。
 var bite_current: float = 0.0
 
 ## 同 [member bite_current]，但按目标**已经损失**的生命算（长十郎的骨拔）。
 ## 两个是互补的：一个越打越弱，一个越打越强。
 var bite_lost: float = 0.0
 
-## 挨一下就把这一下伤害的几成还给打他的那个敌人（M12-c2）。
-## 0 = 不反弹。读点在 [method PBStrikeRules.hurt_ally] 里面。
+## 挨一下就把这一下伤害的几成还给打他的那个敌人。0 = 不反弹。读点在 [method PBStrikeRules.hurt_ally]。
 ##
-## **原版是「免疫了的那一下才反弹」**（宇智波斩自的
-## 「15% 几率免疫此次伤害，并反弹 30% 的伤害」），而这里做成了
-## **挨每一下都反弹**。降级的理由是「词汇表里每个键要能单独说得清」：
-## 绑在 [member dodge] 上的话，一个没配闪避的角色配上反弹会永远不生效，
-## **而那不报错**。原版那句「每隔 5 秒必定触发一次」同样缺读点（内置 CD）。
+## **降级**：原版是「免疫了的那一下才反弹」，这里是挨每一下都反弹 —— 绑在 [member dodge] 上的话，
+## 一个没配闪避的角色配上反弹会永远不生效。原版「每隔 5 秒必定触发一次」缺内置 CD 读点。
 var reflect: float = 0.0
 
-## 常驻增伤：这个人的**普攻**多打几成（M12-e）。0 = 不多打。
+## 常驻增伤：这个人的**普攻**多打几成。0 = 不多打。
 ##
-## **存「额外多打几成」而不是倍数**，所以中性值是 0.0 —— 和量型键天然对得上，
-## 两份 +40% 相加是 +80% 而不是被连乘成 +96%。同 [member crit_bonus] 顶上那条。
+## **存「额外」不存倍数**：两份 +40% 相加是 +80%，不是被连乘成 +96%。
+## 和效果袋里临时的 [constant PBBuffRules.DAMAGE_SCALE] 是一对，两者在 [method strike_for] 相乘。
 ##
-## ## 和效果袋里那个 [constant PBBuffRules.DAMAGE_SCALE] 是一对
-##
-## 那一份是**临时**的（技能挂上去、过期就没），这一份是**常驻**的
-## （羁绊、尾兽光环给的，一整波都在）。两者在 [method strike_for] 相乘 ——
-## 同 [member crit_chance] 与效果袋那一份在 [method PBCritRules.chance_of] 相加。
-##
-## ## 它只作用在普攻上，而原版写的是「所有伤害」
-##
-## 技能与大招的伤害在建人那一刻就按 [method PBCombatRules.skill_damage] 算死了，
-## 而这一份是**建人之后**才装上去的（羁绊要先知道谁在场）。
-## 让它也管技能得把顺序倒过来，那是另一笔。**降级记在这里。**
+## **降级**：只作用在普攻上，原版写的是「所有伤害」—— 技能伤害在建人那一刻就算死了，
+## 而这一份是建人之后才装上去的（羁绊要先知道谁在场）。
 var damage_bonus: float = 0.0
 
 
-## 常驻加速：移动速度多几成（M12-e2）。中性 0.0。
-##
-## **这一批率型键里只剩它了**（M12-h1）：生命与攻速搬去了 [PBStatRules]，
-## 因为它们是**角色属性**，要在算三围那一刻注入。
-## 移速不是 —— 它全队同一个数，由 [member PBSimConfig.unit_move_seconds] 派生，
-## 和角色的三围没有关系，所以留在行为层、折算在
-## [method PBPassiveRules.equip] 末尾。
+## 常驻加速：移动速度多几成。中性 0.0。
+## 移速不是角色属性（全队一个数，由 [member PBSimConfig.unit_move_seconds] 派生），所以留在行为层、
+## 折算在 [method PBPassiveRules.equip] 末尾。
 var move_speed_bonus: float = 0.0
 
 
-## 打出要害那一下顺带挂在目标身上的效果（M12-c2）。
-## 读点在 [method PBStrikeRules.land] 里面。
-##
-## **这是被动那条通道带得了一份效果的那一半。**
-## [member PBCharacter.passives] 只存得了「键 → 数」，而原版有一批被动是
-## 「攻击时 X% 几率**给目标上一份效果**」（带土的扭曲攻击）。
-## 在它之前那一批只能降格成一个要玩家手动按的技能。
-##
-## **它骑在暴击那个掷点上**，同 [member bite_current]：
-## 另开一个骰子就是同一次出手掷两遍（M10-c 那条「一个掷点」）。
+## 打出要害那一下顺带挂在目标身上的效果。读点在 [method PBStrikeRules.land]。
+## 被动那条通道带得了一份效果靠它（名册 `on_hit=<效果键>`）。**骑在暴击那个掷点上。**
 var on_hit_buffs: Array[PBBuff] = []
 
-## 这个位子是给召唤物留的，不是一张卡（M12-c3）。
-##
-## **它一辈子不会变**：位子在建队伍那一刻就按“这支队伍最多召得出几个”
-## 留好了（[method PBSummonRules.reserve]），跑动中只在“空着”和“站着人”之间切。
-##
-## **为什么是预留而不是跑动中往数组里塞人**：定长是这个 sim 里
-## 一堆东西的隐含前提 —— [member PBBattleSim._orders] 开波按人数铺一次、
-## 渲染池按人数建节点、防挤两两遍历。中途变长会让它们各自失配，
-## **而失配基本都不报错**。预留则是本项目已经用熟的形状（同
-## [PBProjectile] 池、[PBEnemy] 池：定长 + `alive` 标志）。
-##
-## **没有召唤技能的队伍一个位子也不留** —— 所以全部既有配平数字一位不动，
-## 同 M3.5-f 装备那条「空着 = 一字不差」。
+## 这个位子是给召唤物留的，不是一张卡。**一辈子不会变**，跑动中只在「空着」和「站着人」之间切。
+## 为什么预留而不是跑动中往数组里塞人，见 [PBSummonRules] 顶部。
 var summoned: bool = false
 
 ## 召唤物散场的 tick。**负数 = 这个位子现在空着**（或者他不是召唤物）。
 var expires_at: int = -1
 
-# ── 出手节奏与子弹（§02，M4-b）────────────────────────────────
+# ── 出手节奏与子弹（§02）─────────────────────────────────────────
 
-## 每秒出手几次。角色表里那个「攻速」第一次被战斗读到（M4-b）。
+## 每秒出手几次（已算完攻速加成）。
 ##
-## ## 0 表示「不分次，每 tick 连续输出」
-##
-## 那正是 M3-a 之前那个标量 DPS 的语义，也是 [method whole_field]
-## 造出来的退化攻击者走的路 —— [PBCombatRules] 的解析式排队模型
-## 假设的就是一条没有边界的连续伤害流，**对拍锚点靠这一档活着**。
-##
-## ## 离散化之后溢出伤害没有了
-##
-## 连续模型里一 tick 打死几个、剩下的伤害接着打下一个，那是「连续」的直接后果。
-## 一发子弹打死了目标，多出来的伤害没有地方去 —— 那是离散唯一的真实损耗，
-## 也是「命中才结算」这件事的代价。**这一条会明显拉长单波时长**，归数值回归。
+## **0 表示「不分次，每 tick 连续输出」**：[method whole_field] 那条退化路径，排队模型假设的就是
+## 一条没有边界的连续伤害流，对拍锚点靠这一档活着。离散出手没有溢出伤害（一发打死了目标，多出来的没处去）。
 var attack_speed: float = 0.0
 
 ## 子弹每 tick 飞多远。**0 表示不发子弹**（近战：接触即伤）。
@@ -359,17 +216,11 @@ var shot_speed: float = 0.0
 ## 第几 tick 起可以出下一手。和 [member PBSkillCast.ready_at] 同一套写法。
 var next_shot_at: int = 0
 
-## **正在起手**：手已经抬起来了，伤害还没落地。M9-e。
+## **正在起手**：手已经抬起来了，伤害还没落地。
 ##
-## ## 为什么它必须是一个状态，不能只把出手时刻整体推后
-##
-## 「打空了不进冷却」（[method PBBattleSim._deal_damage]）意味着射程内没人时
-## 冷却照转、`next_shot_at` 停在过去 —— 于是敌人一踏进射程，
-## `ready_to_fire` 当场为真、**当 tick 就开火**，根本没有起手的余地。
-## 把出手时刻整体推后只对第 2 发之后有用，而玩家看的正是第 1 发。
-##
-## 所以抬手是一件**要先发生**的事：冷却转好 + 射程内有人 → 抬手，
-## [member windup_ticks] 之后才结算。渲染层直接读它决定攻击段什么时候起跑。
+## 必须是一个状态，不能只把出手时刻推后：射程内没人时冷却照转、`next_shot_at` 停在过去，
+## 敌人一踏进射程当 tick 就开火，第 1 发根本没有起手。所以「冷却转好 + 射程内有人 → 抬手，
+## [member windup_ticks] 之后才结算」。渲染层读它决定攻击段什么时候起跑。
 var swinging: bool = false
 
 ## 起手要几 tick —— 从抬手到伤害落地。[method prime] 按
@@ -380,78 +231,38 @@ var swinging: bool = false
 ## 会差几帧，而那正是这一步要修的东西。
 var windup_ticks: int = 0
 
-## 玩家在战斗中点名要打的敌人下标。**-1 表示照常自动选目标**（§02，M4-e）。
+## 玩家在战斗中点名要打的敌人下标。**-1 表示照常自动选目标**（§02）。
 ##
-## ## 为什么点名只是一个偏好，不是一条命令
-##
-## 点名的那个敌人可能被别人打死、可能走出射程、可能压根还没进射程。
-## 这三种情况下**自动规则接管**，不是站着不打 —— 「我点了他，
-## 结果这个忍者整场发呆」是玩家最不能接受的一种听话。
-##
-## 点名也**不会自动清掉**：目标死了下一波换新敌人，下标还在。
-## 所以每波开波要重置（[method revive]），而不是靠「目标死了就清」——
-## 那样一个隔着射程点名的目标会在他走进来之前就被清掉，
-## 而玩家看到的是「点了没用」。
+## **点名是偏好，不是命令**：目标死了、走出射程、还没进射程时自动规则接管，而不是站着不打。
+## **也不会自动清掉**（「目标死了就清」会把隔着射程点名的目标在他走进来之前就清掉），
+## 每波开波由 [method revive] 重置。
 var forced_target: int = -1
 
 ## 渲染层用来认人的槽位号，等于它在出战席里的下标。
 var slot: int = 0
 
-## **他这一刻的攻击目标**（敌人下标，-1 = 场上没有目标）。M5-11 加，M5-12 改语义。
+## **他这一刻的攻击目标**（敌人下标，-1 = 场上没有目标）。**「即将打谁」，不是「刚才打了谁」。**
 ##
-## ## 「即将打谁」，不是「刚才打了谁」
+## 每 tick 由 [method PBBattleSim._aim_targets] 算一遍：有效点名 → 射程内最靠近基地的 → 全场最近的。
+## 记「刚才打了谁」的话，冷却没转好、射程内暂时没人、点了一个还没走到的目标时它都是空的 ——
+## 玩家点名那一下线就断了。
 ##
-## M5-11 记的是上一发打中的那个，于是三种很常见的情形下它是空的：
-## 冷却没转好、射程内暂时没人、**玩家点了一个还没走到的目标**。
-## 而玩家点名的那一下，意思恰恰是「去打他」——
-## 线在那一刻断掉，等于告诉他这条命令没生效。
-##
-## 所以它现在每 tick 由 [method PBBattleSim._aim_targets] 算一遍，
-## 三档取第一个有的：**有效点名 → 射程内最靠近基地的 → 全场最近的**。
-## 后两档就是自动规则本身；第一档**不问射程** —— 够不着就走过去，
-## 那正是 [method PBBattleSim._nearest_enemy] 一直在做的事。
-##
-## ## 为什么必须由 sim 记下来
-##
-## 渲染层要画那根线（[PBAimLines]），只有两条路：**照着同一套规则再算一遍**，
-## 或者把 sim 算出来的那一个记下来。再算一遍就是第二把尺子 ——
-## 点名、射程、出场时刻、死活四个条件里漏抄一个，线就指着一个他其实
-## 没在打的敌人，**而且不报错**。这个项目为这种形状的 bug 付过四次代价。
-##
-## 和 [member forced_target] 仍是两件事：那一个是玩家写下的意图，一波之内不变；
-## 这一个是**这一 tick 的结论**，点名的那个死了它立刻改口。
+## **由 sim 记下来**，渲染层（[PBAimLines]）不照着规则再算一遍 —— 那是第二把尺子。
+## 和 [member forced_target] 是两件事：那个是玩家写下的意图，这个是这一 tick 的结论。
 var aim_at: int = -1
 
-## 这个单位的大招（§02，M3-b；M7-b 起是「0 号技能」的 [PBSkillCast]）。
-## **`null` 表示没有** —— [method whole_field] 造出来的那个退化攻击者就没有，
-## 所以 M3-a 那条对拍不受技能系统影响。
+## 这个单位的大招（0 号技能）。**`null` 表示没有** —— [method whole_field] 造的退化攻击者就没有。
 var ultimate: PBSkillCast = null
 
-## 这个角色**自己表里**的技能（M7-e）。**最多两个**（决策 6）。
+## 这个角色**自己表里**的技能。**最多两个。**
 ##
-## ## 为什么和 [member ultimate] 分成两个字段
-##
-## 它们的来源不同：大招由 [method PBCombatRules._build_skill] 按
-## [PBSimConfig] 现造（全场共用一套数值），而这几个来自
-## `PBCharacter.skill_ids` → `data/skills/*.tres`（逐角色）。
-## 合成一个数组的话「第 0 个是不是大招」就成了一条要靠约定维持的规矩，
-## 而 [member PBSkill.carry_over_ticks]（尾兽的跨波冷却）恰恰只对大招成立。
-##
-## 统一的下标访问走 [method PBSkillRules.cast_at]（0 = 大招，1.. = 这里），
-## 指令卡与 [PBBattleSim] 的入口都只认那个下标 —— **两个字段，一把尺子。**
-##
-## **v1 是空的**：没有任何角色配了 `skill_ids`，所以全部既有配平数字一个不动，
-## 和 M3.5-f 装备那条「空着 = 一字不差」同形。
+## 和 [member ultimate] 分成两个字段：来源不同（大招由 [PBSimConfig] 现造，这几个来自 `data/skills/`），
+## 而且 [member PBSkill.carry_over_ticks] 只对大招成立。统一的下标访问走 [method PBSkillRules.cast_at]
+## （0 = 大招，1.. = 这里）—— 两个字段，一把尺子。
 var skills: Array[PBSkillCast] = []
 
-## 他身上现在挂着的效果（§03A，M7-a）。**永远不为 null** ——
-## 空 bag 的合计值是不折不扣的中性值（率型 1.0、量型 0.0），
-## 所以「没有 buff」和「有一个什么都不改的 buff」在数值上不可区分，
-## 调用方因此不需要到处判空。
-##
-## **[method revive] 会清空它**：效果是**波内作用域**的，不跨波、不进 §12 的存档。
-## 跨波的东西已经有自己的字段（[member PBSkill.carry_over_ticks]），
-## 把 buff 也做成跨波的会让「这一波我身上有什么」变成一个存档问题。
+## 他身上现在挂着的效果。**永远不为 null**：空 bag 的合计值是精确的中性值，调用方不必判空。
+## **[method revive] 会清空它**：效果是波内作用域的，不跨波、不进存档。
 var buffs: PBBuffBag = PBBuffBag.new()
 
 ## 一发打多少、隔几 tick 一发。由 [method prime] 从 [member dps] 与
@@ -463,16 +274,11 @@ var _damage_per_shot: float = 0.0
 var _interval_ticks: int = 1
 
 
-## 造一个覆盖整个战场的单体攻击者 —— **M3-a 之前那个标量 DPS 的等价物**。
+## 造一个覆盖整个战场的单体攻击者 —— **整队标量 DPS 的等价物**。
 ##
-## 保留它不是为了兼容旧调用点，是为了留住**对拍能力**：
-## 整队折成这么一个攻击者时，逐 tick 模型必须与 [PBCombatRules] 的
-## 解析式排队模型逐字段一致。那条断言是「射程改造有没有改坏原有语义」的
-## 唯一判据 —— 拆掉它，以后任何一次目标分配的改动都没有参照物了。
-## [param field_diagonal] 必须是战场的**对角**长度
-## （[method PBSimConfig.field_diagonal]），不是 `field_length`。
-## 升成二维之后最远的敌人在**角落**上，用长度的话它够不着，
-## 而现象是「解析式排队模型的对拍突然差了几个 tick」。
+## 留着是为了**对拍**：整队折成这么一个攻击者时，逐 tick 模型必须与 [PBCombatRules] 的解析式排队模型
+## 逐字段一致，那是「目标分配的改动有没有改坏原有语义」的唯一参照物。
+## [param field_diagonal] 必须是战场**对角**长度（[method PBSimConfig.field_diagonal]）：最远的敌人在角落上。
 static func whole_field(team_dps: float, field_diagonal: float) -> PBAttacker:
 	var out := PBAttacker.new()
 	out.dps = maxf(team_dps, 0.0)
@@ -492,29 +298,22 @@ func clone() -> PBAttacker:
 	out.reach = reach
 	out.shape = shape
 	out.max_targets = max_targets
-	# 暴击那两个也要跟过来（M10-c）：漏掉的话，悬崖二分探测量的是一支
-	# **不会暴击**的队伍，而真正上场的那支会暴 —— 于是探出来的悬崖
-	# 系统性地偏保守，且不报错。同 [member max_hp] 那条「越探越弱」。
+	# 暴击也要跟过来，否则悬崖二分探的是一支不会暴击的队伍，探出来的悬崖系统性偏保守。
 	out.crit_chance = crit_chance
 	out.crit_bonus = crit_bonus
-	# 触发型那四个同理（M10-d）。**`revives` 不拷贝，`revives_max` 才拷贝** ——
-	# 复制品对应「一个刚站起来的他」，同 `hp` 取 `max_hp` 那一条。
+	# **`revives` 不拷贝，`revives_max` 才拷贝**：复制品是「一个刚站起来的他」，同 `hp` 取 `max_hp`。
 	out.crit_on_hit = crit_on_hit
 	out.splash_damage = splash_damage
 	out.heavy_bonus = heavy_bonus
 	out.revives_max = revives_max
-	# M12-c2 那三个同理：漏掉的话悬崖二分探的是一支**不会闪避、
-	# 不吃要害那一笔**的队伍，而真正上场的那支会 —— 探出来的悬崖
-	# 系统性偏保守，且不报错。
+	# 闪避、按生命百分比那一笔、反弹、增伤同理，漏掉的话探出来的悬崖偏保守。
 	out.dodge = dodge
 	out.bite_current = bite_current
 	out.bite_lost = bite_lost
 	out.reflect = reflect
 	out.damage_bonus = damage_bonus
-	# M12-e2 那两个累加器也要跟过来 —— 它们已经折进 `max_hp` / `move_speed`
-	# 了，拷贝是为了让复制品和本体在**字段上**逐个相同（`assert_eq` 对整个
-	# 对象比的那几条测试靠这个），折算不会因此跑第二遍：
-	# 折算只发生在 [method PBPassiveRules.equip] 里，而复制品不走建人那条路。
+	# 累加器也拷贝：已经折进 `move_speed` 了，拷贝只是让复制品在字段上逐个相同；
+	# 折算只发生在 [method PBPassiveRules.equip]，复制品不走建人那条路。
 	out.move_speed_bonus = move_speed_bonus
 	out.on_hit_buffs = on_hit_buffs
 	out.summoned = summoned
@@ -538,8 +337,7 @@ func clone() -> PBAttacker:
 		# 污染真正在战斗的那一份，而它不报错。冷却/落点状态不带 ——
 		# 复制品对应「这一波都还没放过的它」。见 [method PBSkill.clone]。
 		out.ultimate = PBSkillCast.new(ultimate.skill.clone(), ultimate.caster_level)
-	# 角色自己那几个走同一条规矩（M7-e）。**等级要跟过来** ——
-	# 效果数值是按它现算的（决策 7），漏掉的话复制品的治疗量恒等于 1 级。
+	# 角色自己那几个技能同理。**等级要跟过来**：效果数值按它现算，漏掉的话复制品的治疗量恒等于 1 级。
 	for cast: PBSkillCast in skills:
 		out.skills.append(PBSkillCast.new(cast.skill.clone(), cast.caster_level))
 	# **不复制身上挂着的效果**，给一个空的 —— 和 `hp` 取 `max_hp` 同一条：
@@ -558,13 +356,10 @@ func revive() -> void:
 	alive = true
 	hp = max_hp
 	mp = max_mp
-	# 重生次数是**一波一份**（M10-d）。不重填的话上一波用掉的那一次会漏进
-	# 这一波，表现是「第二波起就不复活了」—— 同上面那条残血漏进下一场。
+	# 重生次数一波一份，不重填的话上一波用掉的那一次会漏进这一波。
 	revives = revives_max
 	pos = home if move_speed > 0.0 else pos
-	# **按槽位错开第一发**（M4-b）。全队同时开火的话，十个人的子弹
-	# 每隔一个间隔叠成一道，画面上像一发；错开之后才看得出是一队人在射击。
-	# 用槽位而不是掷骰 —— 同一个种子的两次回放必须长得一样（§13）。
+	# **按槽位错开第一发**：全队同时开火的话子弹叠成一道。用槽位不掷骰 —— 同种子两次回放必须一样（§13）。
 	next_shot_at = posmod(slot, _interval_ticks)
 	# 起手是一个状态，开波要清 —— 上一波抬到一半的手不该带进这一波。
 	swinging = false
@@ -606,26 +401,11 @@ func is_targetable() -> bool:
 
 ## 挨一下打。返回这次是否把它**真的**打死了 —— 还有重生次数时返回 false。
 ##
-## ## 挨打这一路上的每一样东西都在这个函数里面，调用方一律不判
+## **挨打这一路上的每一样东西都在这个函数里面**（减伤、护盾、闪避、重生），调用方一律不判 ——
+## 己方挨打有两个落点，各判一次的话漏掉的那一处就是「被子弹打就吃不到减伤 / 用不完护盾 / 复活不了」。
 ##
-## 己方挨打今天有两个落点：敌人近战那一记（[method PBBattleSim._enemies_attack]）
-## 和敌人的子弹命中（[method PBShotRules._hit_ally]），两处都写着
-## `if take_damage(): allies_lost += 1; 记播报`。
-## 减伤（M11-b）、护盾（M11-b）、重生（M10-d）各判一次的话，
-## **漏掉的那一处表现是「被子弹打就吃不到减伤 / 用不完护盾 / 复活不了」**
-## —— 三样都不报错。和 [constant PBBuffRules.HURT] 顶上那条同形。
-##
-## ## 顺序：先减伤，再护盾，最后扣血
-##
-## 减伤改的是「这一下有多重」，护盾吃的是**减完之后**那个数。
-## 反过来的话护盾会替他挡掉一部分本来就不该挨的伤害，
-## 表现是「带减伤的时候护盾特别不经用」。
-##
-## ## [param at_tick] 故意没有默认值
-##
-## 同 [method PBEnemy.take_damage] 顶上那条：给了默认值的话，漏传的调用方
-## 会静默拿到一个「所有效果都已过期」的 tick —— 也就是
-## 「减伤和护盾在这条路上不生效」，正是这个读点要挡的东西。
+## **顺序：先减伤，再护盾，最后扣血** —— 护盾吃的是减完之后那个数。
+## [param at_tick] **没有默认值**：同 [method PBEnemy.take_damage]。
 func take_damage(
 	amount: float, at_tick: int, rng: RandomNumberGenerator = null
 ) -> bool:
@@ -656,15 +436,11 @@ func ultimate_damage() -> float:
 	return 0.0 if ultimate == null else ultimate.skill.damage
 
 
-## 把 [member dps] 与 [member attack_speed] 换算成「隔几 tick 打多少」。
-## 战斗开始前调一次。
+## 把 [member attack] 与 [member attack_speed] 换算成「隔几 tick 打多少」。战斗开始前调一次。
 ##
-## **一发的伤害由间隔反推，不是 `dps ÷ 攻速`。** 间隔取整之后两者会差一点点，
-## 而按间隔算的那份能保证**平均 DPS 分毫不差** —— 那是离散化敢做的前提：
-## 它改的是节奏，不是总量。
-## [param cfg] 只用来问一件事：起手几 tick（[method PBSimConfig.windup_ticks]）。
-## **必须在这里问，不能由调用方先算好** —— 那个数依赖 `_interval_ticks`，
-## 而它正是这个函数算出来的。给 null 就是不起手，也就是 M9-e 之前的样子。
+## 间隔由攻速定、压在 [constant ATTACK_SPEED_CAP] 之内；攻速为 0 时走退化路径（从 [member dps] 算每 tick 的伤害）。
+## [param cfg] 只用来问起手几 tick（[method PBSimConfig.windup_ticks]）—— 那个数依赖这里算出的间隔，
+## 所以必须在这里问。给 null 就是不起手。
 func prime(tick_rate: int, cfg: PBSimConfig = null) -> void:
 	var rate: int = maxi(tick_rate, 1)
 	if attack_speed <= 0.0:
@@ -674,9 +450,7 @@ func prime(tick_rate: int, cfg: PBSimConfig = null) -> void:
 		_damage_per_shot = maxf(dps, 0.0) / float(rate)
 		windup_ticks = 0
 		return
-	# 真单位那一档（M12-c5）：**一发就是他的攻击力**，和 [member dps] 没有关系。
-	# 攻速的加成不在这儿算 —— [member attack_speed] 拿到手时已经算完了
-	# （[constant PBStatRules.ATTACK_SPEED]，M12-h1）。
+	# 真单位那一档：**一发就是他的攻击力**。攻速加成在 [member attack_speed] 里已经算完了。
 	_interval_ticks = maxi(int(round(float(rate) / attack_speed)), fastest_ticks(rate))
 	_damage_per_shot = maxf(attack, 0.0)
 	if attack <= 0.0:
@@ -692,19 +466,8 @@ func damage_per_shot() -> float:
 	return _damage_per_shot
 
 
-## 这一 tick 他一发真打多少 —— 基数乘上身上的
-## [constant PBBuffRules.DAMAGE_SCALE]（M7-a）。
-##
-## ## 为什么读点在这里，不在 [PBBattleSim] 的三个调用处
-##
-## 出手在那边有三条路（单体、连续输出、范围），**漏乘一处的表现是
-## 「某一种攻击方式吃不到增伤」** —— 而那要盯着数字看很久才发现。
-## 放进类里就只有一个读点，和 §2.4 里 `hurt` 必须写进
-## [method PBEnemy.take_damage] 是同一条理由。
-##
-## M7-a 之前这件事是 [PBBattleSim] 上的一对 `_buff_scale` / `_buff_until`：
-## 一份、全场、后来者覆盖前者。搬进 bag 之后**每个人身上各一份**，
-## 而全场增伤只是「给每个人都挂一份」的那种特例。
+## 这一 tick 他一发真打多少 —— 基数乘上身上的 [constant PBBuffRules.DAMAGE_SCALE] 与常驻增伤。
+## 读点在这里而不是出手的三个调用处：漏乘一处就是「某一种攻击方式吃不到增伤」。
 func strike_for(at_tick: int) -> float:
 	var lasting: float = 1.0 + maxf(damage_bonus, -1.0)
 	return _damage_per_shot * lasting * buffs.amount(PBBuffRules.DAMAGE_SCALE, at_tick)
@@ -737,10 +500,7 @@ func ready_to_fire(tick: int) -> bool:
 
 
 ## 出了一手，转入下一次的间隔。
-##
-## **下一次「抬手」排在 `interval - windup` 之后**（M9-e），而不是 `interval` ——
-## 抬手之后还要再等 [member windup_ticks] 才落地，两段加起来正好是一个间隔。
-## 直接排 `interval` 的话每一发之间会多出一个起手，攻速凭空慢下来。
+## **下一次抬手排在 `interval - windup` 之后**：抬手之后还要等 [member windup_ticks] 才落地，两段正好一个间隔。
 func on_fired(tick: int) -> void:
 	swinging = false
 	next_shot_at = tick + maxi(_interval_ticks - windup_ticks, 1)
@@ -758,11 +518,7 @@ func begin_swing(tick: int) -> bool:
 	return true
 
 
-## 这个点上的敌人打不打得到。[param at] 走 [method PBEnemy.pos]。
-##
-## M4-a 起是**欧氏距离**，不再是「x 差多少」——「射程圈」这四个字
-## 从此说的是真的。副作用是每个人的有效射程都略微缩水
-## （斜着量总比横着量长），归数值回归。
+## 这个点上的敌人打不打得到（欧氏距离）。[param at] 走 [method PBEnemy.pos]。
 func can_reach(at: Vector2) -> bool:
 	return pos.distance_to(at) <= reach
 

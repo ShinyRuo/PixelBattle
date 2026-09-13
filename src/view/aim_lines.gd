@@ -1,57 +1,22 @@
 class_name PBAimLines
 extends Node2D
-## 「他要打谁」「我正在指谁」这两件事画出来（§02，M5-11）。三条虚线。
-##
-## ## 为什么非画不可
-##
-## M4-e 给了战斗中点选与点名，M5-9 又加了手动忍术。**这两条指令在屏幕上
-## 一个反馈都没有** —— 按了「攻击」之后玩家看不出自己进没进指定状态，
-## 点完一个敌人也看不出那个忍者到底改打他了没有。
-## 唯一的线索是指令卡上那格按钮换了个字，而它在屏幕的另一头。
-##
-## 暂停时更是如此：§02 特意允许暂停下操作，而暂停画面上
-## **一切都不动**，「谁在打谁」于是完全不可读。
-##
-## ## 三条线各是一句话
+## 「他要打谁」「我正在指谁」画出来（§02）。点选、点名、手动放技能在屏幕上本来一个反馈都没有 ——
+## 暂停时更是如此，而暂停正是用来读局面的那一刻。
 ##
 ## | 线 | 从哪到哪 | 说的是 |
 ## |---|---|---|
 ## | A | 忍者 → 他这一刻的攻击目标 | 「他要打这个」 |
 ## | B | 选中的忍者 → 鼠标 | 「正在等你点一个敌人」 |
 ## | C | 选中的忍者 → 鼠标，鼠标处加一个范围圈 | 「正在等你点一个落点」 |
-## | D | 选中的忍者 → 鼠标，可选目标脚下各一圈 | 「正在等你点一个队友」（M7-e） |
+## | D | 选中的忍者 → 鼠标，可选目标脚下各一圈 | 「正在等你点一个队友」 |
+## | E | 已下令的忍者脚下一圈 + 指向目标的线 | 「挑好了，等着放」 |
 ##
-## **B / C / D 与 A 不同色**：A 是既成事实，后三条是一个还没落地的意图。
-## 同色的话玩家分不清「已经改好了」和「还没点」——
-## 而那正是两步操作唯一需要表达的东西。
+## **B / C / D 与 A 不同色**：A 是既成事实，后几条是还没落地的意图。C 的圈跟着鼠标（挑的是那块地落在哪），
+## D 的圈在候选目标脚下（能不能点倒下的、能不能点自己，画出来就不用猜）。
 ##
-## C 那个圈画在**鼠标**上而不是忍者身上：忍术打的是一块地，
-## 玩家要挑的是那块地落在哪，圈跟着手走他才看得出自己会罩住几个。
-##
-## D 那一圈圈画在**候选目标**脚下，不跟着鼠标：锁定档要挑的是一个人，
-## 而玩家不知道能不能点已经倒下的那个、能不能点自己 —— 画出来就不用猜。
-##
-## ## 施法者高亮（决策 1，M7-e）
-##
-## **不管哪一档都画**，包括地面技能。它解决的是
-## 「我按了技能之后视线回到战场，忘了是谁在放」——
-## 而地面技能压根没有「候选目标」可高亮，所以它必须是独立的一层。
-##
-## 它和候选环**不同色**，理由同上一段：一个是「就是他在放」（既成事实），
-## 一个是「你可以点这几个」（还没落地的意图）。
-##
-## ## 画哪一条由**技能自己**说，不由模式说
-##
-## [enum PBFieldPicker.Aim] 里只有一个 `SKILL`（M7-e）——
-## 接下来那一下点击是什么意思，读的是 [member PBSkill.target]。
-## 在这儿再摆一份「哪个模式画哪条线」的表就是第二份真相。
-##
-## ## A 画一条还是画全部，看暂停没暂停（M5-12）
-##
-## 跑起来的时候画全部就是一屏乱线 —— 十条线每帧都在扫，谁也读不出信息。
-## 但**暂停正是用来读局面的那一刻**（§02 允许暂停下操作），
-## 那时「哪几个人在打同一个目标、谁在空放」一眼就得看出来，
-## 而只画选中那一条的话，玩家得挨个点过去。
+## **施法者高亮不管哪一档都画**（地面技能没有候选目标可高亮），和候选环不同色。
+## **画哪一条由技能自己说**（[member PBSkill.target]），不另摆一份「哪个模式画哪条线」的表。
+## **A 平时只画选中那一条，暂停时画全场**：跑起来画全部是一屏乱线，暂停时要一眼看出谁在打同一个目标。
 
 ## A：他要打谁。绿 —— 和血条同一套「这是好事」的语义。
 const LINE_TARGET := Color(0.443, 0.816, 0.549, 0.85)
@@ -62,26 +27,17 @@ const LINE_PICK := Color(0.898, 0.420, 0.420, 0.9)
 ## C：正在等你点忍术落点。橙 —— 和落点预示圈（[PBTelegraphPool]）同色系。
 const LINE_CAST := Color(0.98, 0.72, 0.32, 0.9)
 
-## D：正在等你点一个队友（M7-e）。青 —— 三条意图线里唯一一条指向自己人的，
-## 和红（打敌人）、橙（炸地面）都拉得开。
+## D：正在等你点一个队友。青 —— 和红（打敌人）、橙（炸地面）都拉得开。
 const LINE_ALLY := Color(0.42, 0.85, 0.90, 0.9)
 
 ## 施法者脚下那一圈：**就是他在放**。白偏暖，比候选环亮 ——
 ## 它说的是既成事实，而候选环说的是「你可以点这几个」。
 const CASTER_EDGE := Color(1.0, 0.96, 0.86, 0.85)
 
-## E：已下令但还没放出去的那几条（M7-h）。施法者脚下一圈黄 + 一条指向目标的虚线。
+## E：已下令但还没放出去的那几条。施法者脚下一圈黄 + 一条指向目标的虚线。
 ##
-## ## 为什么非画不可
-##
-## 暂停下玩家会连着给好几个人下令（那正是这套操作存在的理由），
-## 而**指令卡只显示选中的那一个** —— 给第 2 个人下令时，第 1 个人下没下过令
-## 在屏幕上没有任何地方说得出来。5 个人的那个场景会变成盲操作。
-##
-## 线的颜色沿用 C / D 那两条（橙 = 炸地面、青 = 治队友）：那一条线说的
-## 本来就是同一句话（「这一发要落在哪」），只是从「正在挑」变成了「挑好了」。
-## 环用黄，和施法者高亮（[constant CASTER_EDGE]，白）拉开 ——
-## 一个是「正在放」，一个是「等着放」。
+## 暂停下玩家会连着给好几个人下令，而指令卡只显示选中的那一个 —— 不画的话就是盲操作。
+## 线色沿用 C / D（同一句话，从「正在挑」变成「挑好了」）；环用黄，和施法者高亮（[constant CASTER_EDGE]，白）拉开。
 const ORDER_EDGE := Color(0.98, 0.85, 0.45, 0.85)
 
 ## 已下令那一圈的半径（像素）。比施法者高亮小一点，比候选环大一点。
@@ -187,14 +143,9 @@ func sync(
 	_apply(links, from, cursor, mode, tier, cast_px, picks, orders, tiers)
 
 
-## 已下令但还没放出去的那几条（M7-h）。每条收一对端点加一个档位。
-##
-## **读的是 [method PBBattleSim.orders]，不是「谁身上有一发在飞」** ——
-## 攒着的那条恰恰还没进 [PBSkillCast]，那正是它要表达的状态。
-## 落地之后它自然从这一层消失，换成落点预示圈（[PBTelegraphPool]）接手。
-##
-## 目标点三档各不同：地面档是落点，锁定档是那个队友现在站的地方，
-## 不挑目标的那一档没有终点（起终点相同，只画那个圈）。
+## 已下令但还没放出去的那几条，每条收一对端点加一个档位。
+## **读 [method PBBattleSim.orders]**：攒着的那条还没进 [PBSkillCast]，放出去之后换成落点预示圈接手。
+## 终点：地面档是落点，锁定档是那个队友现在站的地方，不挑目标的没有终点（只画那个圈）。
 static func _gather_orders(
 	out: PackedVector2Array, tiers: PackedInt32Array, battle: PBBattleSim, field: Vector2
 ) -> void:
@@ -222,14 +173,8 @@ static func _gather_orders(
 		tiers.append(cast.skill.target)
 
 
-## 锁定档下点得中的那几个人（M7-e）。
-##
-## **判据是 [method PBAttacker.is_targetable]，和 [method PBSkillRules.land_on_ally]
-## 落地时那一道门读同一份** —— 各写一份的话会画出一圈「看着能点、点了空放」
-## 的候选，而那正是这一层要消灭的猜测。
-##
-## 尾兽排除在外（`slot < 0`）：它没有本体、位置恒为 0，
-## 画上去玩家会以为基地上站着一个人（同 [method PBFieldPicker.ally_at]）。
+## 锁定档下点得中的那几个人。**判据是 [method PBAttacker.is_targetable]**，和落地时那道门读同一份 ——
+## 否则会画出「看着能点、点了空放」的候选。尾兽排除在外（`slot < 0`，没有本体）。
 static func _gather_allies(
 	out: PackedVector2Array, battle: PBBattleSim, field: Vector2
 ) -> void:
@@ -238,11 +183,7 @@ static func _gather_allies(
 			out.append(PBLayout.to_screen(attacker.pos, field))
 
 
-## 点敌人那一档下点得中的那几个（[constant PBSkill.Target.ENEMY]，M8-b）。
-##
-## **判据是 [method PBEnemy.is_active]，和 [method PBFieldPicker.enemy_at] 那道门
-## 读同一份** —— 各写一份的话会画出一圈「看着能点、点了没反应」的候选，
-## 而那正是这一层要消灭的猜测（同 [method _gather_allies]）。
+## 点敌人那一档下点得中的那几个。**判据是 [method PBEnemy.is_active]**，和 [method PBFieldPicker.enemy_at] 读同一份。
 static func _gather_enemies(
 	out: PackedVector2Array, battle: PBBattleSim, field: Vector2
 ) -> void:
@@ -353,9 +294,7 @@ func _draw() -> void:
 	if _mode != PBFieldPicker.Aim.SKILL:
 		return
 	if _tier == PBSkill.Target.ALLY or _tier == PBSkill.Target.ENEMY:
-		# **点敌人那一档用橙线，不是「攻击」那条红线**（M8-b）：红说的是
-		# 「这一下是改打谁」（一个偏好），橙说的是「这一发技能落在谁身上」
-		# —— 两件事同时都在等一下点击，同色的话玩家分不出自己按的是哪一格。
+		# **点敌人那一档用橙线，不是「攻击」那条红线**：红说「改打谁」（偏好），橙说「这一发落在谁身上」。
 		var hue := LINE_ALLY if _tier == PBSkill.Target.ALLY else LINE_CAST
 		var edge := CANDIDATE_EDGE if _tier == PBSkill.Target.ALLY else CAST_EDGE
 		draw_dashed_line(_from, _cursor, hue, WIDTH, DASH)
@@ -366,7 +305,7 @@ func _draw() -> void:
 		return
 	draw_dashed_line(_from, _cursor, LINE_CAST, WIDTH, DASH)
 	if _cast_px > 0.0:
-		# 战场上的圆在屏幕上是椭圆（M6-a），见 [method PBLayout.ground_disc]。
+		# 地面上的圆画成椭圆，见 [method PBLayout.ground_disc]。
 		var ring := PBLayout.ground_disc(_cursor, _cast_px, SEGMENTS)
 		draw_colored_polygon(ring, CAST_FILL)
 		draw_polyline(ring, CAST_EDGE, WIDTH)

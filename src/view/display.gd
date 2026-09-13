@@ -1,14 +1,8 @@
 class_name PBDisplay
 extends RefCounted
-## 窗口大小与全屏。M6-c。
+## 窗口大小与全屏。
 ##
-## ## 为什么「分辨率可调」对像素游戏是一句关于**倍数**的话
-##
-## 游戏永远按 `640×360` 渲染（`project.godot` 的 `viewport_width/height`），
-## 窗口再大也只是把那一张图放大 —— 所以「支持 1080p」不是让游戏渲染
-## 1920×1080，而是让它**整数倍**放大到 1920×1080。
-##
-## 640×360 之所以是个好基准，正是因为主流分辨率全是它的整数倍：
+## 2D 坐标系永远是 640×360，「支持 1080p」是让它**整数倍**放大：
 ##
 ## | 窗口 | 倍数 |
 ## |---|---|
@@ -17,15 +11,7 @@ extends RefCounted
 ## | 2560×1440 | 4× |
 ## | 3840×2160 | 6× |
 ##
-## `stretch/scale_mode = "integer"` 把这条钉死：**非整数倍时宁可留黑边**，
-## 也不把一个像素拉成 1.5 个 —— 那会让像素栅格出现宽窄不一的行列，
-## 而那是像素风最刺眼的一种失真，且**只有盯着截图看才发现**。
-##
-## ## 为什么不做成设置菜单
-##
-## 这个项目还没有任何设置界面，而按键操作已经是它的既有形态
-## （`A` 自动、`1/2/3` 倍速、`R` 重开）。
-## 一个只为放三个选项而生的菜单，比两个按键贵得多。
+## `stretch/scale_mode = "integer"` 把这条钉死：**非整数倍时宁可留黑边**，否则像素栅格宽窄不一。
 
 ## 按 F10 循环这几档。全是 640×360 的整数倍，见类顶部那张表。
 const SIZES: Array[Vector2i] = [
@@ -79,13 +65,6 @@ static func set_fullscreen(on: bool) -> void:
 	DisplayServer.window_set_mode(
 		DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED
 	)
-
-
-## 当前窗口是基准分辨率的几倍（取整），1 表示还没放大。
-## 只用来在信息栏里报一句 —— 真正的整数化是引擎做的。
-static func scale_now() -> int:
-	var size := DisplayServer.window_get_size()
-	return maxi(mini(size.x / int(PBLayout.SCREEN.x), size.y / int(PBLayout.SCREEN.y)), 1)
 
 
 ## 换完大小把窗口挪回屏幕中间。不挪的话从 1440p 换到 720p 之后

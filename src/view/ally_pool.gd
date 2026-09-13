@@ -1,55 +1,22 @@
 class_name PBAllyPool
 extends Node2D
-## 战场上的己方忍者。§02 第 8 点，M3.5-g；M6-b 起是一组 [AnimatedSprite2D]。
+## 战场上的己方忍者（§02）。一组 [AnimatedSprite2D]。射程、站位、防挤、敌人还手都靠它才看得见。
 ##
-## ## 在它之前，战场上只有敌人
-##
-## M0 到 M3 的战斗是「整队一个标量 DPS」，**「谁站在哪」根本没有答案**，
-## 所以画面上画不出自己人是诚实的。M3-a 把标量拆成一组 [PBAttacker]、
-## M3.5 又给了他们血量和跑动之后，那个答案有了 —— 但一直没有出口，
-## 于是开打之后玩家看到的还是一条只有敌人在走的空道。
-##
-## 那不只是难看：**射程、站位、防挤、敌人还手这四件事全部不可见**，
-## 而它们正是 M3-a 到 M3.5-c 做的全部内容。看不见的系统等于不存在。
-##
-## ## 己方和敌人必须一眼分得开
-##
-## 敌人的白模是**会动的多边形**（每系一个剪影，§02 的第二层视觉编码，
-## 见 [method PBWhiteModel.enemy]）。己方是**方头方脑的人形 + 头顶一条血条**：
-## 形状类别不同，去色之后照样分得开，而属性色两边共用同一套
-## （[constant PBEnemyPool.ELEMENT_COLORS]）—— 玩家在卡面上认的那个颜色就是这个。
-##
-## 血条**只有己方有**。敌人的血量已经编码进颜色明暗（越暗越残），
-## 而己方只有十来个、一个死了就少一份输出，那件事值得一个精确的读数。
-##
-## ## 尾兽不画
-##
-## 尾兽是一个 `dps = 0` 的攻击者（[constant PBBeastRules.BEAST_SLOT]），
-## 它没有本体、不挨打、位置恒为 0。画出来会是一个贴在基地上永远满血的方块，
-## 而玩家会以为那是个忍者。
+## **己方和敌人一眼分得开**：敌人的白模是会动的多边形，己方是人形 + 头顶血条，去色之后照样分得开；
+## 属性色两边共用一套（[constant PBEnemyPool.ELEMENT_COLORS]）。
+## **血条只有己方有**：己方只有十来个，死一个就少一份输出，值得一个精确读数。
+## **尾兽不画**：它是没有本体、位置恒为 0 的攻击者（[constant PBBeastRules.BEAST_SLOT]），画出来像基地上站着一个人。
 
-## 血条尺寸与它离**头顶**多远。头顶多高由那张皮说了算
-## （[method PBActorSkin.head_px]）—— 写死一个数的话，换一套画得高一点的
-## 素材，血条就埋进胸口里了。
-## **跟着人物一起放大**（M6-g，1.5 倍）：一个 41 像素高的忍者配一条
-## 13 像素的血条，读数会比人本身还难认。
+## 血条尺寸与它离**头顶**多远。头顶多高由那张皮说了算（[method PBActorSkin.head_px]），
+## 写死一个数的话换一套高一点的素材血条就埋进胸口里了。
 const BAR: Vector2 = Vector2(20.0, 3.0)
 const BAR_LIFT: float = 6.0
 
-## 脚下那圈影子的横向半径与段数（M6-a）。
+## 脚下那圈影子的横向半径与段数。
 ##
-## ## 影子不是装饰，它是这个视角里唯一的高度读数
-##
-## 压过 y 轴之后（[constant PBLayout.Y_SCALE]）「站得远」和「站得高」
-## 在屏幕上是同一个方向的位移 —— 只看小人本身分不出他是往后站了，
-## 还是跳起来了。影子钉在地面点上，那个歧义就没了。
-##
-## 这也是它必须画在**脚底那个点**上的理由：影子的位置就是
-## [member PBAttacker.pos]，而小人的身体是从那儿往上长的。
-## **地面得比背景亮，影子才有地方落。** 底板原来是 `(0.11,0.12,0.16)`，
-## 背景是 `(0.08,0.09,0.12)` —— 黑影子叠上去算出来和背景同一个色号，
-## 画了等于没画（实测：影子在算，屏幕上一个都看不见）。M6-a 把底板提到
-## `(0.17,0.18,0.22)`，那也正是「地面是一个平面」这句话的视觉前提。
+## **影子是这个视角里唯一的高度读数**：压过 y 轴之后「站得远」和「站得高」是同一个方向的位移，
+## 影子钉在地面点（[member PBAttacker.pos]）上，歧义就没了。
+## 地面底板必须比背景亮，影子才有地方落（否则黑影叠上去和背景同一个色号）。
 const SHADOW_RX: float = 9.0
 const SHADOW_SEGMENTS: int = 12
 const SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.45)
@@ -62,16 +29,8 @@ const HP_GOOD := Color(0.44, 0.82, 0.55)
 const HP_LOW := Color(0.90, 0.42, 0.42)
 const BAR_BACK := Color(0.10, 0.11, 0.14, 0.85)
 
-## 选中那个忍者的射程圈（§02 的战斗中操作，M4-e）。
-##
-## ## 为什么画在这里，而不是再开一个池子
-##
-## 它是**某一个己方单位**的属性，和血条一样跟着那个人走。
-## 单开一个节点的话，「圈的位置」和「小人的位置」会各算一遍，
-## 而差几个像素的表现是「射程圈好像没对准他」。
-##
-## 圈画在自己的 `_draw` 里 —— [CanvasItem] 先画自己再画子节点，
-## 所以它自然落在小人和血条**底下**，不会盖住谁。
+## 选中那个忍者的射程圈。画在这个池子的 `_draw` 里（先画自己再画子节点，自然落在小人底下），
+## 不另开一个节点 —— 否则「圈的位置」和「小人的位置」各算一遍，差几个像素就像没对准。
 const RANGE_FILL := Color(0.55, 0.78, 0.95, 0.06)
 const RANGE_EDGE := Color(0.62, 0.84, 0.98, 0.55)
 const RANGE_SEGMENTS: int = 32
@@ -96,8 +55,7 @@ var _sprites: Array[AnimatedSprite2D] = []
 var _backs: Array[ColorRect] = []
 var _fills: Array[ColorRect] = []
 
-## 每人一份动画状态（M6-b）。它记的是**上一帧**的位置与出手时刻，
-## sim 里没有这两样的差分，见 [PBActorPose]。
+## 每人一份动画状态，记的是**上一帧**的位置与出手时刻（sim 里没有差分，见 [PBActorPose]）。
 var _poses: Array[PBActorPose] = []
 
 ## 这一格现在挂着哪张皮。换人才重装 [SpriteFrames] —— 每帧重装的话
@@ -142,25 +100,15 @@ func _ready() -> void:
 		_skins.append(null)
 
 
-## 倍速（暂停和顿帧给 0）。M6-b。
-##
-## **必须跟着走**：动画自己按墙上时间播，倍速时人物会比战斗慢一半，
-## 而暂停时一群人还在原地跑步 —— §02 特意允许暂停下操作，
-## 那一刻画面必须是静止的局面，不是一段循环播放的舞蹈。
+## 倍速（暂停和顿帧给 0）。**必须跟着走**：否则暂停时一群人还在原地跑步，而暂停时画面必须是静止的局面。
 func set_anim_speed(scale: float) -> void:
 	_anim_speed = maxf(scale, 0.0)
 
 
-## 把池子同步到这一波的攻击者上。每渲染帧调一次。
+## 把池子同步到这一波的攻击者上。每渲染帧调一次。**位置直接读 [member PBAttacker.pos]。**
 ##
-## [param units] 是与攻击者同序的上场名单（[member PBWavePlan.deployed]），
-## 用来取属性色和那张皮 —— [PBAttacker] 身上没有「攻元素」，那一份克制倍率
-## 在建攻击者时就乘进 `dps` 了（§14 铁律 4：element 挂在伤害事件上）。
-## [param enemies] 只用来查**他要打的那个在哪**（朝向），见
-## [member PBAttacker.aim_at]。
-##
-## **位置直接读 [member PBAttacker.pos]**（M4-a）。在那之前 y 是这里
-## 按显示序号现编的 —— sim 是一维的，纵向没有答案可读。
+## [param units] 是与攻击者同序的上场名单，用来取属性色和那张皮（[PBAttacker] 身上没有攻元素）。
+## [param enemies] 只用来查他要打的那个在哪（朝向），见 [member PBAttacker.aim_at]。
 func sync_allies(
 	attackers: Array[PBAttacker],
 	units: Array[PBUnit],
@@ -197,15 +145,8 @@ func sync_allies(
 	_set_shadows(feet)
 
 
-## 准备阶段把上场名单画在他们的开战位置上（§02，M4-f）。
-##
-## ## 为什么准备阶段也要画
-##
-## 在它之前准备阶段的战场是**空的**，上场名单只在屏幕上方那一排头像里 ——
-## 于是「谁站前排」这件事只能从射程档反推。摆位要成为一个操作，
-## 第一步是让玩家看见现在摆成什么样。
-##
-## 不画血条：还没开打，那条永远是满的，而一条恒满的血条只是噪声。
+## 准备阶段把上场名单画在他们的开战位置上（§02）。摆位要成为一个操作，第一步是让玩家看见现在摆成什么样。
+## 不画血条：还没开打，恒满的血条只是噪声。
 func sync_placed(units: Array[PBUnit], spots: Array[Vector2], field: Vector2) -> void:
 	var feet := PackedVector2Array()
 	for i: int in _sprites.size():
@@ -260,7 +201,7 @@ func _draw() -> void:
 		draw_colored_polygon(PBLayout.ground_disc(at, SHADOW_RX, SHADOW_SEGMENTS), SHADOW_COLOR)
 	if _range_px <= 0.0:
 		return
-	# 战场上的圆在屏幕上是椭圆（M6-a）—— y 被压过，见 [constant PBLayout.Y_SCALE]。
+	# 地面上的圆画成椭圆，见 [constant PBLayout.Y_SCALE]。
 	var ring := PBLayout.ground_disc(_range_at, _range_px, RANGE_SEGMENTS)
 	draw_colored_polygon(ring, RANGE_FILL)
 	draw_polyline(ring, RANGE_EDGE, 1.0)
@@ -275,14 +216,8 @@ func _set_shadows(feet: PackedVector2Array) -> void:
 	queue_redraw()
 
 
-## [param at] 是**落脚点**，不是中心（M6-a）。精灵的脚底贴在那个点上。
-##
-## ## 为什么锚点必须是脚
-##
-## y 排序按节点的 y 排（`Actors` 层），而「谁在前面」问的是**谁的脚更靠下**。
-## 按中心锚的话，一个高个子和一个矮个子站在同一条线上会排出先后，
-## 而他们其实并排站着。真精灵进来之后这条更硬：素材高度各不相同，
-## 中心锚会让同一排人前后乱跳。
+## [param at] 是**落脚点**，不是中心，精灵的脚底贴在那个点上。
+## y 排序问的是**谁的脚更靠下**；按中心锚的话高矮不同的人站在同一条线上会排出先后。
 func _place(
 	index: int,
 	at: Vector2,
@@ -297,8 +232,7 @@ func _place(
 	var sprite: AnimatedSprite2D = _sprites[index]
 	sprite.visible = true
 
-	# **每一格都要问**（M7-e/f）：只看大招那一格的话，玩家手放的技能
-	# 一整段施法期间人是站着不动的，而那半秒正是 §02 的预判窗口。
+	# **每一格都要问**：只看大招那一格的话，玩家手放的技能整段施法期间人站着不动。
 	var cast := _pending_cast(attacker)
 	var hold: int = _hold_frames(attacker.attack_interval())
 	var pose: PBActorPose = _poses[index]
@@ -319,9 +253,7 @@ func _place(
 	if pose.state == PBActorPose.State.ATTACK:
 		fit = _fit(skin, anim, attacker.attack_interval())
 	elif pose.state == PBActorPose.State.CAST and cast != null and cast.skill.id != &"":
-		# 逐角色的忍术动画（[member PBActorSkin.skill_anims]）。这张表
-		# M6-b 就建好了，但在 [member PBSkill.id] 之前**没有键可查** ——
-		# §09 的功能档与 §11 的尾兽大招共用一套实现，区别只在这张表里。
+		# 逐角色的忍术动画（[member PBActorSkin.skill_anims]），按 [member PBSkill.id] 查。
 		anim = skin.skill_anim(cast.skill.id)
 	_animate(index, skin, anim, fit, PBActorPose.holds_last(pose.state), pose.swing_began)
 
@@ -389,12 +321,8 @@ func _dress(index: int, unit: PBUnit) -> PBActorSkin:
 	return skin
 
 
-## 播这一段。**同一段不重播** —— 每帧重播会把动画钉死在第一帧，
-## 而那看起来就是「这个人不会动」。
-## 有没有一发在路上，有的话是哪一格（M7-e）。没有就返回 null。
-##
-## 先到先得：同一 tick 里两发都在飞时播前一格那一段 —— 一个人身上
-## 只有一副骨架，而「同时播两段」不是一个能表达的东西。
+## 有没有一发在路上，有的话是哪一格。没有就返回 null。
+## 先到先得：同一 tick 两发都在飞时播前一格那一段（一个人只有一副骨架）。
 static func _pending_cast(attacker: PBAttacker) -> PBSkillCast:
 	for i: int in PBSkillRules.cast_count(attacker):
 		var cast := PBSkillRules.cast_at(attacker, i)
@@ -409,6 +337,7 @@ static func _pending_cast(attacker: PBAttacker) -> PBSkillCast:
 ## 三种情况要分开：换了一段就从头播；同一段还在演就别碰它（每帧调一次
 ## `play` 会把它钉死在第一帧，那看起来就是「这个人不会动」）；
 ## 同一段已经演完，那要么再来一遍（攻击段每出一手一遍），要么就停在那儿。
+## 播这一段。**同一段不重播** —— 每帧重播会把动画钉死在第一帧，看起来就是「这个人不会动」。
 func _animate(
 	index: int,
 	skin: PBActorSkin,
@@ -421,9 +350,8 @@ func _animate(
 	var over: bool = not sprite.is_playing()
 	if sprite.animation != anim or (over and not hold_last):
 		sprite.play(anim)
-	# **一次新挥击从第 0 帧起跑**（M9-e，见 [member PBActorPose.swing_began]）。
-	# 光调 `play` 没用：它对已经在播的同一段什么都不做，而攻击状态在交战期间
-	# 是连着的 —— 不拨回去的话动画按自己的周期自由循环，出手落在第几帧全看运气。
+	# **一次新挥击从第 0 帧起跑**（见 [member PBActorPose.swing_began]）：`play` 对已经在播的同一段什么都不做，
+	# 不拨回去的话出手落在第几帧全看运气。
 	if restart and sprite.animation == anim:
 		sprite.set_frame_and_progress(0, 0.0)
 	sprite.speed_scale = _anim_speed * fit
@@ -464,19 +392,9 @@ func _hide(index: int) -> void:
 	_fills[index].visible = false
 
 
-## 造一条血条。**一律 `MOUSE_FILTER_IGNORE`**（M5-10）。
-##
-## [ColorRect] 默认是 `MOUSE_FILTER_STOP`，而**引擎只要在鼠标下面找到
-## 任何一个非 IGNORE 的 [Control]，那一下点击就算被 GUI 处理掉了** ——
-## `_unhandled_input` 收不到，于是「点战场上的忍者」整条路是死的。
-##
-## 最坑的是它长什么样：**点在忍者身上没反应，点在他旁边也没反应**
-## （底下还压着 `Lane` 和 `Background` 两块同样默认 STOP 的 [ColorRect]）。
-## 看起来像「点选功能没做」，而代码里那一整套判定写得好好的。
-##
-## M6-b 之后本体是 [AnimatedSprite2D]（[Node2D]，压根不参与 GUI 命中），
-## 这条只剩血条这两块还需要，但**规矩不变** —— 下一个往锚上挂
-## [Control] 的人会踩同一个坑。
+## 造一条血条。**一律 `MOUSE_FILTER_IGNORE`**：[ColorRect] 默认 STOP，引擎只要在鼠标下找到任何一个
+## 非 IGNORE 的 [Control]，那一下点击就算被 GUI 处理掉了，`_unhandled_input` 收不到 ——
+## 表现是「点战场上的忍者没反应」，而判定代码写得好好的。下一个往锚上挂 [Control] 的人会踩同一个坑。
 func _add_rect(anchor: Node2D, of_size: Vector2, color: Color) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.size = of_size

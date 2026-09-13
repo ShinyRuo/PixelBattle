@@ -1,15 +1,14 @@
 extends SceneTree
-## 把战斗画面截成 PNG。M0 用来做「看一眼对不对」和去色剪影测试（§02）。
+## 把战斗画面截成 PNG（看一眼对不对、去色剪影测试）。
 ##
-## **不能加 `--headless`。** headless 下渲染服务器是空实现，
-## `get_texture()` 拿不到真像素，截出来是一片黑 —— 而且不会报错。
+## **不能加 `--headless`**：headless 下渲染服务器是空实现，截出来是一片黑，而且不报错。
 ##
 ## [codeblock]
 ## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --path . \
 ##     --script res://src/tools/capture_battle.gd -- --at 400 --out shot.png
 ## [/codeblock]
 ##
-## `--at` 是等多少个物理帧再截 —— 60 帧 = 1 秒。想看第几波就换算一下。
+## `--at` 是等多少个物理帧再截（60 帧 = 1 秒）。
 
 const OUT_DIR := "res://build"
 
@@ -25,7 +24,7 @@ var _start_wave: int = 1
 ## 强制敌人数量，纯视觉用。0 表示按 §04 的公式正常算。
 var _enemy_count: int = 0
 
-## 关掉自动推进，停在准备阶段截图 —— M1-b 的花钱面板只在那时出现。
+## 关掉自动推进，停在准备阶段截图。
 var _manual: bool = false
 
 

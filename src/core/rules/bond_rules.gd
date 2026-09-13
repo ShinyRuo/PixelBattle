@@ -2,22 +2,12 @@ class_name PBBondRules
 extends RefCounted
 ## 羁绊结算（§09）。全部 static，无状态，零引擎依赖。
 ##
-## ## 谁算数
+## **谁算数**：在场且没被派去做任务的人（§06），由 [method PBRunState.bonded_units]
+## 挑出来，本类只负责拿到名单之后算。
 ##
-## §09 的生效规则：**在场的人全额生效、无衰减**，
-## 但**派遣出去做任务的人羁绊暂时失效**（§06 新增）。
-## 所以「算数的人」= 在场且未被派遣的那批，
-## 由 [method PBRunState.bonded_units] 挑出来，本类只负责拿到名单之后算。
-##
-## M3.5-i 删掉待命台之后「在场」就是出战席（[member PBRunState.field]），
-## 于是这批人只比真上场的少了派出去做任务的那几个。
-##
-## ## 加成是各组相加，不是相乘
-##
-## §09 说「同一角色可同时属于多个羁绊」。相乘的话，多组羁绊的收益会指数叠加，
-## 「把能凑羁绊的卡全塞进去」立刻变成唯一解 —— 那正是 §05 记着的**原版漏洞**。
-## 相加时每一组的边际收益恒定，凑第三组和凑第一组一样值钱，
-## 玩家才会去比较「这一组值不值得为它换掉一个高战力位」。
+## **各组相加，不相乘**：相乘的话多组收益指数叠加，「把能凑羁绊的卡全塞进去」
+## 立刻变成唯一解。相加时每一组的边际收益恒定，玩家才会比较「这一组值不值得
+## 为它换掉一个高战力位」。
 
 
 ## 一份名单激活了多少总战力加成。返回的是**加成本身**（0.0 = 没有羁绊），
@@ -33,9 +23,8 @@ static func power_bonus(units: Array[PBUnit], table: PBBondTable) -> float:
 
 ## 这份名单里有几个人算 [param bond] 的成员。
 static func active_count(bond: PBBond, units: Array[PBUnit]) -> int:
-	# **按角色数，不按卡数**（M5-9）。重复抽到的忍者现在是另一个人
-	# （[method PBUnit.key]），照卡数算的话带三个鸣人就能凑满一组羁绊 ——
-	# 而 §09 要的是「凑齐**不同**的成员」，那才是它的全部难度。
+	# **按角色数，不按卡数**：重复抽到的忍者是另一张卡（[method PBUnit.key]），
+	# 照卡数算的话带三个同名忍者就凑满一组，而 §09 要的是凑齐**不同**的成员。
 	var seen: Dictionary = {}
 	for unit: PBUnit in units:
 		if bond.counts(unit):
@@ -59,25 +48,12 @@ static func active_tiers(units: Array[PBUnit], table: PBBondTable) -> Dictionary
 	return out
 
 
-## 现在解锁了哪些功能档，`{ 载体角色 id: [功能键…] }`。§09 / M3-f。
+## 现在解锁了哪些功能档，`{ 载体角色 id: [功能键…] }`（§09）。
 ##
-## ## 两份名单，各管一半
+## [param bonded] 是**算档位的人**（在场减去派遣），[param deployed] 是**真上场的人**。
+## 档位按前者数，功能按后者兑现 —— 不在场上的人没有大招，功能挂不上去。
 ##
-## [param bonded] 是**算档位的人**（在场，减去派遣出去的，§06/§09）；
-## [param deployed] 是**真上场的人**。档位按前者数，功能按后者兑现 ——
-## 不在场上的人没有大招，功能挂不上去。理由写在
-## [member PBBond.tier_function_carriers]。
-##
-## **M3.5-i 删掉待命台之后这两份名单几乎重合**：差的只剩派出去做任务的人。
-## 那条门槛因此从「腾一个出战位给载体」缩成「别把载体派去做任务」——
-## 弱了一截，但方向没变，要不要补回来归数值回归。
-##
-## ## 为什么值是数组而不是一个键
-##
-## §09 说「同一角色可同时属于多个羁绊」。现在 5 组的载体互不相同，
-## 但 M5 要扩到 12–15 组（晓、五影、日向、人柱力…），一个角色同时是
-## 两组的载体只是时间问题。那时用单值字典会**静默丢掉一个功能** ——
-## 后写的那组覆盖先写的，不报错，玩家只会觉得「这组羁绊好像没生效」。
+## **值是数组**：一个角色同时是两组的载体时，单值字典会让后写的静默盖掉先写的。
 static func active_functions(
 	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
 ) -> Dictionary:
@@ -103,16 +79,12 @@ static func active_functions(
 	return out
 
 
-## 满档的羁绊给**每个在场成员**各发了什么（M12-d1）。
+## 满档的羁绊给**每个在场成员**各发了什么。
 ## 返回 `{角色 id: {被动键: 量}}`，词汇表见 [PBPassiveRules]。
 ##
 ## **两组给同一个人同一个键时量相加**，不是后一组盖前一组 ——
-## 盖的话玩家凑满两组只拿到一组的量，**而那不报错**（同 [PBBuffBag]
-## 同 id 整份覆盖那个坑，M10-c 为它把光环挤出了效果袋）。
-##
-## [param bonded] 是算羁绊的名单，[param deployed] 是真的在打这一波的人。
-## **两份名单不能合成一份**：前者决定凑没凑齐，后者决定这一份兑不兑现 ——
-## 同 [method active_functions] 那条。
+## 盖的话凑满两组只拿到一组的量，而它不报错。
+## 两份名单的分工同 [method active_functions]。
 static func active_passives(
 	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
 ) -> Dictionary:
@@ -138,17 +110,12 @@ static func active_passives(
 	return out
 
 
-## 满档的羁绊给**每个在场成员**打了哪些技能补丁（M12-d2）。
+## 满档的羁绊给**每个在场成员**打了哪些技能补丁。
 ## 返回 `{角色 id: {技能 id: {补丁键: 量}}}`，词汇表见 [PBSkillPatchRules]。
 ##
-## **和 [method active_passives] 逐条同构**，只是多一层（改哪一个技能）。
-## 合成一个函数的话，返回值里就要混着两种深度的字典，
-## 而读它的人得先看键名猜自己拿到的是哪一种。
-##
-## 同一个技能被两组各打一份补丁时，**同一个键按后来的那一份覆盖** ——
-## 这和 [method active_passives] 的「相加」不同，因为补丁里有 `*_set`
-## 这种「设成多少」的语义，相加说不通。两组抢同一个技能同一个字段
-## 本来就是设计上该避免的，真出现时至少是确定的（表的顺序）。
+## 和 [method active_passives] 同构，但**同一个键按后来的那一份覆盖**：
+## 补丁里有 `*_set` 这种「设成多少」的语义，相加说不通。
+## 两组抢同一个技能同一个字段是设计上该避免的，真出现时按表顺序确定。
 static func active_skill_patches(
 	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
 ) -> Dictionary:
@@ -208,33 +175,15 @@ static func marginal_bonus(counts: Dictionary, table: PBBondTable, character: PB
 	return gained
 
 
-## 挑出**带上场的那批卡**（出战席 + 待命台），按「战力 × 羁绊」贪心。M2-c。
+## 挑出**带上场的那批卡**，按「战力 × 羁绊」贪心。
 ##
-## ## 为什么这是 M2 的正题
+## 目标函数：`前 deploy_slots 个人的裸战力之和 × (1 + 羁绊加成)`。
+## **用裸战力而不是对某一波的有效战力**：这是整局带着的队伍，
+## 每波再在这批人里换克制系（[method PBStrategy.pick_by_effect]）。
 ##
-## M2-b 装上真羁绊表之后，「谁在场」第一次成了有内容的决策 ——
-## 而在那之前它根本不是决策：[method PBRunState.bonded_units] 按**仓库顺序**
-## 取前 N，也就是「你先抽到谁就带谁」。羁绊表再精致，选人是随机的，
-## 会玩的和不会玩的拿到的加成就一样，§01 那条技能阶梯永远量不出来。
-##
-## ## 目标函数
-##
-## `前 deploy_slots 个人的裸战力之和 × (1 + 羁绊加成)`。
-##
-## 两处刻意的简化，都记在这里：
-##
-## 1. **用裸战力而不是对某一波的有效战力。** 在场名单是整局带着的队伍，
-##    每波在这批人里换克制系上场（[method PBStrategy.pick_by_effect]），
-##    所以选谁在场不该跟着某一波的属性走。
-## 2. **第 deploy_slots 个之后的人只算羁绊、不算输出。** 那正是 §05 说的
-##    「待命台不参战但羁绊全额生效」—— 板凳的唯一价值就是羁绊。
-##
-## ## 为什么是贪心而不是最优
-##
-## 30 张卡挑 16 张是 C(30,16) ≈ 1.45 亿种组合，每波都要算一次。
-## 贪心是 `容量 × 候选 × 羁绊组数` ≈ 5000 次运算，差着五个数量级。
-## 贪心会错过「单看每一步都不划算、凑齐才跳档」的组合 ——
-## **那正是真人玩家要自己发现的东西**，模拟玩家比人略笨在这里是合适的。
+## **贪心不是最优**：30 挑 16 是上亿种组合，贪心是几千次运算。
+## 它会错过「单看每一步都不划算、凑齐才跳档」的组合 ——
+## 那正是真人玩家要自己发现的东西，模拟玩家略笨在这里是合适的。
 static func choose_field(
 	candidates: Array[PBUnit], capacity: int, deploy_slots: int, cfg: PBSimConfig
 ) -> Array[PBUnit]:
@@ -280,13 +229,3 @@ static func choose_field(
 	return chosen
 
 
-## 离 [param bond] 的下一档还差几个人。已满档返回 0。
-##
-## 这是「换一个人上场值不值」里最要紧的一格信息：差 1 个人的时候，
-## 换上一张战力低但能补档的卡往往是赚的，而那笔账玩家自己算不出来。
-static func to_next_tier(bond: PBBond, units: Array[PBUnit]) -> int:
-	var active: int = active_count(bond, units)
-	for count: int in bond.tier_counts:
-		if active < count:
-			return count - active
-	return 0

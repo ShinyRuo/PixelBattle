@@ -1,21 +1,7 @@
 class_name PBBeastLoader
 extends RefCounted
-## 把 `data/beasts/*.tres` 装成一张 [PBBeastTable]。M3-d。
-##
-## 和 [PBCharacterLoader] / [PBBondLoader] / [PBEquipLoader] 同构，
-## 两条理由也一样：
-##
-## - `ResourceLoader` 被 core 纯度检查明令挡住（§14）。core 只认
-##   [PBBeastTable] 这个类型，不知道尾兽数据从哪来。
-## - 报错只能在这一层做 —— 只有这里手上有 `.tres` 的路径，
-##   能指出是**哪一份数据**写错了。
-##
-## ## 这里的排序影响的是显示顺序，不是确定性
-##
-## 尾兽不参与任何随机流（开局选一只是玩家的决定，不是掷骰），
-## 所以顺序变了结果也一样。排序是为了让 §02 的选兽界面和
-## `batch_sim` 的九连扫描按同一个次序排 —— 文件名带序号，
-## 排出来正好是一尾到九尾。
+## 把 `data/beasts/*.tres` 装成一张 [PBBeastTable]。与 [PBCharacterLoader] 同构。
+## 排序影响的是显示顺序（尾兽不参与随机流）：文件名带序号，排出来正好是一尾到九尾。
 
 const DIR := "res://data/beasts"
 
@@ -65,10 +51,8 @@ static func load_from(dir_path: String) -> PBBeastTable:
 			continue
 		var bad := _unknown_aura_keys(beast)
 		if not bad.is_empty():
-			# **不认识的光环键直接拒收，不静默跳过**（M12-e2）。
-			# 静默的表现正是「配了不生效」：表装得进来、界面照样列这只尾兽、
-			# 玩家照样花钱升级，只有光环那一份什么都不发生。
-			# 同 `data/skills.tsv` 那一列「额外」的规矩。
+			# **不认识的光环键直接拒收，不静默跳过**：静默的表现是表装得进来、玩家照样花钱升级，
+			# 只有光环什么都不发生。认不认得只问 [method PBModRules.is_known]。
 			push_error("这只尾兽的光环里有认不得的键 %s：%s" % [bad, path])
 			continue
 		if not table_out.add(beast):

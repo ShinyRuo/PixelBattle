@@ -1,12 +1,7 @@
 class_name PBEquipTable
 extends RefCounted
 ## 全部配件与成品（§10）。合成看它、估值按它算、忍具箱从它出货。
-##
-## 和 [PBCharacterTable] / [PBBondTable] 同一个套路：
-## 真表由 core 外面的加载器从 `data/equipment/*.tres` 装进来，
-## 另有一张 [method synthetic] 造的合成表当默认值 ——
-## **身份层作为可对拍的重构引入，换真数据是下一步**，
-## 那一步的数值变化必须能和这一步的重构分开看。
+## 真表由 core 外的加载器从 `data/equipment/*.tres` 装进来；[method synthetic] 是默认的合成表。
 
 ## 全部配件 id（§10 的 7 种）。忍具箱等概率从这里出一个。
 var parts: Array[StringName] = []
@@ -15,12 +10,8 @@ var parts: Array[StringName] = []
 var items: Array[PBEquipItem] = []
 
 
-## 造一张只有一种配件、一种「万能成品」的表。
-##
-## **这是 M-1 那条替身曲线的结构等价物**：任意 `parts_per_item` 个配件
-## 换一件对谁都生效的成品，没有配方点名、没有分类匹配、没有囤积损耗。
-## 留着它是为了让「换真装备表」那一步的数值变化能单独看见 ——
-## 真表一上来就会同时引入配方损耗和分类匹配两件事，混在一起就分不开了。
+## 造一张只有一种配件、一种「万能成品」的表：任意 `parts_per_item` 个配件换一件对谁都生效的成品，
+## 没有配方点名、分类匹配和囤积损耗。合成表那条替身曲线的结构等价物。
 static func synthetic(parts_per_item: int, power_per_item: float) -> PBEquipTable:
 	var out := PBEquipTable.new()
 	out.parts = [&"part"]

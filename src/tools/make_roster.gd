@@ -1,35 +1,13 @@
 extends SceneTree
-## 按 `data/roster.tsv` 重铺整张角色表（M10-b）。
+## 按 `data/roster.tsv` 重铺整张角色表。
 ##
 ## ```powershell
 ## F:\Godot_PJ\_engine\4.7.2\godot_console.exe --headless --path . -s src/tools/make_roster.gd
 ## ```
 ##
-## ## 为什么要有这个工具
-##
-## 30 个 `.tres` 原来是一次性脚本铺的，而**那个脚本没进仓库**（在 gitignore
-## 的 `build/` 里）。于是「稀有度阶梯改了要重跑生成脚本」这句话在
-## [member PBSimConfig.rarity_power] 顶上写着，却没有脚本可跑 ——
-## 补名册的时候只剩手写四十几个文件这一条路。
-##
-## ## 它不再抄一遍规则
-##
-## 老脚本是 PowerShell/Python 写的，所以战力那一段在
-## [method PBStatRules.fill_placeholder] 之外**又实现了一份**，
-## CLAUDE.md 因此有一句「规则与生成脚本逐条相同，改一边就要改另一边」。
-## 这一版是 GDScript，直接调那个函数 —— **那句话从此作废**。
-##
-## ## 名字不在这个文件里
-##
-## §14 铁律 5：`src/` 不出现角色名，而 `tests/test_character_data.gd`
-## 扫的是整个 `src/`、注释也算。名册住在 `data/roster.tsv`，
-## 这里只认列号（同 [PBPortraitForge] 读 `aires/headshots.txt`）。
-##
-## ## 已经填过的三样不覆盖
-##
-## `actor_key`（接过战场素材的）、`icon_key`、`skill_ids`（M7-g 挂上去的）
-## 是**人工填的**，重铺时从旧文件里读回来。覆盖掉的表现是
-## 「重跑一次生成器，接好的素材全变回白模」，而它不报错。
+## **不抄一遍规则**：换算直接调规则层（[method PBStatRules.apply_original_scale]）。
+## **名字不在这个文件里**（铁律 5，`tests/test_character_data.gd` 扫整个 `src/`、注释也算），这里只认列号。
+## 形象键映射在名册最后一列；`skill_ids` 由 `make_skills.gd` 维护，重铺时从旧文件读回来。
 
 const ROSTER := "res://data/roster.tsv"
 const OUT_DIR := "res://data/characters"
@@ -126,9 +104,8 @@ func _write_one(row: PackedStringArray) -> String:
 	var key: String = row[COL_ID]
 	var path: String = "%s/%s.tres" % [OUT_DIR, key]
 	var character := PBCharacter.new()
-	# `skill_ids` 是人工挂的（M7-g），从旧文件里捞回来。
-	# **`actor_key` 不再从旧文件读** —— M12-b 把那份映射搬进名册最后一列了，
-	# 两处都能给的话，删掉 `data/characters/` 重跑一次就会得到不同的结果。
+	# `skill_ids` 从旧文件里捞回来（由 `make_skills.gd` 维护）。`actor_key` 只从名册读 ——
+	# 两处都能给的话，删掉 `data/characters/` 重跑一次会得到不同的结果。
 	var old: PBCharacter = null
 	if ResourceLoader.exists(path):
 		old = ResourceLoader.load(path) as PBCharacter
@@ -161,7 +138,7 @@ func _write_one(row: PackedStringArray) -> String:
 	character.def_element = ELEMENTS[row[COL_DEFENCE]]
 	character.primary = PRIMARIES[row[COL_PRIMARY]]
 
-	# 三围与成长是**数据**，逐个从名册读（M12-b）。
+	# 三围与成长是**数据**，逐个从名册读。
 	character.strength = float(row[COL_STR])
 	character.agility = float(row[COL_AGI])
 	character.intellect = float(row[COL_INT])
@@ -169,13 +146,8 @@ func _write_one(row: PackedStringArray) -> String:
 	character.agility_growth = float(row[COL_AGI_GROW])
 	character.intellect_growth = float(row[COL_INT_GROW])
 
-	# **换算那一层走规则层那一份，不在这里再算一遍。**
-	#
-	# 这里**不再调 `fill_placeholder`**（M12-b）：那个函数是给
-	# 「还没有属性数据的角色」铺占位值的，它会先按稀有度覆盖一遍三围、
-	# 再反解 `atk_base` 把 DPS 拉回稀有度阶梯上 —— 于是上面刚读进来的
-	# 56 份三围在最后一步被整个抹平，**而它不报错**：
-	# 属性栏里每个数都对，只是同一稀有度的人打出来的伤害一样多。
+	# **换算走规则层那一份，不在这里再算一遍**。也**不调 `fill_placeholder`**：它会按稀有度覆盖三围、
+	# 把 DPS 拉回阶梯，刚读进来的三围在最后一步被抹平，而属性栏里每个数都对、不报错。
 	PBStatRules.apply_original_scale(character, float(row[COL_INTERVAL]))
 
 	var trouble := _fill_passives(character, row[COL_PASSIVE])
@@ -186,12 +158,8 @@ func _write_one(row: PackedStringArray) -> String:
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
 
 
-## 把被动那一列的两半都填进去。**返回错误信息，空串 = 成功。**
-##
-## 抽出来是因为 gdlint 的 `max-returns`（同 M12-c1 抽
-## `make_skills.gd` 的 `_check_enums`）—— 而这一步本来就是一件事：
-## 那一列里 `键=量` 进 [member PBCharacter.passives]，
-## `on_hit=<效果键>` 进 [member PBCharacter.on_hit_buffs]。
+## 把被动那一列的两半都填进去（`键=量` 进 [member PBCharacter.passives]，
+## `on_hit=<效果键>` 进 [member PBCharacter.on_hit_buffs]）。**返回错误信息，空串 = 成功。**
 func _fill_passives(character: PBCharacter, cell: String) -> String:
 	var passives: Variant = _parse_passives(cell)
 	if passives is String:
@@ -204,15 +172,10 @@ func _fill_passives(character: PBCharacter, cell: String) -> String:
 	return ""
 
 
-## 被动那一列：`键=量;键=量`，`-` 或空 = 没有。
+## 被动那一列：`键=量;键=量`，`-` 或空 = 没有。返回 [Dictionary] = 成功，[String] = 错误信息。
 ##
-## **不认识的键在这里报错，不静默跳过。** 静默跳过的表现正是「配了不生效」——
-## 数据、界面、日志全部正常，只有那个字段没人写（同 `make_skills.gd`
-## 的 `额外` 那一列，M12-c1 定的）。规则层那边
-## （[method PBPassiveRules.grant_all]）只是不装、不报错：
-## 战斗中途 `push_error` 没有人看得见，而两处各拦一次就是两把尺子。
-##
-## 返回 [Dictionary] = 成功，返回 [String] = 错误信息。
+## **不认识的键在这里报错，不静默跳过**（静默的表现正是「配了不生效」）。规则层那边只是不装、不报错 ——
+## 战斗中途 `push_error` 没人看得见，两处各拦一次就是两把尺子。
 func _parse_passives(cell: String) -> Variant:
 	var out: Dictionary = {}
 	if cell == "" or cell == SAME_AS_ID:
@@ -233,17 +196,8 @@ func _parse_passives(cell: String) -> Variant:
 	return out
 
 
-## 被动那一列里的 `on_hit=<效果键>` 那几个（M12-c2）。
-##
-## **和 [method _parse_passives] 各拿同一列的一半**：那边收 `键=量`，
-## 这边收引用。两个字段而不是一个，理由写在
-## [member PBCharacter.on_hit_buffs] 顶上。
-##
-## **查不到那份效果就报错退出**，不静默跳过 —— 跳过的表现正是
-## 「配了不生效」。效果由 `make_skills.gd` 从 `data/buffs.tsv` 铺出来，
-## **所以那一支要排在这一支前面跑**。
-##
-## 返回 [Array] = 成功，返回 [String] = 错误信息。
+## 被动那一列里的 `on_hit=<效果键>`。返回 [Array] = 成功，[String] = 错误信息。
+## **查不到那份效果就报错退出**。效果由 `make_skills.gd` 从 `data/buffs.tsv` 铺出来，所以那一支要先跑。
 func _parse_on_hit(cell: String) -> Variant:
 	var out: Array[PBBuff] = []
 	if cell == "" or cell == SAME_AS_ID:
@@ -259,11 +213,7 @@ func _parse_on_hit(cell: String) -> Variant:
 	return out
 
 
-## 名册里没有的 `.tres` 一律删掉。
-##
-## **不删的话「删掉某个角色」这件事做不到**：生成器只写不删，
-## 那几个文件会一直躺在 `data/characters/` 里被加载器扫进来，
-## 而唯一的现象是卡池里多出几个名册上没有的人。
+## 名册里没有的 `.tres` 一律删掉 —— 生成器只写不删的话，「删掉某个角色」这件事做不到。
 func _sweep(wanted: Dictionary) -> void:
 	var dir := DirAccess.open(OUT_DIR)
 	if dir == null:

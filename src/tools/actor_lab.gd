@@ -1,48 +1,23 @@
 class_name PBActorLab
 extends Node2D
-## 战场形象预览台：挑一个忍者，把他的五段动作一段段放出来看。M6-e。
+## 战场形象预览台：挑一个忍者或一种怪，把它的五段动作一段段放出来看。
 ##
 ## ```powershell
 ## F:\Godot_PJ\_engine\4.7.2\godot.exe --path . res://scenes/actor_lab.tscn
 ## ```
 ##
-## ## 为什么要单独一个场景
+## 接素材时「对不对」分成三层，**三层全都不报错**，战斗画面里一样都验不了：
 ##
-## 真素材接进来之后，「对不对」这个问题分成三层，而**三层全都不报错**：
+## 1. **皮装上了吗** —— [member PBCharacter.actor_key] 和 [member PBActorSkin.key] 拼错一个字就是「还是白模」
+## 2. **脚底对齐了吗** —— 锚点错一格，前后关系错一档，而所有坐标看起来都正确
+## 3. **段名对上了吗** —— [method AnimatedSprite2D.play] 遇到不存在的动画静默不播，「卡在上一帧」
 ##
-## 1. **这张皮装上了吗** —— [member PBCharacter.actor_key] 和
-##    [member PBActorSkin.key] 拼错一个字，表现是「还是白模」
-## 2. **脚底对齐了吗** —— 锚点错一格，游戏里的表现是这个人和别人的前后
-##    关系错一档，而所有坐标看起来都完全正确（M6-a 那一条）
-## 3. **段名对上了吗** —— [method AnimatedSprite2D.play] 遇到不存在的动画
-##    只是静默不播，表现是「这个角色卡在上一帧」
+## 这里放大到 8 倍、一段只播一段、画出画布框和脚底十字，信息栏直接写出皮是从 `data/actors/` 装的还是退回了白模。
 ##
-## 在战斗画面里这三样都验不了：小人只有 41 像素高、被别人挡着、
-## 而且一秒钟之内会自己切三次状态。**这里把它们摊开** ——
-## 放大到 8 倍、一段只播一段、画出画布框和脚底十字、
-## 并且在信息栏里直接写出「这张皮是从 `data/actors/` 装的还是退回了白模」。
+## **怪也在这里看**（阵营开关，6 属性 × 5 形态）：怪的皮键是拼出来的（[method PBEnemyPool.skin_key]），
+## 查不到时白模兜底要走敌人那一张（[method PBEnemyPool.white_for]），否则预览台对它唯一要回答的问题给出错的答案。
 ##
-## ## 怪也在这里看（M9-k）
-##
-## 面板上多了一个**阵营**开关，另一档是那 30 种怪
-## （6 属性 × 5 形态，[method PBEnemyPool.skin_key]）。上面那三层
-## 对怪一条不落，而且**更要紧** —— 忍者的皮键写在角色表里，
-## 怪的皮键是**拼出来的**：拼出来的键查不到不报错，
-## [PBActorLibrary] 安静地退回白模，表现就是「接了素材还是白模」。
-## 那正是 M9-f 之前那 5 张物理怪皮的处境（一只都刷不出来，而没人发现）。
-##
-## **怪没有 [PBCharacter]**，所以下拉框那一行只写得出「属性 · 形态」，
-## 而白模兜底要走敌人那一张不是己方那一张
-## （[method PBEnemyPool.white_for]，边数按属性、体型按档次）——
-## 退回己方白模的话，预览台会对「这一种怪在游戏里长什么样」这个
-## **它唯一要回答的问题**给出一个错的答案。
-##
-## ## 它不碰 sim
-##
-## 战斗画面里动画状态由 [PBActorPose] 从 sim 的**状态**里差分出来
-## （位置变没变、`next_shot_at` 挪没挪），这里没有 sim，段是手点的。
-## 所以这个场景验的是**素材那一半**（[PBActorSkin] 的全部约定），
-## 不验状态机那一半 —— 那一半归 `tests/test_actor_pose.gd`。
+## **不碰 sim**：段是手点的。验的是素材那一半，状态机那一半归 `tests/test_actor_pose.gd`。
 
 ## 左边的舞台与右边的控件板。
 const STAGE := Rect2(8.0, 8.0, 422.0, 344.0)
@@ -440,11 +415,7 @@ func _play(state: int) -> void:
 	_refresh()
 
 
-## 朝向**和两个池子同一把尺子**（[method PBActorSkin.flips_for]）。
-##
-## 「翻转朝向」那个按钮的意思就是「看向左边」，所以这里把它翻译成一个
-## [member PBActorPose.facing] 再问 —— 自己再写一遍那两行的话，
-## 这个**专门用来验朝向的工具**就会和它要验的东西各说各的（M9-m 正是这条）。
+## 朝向**和两个池子同一把尺子**（[method PBActorSkin.flips_for]）—— 专门验朝向的工具不能和它要验的东西各说各的。
 func _face() -> void:
 	_sprite.flip_h = _skin.flips_for(
 		PBActorPose.FACE_LEFT if _flip else PBActorPose.FACE_RIGHT
@@ -478,11 +449,8 @@ func _set_zoom(zoom: int) -> void:
 	_refresh()
 
 
-## 放大只改**节点的缩放**，不改 [member Sprite2D.offset]。
-##
-## [member Sprite2D.offset] 是在缩放**之前**作用的，所以脚底那个偏移
-## 会被 `scale` 自动乘上去 —— 两边都乘一遍的话，人会浮在地面线上方
-## 一整个身高，而放大 1 倍时完全看不出来（1 的平方还是 1）。
+## 放大只改**节点的缩放**，不改 [member Sprite2D.offset]：offset 在缩放之前作用，两边都乘一遍的话
+## 人会浮在地面线上方一整个身高（放大 1 倍时看不出来）。
 func _apply_zoom() -> void:
 	_sprite.scale = Vector2.ONE * (_skin.pixel_scale * float(_zoom))
 

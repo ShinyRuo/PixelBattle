@@ -247,8 +247,6 @@ func _pack(count: int) -> Array[PBEnemy]:
 	return out
 
 
-
-
 func test_a_telling_blow_hangs_the_passives_own_effect_on_the_target() -> void:
 	# **这是被动通道从「只带得了数」长出来的那一半。** 原版有一批被动是
 	# 「攻击时 X% 几率给目标上一份效果」（带土的扭曲攻击晕眩 0.7 秒），

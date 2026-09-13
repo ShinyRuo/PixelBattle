@@ -18,8 +18,6 @@ func before_each() -> void:
 	_cfg = PBGameData.config()
 
 
-
-
 func test_choosing_a_beast_happens_exactly_once() -> void:
 	# §11 把「选哪只」定成整局唯一一次的决策。允许中途换的话它就退化成
 	# 「哪一波用哪只」—— 不用取舍，九只全都能用上，决策本身没了。

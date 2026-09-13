@@ -1,30 +1,16 @@
 extends SceneTree
-## 命令行那条路：把一堆视频帧变成一套能直接进游戏的战场形象。M6-f。
+## 命令行那条路：把一堆视频帧变成一套能直接进游戏的战场形象。
 ##
 ## ```powershell
 ## .\scripts\make_actor.ps1 -Key asm
 ## ```
 ##
-## ## 它自己不做任何图像处理
+## **自己不做任何图像处理**：流水线在 [PBActorForge] 里，编辑器插件（[PBActorForgePanel]）调同一个类。
 ##
-## **流水线整个在 [PBActorForge] 里**（M6-l 抽出去的）—— 这里只剩
-## 「读命令行参数、按四段循环、把结果打出来」。编辑器插件
-## （[PBActorForgePanel]）调的是同一个类。
+## **分两趟，中间隔一次 `--import`**：引擎只认导入过的贴图，刚写到磁盘的 PNG 同一进程里 `load()` 不出来。
+## `--phase frames` 只写 PNG，`--phase link` 才装 [SpriteFrames]（插件那条路能当场重扫，没有这个问题）。
 ##
-## 各写一份的话，「命令行出的素材和插件出的素材尺寸差一像素」这种事
-## 迟早发生，而它不报错。
-##
-## ## 为什么分成两趟，中间隔一次 `--import`
-##
-## 引擎只认导入过的贴图，刚写到磁盘上的 PNG 在同一次进程里 `load()`
-## 不出来。所以 `--phase frames` 只写 PNG，`--phase link` 才装
-## [SpriteFrames]。**插件那条路没有这个问题** —— 它能让编辑器当场重扫，
-## 那是做成插件最实在的一处好处。
-##
-## ## 人只负责看结果
-##
-## 出完之后开预览台（`scenes/actor_lab.tscn`）—— 「这张皮装上了吗、
-## 脚底对齐了吗、段名对上了吗」三样都不报错，只有那儿看得出来。
+## 出完开预览台（`scenes/actor_lab.tscn`）看：皮装上了吗、脚底对齐了吗、段名对上了吗 —— 三样都不报错。
 
 var _key: String = ""
 var _mid_dir: String = "res://build/aires/mid"

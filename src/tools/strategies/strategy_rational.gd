@@ -5,7 +5,7 @@ extends PBStrategy
 ## ## 为什么需要它
 ##
 ## 其余流派的花钱逻辑是**写死的优先级**：先升几级金币科技、卡池不满就抽卡、
-## 抽满了转装备。里面唯一一处比价是「攻击科技比单抽便宜就先买」，
+## 抽满了转装备。里面唯一一处比价是「训练科技比单抽便宜就先买」，
 ## 而**装备的价格从头到尾没被任何判断读过** —— `gacha_still_pays()`
 ## 看的是板凳坐没坐满，跟 `equip_part_cost` 无关。
 ##
@@ -56,16 +56,14 @@ var gold_payback_waves: float = 6.0
 ## 它偏大会让经济位被高估、偏小会让它永远不被选中，改动前先跑一遍扫描。
 var economy_slot_horizon_waves: float = 12.0
 
-## [constant Buy.TRAINING] 那一档挑中的是哪一条线（M12-h3）。
-## 只在 [method _buy_best] 与紧跟着的 [method _execute] 之间有意义。
+## [constant Buy.TRAINING] 那一档挑中的是哪一条线。只在 [method _buy_best] 与紧跟着的 [method _execute] 之间有意义。
 var _training_pick: StringName = &""
 
 
 func _init() -> void:
 	id = &"rational"
 	dispatch_policy = Dispatch.SMART
-	# 会算账就会算羁绊。对照组 `bond_blind` 只改这一个字段，
-	# 两者的比值就是羁绊贡献的技能阶梯（M2 的核心验收）。
+	# 会算账就会算羁绊。对照组 `bond_blind` 只改这一个字段，两者的比值就是羁绊贡献的技能阶梯。
 	field_policy = Field.BOND_AWARE
 
 

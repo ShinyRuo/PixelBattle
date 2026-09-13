@@ -162,24 +162,6 @@ func test_unpin_takes_off_exactly_one() -> void:
 	assert_false(PBEquipRules.unpin(pinned, team[1].key(), &"thunder_fang"), "没挂的卸不掉")
 
 
-func test_unassigned_is_the_complement_of_what_people_are_wearing() -> void:
-	# 「仓库里还剩什么」必须是「谁挂了什么」的补集。各算各的迟早对不上，
-	# 而装备栏正是拿这个差集列出「还能挂上什么」的。
-	var team := _team()
-	var parts := _parts(4)
-	var made := PBEquipRules.craftable(parts, _cfg.equipment)
-	var worn: int = 0
-	for row: PackedStringArray in PBEquipRules.assign(team, parts, _cfg):
-		worn += row.size()
-	var left: int = 0
-	for count: int in PBEquipRules.unassigned(team, parts, _cfg).values():
-		left += count
-	var total: int = 0
-	for count: int in made.values():
-		total += count
-	assert_eq(worn + left, total, "挂着的 + 剩下的应该正好等于合得出来的")
-
-
 func test_the_battle_reads_the_players_pins() -> void:
 	# **接线**：手动那一份必须真的进战斗。存了却不读的话，
 	# 装备栏点起来一切正常，而战场上什么都没变 —— 不报错。

@@ -1,20 +1,10 @@
 class_name PBFormationRules
 extends RefCounted
-## 开战位置：谁站在哪（§02，M4-f）。全部 static，零引擎依赖。
+## 开战位置：谁站在哪（§02）。全部 static，零引擎依赖。
 ##
-## ## 为什么它不进 [method PBCombatRules.build_attackers]
-##
-## 那个函数已经顶到 `.gdlintrc` 的参数上限（10 个），而它顶部那条注释写着
-## 「再加一种加成时不要接第 11 个参数」。更重要的是**顺序上它也不该在那儿**：
-## 建攻击者是把一张卡摊成「这一波场上的样子」，而摆位置是**玩家的一次输入**，
-## 覆盖在那个结果上。分开之后自动站位那条路一个字节都没动 ——
-## 空 [member PBRunState.formation] 时 [method apply] 什么都不做。
-##
-## ## 站位仍然是射程的派生量，摆位只是覆盖
-##
-## §02 那条「站位是射程的派生量，不是第二份数据」（[PBAttacker] 顶部）没有作废：
-## **没摆过的人照旧按射程档站**。玩家摆过的那几个才有第二份数据，
-## 而那正是「摆位」这个操作的定义 —— 它是一次有意的偏离。
+## **不进 [method PBCombatRules.build_attackers]**：建攻击者是把卡摊成场上的样子，
+## 摆位是玩家的一次输入，覆盖在那个结果上。空 [member PBRunState.formation] 时
+## [method apply] 什么都不做，没摆过的人照旧按射程档站。
 
 
 ## 把玩家摆的位置盖到已经建好的攻击者上。[param attackers] 会被就地改。

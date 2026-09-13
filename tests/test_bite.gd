@@ -103,7 +103,6 @@ func _quarter_health() -> Array[PBEnemy]:
 	return out
 
 
-
 ## 打一下要害，量出主伤害之外多打了多少。
 func _bite_of(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
 	var out := PBCombatOutcome.new()

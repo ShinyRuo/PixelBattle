@@ -1,23 +1,12 @@
 class_name PBEnemyPool
 extends Node2D
-## 敌人节点的对象池。§14 要求战斗中零新建 —— 节点的创建/销毁在
-## 48 单位 × 20 tick/s 的规模下是实打实的开销，而且会造成帧时间抖动。
+## 敌人节点的对象池。§14 要求战斗中零新建：`_ready()` 一次性建满 `COUNT_CAP` 个，之后只改属性和 `visible`。
 ##
-## 池子在 `_ready()` 一次性建满 `COUNT_CAP` 个，之后只改属性和 `visible`。
-##
-## ## 属性的视觉编码（§02）
-##
-## `640×360` 下一个敌人只有十来个像素，头顶挂图标根本看不清，所以属性必须
-## **编码进精灵本身**。§02 要求三层：
+## 属性的视觉编码（§02 要求三层，640×360 下头顶挂图标看不清）：
 ##
 ## 1. **主色调** —— 五系各占一个明确色相
-## 2. **轮廓形状** —— 每系一个可辨识的剪影。**不能只靠颜色**：
-##    色觉障碍 + 缩放后色彩失真，两条都会让纯色方案失效
-## 3. **描边高亮** —— 可被当前阵容克制的敌人脚下点一圈白
-##
-## §02 的验收项是「去色后仍能仅凭剪影区分五系」，所以形状不是装饰。
-## M6-b 把静态多边形换成了**会动的多边形**（[method PBWhiteModel.enemy]）：
-## 剪影一个顶点都没变，但待机、行军、出手三段从此分得出来。
+## 2. **轮廓形状** —— 每系一个剪影。**不能只靠颜色**（色觉障碍、缩放后色彩失真）；验收是去色后仍能凭剪影分五系
+## 3. **克制高亮** —— 可被当前阵容克制的敌人脚下一圈白
 
 ## 五系 + 物理 + 仙的主色调。§02 指定的色相。
 ##
@@ -54,12 +43,8 @@ const ELEMENT_SIDES := {
 	PBElement.Type.PHYSICAL: 8,
 }
 
-## 每系在皮键里的名字。真素材进来时去 `data/actors/` 里查（M6-b）。
-##
-## 敌人没有 [PBCharacter]，所以借不到 [member PBCharacter.actor_key] 那条路 ——
-## 但换皮的入口必须和己方是同一个（[PBActorLibrary]），
-## 否则「敌人的形象」会长出第二套加载规则，而两套迟早在朝向或脚底上分叉。
-## **查不到就退回白模**，也就是今天走的那一条。
+## 每系在皮键里的名字。敌人没有 [PBCharacter]，但换皮入口必须和己方同一个（[PBActorLibrary]），
+## 否则会长出第二套加载规则。查不到就退回白模。
 const ELEMENT_NAMES := {
 	PBElement.Type.FIRE: "fire",
 	PBElement.Type.WIND: "wind",
@@ -69,45 +54,22 @@ const ELEMENT_NAMES := {
 	PBElement.Type.PHYSICAL: "physical",
 }
 
-## 五种形态，按 [method form_of] 的下标排（M9-c，玩家定的）。
-##
-## ## BOSS 只有一种，不分近远
-##
-## **而它现在实际上是远程的**：`boss_count = 2`，槽位 0 和 1，
-## 而 [method PBSimConfig.enemy_is_ranged] 判的是 `posmod(slot, 10) < 3` ——
-## 两只都落在远程那一档。超级 BOSS 只有一只，槽位 0，同理。
-##
-## 所以 `*_boss` 那张皮的 `attack` 段要按**放术**画，画成挥拳的话
-## 游戏里就是隔着 0.15 打空气，而没有任何一处会报错。
+## 五种形态，按 [method form_of] 的下标排（玩家定的）。**BOSS 只有一种，不分近远**。
+## BOSS 实际上落在远程那一档（[method PBSimConfig.enemy_is_ranged] 按槽位取模），
+## 所以 `*_boss` 那张皮的 `attack` 段要按放术画，画成挥拳的话游戏里就是隔着距离打空气。
 const FORM_NAMES: Array[String] = ["melee", "ranged", "elite_melee", "elite_ranged", "boss"]
 
-## 白模按档次分大小（M9-c）。形状那一维已经被属性占满了
-## （[constant ELEMENT_SIDES]，§02 要求去色后仍能凭剪影分五系），
-## 所以档次只能靠大小说。
+## 白模按档次分大小：形状那一维已经被属性占满了，档次只能靠大小说。
 const RANK_BULK: Array[float] = [1.0, 1.4, 1.9]
 
-## 克制高亮：**脚下一圈白**（M6-b 从「本体加一圈亮边」改过来）。
-##
-## ## 为什么必须是纯白
-##
-## 它要对全部六种属性色都有对比度。初版用的是淡黄 `(1.0, 0.98, 0.72)`，
-## 撞上雷系的黄色本体之后亮边直接消失 —— 而雷系恰恰是玩家最需要看到
-## 「我克得住」的场合之一。任何带色相的亮边都会和某一系撞车。
-##
-## ## 为什么从描边改成了地面圈
-##
-## 描边那一版是「比本体大一圈的同形状多边形」画在本体后面。本体换成
-## 有身高的精灵之后，那圈边整个埋进了精灵里 —— 它假设的是
-## 「本体是一个贴在地面上的小多边形」，而 M6-a 之后不是了。
-## 画在脚下则和影子、射程圈同一个平面，视角一致，也不会挡住剪影。
+## 克制高亮：**脚下一圈白**。
+## **必须是纯白**：任何带色相的亮边都会和某一系的本体撞车（淡黄撞上雷系就消失）。
+## **画在脚下**：本体是有身高的精灵，包在本体外面的描边会埋进精灵里；地面圈和影子、射程圈同一个平面。
 const RING_COLOR := Color(1.0, 1.0, 1.0, 0.75)
 const RING_RX: float = 12.0
 const RING_SEGMENTS: int = 14
 
-## 挨打之后白闪几帧。§02 的「命中反馈」，M3.5-h。
-##
-## **只有几帧**：逐 tick 的普攻是连续的，闪久了整片战场会一直亮着，
-## 那时闪光就不再代表「刚挨了一下」，而只是背景噪声。
+## 挨打之后白闪几帧（§02 的命中反馈）。**只有几帧**：普攻是连续的，闪久了整片战场一直亮着，闪光就成了噪声。
 const FLASH_FRAMES: int = 4
 const FLASH_COLOR := Color(1.0, 1.0, 1.0)
 
@@ -117,7 +79,7 @@ var _keys: Dictionary = {}
 
 var _nodes: Array[AnimatedSprite2D] = []
 
-## 每人一份动画状态（M6-b），和己方共用一份实现，见 [PBActorPose]。
+## 每人一份动画状态，和己方共用一份实现，见 [PBActorPose]。
 var _poses: Array[PBActorPose] = []
 
 ## 这一格现在挂着哪张皮。整波属性相同，所以实际上一波只换一次。
@@ -192,17 +154,12 @@ func sync_enemies(
 			node.visible = false
 			continue
 		node.visible = true
-		# **位置是落脚点，画布靠 `offset` 往上抬**（M6-a）。
-		#
-		# 抬节点本身的话 y 排序就按「画布左上角在哪」排了 —— 而己方那边
-		# 锚在脚下（[member PBAllyPool._anchors]），两把尺子差一个身高，
-		# 表现是「站在前面的忍者被后面的敌人盖住」，而两边坐标都对。
+		# **位置是落脚点，画布靠 `offset` 往上抬**：抬节点本身的话 y 排序按画布左上角排，
+		# 而己方锚在脚下，两把尺子差一个身高 —— 站在前面的忍者会被后面的敌人盖住。
 		node.position = screen_position(enemy, field)
 		_dress(i, enemy)
 		_animate(i, enemy)
-		# 身上挂着东西就染一层（M7-f）。**排在血量与白闪之后** ——
-		# 那两层讲的是「还剩多少血」和「刚挨了一下」，而这一层讲的是
-		# 「他现在被上了状态」，三句话都要说得出。
+		# 身上挂着东西就染一层，**排在血量与白闪之后**：三层各说一句（还剩多少血、刚挨了一下、被上了状态）。
 		node.modulate = PBBuffStrip.tinted(_color_of(i, enemy), enemy.buffs, current_tick)
 		feet.append(node.position)
 	_ringed = show_counter_ring
@@ -210,41 +167,23 @@ func sync_enemies(
 	_decay_flash()
 
 
-## 这一格现在画不画。M9-b。
+## 这一格现在画不画。
 ##
-## ## 为什么不能直接用 [method PBEnemy.is_active]
+## 不能直接用 [method PBEnemy.is_active]（活着且已出场）：怪一死当帧就藏的话倒地段没机会播。
+## 死了之后画到 `dead` 那一段演完并停在最后一帧（[method PBActorPose.holds_last]）—— **不等固定帧数**，
+## 写死的话帧多的素材会被拦腰截断。
 ##
-## 那句话是「活着而且已经出场」，也就是**怪一死当帧就藏**。
-## 于是倒地那一段从来没有机会播 —— 玩家看到的是怪凭空消失，
-## 而己方那边（[PBAllyPool]）早就是「演完倒地再留在场上」。
-##
-## 所以死了之后还要再画一会儿：直到 `dead` 那一段演完并停在最后一帧
-## （[method PBActorPose.holds_last]）。演完就藏，**不是等一个固定的帧数** ——
-## 帧数写死的话，换一套帧多的真素材就会被拦腰截断，而那不报错。
-##
-## ## 槽位被下一波接管时不用额外记账
-##
-## 一波打完槽位会分给下一波的怪，而那时上一具尸体可能还没演完。
-## **但这件事已经被下面那句 `has_spawned` 挡住了**：接管这一格的新怪要么
-## 已经出场（那就 `is_active`，照常画它自己，[method _animate] 顺手把姿势
-## 从倒地切回来），要么还没出场（那就藏）—— 两条路都走不到尸体那一支。
-##
-## 我一开始给每个槽位记了一份「这具尸体是谁的」，写完才发现它一次都不会生效。
-## 那种字段最难查：它看起来在守着什么，于是没人敢动，而它其实什么都没守。
+## 槽位被下一波接管时不用额外记账：接管的新怪要么已出场（照常画它自己），要么还没出场（藏）。
 func _on_screen(index: int, enemy: PBEnemy, current_tick: int) -> bool:
 	if enemy.is_active(current_tick):
 		return true
 	if not enemy.has_spawned(current_tick):
 		return false
-	# 死了。倒地那一段演完之前留着。
+	# 死了：倒地那一段演完之前留着。
 	return not (PBActorPose.holds_last(_poses[index].state) and not _nodes[index].is_playing())
 
 
-## 这个槽位刚挨了一下，白闪一下（§02 的命中反馈，M3.5-h）。
-##
-## 由 [PBBattleView] 按 [PBDamageWatch] 报的结果调 —— **谁挨打是逐帧比对
-## 血量差得出来的**，sim 里没有这个事件。加一个事件到 sim 层的话，
-## 那是给渲染层的方便去改确定性模拟，代价完全不对等。
+## 这个槽位刚挨了一下，白闪一下。由 [PBBattleView] 按 [PBDamageWatch] 逐帧比出来的结果调，sim 里没有这个事件。
 func flash(slot: int) -> void:
 	if slot >= 0 and slot < _flash.size():
 		_flash[slot] = FLASH_FRAMES
@@ -271,12 +210,7 @@ func _draw() -> void:
 		draw_polyline(PBLayout.ground_disc(at, RING_RX, RING_SEGMENTS), RING_COLOR, 1.0)
 
 
-## 敌人在屏幕上的位置。
-##
-## M4-a 之前这里用「槽位号 × 黄金比」现编一个纵向散布 —— 那是渲染层
-## **自己发明的装饰**，sim 一个字节都不知道。现在泳道是
-## [member PBEnemy.lane]，那个式子搬进了 [method PBSimConfig.enemy_lane]：
-## **画面一个像素都没变，但纵向从此算数了。**
+## 敌人在屏幕上的位置。泳道来自 [member PBEnemy.lane]。
 func screen_position(enemy: PBEnemy, field: Vector2) -> Vector2:
 	return PBLayout.to_screen(enemy.pos(), field)
 
@@ -307,15 +241,8 @@ static func form_of(rank: int, ranged: bool) -> int:
 
 
 ## 皮键：`enemy_<属性>_<形态>`，共 6 × 5 = 30 个。
-##
-## **只有这一处拼这个字符串。** 出图那一侧照它建目录，
-## 两处各拼一份的话，出好的素材装不进来而工具一句话都不说 ——
+## **只有这一处拼这个字符串**（预览台和战场共用）：出图那一侧照它建目录，两处各拼一份的话出好的素材装不进来，
 ## [PBActorLibrary] 查不到就退回白模，表现是「接了素材还是白模」。
-##
-## **这一处以前不是一处。** [method _ready] 预拼那 30 个键时自己又写了一遍
-## 同样的格式串，两份里只有这一份带 `.get(element, "physical")` 兜底 ——
-## 也就是说加一个属性时，池子里那份会拼出 `enemy__melee`，
-## 而它照样是个合法的 [StringName]，只是没人查得到。M9-k 收成一处。
 static func key_for(element: PBElement.Type, form: int) -> StringName:
 	var slot: int = clampi(form, 0, FORM_NAMES.size() - 1)
 	return StringName("enemy_%s_%s" % [ELEMENT_NAMES.get(element, "physical"), FORM_NAMES[slot]])
@@ -326,11 +253,7 @@ static func skin_key(element: PBElement.Type, rank: int, ranged: bool) -> String
 	return key_for(element, form_of(rank, ranged))
 
 
-## 这一种怪**没有真素材时**长什么样。
-##
-## 抽出来是给预览台用的（M9-k）：预览台要摊开 30 种怪，而它们今天全是白模。
-## 两处各写一份的话，预览台里的怪会和战场上的怪在边数或体型上分叉 ——
-## 而「这一种怪在游戏里长什么样」恰恰是那个工具唯一要回答的问题。
+## 这一种怪**没有真素材时**长什么样。预览台和战场共用，否则两边的白模会在边数或体型上分叉。
 static func white_for(element: PBElement.Type, rank: int) -> PBActorSkin:
 	return PBWhiteModel.enemy(ELEMENT_SIDES.get(element, 6), RANK_BULK[clampi(rank, 0, 2)])
 
@@ -342,11 +265,8 @@ func _animate(index: int, enemy: PBEnemy) -> void:
 	var skin: PBActorSkin = _skins[index]
 	var pose: PBActorPose = _poses[index]
 	var hold: int = maxi(roundi(float(maxi(enemy.attack_interval, 1)) * _frames_per_tick), 2)
-	# `engaged` 就是敌人那一侧的「够不够得着」（[method PBBattleSim._enemies_attack]
-	# 每 tick 从 false 重算）—— 和己方那边的 `can_reach(aim_at)` 是同一句话，
-	# 见 [method PBActorPose.update] 的 `in_range` 那段。
-	# 起手（M9-e）：命中那一帧要落在出手的 tick 上。**敌人这一边动画不缩放**
-	# （没有 [method PBAllyPool._fit] 那一步），所以实际长度就是素材自己的长度。
+	# `engaged` 就是敌人那一侧的「够不够得着」，和己方的 `can_reach(aim_at)` 同一句话（见 [method PBActorPose.update]）。
+	# **敌人的动画不缩放**（没有 [method PBAllyPool._fit] 那一步），实际长度就是素材自己的长度。
 	pose.update(
 		enemy.pos(),
 		enemy.alive,
@@ -360,19 +280,13 @@ func _animate(index: int, enemy: PBEnemy) -> void:
 	)
 	var node: AnimatedSprite2D = _nodes[index]
 	var anim: StringName = skin.anim_for(pose.state)
-	# **一次新挥击从第 0 帧起跑**（M9-e）。同 [method PBAllyPool._animate]：
-	# 光调 `play` 没用，它对已经在播的同一段什么都不做。
+	# **一次新挥击从第 0 帧起跑**，同 [method PBAllyPool._animate]。
 	if pose.swing_began and node.animation == anim:
 		node.set_frame_and_progress(0, 0.0)
-	# **`holds_last` 那一档演完就停住，不能再 `play`。**
-	# `AnimatedSprite2D` 在「停在最后一帧」时再调一次 `play()` 就是重播
-	# （见 CLAUDE.md 已知坑位），于是倒地会一遍遍重演 ——
-	# 而 M9-b 之前敌人一死就藏，这条从来没机会发作。
+	# **`holds_last` 那一档演完就停住，不能再 `play`**：停在最后一帧时再调 `play()` 就是重播，倒地会一遍遍重演。
 	if node.animation != anim or (not node.is_playing() and not PBActorPose.holds_last(pose.state)):
 		node.play(anim)
-	# **攻击段要压进一个攻击间隔里**（M9-e 补的，己方那边一直有：
-	# [method PBAllyPool._fit]）。不压的话白模那 3 帧 0.25 秒就演完了，
-	# 而出手要等到间隔的一半 —— 第 4 帧根本不会落在出手那一 tick 上。
+	# **攻击段要压进一个攻击间隔里**（同 [method PBAllyPool._fit]），否则第 4 帧不会落在出手那一 tick 上。
 	var fit: float = 1.0
 	if pose.state == PBActorPose.State.ATTACK:
 		var have: float = skin.anim_seconds(anim)
@@ -380,8 +294,7 @@ func _animate(index: int, enemy: PBEnemy) -> void:
 		if have > 0.0 and want > 0.0:
 			fit = clampf(have / want, PBAllyPool.FIT_MIN, PBAllyPool.FIT_MAX)
 	node.speed_scale = _anim_speed * fit
-	# **和己方同一把尺子**（[method PBActorSkin.flips_for]）—— M9-m 之前
-	# 这里的符号是反的，而白模左右对称，看不出来。
+	# **和己方同一把尺子**（[method PBActorSkin.flips_for]）。
 	node.flip_h = skin.flips_for(pose.facing)
 
 
@@ -391,22 +304,10 @@ func _decay_flash() -> void:
 			_flash[i] -= 1
 
 
-## 颜色。血量越低越暗，给一点「快死了」的即时反馈；刚挨打的往白里提。
+## 颜色。血量越低越暗（状态），刚挨打的往白里提（事件）—— 两层不冲突。
 ##
-## 两层不冲突：**暗是状态（还剩多少血），白是事件（刚才挨了一下）**。
-## 只有暗的那一层时，一个满血 BOSS 挨了整整一波普攻，画面上一点动静都没有。
-##
-## ## 属性色只染白模
-##
-## 白模只有一个形状，五系全靠色相分；**真素材各画各的，再乘一层属性色
-## 会把美术定的颜色整个拉偏**（[member PBActorSkin.tint_by_element]）。
-##
-## 己方那边从来就是这么做的（[method PBAllyPool._tint]），敌人这边一直
-## 无条件乘 —— M9-c 之前敌人只有白模，所以这条没机会发作。
-## 发作起来的样子是「接进来的火系怪整个偏橙红」，而没有一处会报错。
-##
-## **血量与白闪两层照旧对真素材生效**：它们讲的是「还剩多少血」和
-## 「刚挨了一下」，和这个怪本来什么颜色是两回事。
+## **属性色只染白模**：真素材各画各的，再乘一层属性色会把美术定的颜色拉偏（[member PBActorSkin.tint_by_element]），
+## 同 [method PBAllyPool._tint]。血量与白闪两层照旧对真素材生效。
 func _color_of(index: int, enemy: PBEnemy) -> Color:
 	var skin: PBActorSkin = _skins[index]
 	var base := Color.WHITE

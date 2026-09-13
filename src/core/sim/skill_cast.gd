@@ -1,17 +1,11 @@
 class_name PBSkillCast
 extends RefCounted
-## 一份技能**这一波的状态**：冷却转好没有、有没有待落地的落点。M7-b。
+## 一份技能**这一波的状态**：冷却转好没有、有没有待落地的落点。
 ##
-## [PBSkill] 是定义（不可变、逐人一份）；本类是「这一份挂在这个攻击者身上，
-## 这一波它进行到哪了」。拆开之后 [method PBSkill.clone] 只带设定、
-## 本类的默认字段就是「一波刚开始、什么都没放过」的状态 ——
-## 两边各自只有一件事要记，[method reset] 因此不必再记「清哪几个字段」。
+## [PBSkill] 是定义，本类是「这一份在这个攻击者身上进行到哪了」，默认字段就是「一波刚开始」。
 ##
-## ## 这个类会被跨波、跨探测复用
-##
-## 悬崖二分一次要建几十场战斗，[PBBattleSim] 在构造时对每个攻击者的
-## [member PBAttacker.ultimate] 调一次 [method reset]。不清的话上一场剩下的
-## 冷却会漏进下一场，表现为「有几波技能莫名其妙放不出来」，且不报任何错。
+## **跨波、跨探测复用**：[PBBattleSim] 构造时对每一格调 [method reset]，
+## 不清的话上一场的冷却漏进下一场，表现为「有几波技能莫名其妙放不出来」。
 
 ## 「没有落点」的哨兵。[member spot] 与 [method PBAimRules.pick_spot] 共用它。
 ##
@@ -30,43 +24,25 @@ var skill: PBSkill = null
 ## 第几 tick 起冷却转好。
 var ready_at: int = 0
 
-## 已下达但还没落地的落点（M4-a 起是二维，见 [PBAimRules]）。
-## 只有 [constant PBSkill.Target.GROUND] 档用得上它。
-##
-## **M7-c 起它不再是「有没有待落地」的判据** —— 那个判据搬到了
-## [member lands_at]，见 [method is_pending]。
+## 已下达但还没落地的落点。只有 [constant PBSkill.Target.GROUND] 档用得上它。
+## 「有没有待落地」的判据是 [member lands_at]，见 [method is_pending]。
 var spot: Vector2 = NO_SPOT
 
 ## 锁定的那一个单位的槽位。**-1 表示没锁定谁。**
 ##
-## **指向哪个数组由 [member PBSkill.target] 说**：`ALLY` 档是
-## [member PBAttacker.slot]（M7-c），`ENEMY` 档是 [member PBEnemy.slot]（M8-b）。
-## 两档各存一个字段的话，「这一发锁的是谁」就有两个答案，
-## 而读错一个的表现是「治疗打到了敌人身上」—— 同 [member PBProjectile.at_ally]
-## 那条「一个开关而不是两个池子」。
-##
-## 存**槽位号**不存引用：§12 的存档要序列化它，而引用序列化不了 ——
-## 和 [member PBProjectile.target] 同一条规矩。
+## **指向哪个数组由 [member PBSkill.target] 说**：`ALLY` 档是 [member PBAttacker.slot]，
+## `ENEMY` 档是 [member PBEnemy.slot]。一个字段，否则「这一发锁的是谁」有两个答案。
+## 存槽位号不存引用：存档要序列化它。
 var target_slot: int = -1
 
 ## 待落地的技能在第几 tick 结算。**-1 表示手上没有待落地的技能。**
 var lands_at: int = -1
 
-## 施法者的等级，**只用来算效果数值**（决策 7，M7-c）。
+## 施法者的等级，**只用来算效果数值**。
 ##
-## ## 为什么记等级，而不是把算完的数值记下来
-##
-## [PBAttacker] 身上没有 `level` 这个字段，也不该有 —— 它顶上写着
-## 「属性克制、科技、羁绊、装备**全部已经乘进来了**」，等级和它们是同一类东西。
-## 所以这个数必须在**建攻击者那一刻**存进来，落地时 sim 才问得到。
-##
-## 但**算完的数值不能提前存**：[PBSkill] 在建好之后还会被改
-## （[method PBBondFunctionRules.apply_to_skill] 就是这么干的），
-## 预先算好一份的话，后改的那一下不会跟着更新，而它不报错 ——
-## 表现是「这个羁绊功能好像没生效」。存等级、用的时候现算，就没有第二份真相。
-##
-## 默认 1 —— 尾兽、敌人、以及不关心等级的技能走的就是这一档，
-## 成长项贡献 0，取到的就是基数。
+## [PBAttacker] 身上没有 `level`，所以建攻击者那一刻存进来。**存等级不存算完的数值**：
+## [PBSkill] 建好之后还会被改（[method PBBondFunctionRules.apply_to_skill]），
+## 预先算好的那份不会跟着更新。默认 1（尾兽、敌人、不关心等级的技能）。
 var caster_level: int = 1
 
 
@@ -106,16 +82,7 @@ func is_ready(tick: int) -> bool:
 
 
 ## 已下达、还没落地。渲染层要画预示圈的就是这个状态。
-##
-## ## 判据是 [member lands_at]，不是「有没有落点」（M7-c 改的）
-##
-## M7-b 之前只有 [constant PBSkill.Target.GROUND] 一种技能，
-## 「有落点」和「有一发在路上」永远同时成立，所以拿 `spot` 当哨兵是够用的。
-## [constant PBSkill.Target.NONE] 档进来之后那条等价关系断了 ——
-## 它既没有落点也没有锁定目标，但**照样有一发在路上**。
-##
-## 换成 `lands_at` 对 GROUND 档是**逐位等价**的：`spot` 和 `lands_at`
-## 在 [method cast] / [method land] / [method reset] 里从来都是一起设、一起清。
+## 判据是 [member lands_at] 而不是「有没有落点」：[constant PBSkill.Target.NONE] 档没有落点，但照样有一发在路上。
 func is_pending() -> bool:
 	return lands_at >= 0
 
@@ -127,15 +94,14 @@ func cast(at_spot: Vector2, tick: int) -> void:
 	lands_at = tick + skill.delay_ticks
 
 
-## 下达一发**锁定单个单位**的技能（`ALLY` / `ENEMY` 两档，M7-c / M8-b）。
-##
-## 锁的是槽位不是位置：目标会跑，而「打谁 / 治谁」这件事不该跟着他的坐标走。
+## 下达一发**锁定单个单位**的技能（`ALLY` / `ENEMY` 两档）。
+## 锁槽位不锁位置：目标会跑。
 func cast_on(slot: int, tick: int) -> void:
 	target_slot = slot
 	lands_at = tick + skill.delay_ticks
 
 
-## 下达一发**不需要目标**的技能（[constant PBSkill.Target.NONE]，M7-c）。
+## 下达一发**不需要目标**的技能（[constant PBSkill.Target.NONE]）。
 func cast_now(tick: int) -> void:
 	lands_at = tick + skill.delay_ticks
 

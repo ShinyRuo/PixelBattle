@@ -1,21 +1,10 @@
 class_name PBShopLabels
 extends RefCounted
-## 准备阶段每个购买项的**价格与文案**。M3.5-e，从 [PBPreparePanel] 抽出来。
+## 准备阶段每个购买项的**价格与文案**。
 ##
-## ## 为什么要单独一份
-##
-## 战场直接操作（§02）之后，这些项从一块常驻面板搬进了**指令卡**——
-## 一个 3×3 的小格子网格。格子里写不下「忍具箱 300（配件 14，每箱战力 +0.6%）」，
-## 所以拆成两截：格子上写短的，悬停时在提示条上写长的。
-##
-## **两截必须来自同一处。** 分开写的话，按钮上的价格和提示里的价格
-## 迟早对不上 —— 而那正是 CLAUDE.md 那条「四块面板与比价同源」防的病。
-##
-## ## 「买下去战力涨多少」搬到了悬停，但没有丢
-##
-## 那句话是这一层存在的理由（原版最大的短板是信息不透明，§03/§10），
-## 数字来自 [PBValuation]，也就是模拟玩家比价用的**同一份计算**。
-## 指令卡的格子太小，长句只能进提示条 —— 这是记在案的取舍，不是省略。
+## 指令卡的格子写不下整句，所以拆两截：格子上写短的，悬停时提示条上写长的。**两截必须来自同一处**，
+## 否则按钮上的价格和提示里的价格迟早对不上。
+## 「买下去战力涨多少」是这一层存在的理由，数字来自 [PBValuation] —— 与模拟玩家比价同一份计算。
 
 ## 大本营首页那几项。顺序即指令卡里的排列顺序。
 const BASE_KINDS: Array[StringName] = [
@@ -27,7 +16,7 @@ const BASE_KINDS: Array[StringName] = [
 	&"tech_def",
 ]
 
-## 「科技 ▸」二级页那四项（M12-h3）。**键 = `tech_` + [constant PBTechRules.BRANCHES]**，
+## 「科技 ▸」二级页那四项。**键 = `tech_` + [constant PBTechRules.BRANCHES]**，
 ## 于是 [PBBattleView] 那条「去掉前缀交给 `buy_tech`」的兜底一行不用改。
 const TRAINING_KINDS: Array[StringName] = [
 	&"tech_train_attack",
@@ -66,7 +55,7 @@ const CATEGORY_HINTS := {
 	PBEquipItem.Category.TANK: "当前角色表里没有能吃它的人",
 }
 
-## 科技分支的显示名（§07 + M12-h3 的四条训练）。
+## 科技分支的显示名。
 const TECH_NAMES := {
 	&"gold": "金币科技",
 	&"pop": "人口科技",
@@ -139,13 +128,8 @@ static func detail_of(kind: StringName, state: PBRunState, cfg: PBSimConfig) -> 
 	return _detail_tech(kind, state, cfg, base, cost)
 
 
-## 一件**成品**的说明卡正文（§10，M5-5）。标题由调用方给 —— 它已经查过名字了。
-##
-## 三件事按玩家会问的顺序排：**能不能挂给他**（分类匹配是 §10 最容易踩的坑）、
-## **挂上去值多少**、**要哪几个配件**。
-## 一份词条表写成人看得懂的几个词（M12-h2）。**两块面板共用这一处** ——
-## 各写一份的话「攻速 +30%」和「攻速 +0%」会同时出现在屏幕上，
-## 而那只是其中一处忘了成数要乘 100（见 [method PBModRules.display_value]）。
+## 一份词条表写成人看得懂的几个词。**两块面板共用这一处** —— 各写一份的话
+## 「攻速 +30%」和「攻速 +0%」会同时出现（成数忘了乘 100，见 [method PBModRules.display_value]）。
 static func mod_words(mods: Dictionary) -> PackedStringArray:
 	var out := PackedStringArray()
 	for key: StringName in mods:
@@ -155,11 +139,12 @@ static func mod_words(mods: Dictionary) -> PackedStringArray:
 	return out
 
 
+## 一件**成品**的说明卡正文（§10）。标题由调用方给。
+## 按玩家会问的顺序排：**能不能挂给他**、**挂上去给什么**、**要哪几个配件**。
 static func item_body(item: PBEquipItem, table: PBEquipTable) -> String:
 	var lines := PackedStringArray()
 	lines.append(CATEGORY_NAMES.get(item.category, "?"))
-	# **写词条，不写「+N% 战力」**（M12-h2）：`power` 现在只是给比价用的估值分，
-	# 而玩家要对的是属性栏上那几个数。见 [member PBEquipItem.mods]。
+	# **写词条，不写「+N% 战力」**：`power` 只是估值分，玩家要对的是属性栏上那几个数。
 	var words := mod_words(item.mods)
 	if words.is_empty():
 		lines.append(PBSkin.tint("当前战斗模型下什么都不给", PBSkin.DIM))
@@ -232,8 +217,7 @@ static func _detail_tech(
 		return "%s Lv%d　%d　战力 %s" % [label, level, cost, _percent(gain)]
 	if branch == &"pop":
 		return "%s Lv%d　%d　出战位 +1" % [label, level, cost]
-	# 训练科技写**词条**（M12-h3）：训练防御与训练生命在战力那把尺子上恒为 0，
-	# 写「战力 +0.0%」会让人以为它没用。词条和装备说明走同一处 [method mod_words]。
+	# 训练科技写**词条**：训练防御与训练生命在战力那把尺子上恒为 0，写「战力 +0.0%」会让人以为它没用。
 	return "%s Lv%d　%d　%s" % [label, level, cost, _training_words(branch)]
 
 
