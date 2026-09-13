@@ -34,7 +34,8 @@ static func mean_dps(state: PBRunState, cfg: PBSimConfig) -> float:
 			state.atk_mult(cfg),
 			state.bond_mult(cfg),
 			PBCombatRules.unit_multipliers(deployed, state, cfg),
-			cfg
+			cfg,
+			PBCombatRules.unit_mods(deployed, state, cfg)
 		)
 	return total / float(PBWaveRules.WAVE_ELEMENTS.size())
 
@@ -103,7 +104,8 @@ static func dps_of(
 		state.atk_mult(cfg),
 		state.bond_mult(cfg),
 		PBCombatRules.unit_multipliers(units, state, cfg),
-		cfg
+		cfg,
+		PBCombatRules.unit_mods(units, state, cfg)
 	)
 
 

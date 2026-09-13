@@ -62,25 +62,27 @@ func test_no_pins_reproduces_the_old_automatic_assignment() -> void:
 	# 否则「装备定价」以来的全部扫描结论都要重跑。
 	var team := _team()
 	var parts := _parts(2)
-	var auto := PBEquipRules.unit_multipliers(team, parts, _cfg)
-	var same := PBEquipRules.unit_multipliers(team, parts, _cfg, {})
+	var auto := PBEquipRules.unit_mods(team, parts, _cfg)
+	var same := PBEquipRules.unit_mods(team, parts, _cfg, {})
 	assert_eq(auto.size(), same.size(), "两种叫法应返回同样长度")
 	for i: int in auto.size():
-		assert_almost_eq(same[i], auto[i], 1e-9, "第 %d 个人的倍率不该因为多了个空字典而变" % i)
+		assert_eq(same[i], auto[i], "第 %d 个人的词条不该因为多了个空字典而变" % i)
 
 
 func test_multipliers_are_derived_from_the_named_list() -> void:
-	# 倍率是「身上挂了哪几件」加出来的派生量，不是第二份计算。
+	# 词条是「身上挂了哪几件」并出来的派生量，不是第二份计算。
 	# 分成两份的话，面板上写着挂了雷牙、战斗里却按没挂算 —— 不报错。
 	var team := _team()
 	var parts := _parts(3)
 	var held := PBEquipRules.assign(team, parts, _cfg)
-	var mults := PBEquipRules.unit_multipliers(team, parts, _cfg)
+	var worn := PBEquipRules.unit_mods(team, parts, _cfg)
 	for i: int in team.size():
-		var sum: float = 1.0
+		var sum: Dictionary = {}
 		for item_id: String in held[i]:
-			sum += _cfg.equipment.item(StringName(item_id)).power
-		assert_almost_eq(mults[i], sum, 1e-9, "第 %d 个人的倍率应等于他身上那几件之和" % i)
+			var item := _cfg.equipment.item(StringName(item_id))
+			for key: StringName in item.mods:
+				sum[key] = float(sum.get(key, 0.0)) + float(item.mods[key])
+		assert_eq(worn[i], sum, "第 %d 个人的词条应等于他身上那几件并起来" % i)
 
 
 func test_a_pin_wins_over_the_greedy_order() -> void:
@@ -186,7 +188,25 @@ func test_the_battle_reads_the_players_pins() -> void:
 	for unit: PBUnit in team:
 		state.add_unit(unit)
 	state.equip_parts = _parts(1)
-	var before := PBCombatRules.unit_multipliers(team, state, _cfg)
+	var before := PBCombatRules.unit_mods(team, state, _cfg)
 	PBEquipRules.pin(state.equipped, team[2].key(), &"thunder_fang", _cfg)
-	var after := PBCombatRules.unit_multipliers(team, state, _cfg)
-	assert_gt(after[2], before[2], "点名要了那一件之后，他身上的倍率该涨")
+	var after := PBCombatRules.unit_mods(team, state, _cfg)
+	assert_true(before[2].is_empty(), "点名之前他身上什么都没有")
+	assert_false(after[2].is_empty(), "点名要了那一件之后，他身上该有词条")
+
+
+func test_both_legs_are_walked_everywhere_the_bonuses_are_folded() -> void:
+	# **扫描式断言**（M12-h2）。装备从「一个倍率」变成「一张词条表」之后，
+	# 逐人加成有了**两条腿**：[method PBCombatRules.unit_multipliers]（尾兽光环）
+	# 和 [method PBCombatRules.unit_mods]（装备）。
+	#
+	# 四个调用点（战斗、估值两处、任务卡预览）**两条都要拿** ——
+	# 漏掉一条的表现是「那条路径上装备完全不生效」，而它不报错：
+	# 界面照常、战斗照跑，只是打得少一点。同 M9-m 那条 `flips_for` 的扫描。
+	for path: String in ["res://src/core/sim/run_sim.gd", "res://src/core/rules/valuation.gd"]:
+		var text := FileAccess.get_file_as_string(path)
+		assert_eq(
+			text.count("PBCombatRules.unit_multipliers("),
+			text.count("PBCombatRules.unit_mods("),
+			"%s 里两条腿的次数对不上 —— 有一处只折了一半" % path
+		)

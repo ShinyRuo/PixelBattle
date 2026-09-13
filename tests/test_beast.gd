@@ -60,7 +60,7 @@ func test_every_aura_key_in_the_real_table_is_one_we_know() -> void:
 	assert_eq(table.size(), PBBeastLoader.SPEC_BEASTS, "尾兽该是九只")
 	for beast: PBBeast in table.all():
 		for key: StringName in beast.aura_passives:
-			assert_true(PBPassiveRules.is_known(key), "「%s」这个键没人认得" % key)
+			assert_true(PBModRules.is_known(key), "「%s」这个键没人认得" % key)
 
 
 func _beast(beast_id: StringName) -> PBBeast:

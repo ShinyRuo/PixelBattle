@@ -87,13 +87,15 @@ static func team_dps(
 	atk_tech_mult: float,
 	bond_mult: float,
 	equip_mults: PackedFloat64Array,
-	cfg: PBSimConfig
+	cfg: PBSimConfig,
+	equip_mods: Array[Dictionary] = []
 ) -> float:
 	var mult: float = atk_tech_mult * bond_mult
 	var total: float = 0.0
 	for i: int in deployed.size():
 		var equip: float = equip_mults[i] if i < equip_mults.size() else 1.0
-		total += deployed[i].effective_power(wave_element, cfg) * equip
+		var mods: Dictionary = equip_mods[i] if i < equip_mods.size() else {}
+		total += deployed[i].effective_power(wave_element, cfg, mods) * equip
 	return total * mult
 
 
@@ -109,20 +111,24 @@ static func team_dps(
 ## **漏改一处不会报错**，只会让那条路径上的战力比实际低一点 ——
 ## 而那四处里有两处是估值，估值偏低的表现是「会算账的玩家做出略差的选择」，
 ## 从现象反推几乎不可能。所以折叠只做一次，加第三种加成时也只改这里。
+## **M12-h2 起装备不在这一路了** —— 它给的是词条不是倍率，走
+## [method unit_mods]。这里只剩尾兽光环那一份（[member PBBeast.aura_power]，
+## 今天九只全是 0，但机制留着）。两条路都要走，所以
+## `tests/test_equip_manual.gd` 有一条扫描式断言钉着
+## **每一个调用这一句的地方旁边都得有一句 `unit_mods`** ——
+## 漏掉的那一路表现是「那条路径上装备完全不生效」，而它不报错。
 static func unit_multipliers(
 	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
 ) -> PackedFloat64Array:
-	var equip := PBEquipRules.unit_multipliers(units, state.equip_parts, cfg, state.equipped)
-	var beast := PBBeastRules.beast_of(state, cfg)
-	if beast == null:
-		return equip
-	var aura := PBBeastRules.unit_multipliers(units, beast, state.beast_level, cfg)
 	var out := PackedFloat64Array()
 	out.resize(units.size())
+	out.fill(1.0)
+	var beast := PBBeastRules.beast_of(state, cfg)
+	if beast == null:
+		return out
+	var aura := PBBeastRules.unit_multipliers(units, beast, state.beast_level, cfg)
 	for i: int in units.size():
-		var equip_mult: float = equip[i] if i < equip.size() else 1.0
-		var aura_mult: float = aura[i] if i < aura.size() else 1.0
-		out[i] = equip_mult * aura_mult
+		out[i] = aura[i] if i < aura.size() else 1.0
 	return out
 
 
@@ -166,7 +172,8 @@ static func build_attackers(
 	beast_cooldown_ticks: int = 0,
 	bond_functions: Dictionary = {},
 	bond_passives: Dictionary = {},
-	bond_skill_patches: Dictionary = {}
+	bond_skill_patches: Dictionary = {},
+	equip_mods: Array[Dictionary] = []
 ) -> Array[PBAttacker]:
 	var team_mult: float = atk_tech_mult * bond_mult
 	var out: Array[PBAttacker] = []
@@ -191,8 +198,22 @@ static func build_attackers(
 		var mult: float = team_mult * (equip_mults[i] if i < equip_mults.size() else 1.0)
 		var attacker := PBAttacker.new()
 		attacker.slot = i
+		# **属性词条先收齐**（M12-h1）：三围、攻击力、防御、生命、攻速全在这一档，
+		# 它们必须在 [method PBStatRules.of] **里面**注入 —— 二级属性是从一级
+		# 派生的，而攻击力还要排在属性克制之前。行为那一档（暴击、闪避、溅射……）
+		# 走下面的 [method PBPassiveRules.equip]。
+		# 装备那一份（M12-h2）：它和羁绊、尾兽、角色被动写的是同一套词条。
+		var worn: Dictionary = equip_mods[i] if i < equip_mods.size() else {}
+		var stat_mods: Dictionary = PBStatRules.collect(
+			[
+				unit.character.passives,
+				bond_passives.get(unit.character.id, {}) as Dictionary,
+				beast_aura,
+				worn,
+			]
+		)
 		# **一发多重**（M12-c5）：战斗真正用的是这个数，见 [member PBAttacker.attack]。
-		attacker.attack = unit.effective_attack(wave_element, cfg) * mult
+		attacker.attack = unit.effective_attack(wave_element, cfg, stat_mods) * mult
 		# 每秒多少：从此只是统计量与退化路径的输入。**这一行一个字没动** ——
 		# 面板、估值、解析模型读到的仍是它一直以来的那个数。
 		attacker.dps = unit.effective_power(wave_element, cfg) * mult
@@ -200,7 +221,7 @@ static func build_attackers(
 		# 装备、羁绊、尾兽光环目前全是进攻向的，把它们乘到防守上
 		# 等于凭空发明一份没人设计过的加成。§10 的两件防御装
 		# 和 §11 一尾的减伤光环接上来时，那才是它们的落点。
-		var stats := unit.stats(cfg)
+		var stats := unit.stats(cfg, stat_mods)
 		attacker.max_hp = stats.hp
 		attacker.defence = stats.def
 		attacker.def_element = unit.def_element
@@ -261,6 +282,7 @@ static func build_attackers(
 				unit.character.passives,
 				bond_passives.get(unit.character.id, {}) as Dictionary,
 				beast_aura,
+				worn,
 			]
 		)
 		# 名册那一列的另一半：`on_hit=<效果键>`（M12-c2）。这份是**定义**，
@@ -387,6 +409,17 @@ static func _build_skill(
 ##
 ## [param mult] 是队伍这一波的倍率（攻击科技 × 羁绊 × 这个人的装备），
 ## 也就是 [method build_attackers] 里乘进 [member PBAttacker.dps] 的那一份。
+## 每个上场单位身上那几件装备给的词条（与 [param units] 同序，M12-h2）。
+##
+## 和 [method unit_multipliers] 是**同一件事的两条腿**：那一条答「乘几倍」，
+## 这一条答「加了什么词条」。四个调用点（战斗、估值两处、任务卡预览）
+## 两条都要拿 —— 见那一条顶上那段。
+static func unit_mods(
+	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
+) -> Array[Dictionary]:
+	return PBEquipRules.unit_mods(units, state.equip_parts, cfg, state.equipped)
+
+
 static func skill_damage(
 	unit: PBUnit,
 	skill: PBSkill,

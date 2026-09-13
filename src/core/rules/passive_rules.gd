@@ -40,25 +40,23 @@ extends RefCounted
 ## | `bite_lost` | [member PBAttacker.bite_lost] | [method PBStrikeRules.land] |
 ## | `reflect` | [member PBAttacker.reflect] | [method PBStrikeRules.hurt_ally] |
 ## | `damage_bonus` | [member PBAttacker.damage_bonus] | [method PBAttacker.strike_for] |
-## | `defence` | [member PBAttacker.defence] | [method PBStatRules.strike_damage] |
-## | `hp_bonus` | [member PBAttacker.hp_bonus] | [method equip] 折进 `max_hp` |
 ## | `move_speed_bonus` | [member PBAttacker.move_speed_bonus] | [method equip] 折进 `move_speed` |
-## | `attack_speed` | [member PBAttacker.attack_speed_bonus] | [method PBAttacker.prime] |
+##
+## ## 属性不在这张表里（M12-h1）
+##
+## 力量 / 敏捷 / 智力 / 全属性 / 攻击力 / 防御 / 最大生命 / 攻速 **搬去了
+## [PBStatRules]**，分界线是「什么时候生效」：**属性在算三围那一刻注入**
+## （属性克制之前，而且二级属性是从一级属性派生的，事后加只是加了个孤立的数），
+## **行为建人之后装**。这张表从此只管行为。
+##
+## **移速留在这里**：它在我们的模型里不是角色属性 —— 全队同一个数，
+## 由 [member PBSimConfig.unit_move_seconds] 派生（见 [member PBAttacker.move_speed]）。
 ##
 ## ## 裸名 = 量型，`_bonus` 后缀 = 率型
 ##
-## 原版自己两种都用：防御一律写点数（羁绊那边是「全队友军提升 30 点防御」，
-## 尾兽那边是「提升 [4x等级] 点防御」），而生命与移速一律写百分比
-## （「提升 [1.5x等级]% 最大生命值」「提升 [10x等级]% 的移动速度」）。
-##
-## **照抄点数是对的，因为刻度是同一把**：M12-b 把换算系数换成了
-## `war3mapMisc.txt` 那一套（护甲 `4 + 敏捷×0.22`、生命 `100 + 力量×80`），
-## 所以 [member PBAttacker.defence] 本来就在原版的刻度上。
-## 发明一个「点数 → 成数」的换算反而会在数值回归改一次基数之后整个失效，
-## **而且不报错**（同 [constant PBStrikeRules.BITE_CAP] 顶上那条）。
-##
-## 统一成一种的话，读表的人得记住哪个字段是哪种，**而记错不报错** ——
-## 同 [PBSkillPatchRules] 那条「每个键自己说清楚是加是乘是设」。
+## 原版两种都用（「提升 30 点防御」是量型，「提升 [10x等级]% 的移动速度」是率型），
+## 所以**每个键自己说清楚是哪一种**，同 [PBSkillPatchRules] 那条。
+## 统一成一种的话，读表的人得记住哪个字段是哪种，**而记错不报错**。
 ##
 ## ## 忍术抗性没有进来，那是有意的
 ##
@@ -111,25 +109,8 @@ const REFLECT: StringName = &"reflect"
 ## 常驻增伤：普攻多打几成（M12-e）。
 const DAMAGE_BONUS: StringName = &"damage_bonus"
 
-## 常驻加防，**点数**（M12-e2）。见本类顶上「裸名 = 量型」。
-const DEFENCE: StringName = &"defence"
-
-## 最大生命多几成（M12-e2）。中性 0.0，折算在 [method equip] 末尾。
-const HP_BONUS: StringName = &"hp_bonus"
-
 ## 移动速度多几成（M12-e2）。中性 0.0，折算在 [method equip] 末尾。
 const MOVE_SPEED_BONUS: StringName = &"move_speed_bonus"
-
-## 出手多快几成（M12-c4）。中性 0.0。
-##
-## **键名是裸的 `attack_speed`，而它落在 `attack_speed_bonus` 上** ——
-## 表里写的是原版那句「提升 [4x等级]% 的攻击速度」，而
-## [member PBAttacker.attack_speed] 那个字段是**基础攻速**，
-## 直接往上加等于没加（见 [member PBAttacker.attack_speed_bonus]）。
-##
-## **它不在 [method _settle] 里折算**，唯一的消费方是
-## [method PBAttacker.prime]，而那一句在建人之后才跑。
-const ATTACK_SPEED: StringName = &"attack_speed"
 
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
@@ -144,10 +125,7 @@ const ALL: Array[StringName] = [
 	BITE_LOST,
 	REFLECT,
 	DAMAGE_BONUS,
-	DEFENCE,
-	HP_BONUS,
 	MOVE_SPEED_BONUS,
-	ATTACK_SPEED,
 ]
 
 
@@ -208,14 +186,8 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.reflect += amount
 		DAMAGE_BONUS:
 			attacker.damage_bonus += amount
-		DEFENCE:
-			attacker.defence += amount
-		HP_BONUS:
-			attacker.hp_bonus += amount
 		MOVE_SPEED_BONUS:
 			attacker.move_speed_bonus += amount
-		ATTACK_SPEED:
-			attacker.attack_speed_bonus += amount
 		_:
 			return false
 	return true
@@ -279,7 +251,5 @@ static func equip(attacker: PBAttacker, sources: Array[Dictionary]) -> int:
 ## 原版有代价型被动，而 −1.5 会算出负的血上限，
 ## 那时 [method PBAttacker.revive] 会让人一站起来就是死的，**而它不报错**。
 static func _settle(attacker: PBAttacker) -> void:
-	if attacker.hp_bonus != 0.0:
-		attacker.max_hp *= 1.0 + maxf(attacker.hp_bonus, -1.0)
 	if attacker.move_speed_bonus != 0.0:
 		attacker.move_speed *= 1.0 + maxf(attacker.move_speed_bonus, -1.0)

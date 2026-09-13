@@ -126,14 +126,20 @@ static func _can_give(
 	return ignore_category or item.fits(unit.element)
 
 
-## 每个单位吃到的**战力倍率**（与 [param deployed] 同序）。
-## **纯派生量**，由 [method assign] 那份名单加出来 —— 见那个方法的说明。
-static func unit_multipliers(
+## 每个单位身上那几件装备**加起来给了什么**（与 [param deployed] 同序，M12-h2）。
+## **纯派生量**，由 [method assign] 那份名单并出来 —— 见那个方法的说明。
+##
+## 在它之前这里返回的是一个**战力倍率**（`1.0 + Σ power`）。
+## 原版的装备全是属性词条，倍率那个形状表达不了它们 ——
+## 见 [member PBEquipItem.mods]。
+##
+## **同键相加不覆盖**：两件都给攻击力该是两份都算。
+static func unit_mods(
 	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig, pinned: Dictionary = {}
-) -> PackedFloat64Array:
-	var out := PackedFloat64Array()
-	out.resize(deployed.size())
-	out.fill(1.0)
+) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for _i: int in deployed.size():
+		out.append({})
 	var table: PBEquipTable = cfg.equipment
 	if deployed.is_empty() or table == null:
 		return out
@@ -141,8 +147,10 @@ static func unit_multipliers(
 	for i: int in deployed.size():
 		for item_id: String in held[i]:
 			var item := table.item(StringName(item_id))
-			if item != null:
-				out[i] += item.power
+			if item == null:
+				continue
+			for key: StringName in item.mods:
+				out[i][key] = float(out[i].get(key, 0.0)) + float(item.mods[key])
 	return out
 
 
@@ -208,13 +216,33 @@ static func pinned_of(pinned: Dictionary, unit_id: StringName) -> Array:
 ## 战斗按 [method unit_multipliers] 逐人结算，因为分类匹配的意义就在于
 ## 「谁吃得到」。这个平均值只是把那份逐人结果压成一个可显示的标量，
 ## **它是派生量，不是第二份计算**。
+## 逐人的**估值分**（[member PBEquipItem.power]），给比价用 ——
+## **不是效果**，效果在 [method unit_mods] 里。
+static func _worth_each(
+	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig, pinned: Dictionary = {}
+) -> PackedFloat64Array:
+	var out := PackedFloat64Array()
+	out.resize(deployed.size())
+	out.fill(1.0)
+	var table: PBEquipTable = cfg.equipment
+	if deployed.is_empty() or table == null:
+		return out
+	var held := assign(deployed, parts, cfg, pinned)
+	for i: int in deployed.size():
+		for item_id: String in held[i]:
+			var item := table.item(StringName(item_id))
+			if item != null:
+				out[i] += item.power
+	return out
+
+
 static func mean_multiplier(
 	deployed: Array[PBUnit], parts: Dictionary, cfg: PBSimConfig
 ) -> float:
 	if deployed.is_empty():
 		return 1.0
 	var total: float = 0.0
-	for value: float in unit_multipliers(deployed, parts, cfg):
+	for value: float in _worth_each(deployed, parts, cfg):
 		total += value
 	return total / float(deployed.size())
 

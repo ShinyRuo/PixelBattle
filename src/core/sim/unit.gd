@@ -87,8 +87,10 @@ func star() -> int:
 ## **每次调用都重算，不缓存。** 等级会变、星级会变、以后装备和光环也会 ——
 ## 缓存就要处理失效，而失效漏一处的表现是「升了级战力没涨」，从现象反推不出来。
 ## 真成为热点时再在调用方那一层缓存，那里知道什么时候该失效。
-func stats(cfg: PBSimConfig) -> PBStats:
-	return PBStatRules.of(character, level, star(), cfg)
+## [param mods] 是装备、羁绊、尾兽给的**属性词条**（[PBStatRules] 那张表）。
+## 空的时候每一个数逐位不变 —— 面板那几处就是这么调的。
+func stats(cfg: PBSimConfig, mods: Dictionary = {}) -> PBStats:
+	return PBStatRules.of(character, level, star(), cfg, mods)
 
 
 ## 这张卡的每秒基础伤害，未计属性克制、科技、羁绊。
@@ -102,8 +104,8 @@ func stats(cfg: PBSimConfig) -> PBStats:
 ## **可对拍的重构**：战斗层、估值、四块面板读到的仍是同一种量，
 ## 换模型带来的数值变化因此可以和接线错误分开看 ——
 ## 本案已经这么做过四次（角色表、羁绊、装备、尾兽）。
-func power(cfg: PBSimConfig) -> float:
-	return stats(cfg).dps()
+func power(cfg: PBSimConfig, mods: Dictionary = {}) -> float:
+	return stats(cfg, mods).dps()
 
 
 ## 在 [param wave_element] 这一波的实际每秒伤害 —— 已计入属性克制。
@@ -113,9 +115,11 @@ func power(cfg: PBSimConfig) -> float:
 ## 全员固定上场的话，五系阵容的平均倍率是 (2.0+0.5+1.0×3)/5 = 1.10，
 ## 跟物理的 1.05 几乎没区别 —— 模拟玩家必须模拟换人，否则会得出
 ## 「属性系统没用」的错误结论，而那是模型的错不是设计的错。
-func effective_power(wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
+func effective_power(
+	wave_element: PBElement.Type, cfg: PBSimConfig, mods: Dictionary = {}
+) -> float:
 	var rel := PBElement.relation(element, wave_element)
-	return power(cfg) * cfg.damage_multiplier(rel)
+	return power(cfg, mods) * cfg.damage_multiplier(rel)
 
 
 ## 在 [param wave_element] 这一波**一发普攻**打多少 —— 已计入属性克制（M12-c5）。
@@ -125,9 +129,11 @@ func effective_power(wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
 ## **克制仍然只在一处算**（[method PBElement.relation]）——
 ## 两处各算一遍的话，「每秒」和「一下」迟早对不上，
 ## 而那不报错，只表现为面板上的战力和战场上的伤害脱节。
-func effective_attack(wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
+func effective_attack(
+	wave_element: PBElement.Type, cfg: PBSimConfig, mods: Dictionary = {}
+) -> float:
 	var rel := PBElement.relation(element, wave_element)
-	return stats(cfg).atk * cfg.damage_multiplier(rel)
+	return stats(cfg, mods).atk * cfg.damage_multiplier(rel)
 
 
 ## 这张卡的唯一身份。仓库字典的键，也是 §12 存档里记「我有哪些卡」的那个值。

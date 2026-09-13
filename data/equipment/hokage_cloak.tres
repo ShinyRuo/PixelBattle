@@ -8,4 +8,8 @@ id = &"hokage_cloak"
 name_key = "equip.hokage_cloak"
 category = 2
 recipe = Array[StringName]([&"cloak", &"cloak", &"cloak"])
-power = 0.00
+power = 0.5
+mods = {
+&"defence": 15.0,
+&"max_hp": 3500.0
+}

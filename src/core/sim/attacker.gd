@@ -293,45 +293,15 @@ var reflect: float = 0.0
 var damage_bonus: float = 0.0
 
 
-## 常驻加血：最大生命多几成（M12-e2）。中性值 0.0，理由同 [member damage_bonus]。
+## 常驻加速：移动速度多几成（M12-e2）。中性 0.0。
 ##
-## **它是一个累加器，不是读点。** 折算发生在
-## [method PBPassiveRules.equip] 的末尾，一次性乘进 [member max_hp]。
-##
-## ## 为什么不让消费方去乘
-##
-## [member max_hp] 有一大把读点（[method revive]、[method heal] 的封顶、
-## 悬崖二分的缩放……），让它们各自乘一遍的话**漏一处就是一把新尺子**，
-## 而漏掉的那一处不报错 —— 同 [constant PBBuffRules.HURT] 顶上那条。
-## 折在建人那一刻只有一个写点，而 [method revive] 随后把 `hp` 填到新的上限。
-var hp_bonus: float = 0.0
-
-## 常驻加速：移动速度多几成（M12-e2）。中性值 0.0。
-##
-## 理由同 [member hp_bonus]：[member move_speed] 被 [PBMoveRules] 的
-## 两条路和 [method revive] 各读一次，折在建人那一刻只有一个写点。
+## **这一批率型键里只剩它了**（M12-h1）：生命与攻速搬去了 [PBStatRules]，
+## 因为它们是**角色属性**，要在算三围那一刻注入。
+## 移速不是 —— 它全队同一个数，由 [member PBSimConfig.unit_move_seconds] 派生，
+## 和角色的三围没有关系，所以留在行为层、折算在
+## [method PBPassiveRules.equip] 末尾。
 var move_speed_bonus: float = 0.0
 
-## 常驻加攻速：出手多快几成（M12-c4）。中性 0.0。
-##
-## ## 它是这批率型键里唯一不在 [method PBPassiveRules.equip] 里折算的
-##
-## 另外两个（[member hp_bonus] / [member move_speed_bonus]）折进的是**字段**，
-## 而这一个折进的是 [method prime] 算出来的 `_interval_ticks` ——
-## 而 `prime` 在建人**之后**才跑（[PBBattleSim] 构造时）。
-## 在 `equip` 里折的话，`prime` 随后会拿基础攻速把它整个盖掉。
-##
-## ## 为什么不能直接加在 [member attack_speed] 上
-##
-## **那样加了等于没加。** `prime` 从 [member dps] 反推每一发的伤害：
-## 攻速抬一倍 → 间隔减半 → 每发伤害**跟着减半** → 总量一位不动。
-## 那条反推是解析式排队模型对拍要的（见 [method prime]），不能动；
-## 所以加成必须走一格自己的数，**只缩间隔、不参与反推**。
-##
-## ## 它只作用在普攻上
-##
-## 同 [member damage_bonus] 顶上那条：技能与大招的伤害在建人那一刻就算死了。
-var attack_speed_bonus: float = 0.0
 
 ## 打出要害那一下顺带挂在目标身上的效果（M12-c2）。
 ## 读点在 [method PBStrikeRules.land] 里面。
@@ -545,9 +515,7 @@ func clone() -> PBAttacker:
 	# 了，拷贝是为了让复制品和本体在**字段上**逐个相同（`assert_eq` 对整个
 	# 对象比的那几条测试靠这个），折算不会因此跑第二遍：
 	# 折算只发生在 [method PBPassiveRules.equip] 里，而复制品不走建人那条路。
-	out.hp_bonus = hp_bonus
 	out.move_speed_bonus = move_speed_bonus
-	out.attack_speed_bonus = attack_speed_bonus
 	out.on_hit_buffs = on_hit_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at
@@ -707,8 +675,9 @@ func prime(tick_rate: int, cfg: PBSimConfig = null) -> void:
 		windup_ticks = 0
 		return
 	# 真单位那一档（M12-c5）：**一发就是他的攻击力**，和 [member dps] 没有关系。
-	var speed: float = attack_speed * maxf(1.0 + attack_speed_bonus, 0.01)
-	_interval_ticks = maxi(int(round(float(rate) / speed)), fastest_ticks(rate))
+	# 攻速的加成不在这儿算 —— [member attack_speed] 拿到手时已经算完了
+	# （[constant PBStatRules.ATTACK_SPEED]，M12-h1）。
+	_interval_ticks = maxi(int(round(float(rate) / attack_speed)), fastest_ticks(rate))
 	_damage_per_shot = maxf(attack, 0.0)
 	if attack <= 0.0:
 		# 没填攻击力的老构造点（测试夹具）退回旧口径：由 dps 与**基础**攻速反推。

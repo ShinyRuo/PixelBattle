@@ -84,13 +84,14 @@ func test_the_defensive_aura_is_not_quietly_paid_out_as_damage() -> void:
 	# 所以照实填进 [member PBBeast.aura_def_reduction] 当基地减伤，恒为 0。
 	# 而敌人早就会还手了（M3.5-b / M5-7），[member PBAttacker.defence] 也
 	# 一直在 [method PBStatRules.strike_damage] 里被读 —— 缺的只是一个键。
-	# M12-e2 把 `defence` 接上之后，一尾那一份是**真的**落在防御上的。
+	# M12-e2 把 `defence` 接上之后，一尾那一份是**真的**落在防御上的；
+	# M12-h1 又把那个键搬进了 [PBStatRules]（属性在算三围那一刻注入）。
 	#
 	# 留下来的规矩一个字没变：**不把防御效果折算成伤害** ——
 	# 折算了就等于凭空发明一份收益，而调参的人会拿着那份收益去定价
 	# （§10 在装备上定下的同一条规矩）。
 	var defensive: PBBeast = _find(
-		func(b: PBBeast) -> bool: return b.aura_passives.has(PBPassiveRules.DEFENCE)
+		func(b: PBBeast) -> bool: return b.aura_passives.has(PBStatRules.DEFENCE)
 	)
 	assert_not_null(defensive, "该有一只带全体防御光环的（§11 的一尾）")
 	assert_eq(defensive.aura_power, 0.0, "防御光环不该被折算成伤害加成")

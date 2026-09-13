@@ -8,4 +8,9 @@ id = &"blood_blade"
 name_key = "equip.blood_blade"
 category = 0
 recipe = Array[StringName]([&"senbon", &"greaves", &"gauntlet"])
-power = 0.00
+power = 1.3
+mods = {
+&"agility": 25.0,
+&"attack": 150.0,
+&"strength": 25.0
+}

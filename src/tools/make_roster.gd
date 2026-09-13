@@ -225,7 +225,7 @@ func _parse_passives(cell: String) -> Variant:
 		# `on_hit=` 那几个由 [method _parse_on_hit] 收，这里跳过。
 		if name == ON_HIT:
 			continue
-		if not PBPassiveRules.is_known(name):
+		if not PBModRules.is_known(name):
 			return "不认识的键「%s」" % name
 		if out.has(name):
 			return "键「%s」写了两遍" % name

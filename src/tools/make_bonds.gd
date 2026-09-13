@@ -145,7 +145,7 @@ func _fill_members(bond: PBBond, row: PackedStringArray, members: Array) -> Stri
 			if kv.size() != 2:
 				return "「%s」不是 键=量 的样子" % pair
 			var name := StringName(kv[0].strip_edges())
-			if not PBPassiveRules.is_known(name):
+			if not PBModRules.is_known(name):
 				return "不认识的键「%s」" % name
 			mine[name] = float(kv[1].strip_edges())
 		out[who] = mine

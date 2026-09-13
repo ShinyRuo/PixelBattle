@@ -8,4 +8,7 @@ id = &"thunder_fang"
 name_key = "equip.thunder_fang"
 category = 1
 recipe = Array[StringName]([&"seal", &"seal", &"kunai"])
-power = 0.20
+power = 1.0
+mods = {
+&"attack": 200.0
+}

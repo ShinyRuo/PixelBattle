@@ -333,12 +333,15 @@ func _equipment_text(
 	)[index]
 	if held.is_empty():
 		return "装备：没挂上"
-	var mults := PBEquipRules.unit_multipliers(deployed, state.equip_parts, cfg, state.equipped)
+	# **列词条，不列倍率**（M12-h2）—— 装备从此给的是属性，
+	# 而「×1.40」在属性栏里找不到对应的数。
+	var worn := PBEquipRules.unit_mods(deployed, state.equip_parts, cfg, state.equipped)[index]
 	var names := PackedStringArray()
 	for item_id: String in held:
 		var item := cfg.equipment.item(StringName(item_id))
 		names.append(PBLocale.text(item.name_key) if item != null else item_id)
-	return "装备 ×%.2f（%s）" % [mults[index], "·".join(names)]
+	var words := PBShopLabels.mod_words(worn)
+	return "装备：%s\n　%s" % ["·".join(names), "　".join(words)]
 
 
 ## 这张卡进了哪几组羁绊，每组**到了几个 / 要几个**。

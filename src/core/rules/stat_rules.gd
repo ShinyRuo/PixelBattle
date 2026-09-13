@@ -77,6 +77,57 @@ const PLACEHOLDER_PRIMARY := {
 }
 
 
+## 力量加几点。**量型**（直接加点数）。
+const STRENGTH: StringName = &"strength"
+
+## 敏捷加几点。**量型**。
+const AGILITY: StringName = &"agility"
+
+## 智力加几点。**量型**。
+const INTELLECT: StringName = &"intellect"
+
+## 三围各加几点（原版的「全属性 +N」）。**量型**，和上面三个相加。
+const ALL_STATS: StringName = &"all_stats"
+
+## 攻击力加几点。**量型**。
+##
+## ## 它为什么非在这一层不可
+##
+## [member PBAttacker.attack] 是 `stats.atk × 属性克制`——**克制已经乘进去了**。
+## 事后往攻击者身上加的话，装备给的这 200 点攻击力**不吃克制**，
+## 而原版是吃的（克制是伤害倍率，攻击力在它下游）。
+## 表现是「带克制系装备的收益比裸的低一截」，而它不报错。
+const ATTACK: StringName = &"attack"
+
+## 防御加几点。**量型**。M12-h1 从 [PBPassiveRules] 搬过来的。
+const DEFENCE: StringName = &"defence"
+
+## 最大生命加几点。**量型**（原版的「生命值 +1200」）。
+const MAX_HP: StringName = &"max_hp"
+
+## 最大生命多几成。**率型**，中性 0.0。M12-h1 从 [PBPassiveRules] 搬过来的。
+const HP_BONUS: StringName = &"hp_bonus"
+
+## 攻速多几成。**率型**，中性 0.0。M12-h1 从 [PBPassiveRules] 搬过来的。
+##
+## 搬过来之后 [method PBAttacker.prime] 不再需要一格自己的累加器 ——
+## 它拿到的 [member PBAttacker.attack_speed] 已经是算完加成的那个数。
+const ATTACK_SPEED: StringName = &"attack_speed"
+
+## 认得的全部属性词条。见本类顶上「属性 vs 行为」。
+const ALL: Array[StringName] = [
+	STRENGTH,
+	AGILITY,
+	INTELLECT,
+	ALL_STATS,
+	ATTACK,
+	DEFENCE,
+	MAX_HP,
+	HP_BONUS,
+	ATTACK_SPEED,
+]
+
+
 ## 把原版那套换算系数铺到一个角色上（M12-b）。
 ##
 ## 三围、成长与攻击间隔由调用方从 `data/roster.tsv` 逐个填 —— 那些是**数据**；
@@ -192,8 +243,38 @@ static func fill_placeholder(character: PBCharacter) -> void:
 ## 算出一个角色在 [param level] 级、[param star] 星时的全部属性。
 ##
 ## [param star] 走 [method PBUnit.star]，最低 1。
+## 这个键是不是一条属性词条。
+##
+## **和 [method PBPassiveRules.is_known] 是互斥的两张表**，分界线是
+## 「什么时候生效」：属性在算三围那一刻注入（**属性克制之前**），
+## 行为在建人之后装到 [PBAttacker] 身上。
+## 一个键同时进两张表的话，它会被算两遍，而那不报错。
+static func is_known(key: StringName) -> bool:
+	return ALL.has(key)
+
+
+## 把几份词条表并成一份（同键累加）。**只收这张表认得的键** ——
+## 别的（暴击、闪避、溅射……）归 [method PBPassiveRules.equip]。
+##
+## [param sources] 按顺序是角色自带 / 羁绊 / 尾兽光环 / 装备。
+## **同键相加不覆盖**：两组羁绊各给 +15 点防御该是 +30，
+## 而覆盖的表现是玩家凑满两组只拿到一组的量（同 [PBBuffBag] 那个坑）。
+static func collect(sources: Array[Dictionary]) -> Dictionary:
+	var out: Dictionary = {}
+	for one: Dictionary in sources:
+		for key: StringName in one:
+			if is_known(key):
+				out[key] = float(out.get(key, 0.0)) + float(one[key])
+	return out
+
+
+## 词条里这个键是多少。没有就是 0。
+static func amount(mods: Dictionary, key: StringName) -> float:
+	return float(mods.get(key, 0.0))
+
+
 static func of(
-	character: PBCharacter, level: int, star: int, cfg: PBSimConfig
+	character: PBCharacter, level: int, star: int, cfg: PBSimConfig, mods: Dictionary = {}
 ) -> PBStats:
 	var out := PBStats.new()
 	if character == null:
@@ -204,6 +285,13 @@ static func of(
 	out.strength = character.strength + character.strength_growth * steps
 	out.agility = character.agility + character.agility_growth * steps
 	out.intellect = character.intellect + character.intellect_growth * steps
+	# **一级属性的词条必须在这儿注入**（M12-h1）：下面每一个二级属性都是从
+	# 这三个数算出来的，事后加等于只加了一个孤立的数字。
+	# 空词条时每一句都是 `+= 0.0`，逐位不变。
+	var every: float = amount(mods, ALL_STATS)
+	out.strength += amount(mods, STRENGTH) + every
+	out.agility += amount(mods, AGILITY) + every
+	out.intellect += amount(mods, INTELLECT) + every
 
 	# ── 基础属性：固定部分 + 二级属性 × 系数 ──────────────────
 	var star_mult: float = 1.0 + cfg.star_power_mult * float(maxi(star, 1) - 1)
@@ -217,6 +305,13 @@ static func of(
 	out.attack_speed = character.attack_speed_base * (
 		1.0 + out.agility * character.attack_speed_per_agility
 	)
+	# 二级属性的词条排在这儿 —— 它们不参与上面那几条派生。
+	# **点数不吃星级倍率**：星级放大的是这个角色自己的底子，
+	# 而装备给的 200 点攻击力对谁都是 200 点。
+	out.atk += amount(mods, ATTACK)
+	out.def += amount(mods, DEFENCE)
+	out.hp = (out.hp + amount(mods, MAX_HP)) * (1.0 + amount(mods, HP_BONUS))
+	out.attack_speed *= 1.0 + amount(mods, ATTACK_SPEED)
 	return out
 
 

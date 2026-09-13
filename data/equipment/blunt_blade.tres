@@ -8,4 +8,8 @@ id = &"blunt_blade"
 name_key = "equip.blunt_blade"
 category = 0
 recipe = Array[StringName]([&"senbon", &"kunai", &"kunai"])
-power = 0.20
+power = 2.0
+mods = {
+&"attack": 300.0,
+&"attack_speed": 0.3
+}

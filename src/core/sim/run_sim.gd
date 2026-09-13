@@ -208,7 +208,19 @@ static func lock_plan(
 		PBBeastRules.beast_of(state, cfg),
 		state.beast_level,
 		state.beast_cooldown_ticks,
-		plan.bond_functions
+		# **这三份缺一不可。** 在 M12-h2 之前这里只传了第一份 ——
+		# 后两份算出来存在 [PBWavePlan] 上，却从来没人来取，
+		# 于是 M12-d1/d2/d3 与 e1/e2 铺的**羁绊成员效果和技能补丁
+		# 在真游戏里一次都没生效过**。而它不报错：表装得进来、
+		# 信息栏照样列着那几组亮了、屏幕上只是打得少一点。
+		#
+		# 测试没抓到是因为它们直接调 [method PBCombatRules.build_attackers]
+		# 并自己把字典传进去 —— 漏的是**这一处接线**，不是规则。
+		# `tests/test_bond_members.gd` 因此多了一条走完整条 [PBRunSim] 的断言。
+		plan.bond_functions,
+		plan.bond_passives,
+		plan.bond_skill_patches,
+		PBCombatRules.unit_mods(plan.deployed, state, cfg)
 	)
 	# 玩家拖出来的开战位置盖在自动站位上（§02，M4-f）。
 	# **排在建攻击者之后**：建攻击者是把卡摊成「这一波场上的样子」，

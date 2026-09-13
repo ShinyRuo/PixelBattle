@@ -84,6 +84,6 @@ static func load_from(dir_path: String) -> PBBeastTable:
 static func _unknown_aura_keys(beast: PBBeast) -> Array[StringName]:
 	var bad: Array[StringName] = []
 	for key: StringName in beast.aura_passives:
-		if not PBPassiveRules.is_known(key):
+		if not PBModRules.is_known(key):
 			bad.append(key)
 	return bad

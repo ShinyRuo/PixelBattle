@@ -101,7 +101,7 @@ func test_every_key_in_the_real_table_is_one_we_know() -> void:
 		for who: StringName in bond.member_functions:
 			assert_true(bond.member_ids.has(who), "「%s」不是 %s 的成员" % [who, bond.id])
 			for key: StringName in bond.member_functions[who]:
-				assert_true(PBPassiveRules.is_known(key), "「%s」这个键没人认得" % key)
+				assert_true(PBModRules.is_known(key), "「%s」这个键没人认得" % key)
 				seen += 1
 	assert_gt(seen, 0, "真表里一份成员效果都没有，上面什么都没量")
 

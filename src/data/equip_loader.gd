@@ -108,7 +108,10 @@ static func load_from(dir_path: String) -> PBEquipTable:
 static func _parts_of(items: Array[PBEquipItem]) -> Array[StringName]:
 	var seen: Dictionary = {}
 	for item: PBEquipItem in items:
-		if item.power <= 0.0:
+		# **判据是「它给不给东西」，不是估值分**（M12-h2）。
+		# 看 `power` 的那一版把吸血与格挡两件的配件下架了九个里程碑 ——
+		# 理由是「敌人不还手」，而那句话从 M3.5-b 起就不成立了。
+		if item.mods.is_empty():
 			continue
 		for part_id: StringName in item.recipe:
 			seen[part_id] = true

@@ -8,4 +8,8 @@ id = &"anbu_mask"
 name_key = "equip.anbu_mask"
 category = 1
 recipe = Array[StringName]([&"seal", &"helmet", &"helmet"])
-power = 0.12
+power = 0.9
+mods = {
+&"all_stats": 30.0,
+&"defence": 10.0
+}

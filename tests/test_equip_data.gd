@@ -44,18 +44,20 @@ func test_the_box_never_sells_a_part_nothing_can_use() -> void:
 	# 期望产出就被稀释一份。** 真树刚接上时七种里有三种只喂 0 收益的配方，
 	# 实测足以让会算账的玩家整局买 0 个配件 —— §10 的金币坑当场不成立。
 	#
-	# 规则因此是「箱子不卖你用不上的东西」，而且是自愈的：
-	# 那两件成品的 power 一变正，它们的配件自动回到货架上。
+	# 规则因此是「箱子不卖你用不上的东西」，而且是自愈的 ——
+	# **M12-h2 它真的自愈了**：判据从「估值分为正」换成
+	# 「这件装备给不给东西」（[member PBEquipItem.mods]），
+	# 而那两件防御向的成品一接上词条，三种配件自动回到了货架上。
 	var live: Dictionary = {}
 	for item: PBEquipItem in _table.items:
-		if item.power <= 0.0:
+		if item.mods.is_empty():
 			continue
 		for part_id: StringName in item.recipe:
 			live[part_id] = true
 	for part_id: StringName in _table.parts:
 		assert_true(live.has(part_id), "配件 %s 喂不到任何有效成品，不该出现在箱子里" % part_id)
 	assert_eq(_table.parts.size(), live.size(), "货架上应该正好是那些有用的配件")
-	assert_eq(_table.parts.size(), PBEquipLoader.LIVE_PARTS, "当前有效配件种类数")
+	assert_eq(_table.parts.size(), PBEquipLoader.SPEC_PARTS, "§10 那七种该全在货架上")
 
 
 func test_all_three_categories_exist() -> void:
@@ -82,27 +84,32 @@ func test_physical_and_magic_items_never_fit_the_same_unit() -> void:
 func test_the_defensive_items_are_honestly_worth_zero() -> void:
 	# **这条钉的是一个已知的模型缺口，不是一个愿望。**
 	#
-	# §10 的吸血刀（造成伤害 15% 吸血）和火影风衣（50% 概率格挡 260 伤害）
-	# 在当前战斗模型下不产生任何伤害：**敌人不还手，己方单位也不会死**。
-	# 数据里照实填 0，不把防御效果折算成伤害 —— 折算了就等于凭空发明一份收益，
-	# 而调参的人会拿着那份收益去定价。
+	# ## 这条断言以前钉的是一个 bug，而它自己看不出来
 	#
-	# 等 [PBBattleSim] 有了「敌人还手」，改的是 `.tres` 里的数，这条断言跟着改。
-	var zero: int = 0
+	# 原话是「吸血刀和火影风衣在当前战斗模型下不产生任何伤害：
+	# **敌人不还手，己方单位也不会死**」，所以数据里照实填 0，
+	# 而它断言「恰好有两件成品的战力加成为 0」。
+	#
+	# **那句前提从 M3.5-b / M5-7 起就不成立了** —— 敌人会还手、己方会死。
+	# 没人回头改，于是两件成品与三种配件被钉死了九个里程碑，
+	# 而这条断言**每天都在替那个 bug 站岗**：内容一旦修好，它就变红。
+	#
+	# 守的规矩一个字没变（**不把防御效果折算成伤害**，§10 定的），
+	# 换的是问法：**「有效果却被估值当成废物」不许出现** ——
+	# 那正是当年那件事的形状，而它拦得住下一次。
 	for item: PBEquipItem in _table.items:
-		if item.power <= 0.0:
-			zero += 1
-	assert_eq(zero, 2, "当前应恰好有两件成品的战力加成为 0（吸血刀、火影风衣）")
+		assert_false(item.mods.is_empty(), "%s 什么都不给，那它不该在表里" % item.id)
+		assert_gt(item.power, 0.0, "%s 有词条却被估值当成废物" % item.id)
 
 
-func test_the_dead_recipes_still_cost_the_shelf_three_part_types() -> void:
-	# 上一条的另一半：那两件无效成品**确实**独占了几种配件。
-	# 它们没有被从数据里删掉（§10 的配方表照原样留着），只是暂时下架。
+func test_nothing_is_shelved_any_more() -> void:
+	# 上一条的另一半。它以前写的是「当前应有三种配件因为专属成品无效而下架」，
+	# 而那三种正是被那个过期前提锁住的 —— M12-h2 修好之后货架回到了七种。
 	#
-	# 这条量的是「敌人还手」这个缺口现在有多贵：
-	# 补上它，货架从 4 种回到 7 种，忍具箱的定价才能按 §10 原来的口径谈。
+	# **留着这一条不是为了数 0**，是为了在下一次有人把某件成品写空时
+	# 立刻看见代价：货架会跟着缩，而忍具箱的定价是按七种谈的。
 	var shelved: int = PBEquipLoader.SPEC_PARTS - _table.parts.size()
-	assert_eq(shelved, 3, "当前应有三种配件因为专属成品无效而下架")
+	assert_eq(shelved, 0, "每件成品都给得出东西，就不该有配件下架")
 
 
 func test_no_equipment_name_leaks_into_src() -> void:

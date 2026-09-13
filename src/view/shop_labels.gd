@@ -115,12 +115,28 @@ static func detail_of(kind: StringName, state: PBRunState, cfg: PBSimConfig) -> 
 ##
 ## 三件事按玩家会问的顺序排：**能不能挂给他**（分类匹配是 §10 最容易踩的坑）、
 ## **挂上去值多少**、**要哪几个配件**。
+## 一份词条表写成人看得懂的几个词（M12-h2）。**两块面板共用这一处** ——
+## 各写一份的话「攻速 +30%」和「攻速 +0%」会同时出现在屏幕上，
+## 而那只是其中一处忘了成数要乘 100（见 [method PBModRules.display_value]）。
+static func mod_words(mods: Dictionary) -> PackedStringArray:
+	var out := PackedStringArray()
+	for key: StringName in mods:
+		out.append(
+			PBLocale.text("mod.%s" % key) % PBModRules.display_value(key, float(mods[key]))
+		)
+	return out
+
+
 static func item_body(item: PBEquipItem, table: PBEquipTable) -> String:
 	var lines := PackedStringArray()
-	lines.append("%s　+%.0f%% 战力" % [CATEGORY_NAMES.get(item.category, "?"), item.power * 100.0])
-	if item.power <= 0.0:
-		# 照实说，不把防御效果折算成伤害（[member PBEquipItem.power] 的原话）。
-		lines.append(PBSkin.tint("当前战斗模型下不产生伤害", PBSkin.DIM))
+	lines.append(CATEGORY_NAMES.get(item.category, "?"))
+	# **写词条，不写「+N% 战力」**（M12-h2）：`power` 现在只是给比价用的估值分，
+	# 而玩家要对的是属性栏上那几个数。见 [member PBEquipItem.mods]。
+	var words := mod_words(item.mods)
+	if words.is_empty():
+		lines.append(PBSkin.tint("当前战斗模型下什么都不给", PBSkin.DIM))
+	else:
+		lines.append("　".join(words))
 	var parts := PackedStringArray()
 	for part_id: StringName in item.recipe:
 		parts.append(PBLocale.text("equip_part.%s" % part_id))

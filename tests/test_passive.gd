@@ -74,45 +74,36 @@ func test_every_key_in_the_vocabulary_actually_moves_something() -> void:
 		assert_ne(_snapshot(attacker), before, "「%s」装上了却什么都没改" % key)
 
 
-func test_the_rate_keys_only_take_effect_once_equip_folds_them() -> void:
-	# `hp_bonus` / `move_speed_bonus` 是**累加器**：`grant` 只往累加器上加，
-	# 真正生效要折进 `max_hp` / `move_speed`。
-	# 把折算留给调用方的话，「忘了折」的表现是**那一组羁绊配了不生效** ——
-	# 数据、界面、日志全部正常，只有血条不对。所以折算在 `equip` 里面。
+func test_the_rate_key_only_takes_effect_once_equip_folds_it() -> void:
+	# `move_speed_bonus` 是**累加器**：`grant` 只往累加器上加，
+	# 真正生效要折进 `move_speed`。把折算留给调用方的话，
+	# 「忘了折」的表现是**那一组羁绊配了不生效** ——
+	# 数据、界面、日志全部正常，只有他跑得不对。所以折算在 `equip` 里面。
+	#
+	# **M12-h1 起这一档只剩移速了**：生命与攻速是**角色属性**，
+	# 搬去了 [PBStatRules]（要在算三围那一刻注入）；
+	# 移速不是 —— 它全队同一个数，由 [member PBSimConfig.unit_move_seconds] 派生。
 	var attacker := PBAttacker.new()
-	attacker.max_hp = 1000.0
 	attacker.move_speed = 0.010
-	attacker.defence = 12.0
-	PBPassiveRules.grant(attacker, PBPassiveRules.HP_BONUS, 0.5)
-	assert_almost_eq(attacker.max_hp, 1000.0, 0.0001, "光 grant 还不该动血上限")
+	PBPassiveRules.grant(attacker, PBPassiveRules.MOVE_SPEED_BONUS, 0.2)
+	assert_almost_eq(attacker.move_speed, 0.010, 0.000001, "光 grant 还不该动移速")
 
 	var folded := PBAttacker.new()
-	folded.max_hp = 1000.0
 	folded.move_speed = 0.010
-	folded.defence = 12.0
-	PBPassiveRules.equip(
-		folded,
-		[
-			{PBPassiveRules.HP_BONUS: 0.5},
-			{PBPassiveRules.MOVE_SPEED_BONUS: 0.2, PBPassiveRules.DEFENCE: 30.0},
-		]
-	)
-	assert_almost_eq(folded.max_hp, 1500.0, 0.0001, "折算之后血上限该抬起来")
-	assert_almost_eq(folded.move_speed, 0.012, 0.000001, "移速同理")
-	# **裸名是量型：防御直接加点数**，不走折算那一条（原版写的就是点数，
-	# 而 M12-b 之后我们的护甲和它同一把刻度）。
-	assert_almost_eq(folded.defence, 42.0, 0.0001, "防御是直接加上去的点数")
+	PBPassiveRules.equip(folded, [{PBPassiveRules.MOVE_SPEED_BONUS: 0.2}])
+	assert_almost_eq(folded.move_speed, 0.012, 0.000001, "折算之后移速该抬起来")
 
 
 func test_two_rate_sources_add_up_instead_of_compounding() -> void:
-	# 两组各给 +50% 生命该是 **+100%**，不是 1.5 x 1.5 = 2.25。
+	# 两组各给 +50% 该是 **+100%**，不是 1.5 x 1.5 = 2.25。
 	# 边加边折就是连乘，而那不是人会预期的叠加方式 —— 同 `damage_bonus` 那条。
 	var attacker := PBAttacker.new()
-	attacker.max_hp = 1000.0
+	attacker.move_speed = 0.010
 	PBPassiveRules.equip(
-		attacker, [{PBPassiveRules.HP_BONUS: 0.5}, {PBPassiveRules.HP_BONUS: 0.5}]
+		attacker,
+		[{PBPassiveRules.MOVE_SPEED_BONUS: 0.5}, {PBPassiveRules.MOVE_SPEED_BONUS: 0.5}]
 	)
-	assert_almost_eq(attacker.max_hp, 2000.0, 0.0001, "两份 +50% 该相加成 +100%")
+	assert_almost_eq(attacker.move_speed, 0.020, 0.000001, "两份 +50% 该相加成 +100%")
 
 
 func test_a_key_nobody_knows_is_refused_not_silently_dropped() -> void:
@@ -143,18 +134,14 @@ func test_an_empty_passive_table_changes_absolutely_nothing() -> void:
 	# 数字一位都不许动。**填上了就不是了** —— 被动是他站着就一直在
 	# 发生的事，批量扫描吃得到，那是 M12 头一次真的动了自动模拟的输出。
 	#
-	# **防御那一格要单独交代**（M12-e2）：`defence` 是词汇表里唯一一个
-	# 写在**三围算出来的基数**上的键（裸名 = 量型，见 [PBPassiveRules] 顶上），
-	# 所以建人那一刻它本来就不是 0 —— 拿它和一个裸 [PBAttacker] 比
-	# 只会量出「这个角色有几点护甲」，和被动一点关系都没有。
-	# 基线里因此照抄它，这一格在这条断言下是空的；
-	# 真正钉住 `defence` 有没有接上读点的是
-	# [method test_every_key_in_the_vocabulary_actually_moves_something]。
+	# **M12-h1 之后这条又干净了**：`defence` 搬去了 [PBStatRules]，
+	# 于是这张快照里每一格都是**只有被动才会动**的字段，
+	# 拿它和一个裸 [PBAttacker] 比又说得准了。
+	# （e2 到 h1 之间它要单独把防御那一格抄进基线 —— 那是词汇表里唯一一个
+	# 写在「三围算出来的基数」上的键。）
 	var built := _build([_character({}), _character({})])
 	for one: PBAttacker in built:
-		var bare := PBAttacker.new()
-		bare.defence = one.defence
-		assert_eq(_snapshot(one), _snapshot(bare), "没填就该和裸的一模一样")
+		assert_eq(_snapshot(one), _snapshot(PBAttacker.new()), "没填就该和裸的一模一样")
 
 
 # ── 名册那张表 ────────────────────────────────────────────────
@@ -166,7 +153,7 @@ func test_every_passive_on_every_character_is_a_key_we_know() -> void:
 	var seen: int = 0
 	for character: PBCharacter in _characters.all():
 		for key: StringName in character.passives:
-			assert_true(PBPassiveRules.is_known(key), "「%s」这个键没人认得" % key)
+			assert_true(PBModRules.is_known(key), "「%s」这个键没人认得" % key)
 			seen += 1
 	assert_gt(seen, 0, "名册里一个被动都没有的话，上面那一圈什么都没量")
 
@@ -208,10 +195,7 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.bite_lost,
 		one.reflect,
 		one.damage_bonus,
-		one.defence,
-		one.hp_bonus,
 		one.move_speed_bonus,
-		one.attack_speed_bonus,
 	]
 
 
