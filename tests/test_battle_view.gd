@@ -282,8 +282,10 @@ func test_the_shop_spends_through_the_shared_primitives() -> void:
 	root._on_command(&"equip")
 	assert_eq(PBEquipRules.part_total(root._state.equip_parts), 1, "买配件应真的进仓库")
 
-	root._on_command(&"tech_atk")
-	assert_eq(root._state.tech_atk, 1, "升攻击科技应真的升级")
+	root._on_command(&"tech_train_attack")
+	assert_eq(
+		root._state.training_level(PBTechRules.TRAIN_ATTACK), 1, "升训练科技应真的升级"
+	)
 
 
 func test_the_shop_only_reacts_during_preparation() -> void:

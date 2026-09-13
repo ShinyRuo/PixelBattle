@@ -217,5 +217,5 @@ func _units(characters: Array) -> Array[PBUnit]:
 
 func _build(units: Array[PBUnit]) -> Array[PBAttacker]:
 	return PBCombatRules.build_attackers(
-		units, PBElement.Type.PHYSICAL, 1.0, 1.0, PackedFloat64Array(), _cfg
+		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg
 	)

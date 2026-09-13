@@ -59,7 +59,7 @@ func _skill_carrier() -> PBCharacter:
 ## 一队人在指定队伍倍率下的攻击者。
 func _skilled_squad(units: Array[PBUnit], mult: float) -> Array[PBAttacker]:
 	return PBCombatRules.build_attackers(
-		units, PBElement.Type.PHYSICAL, mult, 1.0, PackedFloat64Array(), _cfg
+		units, PBElement.Type.PHYSICAL, mult, PackedFloat64Array(), _cfg
 	)
 
 
@@ -78,7 +78,6 @@ func _damage_against(character: PBCharacter, wave: PBElement.Type) -> float:
 		[_unit_of(character)] as Array[PBUnit],
 		wave,
 		1.0,
-		1.0,
 		PackedFloat64Array(),
 		_cfg
 	)
@@ -94,7 +93,7 @@ func _squad(units: Array[PBUnit], with_skills: bool) -> Array[PBAttacker]:
 		cfg.spawn_window = 0.0
 		cfg.skills = null
 	return PBCombatRules.build_attackers(
-		units, PBElement.Type.FIRE, 1.0, 1.0, PackedFloat64Array(), cfg
+		units, PBElement.Type.FIRE, 1.0, PackedFloat64Array(), cfg
 	)
 
 

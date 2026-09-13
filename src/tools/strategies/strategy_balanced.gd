@@ -8,15 +8,15 @@ extends PBStrategy
 ##    价格曲线 `120 × 1.35^Lv` 越往后越贵、回本越慢。无脑升满会饿死战力，
 ##    正是 §07 说的「纯经济开局在 8–12 波必然崩盘」。
 ## 2. **人口科技只在坐不下的时候买。** 位置空着买位置是纯亏。
-## 3. **攻击科技与抽卡比价。** 谁便宜先买谁 —— 攻击科技是确定的 +6%，
+## 3. **训练科技与抽卡比价。** 谁便宜先买谁 —— 训练是确定的词条，
 ##    抽卡是期望更高但方差大的一发。前期科技便宜，后期抽卡相对更划算，
 ##    这个交叉点自己会浮现，不用写死。
 
 ## 金币科技升到几级就停。
 var gold_tech_target: int = 6
 
-## 攻击科技的上限。
-var atk_tech_target: int = 15
+## 每条训练科技升到几级就停。
+var training_target: int = PBTechRules.MAX_LEVEL
 
 
 func _init() -> void:
@@ -47,4 +47,4 @@ func _buy_population(state: PBRunState, cfg: PBSimConfig) -> void:
 ## 剩下的钱换战力。逻辑在基类，`pure_power` 用的是同一套 ——
 ## 这样两者的差别只剩「升不升金币科技」这一个变量。
 func _buy_power(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams) -> void:
-	spend_on_power(state, wave, cfg, rng, atk_tech_target)
+	spend_on_power(state, wave, cfg, rng, training_target)

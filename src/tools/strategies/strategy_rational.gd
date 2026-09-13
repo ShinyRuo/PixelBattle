@@ -36,7 +36,7 @@ extends PBStrategy
 ## 卡在阈值上自然就停了 —— 不需要像 `balanced` 那样写死一个目标等级。
 
 ## 候选项的编号。
-enum Buy { NONE, GACHA, TECH_ATK, TECH_POP, EQUIP, KAKUZU }
+enum Buy { NONE, GACHA, TRAINING, TECH_POP, EQUIP, KAKUZU }
 
 ## 一次 `prepare` 最多买多少笔。纯安全阀 —— 每一笔都在花钱、金币有限，
 ## 正常情况下会自己停下来。
@@ -55,6 +55,10 @@ var gold_payback_waves: float = 6.0
 ## **这个数直接决定经济位的估值，是本流派里最像「拍的」的一处。**
 ## 它偏大会让经济位被高估、偏小会让它永远不被选中，改动前先跑一遍扫描。
 var economy_slot_horizon_waves: float = 12.0
+
+## [constant Buy.TRAINING] 那一档挑中的是哪一条线（M12-h3）。
+## 只在 [method _buy_best] 与紧跟着的 [method _execute] 之间有意义。
+var _training_pick: StringName = &""
 
 
 func _init() -> void:
@@ -111,11 +115,17 @@ func _buy_best(state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStre
 	var best := Buy.NONE
 	var best_rate: float = 0.0
 
-	var atk_cost := PBEconomyRules.tech_cost(&"atk", state.tech_atk, cfg)
-	if atk_cost > 0 and atk_cost <= state.gold:
-		best_rate = _rate(PBValuation.tech_gain(state, cfg, &"atk", base), atk_cost)
-		if best_rate > 0.0:
-			best = Buy.TECH_ATK
+	# 四条训练各比一次价。**训练防御与训练生命在这把尺子上恒为 0**
+	# （估值只看 DPS），所以它不会买那两条 —— 归数值回归。
+	for branch: StringName in PBTechRules.BRANCHES:
+		var cost := PBEconomyRules.tech_cost(branch, state.training_level(branch), cfg)
+		if cost <= 0 or cost > state.gold:
+			continue
+		var trained := _rate(PBValuation.tech_gain(state, cfg, branch, base), cost)
+		if trained > best_rate:
+			best_rate = trained
+			best = Buy.TRAINING
+			_training_pick = branch
 
 	var pop_cost := PBEconomyRules.tech_cost(&"pop", state.tech_pop, cfg)
 	if pop_cost > 0 and pop_cost <= state.gold:
@@ -162,8 +172,8 @@ func _execute(
 	choice: Buy, state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams
 ) -> bool:
 	match choice:
-		Buy.TECH_ATK:
-			return buy_tech(state, &"atk", cfg)
+		Buy.TRAINING:
+			return buy_tech(state, _training_pick, cfg)
 		Buy.TECH_POP:
 			return buy_tech(state, &"pop", cfg)
 		Buy.EQUIP:

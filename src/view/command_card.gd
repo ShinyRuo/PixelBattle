@@ -20,9 +20,20 @@ extends Control
 ## 玩家点了某一格。[param command] 是下面那几组常量里的一个。
 signal command(command_id: StringName)
 
-## 大本营的指令：花钱那七项 + 重抽任务 + 开打。
+## 大本营的指令：花钱那六项 + 「科技 ▸」 + 重抽任务 + 开打。
 const CMD_REROLL_QUEST: StringName = &"reroll_quest"
 const CMD_START: StringName = &"start"
+
+## 「科技 ▸」进二级页、「◂ 返回」回首页（M12-h3）。
+##
+## **这两条不往外发**（[signal command] 收不到）：翻页是指令卡自己的事，
+## 不改任何局面。发出去的话 [PBBattleView] 那条「不认识的都当科技买」的兜底
+## 会拿它去买一条叫 `page` 的科技 —— 买不到，也不报错。
+##
+## 为什么要翻页：原版的训练分近战三条、远程一条，而首页九格已经满了
+## （[constant COLUMNS] × [constant ROWS]，那一段写着「多了就该拆界面了」）。
+const CMD_TECH_PAGE: StringName = &"tech_page"
+const CMD_BACK: StringName = &"back"
 
 ## 忍者的指令。
 const CMD_LEVEL_UP: StringName = &"level_up"
@@ -127,6 +138,13 @@ var _hint: Label
 var _title: Label
 var _state: PBRunState
 var _cfg: PBSimConfig
+## 翻页要原样重画一遍，所以上一次 [method refresh] 的另外两个参数也记着。
+var _selection: PBSelection
+var _plan: PBWavePlan
+
+## 大本营现在翻在「科技 ▸」那一页。**换选中对象、开打都退回首页** ——
+## 否则下次点大本营时首页的「开打」不见了，而玩家不记得自己翻过页。
+var _tech_page: bool = false
 ## 这一波**真会打**的人。派出去做任务的已经不在里面了（见 [member _away]）。
 var _deployed: Array[PBUnit] = []
 
@@ -225,6 +243,8 @@ func refresh(
 ) -> void:
 	_state = state
 	_cfg = cfg
+	_selection = selection
+	_plan = plan
 	_deployed = deployed
 	_away = away
 	_grade = plan.quest_grade
@@ -233,6 +253,8 @@ func refresh(
 		_slots[i].visible = false
 	_hint.text = ""
 
+	if _battle_mode or selection.kind != PBSelection.Kind.BASE:
+		_tech_page = false
 	if _battle_mode:
 		_fill_battle(selection)
 		return
@@ -388,16 +410,30 @@ func _battle_hint(picking: bool, casting: bool) -> String:
 
 
 func _fill_base(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
-	var slot: int = 0
-	for kind: StringName in PBShopLabels.KINDS:
-		var cost: int = PBShopLabels.cost_of(kind, state, cfg)
-		_bind(slot, kind, PBShopLabels.short_of(kind, state, cfg), cost >= 0 and cost <= state.gold)
-		slot += 1
+	if _tech_page:
+		_title.text = "大本营　科技"
+		_fill_kinds(PBShopLabels.TRAINING_KINDS, state, cfg)
+		_bind(COLUMNS * ROWS - 1, CMD_BACK, "◂ 返回", true)
+		_hint.text = "训练分线：前三条加近战，精准加远程。"
+		return
+	var slot: int = _fill_kinds(PBShopLabels.BASE_KINDS, state, cfg)
+	_bind(slot, CMD_TECH_PAGE, "科技 ▸", true)
+	slot += 1
 	# 重抽任务（§06：`50 + 5n`）。**按钮在大本营**，和原版一致。
 	var reroll: int = PBEconomyRules.quest_reroll_cost(plan.wave.index, cfg)
 	_bind(slot, CMD_REROLL_QUEST, "重抽任务\n%d" % reroll, reroll <= state.gold)
 	slot += 1
 	_bind(slot, CMD_START, "开打\n回车", true, PBSkin.Tone.PRIMARY)
+
+
+## 从第 0 格起摆一串购买项，返回下一个空格。
+func _fill_kinds(kinds: Array[StringName], state: PBRunState, cfg: PBSimConfig) -> int:
+	var slot: int = 0
+	for kind: StringName in kinds:
+		var cost: int = PBShopLabels.cost_of(kind, state, cfg)
+		_bind(slot, kind, PBShopLabels.short_of(kind, state, cfg), cost >= 0 and cost <= state.gold)
+		slot += 1
+	return slot
 
 
 func _fill_beast(state: PBRunState, cfg: PBSimConfig) -> void:
@@ -506,6 +542,11 @@ func _make_slot(index: int, at: Vector2) -> Button:
 
 func _on_slot_pressed(index: int) -> void:
 	var id: StringName = _bound[index]
+	if id == CMD_TECH_PAGE or id == CMD_BACK:
+		_tech_page = id == CMD_TECH_PAGE
+		if _selection != null:
+			refresh(_selection, _state, _cfg, _plan, _deployed, _away)
+		return
 	if id != &"":
 		command.emit(id)
 

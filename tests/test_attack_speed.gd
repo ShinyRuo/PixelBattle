@@ -87,7 +87,7 @@ func test_a_real_ninja_hits_for_exactly_his_attack_power() -> void:
 	for character: PBCharacter in cfg.characters.all():
 		units.append(PBUnit.new(character))
 	var built := PBCombatRules.build_attackers(
-		units, PBElement.Type.PHYSICAL, 1.0, 1.0, PackedFloat64Array(), cfg
+		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), cfg
 	)
 	for one: PBAttacker in built:
 		if one.summoned:

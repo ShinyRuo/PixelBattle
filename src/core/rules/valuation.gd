@@ -31,7 +31,6 @@ static func mean_dps(state: PBRunState, cfg: PBSimConfig) -> float:
 		total += PBCombatRules.team_dps(
 			deployed,
 			element,
-			state.atk_mult(cfg),
 			state.bond_mult(cfg),
 			PBCombatRules.unit_multipliers(deployed, state, cfg),
 			cfg,
@@ -101,7 +100,6 @@ static func dps_of(
 	return PBCombatRules.team_dps(
 		units,
 		element,
-		state.atk_mult(cfg),
 		state.bond_mult(cfg),
 		PBCombatRules.unit_multipliers(units, state, cfg),
 		cfg,
@@ -117,12 +115,20 @@ static func tech_gain(
 ) -> float:
 	if base <= 0.0:
 		return 0.0
-	# 只有攻击和人口影响 DPS；金币和防御要另外的口径（见 [PBStratRational]）。
-	if branch == &"atk":
-		state.tech_atk += 1
-		var after: float = mean_dps(state, cfg)
-		state.tech_atk -= 1
-		return after / base - 1.0
+	# 只有训练与人口影响 DPS；金币和基地防御要另外的口径（见 [PBStratRational]）。
+	# 训练里**只有加攻击力 / 攻速的那两条量得出来** —— 训练防御与训练生命
+	# 在这把尺子上恒为 0，归数值回归（同 [member PBAttacker.dps] 看不见防守）。
+	if PBTechRules.is_branch(branch):
+		var level: int = state.training_level(branch)
+		state.training[branch] = level + 1
+		var trained: float = mean_dps(state, cfg)
+		# 改回去要**逐位还原**：0 级是「没有这个键」，留一个 0 在字典里
+		# 会让「有没有升过科技」的快路径（[method PBCombatRules.unit_mods]）失效。
+		if level == 0:
+			state.training.erase(branch)
+		else:
+			state.training[branch] = level
+		return trained / base - 1.0
 	if branch == &"pop":
 		state.tech_pop += 1
 		var after_pop: float = mean_dps(state, cfg)

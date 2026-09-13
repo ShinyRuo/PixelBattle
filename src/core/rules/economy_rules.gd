@@ -121,11 +121,14 @@ static func tech_cost(branch: StringName, level: int, cfg: PBSimConfig) -> int:
 			return _cost_or_capped(level, cfg.tech_gold_max, cfg.tech_gold_cost, cfg.tech_gold_mult)
 		&"pop":
 			return _cost_or_capped(level, cfg.tech_pop_max, cfg.tech_pop_cost, cfg.tech_pop_mult)
-		&"atk":
-			return _cost_or_capped(level, cfg.tech_atk_max, cfg.tech_atk_cost, cfg.tech_atk_mult)
 		&"def":
 			return _cost_or_capped(level, cfg.tech_def_max, cfg.tech_def_cost, cfg.tech_def_mult)
 		_:
+			# 训练科技那四条（M12-h3）的价格曲线在 [PBTechRules] 上，理由见那里。
+			if PBTechRules.is_branch(branch):
+				return _cost_or_capped(
+					level, PBTechRules.MAX_LEVEL, PBTechRules.COST_BASE, PBTechRules.COST_MULT
+				)
 			return -1
 
 

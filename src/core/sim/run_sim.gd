@@ -201,7 +201,6 @@ static func lock_plan(
 	plan.attackers = PBCombatRules.build_attackers(
 		plan.deployed,
 		plan.wave.element,
-		state.atk_mult(cfg),
 		state.bond_mult(cfg),
 		PBCombatRules.unit_multipliers(plan.deployed, state, cfg),
 		cfg,
@@ -376,7 +375,8 @@ static func _snapshot(state: PBRunState, result: PBRunResult) -> void:
 	result.gacha_pulls = state.gacha_pulls
 	result.final_tech_gold = state.tech_gold
 	result.final_tech_pop = state.tech_pop
-	result.final_tech_atk = state.tech_atk
+	for branch: StringName in state.training:
+		result.final_training += state.training_level(branch)
 	result.final_tech_def = state.tech_def
 	result.final_roster_size = state.roster.size()
 	result.final_equip_parts = PBEquipRules.part_total(state.equip_parts)

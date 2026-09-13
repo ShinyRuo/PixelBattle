@@ -19,11 +19,17 @@ var base_hp: float = 0.0
 ## 键分别是 `id` 和 `id#1`。认角色要走 `unit.character.id`，不是这个键。
 var roster: Dictionary = {}
 
-## 四条科技分支的等级（§07）。
+## 经济那三条科技的等级（§07）。
 var tech_gold: int = 0
 var tech_pop: int = 0
-var tech_atk: int = 0
 var tech_def: int = 0
+
+## 训练科技的等级，`{线: 等级}`，线是 [constant PBTechRules.BRANCHES] 里的一条（M12-h3）。
+##
+## **空 = 一级都没升**。它取代了一个 `tech_atk` 整数（全队 +6%/级）——
+## 原版的训练是**近战 / 远程分线**的属性词条，一个数表达不了哪条线升了几级。
+## 效果不在这里算，见 [method PBCombatRules.unit_mods]。
+var training: Dictionary = {}
 
 ## 上场的经济位数量。纯经济卡，占出战位但不产生任何输出（§07 的改动）。
 var economy_slot_count: int = 0
@@ -282,9 +288,9 @@ func field_slots(cfg: PBSimConfig) -> int:
 	return open_slots(cfg) + dispatch_manual.size()
 
 
-## 攻击科技的全局倍率。§07：+6%/级。
-func atk_mult(cfg: PBSimConfig) -> float:
-	return 1.0 + cfg.tech_atk_per_level * float(tech_atk)
+## 某一条训练科技现在几级。不认识的线是 0。
+func training_level(branch: StringName) -> int:
+	return int(training.get(branch, 0))
 
 
 ## 基地减伤比例。§07 的防御科技（+4%/级）加上 §11 的尾兽光环。

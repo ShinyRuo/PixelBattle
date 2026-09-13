@@ -31,7 +31,8 @@ var waves_in_target_duration: int = 0
 ## 终局的科技等级快照，用来看不同策略把钱花到哪去了。
 var final_tech_gold: int = 0
 var final_tech_pop: int = 0
-var final_tech_atk: int = 0
+## 训练科技四条线的等级之和（M12-h3，取代 `final_tech_atk`）。
+var final_training: int = 0
 var final_tech_def: int = 0
 var final_roster_size: int = 0
 

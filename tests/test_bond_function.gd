@@ -322,7 +322,6 @@ func test_the_carrier_gets_the_function_through_build_attackers() -> void:
 		units,
 		PBElement.Type.PHYSICAL,
 		1.0,
-		1.0,
 		PackedFloat64Array(),
 		_cfg,
 		null,
@@ -390,7 +389,6 @@ func _squad(units: Array[PBUnit], functions: Dictionary) -> Array[PBAttacker]:
 	return PBCombatRules.build_attackers(
 		units,
 		PBElement.Type.PHYSICAL,
-		1.0,
 		1.0,
 		PackedFloat64Array(),
 		_cfg,

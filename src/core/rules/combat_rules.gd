@@ -71,7 +71,7 @@ static func resolve(
 	return out
 
 
-## 一队单位对某一波的有效 DPS，属性克制、攻击科技、羁绊加成全部计入。
+## 一队单位对某一波的有效 DPS，属性克制、羁绊、装备与训练科技的词条全部计入。
 ##
 ## 这个求和是 §03 成立与否的支点：只有当 [param deployed] 里真的换上了
 ## 克制系单位，2.0 的倍率才吃得到。全员固定上场的五系阵容平均只有 1.10，
@@ -84,13 +84,12 @@ static func resolve(
 static func team_dps(
 	deployed: Array[PBUnit],
 	wave_element: PBElement.Type,
-	atk_tech_mult: float,
 	bond_mult: float,
 	equip_mults: PackedFloat64Array,
 	cfg: PBSimConfig,
 	equip_mods: Array[Dictionary] = []
 ) -> float:
-	var mult: float = atk_tech_mult * bond_mult
+	var mult: float = bond_mult
 	var total: float = 0.0
 	for i: int in deployed.size():
 		var equip: float = equip_mults[i] if i < equip_mults.size() else 1.0
@@ -163,7 +162,6 @@ static func unit_multipliers(
 static func build_attackers(
 	deployed: Array[PBUnit],
 	wave_element: PBElement.Type,
-	atk_tech_mult: float,
 	bond_mult: float,
 	equip_mults: PackedFloat64Array,
 	cfg: PBSimConfig,
@@ -175,7 +173,7 @@ static func build_attackers(
 	bond_skill_patches: Dictionary = {},
 	equip_mods: Array[Dictionary] = []
 ) -> Array[PBAttacker]:
-	var team_mult: float = atk_tech_mult * bond_mult
+	var team_mult: float = bond_mult
 	var out: Array[PBAttacker] = []
 	# 召唤物的位子在这一刻就留好（M12-c3）—— 理由写在
 	# [member PBAttacker.summoned] 顶上：中途往数组里塞人会让一批
@@ -392,6 +390,29 @@ static func _build_skill(
 	return skill
 
 
+## 每个上场单位**从局面上**吃到的词条：装备（M12-h2）+ 训练科技（M12-h3）。
+## 与 [param units] 同序。
+##
+## 和 [method unit_multipliers] 是**同一件事的两条腿**：那一条答「乘几倍」，
+## 这一条答「加了什么词条」。四个调用点（战斗、估值两处、任务卡预览）
+## 两条都要拿 —— 见那一条顶上那段。
+##
+## **科技并在这里而不是另开一个参数**：这是唯一一个手上有 [PBRunState]
+## 又已经接到全部折叠点的地方。在它之前攻击科技是 `build_attackers` /
+## `team_dps` 的第三个参数，23 个调用点各传一遍 —— 换成词条之后那个参数没有意义了。
+static func unit_mods(
+	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
+) -> Array[Dictionary]:
+	var out := PBEquipRules.unit_mods(units, state.equip_parts, cfg, state.equipped)
+	if state.training.is_empty():
+		return out
+	for i: int in units.size():
+		var trained := PBTechRules.unit_mods(units[i], state.training)
+		for key: StringName in trained:
+			out[i][key] = float(out[i].get(key, 0.0)) + float(trained[key])
+	return out
+
+
 ## 一发技能打多少（M11-a）。**大招和角色技能共用这一句。**
 ##
 ## `战力 × 属性克制 × 队伍倍率 × 这一发的倍率`。
@@ -407,19 +428,8 @@ static func _build_skill(
 ## 伤害事件上）。所以「本体土属性、大招火系」的角色，普攻和技能会在
 ## 同一波里吃到不同的倍率 —— 那正是那条铁律想留出来的空间。
 ##
-## [param mult] 是队伍这一波的倍率（攻击科技 × 羁绊 × 这个人的装备），
+## [param mult] 是队伍这一波的倍率（羁绊 × 尾兽光环），
 ## 也就是 [method build_attackers] 里乘进 [member PBAttacker.dps] 的那一份。
-## 每个上场单位身上那几件装备给的词条（与 [param units] 同序，M12-h2）。
-##
-## 和 [method unit_multipliers] 是**同一件事的两条腿**：那一条答「乘几倍」，
-## 这一条答「加了什么词条」。四个调用点（战斗、估值两处、任务卡预览）
-## 两条都要拿 —— 见那一条顶上那段。
-static func unit_mods(
-	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
-) -> Array[Dictionary]:
-	return PBEquipRules.unit_mods(units, state.equip_parts, cfg, state.equipped)
-
-
 static func skill_damage(
 	unit: PBUnit,
 	skill: PBSkill,

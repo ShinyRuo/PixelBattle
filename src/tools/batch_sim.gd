@@ -314,7 +314,7 @@ func _write_runs_csv(runs: Array[PBRunResult]) -> void:
 		(
 			"growth,strategy,seed,wave_reached,hit_wave_cap,kills,leaked,"
 			+ "gold_earned,gold_spent,pulls,quests,roster,equip_parts,"
-			+ "tech_gold,tech_pop,tech_atk,mean_battle_seconds,bond_mult,deployed_power"
+			+ "tech_gold,tech_pop,training,mean_battle_seconds,bond_mult,deployed_power"
 		)
 	)
 	for run: PBRunResult in runs:
@@ -336,7 +336,7 @@ func _write_runs_csv(runs: Array[PBRunResult]) -> void:
 				run.final_equip_parts,
 				run.final_tech_gold,
 				run.final_tech_pop,
-				run.final_tech_atk,
+				run.final_training,
 				run.mean_battle_seconds(),
 				run.final_bond_mult,
 				run.final_deployed_power,

@@ -17,15 +17,37 @@ extends RefCounted
 ## 数字来自 [PBValuation]，也就是模拟玩家比价用的**同一份计算**。
 ## 指令卡的格子太小，长句只能进提示条 —— 这是记在案的取舍，不是省略。
 
-## 全部可购买项。顺序即指令卡里的排列顺序。
+## 大本营首页那几项。顺序即指令卡里的排列顺序。
+const BASE_KINDS: Array[StringName] = [
+	&"gacha",
+	&"equip",
+	&"economy_slot",
+	&"tech_gold",
+	&"tech_pop",
+	&"tech_def",
+]
+
+## 「科技 ▸」二级页那四项（M12-h3）。**键 = `tech_` + [constant PBTechRules.BRANCHES]**，
+## 于是 [PBBattleView] 那条「去掉前缀交给 `buy_tech`」的兜底一行不用改。
+const TRAINING_KINDS: Array[StringName] = [
+	&"tech_train_attack",
+	&"tech_train_defence",
+	&"tech_train_hp",
+	&"tech_train_aim",
+]
+
+## 全部可购买项（两页合起来）。悬停提示与测试按它走。
 const KINDS: Array[StringName] = [
 	&"gacha",
 	&"equip",
 	&"economy_slot",
 	&"tech_gold",
 	&"tech_pop",
-	&"tech_atk",
 	&"tech_def",
+	&"tech_train_attack",
+	&"tech_train_defence",
+	&"tech_train_hp",
+	&"tech_train_aim",
 ]
 
 ## §10 的三档装备分类。**名字写在这里而不是数据表里** ——
@@ -44,12 +66,15 @@ const CATEGORY_HINTS := {
 	PBEquipItem.Category.TANK: "当前角色表里没有能吃它的人",
 }
 
-## 四条科技分支的显示名（§07）。
+## 科技分支的显示名（§07 + M12-h3 的四条训练）。
 const TECH_NAMES := {
 	&"gold": "金币科技",
 	&"pop": "人口科技",
-	&"atk": "攻击科技",
 	&"def": "防御科技",
+	&"train_attack": "训练攻击",
+	&"train_defence": "训练防御",
+	&"train_hp": "训练生命",
+	&"train_aim": "训练精准",
 }
 
 ## 格子上写的短名。
@@ -59,8 +84,11 @@ const SHORT_NAMES := {
 	&"economy_slot": "经济位",
 	&"tech_gold": "金币科技",
 	&"tech_pop": "人口科技",
-	&"tech_atk": "攻击科技",
 	&"tech_def": "防御科技",
+	&"tech_train_attack": "训练攻击",
+	&"tech_train_defence": "训练防御",
+	&"tech_train_hp": "训练生命",
+	&"tech_train_aim": "训练精准",
 }
 
 
@@ -199,14 +227,22 @@ static func _detail_tech(
 		return "%s Lv%d　%d　基地减伤 +%.0f%%" % [label, level, cost, reduction]
 	# 队伍是空的时候，「涨百分之几」算出来恒为 0（0 的 6% 还是 0）。
 	# 照实显示「战力 —」会让开局这一屏看起来像坏了，改写标称效果 —— 那句同样是真的。
-	if base <= 0.0:
-		if branch == &"pop":
-			return "%s Lv%d　%d　出战位 +1" % [label, level, cost]
-		return "%s Lv%d　%d　全体攻击 +%.0f%%" % [label, level, cost, cfg.tech_atk_per_level * 100.0]
-	return (
-		"%s Lv%d　%d　战力 %s"
-		% [label, level, cost, _percent(PBValuation.tech_gain(state, cfg, branch, base))]
-	)
+	var gain: float = PBValuation.tech_gain(state, cfg, branch, base) if base > 0.0 else 0.0
+	if gain > 0.0:
+		return "%s Lv%d　%d　战力 %s" % [label, level, cost, _percent(gain)]
+	if branch == &"pop":
+		return "%s Lv%d　%d　出战位 +1" % [label, level, cost]
+	# 训练科技写**词条**（M12-h3）：训练防御与训练生命在战力那把尺子上恒为 0，
+	# 写「战力 +0.0%」会让人以为它没用。词条和装备说明走同一处 [method mod_words]。
+	return "%s Lv%d　%d　%s" % [label, level, cost, _training_words(branch)]
+
+
+## 「近战 攻击力 +50 攻速 +5%」—— 每一级给什么、给谁。
+static func _training_words(branch: StringName) -> String:
+	if not PBTechRules.is_branch(branch):
+		return ""
+	var who: String = "近战" if bool(PBTechRules.FOR_MELEE[branch]) else "远程"
+	return "%s %s" % [who, " ".join(mod_words(PBTechRules.PER_LEVEL[branch]))]
 
 
 ## 升一级金币科技，每波多赚多少。用上一波的实际时长估。
@@ -244,15 +280,16 @@ static func _branch_of(kind: StringName) -> StringName:
 
 
 static func _tech_level(kind: StringName, state: PBRunState) -> int:
-	match _branch_of(kind):
+	var branch := _branch_of(kind)
+	match branch:
 		&"gold":
 			return state.tech_gold
 		&"pop":
 			return state.tech_pop
-		&"atk":
-			return state.tech_atk
-		_:
+		&"def":
 			return state.tech_def
+		_:
+			return state.training_level(branch)
 
 
 ## 带符号的百分比。**正号要写出来** —— 一列没有符号的数字读起来像开销。

@@ -211,7 +211,7 @@ func _build(characters: Array) -> Array[PBAttacker]:
 	for character: PBCharacter in characters:
 		units.append(PBUnit.new(character))
 	return PBCombatRules.build_attackers(
-		units, PBElement.Type.PHYSICAL, 1.0, 1.0, PackedFloat64Array(), _cfg
+		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg
 	)
 
 

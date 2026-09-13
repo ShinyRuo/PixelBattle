@@ -128,7 +128,6 @@ func test_the_real_squad_gets_a_mana_bar_from_its_intellect() -> void:
 		deployed,
 		PBElement.Type.PHYSICAL,
 		1.0,
-		1.0,
 		PackedFloat64Array(),
 		cfg
 	)

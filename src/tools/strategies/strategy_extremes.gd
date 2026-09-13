@@ -51,7 +51,7 @@ class PureEconomy:
 				return
 
 
-## 纯战力：一分钱不投经济，全部换成卡和攻击科技。
+## 纯战力：一分钱不投经济，全部换成卡和训练科技。
 ##
 ## 预期在 20 波左右因缺钱停滞 —— 波次奖金是线性的（`45 + 6n`），
 ## 而怪物血量是指数的，不升金币科技的话收入迟早追不上。
@@ -67,4 +67,4 @@ class PurePower:
 			if not buy_tech(state, &"pop", cfg):
 				break
 		# 和 balanced 用同一套花钱逻辑，唯一的差别就是上面一分钱没投金币科技。
-		spend_on_power(state, wave, cfg, rng, cfg.tech_atk_max)
+		spend_on_power(state, wave, cfg, rng, PBTechRules.MAX_LEVEL)

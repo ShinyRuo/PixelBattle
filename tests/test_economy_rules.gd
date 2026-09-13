@@ -42,9 +42,12 @@ func test_pity_guarantees_an_ssr() -> void:
 
 
 func test_tech_costs_climb_and_stop_at_max_level() -> void:
-	for branch: StringName in [&"gold", &"pop", &"atk", &"def"]:
+	var branches: Array[StringName] = [&"gold", &"pop", &"def"]
+	branches.append_array(PBTechRules.BRANCHES)
+	for branch: StringName in branches:
 		var previous: int = -1
-		for level: int in 6:
+		# 训练科技只有 5 级（M12-h3），第 5 级起就是 -1 了。
+		for level: int in PBTechRules.MAX_LEVEL if PBTechRules.is_branch(branch) else 6:
 			var cost := PBEconomyRules.tech_cost(branch, level, _cfg)
 			assert_gt(cost, previous, "%s 科技第 %d 级应比上一级贵" % [branch, level])
 			previous = cost

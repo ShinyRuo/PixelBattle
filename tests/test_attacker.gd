@@ -56,11 +56,11 @@ func test_attacker_dps_sums_to_the_reported_team_dps() -> void:
 	for element: int in [PBElement.Type.FIRE, PBElement.Type.WATER, PBElement.Type.PHYSICAL]:
 		deployed.append(PBUnit.of(_cfg, element as PBElement.Type, PBUnit.Rarity.SR))
 	var reported: float = PBCombatRules.team_dps(
-		deployed, PBElement.Type.WIND, 1.18, 1.32, PackedFloat64Array(), _cfg
+		deployed, PBElement.Type.WIND, 1.32, PackedFloat64Array(), _cfg
 	)
 	var total: float = 0.0
 	for attacker: PBAttacker in PBCombatRules.build_attackers(
-		deployed, PBElement.Type.WIND, 1.18, 1.32, PackedFloat64Array(), _cfg
+		deployed, PBElement.Type.WIND, 1.32, PackedFloat64Array(), _cfg
 	):
 		total += attacker.dps
 	assert_almost_eq(total, reported, reported * 1e-9, "攻击者 DPS 之和应等于报出去的队伍 DPS")

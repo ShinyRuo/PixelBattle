@@ -308,10 +308,10 @@ func test_the_cooldown_aura_makes_character_ultimates_come_round_sooner() -> voi
 	faster.aura_ultimate_cd_scale = 0.8
 	var deployed: Array[PBUnit] = [PBUnit.of(_cfg, PBElement.Type.FIRE, PBUnit.Rarity.SR)]
 	var plain := PBCombatRules.build_attackers(
-		deployed, PBElement.Type.WIND, 1.0, 1.0, PackedFloat64Array(), _cfg
+		deployed, PBElement.Type.WIND, 1.0, PackedFloat64Array(), _cfg
 	)
 	var hasted := PBCombatRules.build_attackers(
-		deployed, PBElement.Type.WIND, 1.0, 1.0, PackedFloat64Array(), _cfg, faster
+		deployed, PBElement.Type.WIND, 1.0, PackedFloat64Array(), _cfg, faster
 	)
 	assert_lt(
 		hasted[0].ultimate.skill.cooldown_ticks,

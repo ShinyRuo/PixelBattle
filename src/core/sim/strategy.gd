@@ -330,21 +330,22 @@ func _choose_from_offer(offer: Array[PBUnit], cfg: PBSimConfig) -> int:
 ##
 ## 优先级是有依据的，不是随手排的：
 ##
-## 1. **攻击科技比单抽便宜时先买** —— 确定的 +6% 好过一发方差极大的抽卡
+## 1. **训练科技比单抽便宜时先买**（挑最便宜的那一条）—— 确定的词条好过一发方差极大的抽卡
 ## 2. **卡池没抽满就抽卡** —— 新卡是全新战力，重复卡只加星级，差一个数量级
 ## 3. **抽满了转装备** —— 抽卡的边际收益此时已趋近于零，而装备在装满整队前
 ##    每一件都实打实。这个拐点就是 §10 存在的经济学意义
 ## 4. **装备也满了再回去抽卡刷星级** —— 边际收益低，但总比钱烂在手里强
 func spend_on_power(
-	state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams, atk_target: int
+	state: PBRunState, wave: PBWave, cfg: PBSimConfig, rng: PBRngStreams, training_target: int
 ) -> void:
 	while true:
-		var atk_cost := PBEconomyRules.tech_cost(&"atk", state.tech_atk, cfg)
+		var branch := _cheapest_training(state, cfg, training_target)
 		var tech_first: bool = (
-			atk_cost >= 0 and atk_cost <= cfg.gacha_cost and state.tech_atk < atk_target
+			branch != &""
+			and PBEconomyRules.tech_cost(branch, state.training_level(branch), cfg) <= cfg.gacha_cost
 		)
 		if tech_first:
-			if not buy_tech(state, &"atk", cfg):
+			if not buy_tech(state, branch, cfg):
 				return
 		elif gacha_still_pays(state, cfg) or equipment_is_full(state, cfg):
 			if not pull_once(state, wave, cfg, rng):
@@ -421,11 +422,29 @@ func buy_tech(state: PBRunState, branch: StringName, cfg: PBSimConfig) -> bool:
 			state.tech_gold += 1
 		&"pop":
 			state.tech_pop += 1
-		&"atk":
-			state.tech_atk += 1
 		&"def":
 			state.tech_def += 1
+		_:
+			state.training[branch] = level + 1
 	return true
+
+
+## 还没升到 [param target] 级的训练科技里最便宜的那一条。都满了返回空。
+##
+## **不看这一条对谁生效** —— 一队全远程也会买训练攻击。这是脚本玩家的粗糙之处，
+## 会算账的那一个（[PBStratRational]）按估值挑，归数值回归。
+func _cheapest_training(state: PBRunState, cfg: PBSimConfig, target: int) -> StringName:
+	var best: StringName = &""
+	var best_cost: int = -1
+	for branch: StringName in PBTechRules.BRANCHES:
+		var level: int = state.training_level(branch)
+		var cost := PBEconomyRules.tech_cost(branch, level, cfg)
+		if level >= target or cost < 0:
+			continue
+		if best_cost < 0 or cost < best_cost:
+			best = branch
+			best_cost = cost
+	return best
 
 
 func _tech_level(state: PBRunState, branch: StringName) -> int:
@@ -434,9 +453,7 @@ func _tech_level(state: PBRunState, branch: StringName) -> int:
 			return state.tech_gold
 		&"pop":
 			return state.tech_pop
-		&"atk":
-			return state.tech_atk
 		&"def":
 			return state.tech_def
 		_:
-			return 0
+			return state.training_level(branch)
