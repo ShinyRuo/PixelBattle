@@ -90,6 +90,36 @@ func test_reading_back_frames_from_disk() -> void:
 	assert_eq(page._hit.load_from(dir), 0, "没切过的那段是零帧，不报错")
 
 
+func test_turning_the_hit_off_hides_its_options_and_the_preview() -> void:
+	var page := PBFxShotPage.new()
+	add_child_autofree(page)
+	page._hit.use_sheet(_sheet_file())
+	page._hit._frames.value = 3
+	assert_eq(page._hit.cut("%s/fx/probe" % ROOT), "", "前提：命中段切得开")
+	assert_true(page._hit_check.button_pressed, "默认带爆炸特效")
+	assert_eq(page._preview.frame_count(1), 3, "预览在播命中段")
+	page._hit_check.button_pressed = false
+	assert_false(page._hit_group.visible, "不勾就把命中段整块藏起来")
+	assert_false(page._hit_fps.is_visible_in_tree(), "命中帧率也跟着藏")
+	assert_eq(page._preview.frame_count(1), 0, "预览只播飞行段")
+	page._hit_check.button_pressed = true
+	assert_true(page._hit_group.visible, "勾回来就出来")
+	assert_eq(page._preview.frame_count(1), 3, "切过的帧还在，预览接着播")
+
+
+func test_reading_a_key_without_hit_frames_turns_the_hit_off() -> void:
+	var page := PBFxShotPage.new()
+	add_child_autofree(page)
+	page._fly.use_sheet(_sheet_file())
+	var dir: String = "%s/fx/probe" % ROOT
+	assert_eq(page._fly.cut(dir), "", "前提：只切了飞行段")
+	page._forge.assets_dir = "%s/fx" % ROOT
+	page._key_edit.text = "probe"
+	page._on_load()
+	assert_false(page._hit_check.button_pressed, "盘上没有命中帧，读回来就是不带爆炸特效")
+	assert_false(page._hit_group.visible, "那一段收起来")
+
+
 func _wipe(dir_path: String) -> void:
 	var dir := DirAccess.open(dir_path)
 	if dir == null:

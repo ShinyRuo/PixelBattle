@@ -50,6 +50,30 @@ func _forge() -> PBShotForge:
 	return forge
 
 
+## 读贴图那一步换成现造的（测试里 `user://` 下的 PNG 不会被导入）。
+## [param hit_unimported] 为真时命中段读不到，模拟「切了还没导入完」。
+class FakeForge:
+	extends PBShotForge
+	var hit_unimported: bool = false
+
+	func _textures(_key: String, anim: StringName) -> Array[Texture2D]:
+		var out: Array[Texture2D] = []
+		if anim == HIT and hit_unimported:
+			return out
+		for _i: int in 3:
+			var image := Image.create_empty(8, 8, false, Image.FORMAT_RGBA8)
+			out.append(ImageTexture.create_from_image(image))
+		return out
+
+
+func _imported_forge(hit_unimported: bool) -> PBShotForge:
+	var forge := FakeForge.new()
+	forge.hit_unimported = hit_unimported
+	forge.assets_dir = "%s/fx" % ROOT
+	forge.data_dir = "%s/shots" % ROOT
+	return forge
+
+
 func _textures(count: int) -> Array[Texture2D]:
 	var out: Array[Texture2D] = []
 	for _i: int in count:
@@ -186,6 +210,24 @@ func test_a_shot_may_have_no_hit_segment() -> void:
 	var skin := PBShotForge.new().assemble("kunai", _textures(3), [] as Array[Texture2D])
 	assert_eq(skin.frames.get_frame_count(skin.anim_fly), 3, "飞行段照装")
 	assert_false(skin.has(skin.anim_hit), "没切命中段就没有这一段 —— 不许拿飞行段顶上")
+
+
+func test_building_without_a_hit_leaves_the_hit_frames_on_disk_out() -> void:
+	# 面板上「子弹有爆炸特效」不勾：盘上切过的 `hit_*.png` 不装，也不因为它们没导入完而拦下。
+	var forge := _imported_forge(true)
+	var dir := ProjectSettings.globalize_path(forge.frame_dir("kunai"))
+	DirAccess.make_dir_recursive_absolute(dir)
+	Image.create_empty(8, 8, false, Image.FORMAT_RGBA8).save_png("%s/hit_0.png" % dir)
+	assert_string_contains(forge.build("kunai"), "命中段", "要爆炸特效、命中帧却没导入完：拦下")
+	forge.with_hit = false
+	assert_eq(forge.build("kunai"), "", "不要爆炸特效就不管命中帧")
+	var skin := load(forge.shot_path("kunai")) as PBShotSkin
+	assert_false(skin.has(skin.anim_hit), "生成出来的资源里没有命中段")
+	var full := _imported_forge(false)
+	full.with_hit = false
+	assert_eq(full.build("kunai"), "", "前提：命中帧导入好了也照样生成")
+	skin = load(full.shot_path("kunai")) as PBShotSkin
+	assert_false(skin.has(skin.anim_hit), "导入好了的命中帧也不装")
 
 
 func test_build_refuses_when_frames_are_missing() -> void:

@@ -35,6 +35,10 @@ var spin: bool = true
 var additive_fly: bool = true
 var additive_hit: bool = true
 
+## 这颗子弹有没有爆炸特效（命中段）。**关掉就不装命中段**，盘上有 `hit_*.png` 也不读 ——
+## 打中时用默认火花（[method PBShotPool._spark]）。面板上那个勾选框（玩家定的）。
+var with_hit: bool = true
+
 
 ## 键合不合规矩。**返回错误信息，空串 = 合规。**
 static func key_error(key: String) -> String:
@@ -93,9 +97,11 @@ func build(key: String) -> String:
 	var fly := _textures(key, FLY)
 	if fly.is_empty():
 		return "飞行段一帧都没有（%s/fly_*.png）—— 先切图，切完等编辑器导入。" % frame_dir(key)
-	var hit := _textures(key, HIT)
-	# 命中段可以不切；**切了却没导入完**要拦 —— 不拦的话生成出来的子弹静默用默认火花。
-	if hit.is_empty() and frames_on_disk(key, HIT) > 0:
+	var hit: Array[Texture2D] = []
+	if with_hit:
+		hit = _textures(key, HIT)
+	# 命中段可以不切；**要了命中段、切了却没导入完**要拦 —— 不拦的话生成出来的子弹静默用默认火花。
+	if with_hit and hit.is_empty() and frames_on_disk(key, HIT) > 0:
 		return "命中段的帧还没导入完（%s/hit_*.png）—— 等编辑器导入再点一次。" % frame_dir(key)
 	PBPortraitForge.new().want_mipmaps(frame_dir(key))
 	var err := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(data_dir))

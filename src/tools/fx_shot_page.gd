@@ -20,6 +20,9 @@ var _forge := PBShotForge.new()
 var _key_edit: LineEdit
 var _fly: PBFxSegment
 var _hit: PBFxSegment
+var _hit_check: CheckBox
+## 命中段整块（切图那一段 + 命中帧率）。不要爆炸特效时整块藏起来。
+var _hit_group: VBoxContainer
 var _spin_check: CheckBox
 var _fly_fps: SpinBox
 var _hit_fps: SpinBox
@@ -37,7 +40,10 @@ func _ready() -> void:
 	_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(_preview)
 	_refresh_ninjas()
-	_say("新子弹：填键 → 两段各选图、切图 → 看预览 → 生成子弹资源 → 选忍者、设为普攻子弹。")
+	_say(
+		"新子弹：填键 → 飞行段选图、切图 →（要爆炸特效再切命中段）→ 看预览"
+		+ " → 生成子弹资源 → 选忍者、设为普攻子弹。"
+	)
 
 
 ## 左边一栏。**包一层滚动、状态栏留在滚动区外**，理由同「战场形象」面板：面板高度是人拖出来的。
@@ -61,19 +67,29 @@ func _build_side() -> Control:
 	side.add_child(HSeparator.new())
 	_fly = _segment(PBShotForge.FLY, "飞行段（朝右画）", 48, 3)
 	side.add_child(_fly)
-	side.add_child(HSeparator.new())
-	_hit = _segment(PBShotForge.HIT, "命中段（可以不切，不切就用默认火花）", 120, 4)
-	side.add_child(_hit)
-
-	side.add_child(HSeparator.new())
+	var fly_speed := HBoxContainer.new()
+	_fly_fps = _fps_box(fly_speed, "飞行帧率", _forge.fly_fps)
+	side.add_child(fly_speed)
 	_spin_check = CheckBox.new()
 	_spin_check.text = "飞行中转向飞行方向（圆球类可以关）"
 	_spin_check.button_pressed = true
 	side.add_child(_spin_check)
-	var speeds := HBoxContainer.new()
-	_fly_fps = _fps_box(speeds, "飞行帧率", _forge.fly_fps)
-	_hit_fps = _fps_box(speeds, "命中帧率", _forge.hit_fps)
-	side.add_child(speeds)
+
+	side.add_child(HSeparator.new())
+	_hit_check = CheckBox.new()
+	_hit_check.text = "子弹有爆炸特效（不勾就用默认火花）"
+	_hit_check.button_pressed = true
+	_hit_check.toggled.connect(func(_on: bool) -> void: _use_hit(_on))
+	side.add_child(_hit_check)
+	_hit_group = VBoxContainer.new()
+	_hit = _segment(PBShotForge.HIT, "命中段（爆炸特效）", 120, 4)
+	_hit_group.add_child(_hit)
+	var hit_speed := HBoxContainer.new()
+	_hit_fps = _fps_box(hit_speed, "命中帧率", _forge.hit_fps)
+	_hit_group.add_child(hit_speed)
+	side.add_child(_hit_group)
+
+	side.add_child(HSeparator.new())
 	side.add_child(_button("生成子弹资源", _on_build))
 
 	side.add_child(HSeparator.new())
@@ -117,7 +133,7 @@ func _on_cut(segment: PBFxSegment) -> void:
 	if err != "":
 		_say(_red(err))
 		return
-	_say(_green(segment.summary()) + "。切好了就按「生成子弹资源」（命中段可以不切）。")
+	_say(_green(segment.summary()) + "。切好了就按「生成子弹资源」。")
 	await _rescan()
 
 
@@ -132,16 +148,28 @@ func _on_load() -> void:
 	var hit: int = _hit.load_from(dir)
 	_refresh_users()
 	if fly == 0 and hit == 0:
-		_say("%s 下还没有帧 —— 新子弹，两段各选图切一次。" % dir)
+		_say("%s 下还没有帧 —— 新子弹，选图切一次。" % dir)
 		return
-	_say("读回来了：%s；%s。" % [_fly.summary(), _hit.summary()])
+	# 盘上有命中帧就当它有爆炸特效，没有就收起那一段 —— 读回来的样子和上次生成时一致。
+	_hit_check.set_pressed_no_signal(hit > 0)
+	_use_hit(hit > 0)
+	_say("读回来了：%s；%s。" % [_fly.summary(), _hit.summary() if hit > 0 else "没有爆炸特效"])
+
+
+## 要不要爆炸特效（命中段）。**不要就把那一段整块藏起来**，预览也只播飞行段；生成时不装命中段。
+func _use_hit(on: bool) -> void:
+	_hit_group.visible = on
+	_refresh_preview()
 
 
 func _refresh_preview() -> void:
 	if _preview == null:
 		return
 	_preview.show_segment(0, _fly.images, _fly_fps.value, _fly.additive())
-	_preview.show_segment(1, _hit.images, _hit_fps.value, _hit.additive())
+	var hit: Array[Image] = []
+	if _hit_check.button_pressed:
+		hit = _hit.images
+	_preview.show_segment(1, hit, _hit_fps.value, _hit.additive())
 
 
 # ── 生成与配置 ──────────────────────────────────────────────────
@@ -161,13 +189,16 @@ func _on_build() -> void:
 	_forge.spin = _spin_check.button_pressed
 	_forge.additive_fly = _fly.additive()
 	_forge.additive_hit = _hit.additive()
+	_forge.with_hit = _hit_check.button_pressed
 	var err := _forge.build(key)
 	if err != "":
 		_say(_red(err))
 		return
 	await _rescan()
 	_refresh_users()
-	_say(_green("子弹资源生成好了：%s" % _forge.shot_path(key)) + "。选一个忍者，按「设为普攻子弹」。")
+	var kind: String = "带爆炸特效" if _forge.with_hit else "不带爆炸特效，打中用默认火花"
+	var done: String = _green("子弹资源生成好了（%s）：%s" % [kind, _forge.shot_path(key)])
+	_say(done + "。选一个忍者，按「设为普攻子弹」。")
 
 
 func _on_assign() -> void:
