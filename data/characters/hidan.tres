@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_i7g2p"]
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_xk0q5"]
+[ext_resource type="Resource" path="res://data/buffs/hidan_undying.tres" id="2_g8u7j"]
 
 [resource]
 script = ExtResource("1_xk0q5")
@@ -26,3 +27,9 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 attack_range = 245.0
+passives = {
+&"reflect": 0.25,
+&"splash": 0.35,
+&"splash_radius": 250.0
+}
+lethal_buffs = Array[ExtResource("1_i7g2p")]([ExtResource("2_g8u7j")])

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ay2qm"]
+
+[resource]
+script = ExtResource("1_ay2qm")
+id = &"asuma_ash"
+name_key = "buff.asuma_ash"
+icon_key = "buff.asuma_ash"
+kind = 1
+friendly = false
+duration_seconds = 2.5
+mods = {
+&"enemy_hit_scale": 0.0
+}

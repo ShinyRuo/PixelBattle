@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_wgsv6"]
+
+[resource]
+script = ExtResource("1_wgsv6")
+id = &"tsunade_byakugou"
+name_key = "buff.tsunade_byakugou"
+icon_key = "buff.tsunade_byakugou"
+kind = 2
+duration_seconds = 5.0
+period_seconds = 1.0
+mods = {
+&"heal_max": 0.1
+}

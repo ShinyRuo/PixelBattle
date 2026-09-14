@@ -128,6 +128,23 @@ func test_the_splash_does_not_reach_across_the_field() -> void:
 	assert_eq(enemies[2].hp, far, "站得远的那个一点血都不该掉")
 
 
+func test_an_original_splash_radius_reaches_farther_than_the_default() -> void:
+	# 被动配了原版码数（`splash_radius=275`）就按那把尺子换算；没配的还是默认半径。
+	var attacker := _striker()
+	attacker.splash_damage = 0.5
+	var gap: float = PBStrikeRules.SPLASH_RADIUS * 2.0
+	var enemies := _pack(2, gap)
+	var out := PBCombatOutcome.new()
+	var before: float = enemies[1].hp
+	PBStrikeRules.land(attacker, enemies[0], 100.0, false, enemies, _cfg, 0, null, out)
+	assert_eq(enemies[1].hp, before, "前提：默认半径够不着这个距离")
+	attacker.splash_radius = 275.0
+	assert_almost_eq(PBStrikeRules.splash_reach(attacker, _cfg), 0.1375, 0.0001, "275 码 = 0.1375")
+	assert_gt(PBStrikeRules.splash_reach(attacker, _cfg), gap, "前提：换算后的半径盖得住")
+	PBStrikeRules.land(attacker, enemies[0], 100.0, false, enemies, _cfg, 1, null, out)
+	assert_almost_eq(before - enemies[1].hp, 50.0, 0.001, "配了原版溅射范围就够得着")
+
+
 func test_hitting_a_healthy_enemy_lands_the_extra_but_a_hurt_one_does_not() -> void:
 	# 判据看的是**这一下之前**的血量比 —— 打完再看的话，一记正好把人
 	# 打到半血以下的攻击会拿不到加成，而玩家读到的是「有时候触发有时候不」。

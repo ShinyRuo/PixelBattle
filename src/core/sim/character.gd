@@ -145,6 +145,13 @@ const MAX_SKILLS: int = 2
 ## 混进同一个 Dictionary 的话读的人得先知道哪些键是引用。
 @export var on_hit_buffs: Array[PBBuff] = []
 
+## 被动里「血量掉到阈值那一刻给自己挂上」的效果（名册同一列的 `on_low_hp=<效果键>`）。
+## 阈值是 [member passives] 里的 `low_hp`：一个存数、一个存引用，理由同 [member on_hit_buffs]。
+@export var low_hp_buffs: Array[PBBuff] = []
+
+## 被动里「受致命伤那一下挡住、给自己挂上」的效果（名册同一列的 `on_lethal=<效果键>`）。一波一次。
+@export var lethal_buffs: Array[PBBuff] = []
+
 
 ## 大招实际打什么属性。见 [member ultimate_element_override]。
 func ultimate_element() -> PBElement.Type:

@@ -159,6 +159,8 @@ func step() -> void:
 	_deal_damage()
 	_enemies_attack()
 	_advance_and_leak()
+	# **排在所有会死人的阶段之后**：挨打、子弹、自身掉血死的人同一 tick 放掉阵亡技能。
+	_fire_death_casts()
 	_separate()
 
 
@@ -346,16 +348,38 @@ func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 				_outcome.kills += PBSkillRules.land_on_field(
 					cast, _enemies, _front, _cfg, _tick
 				)
+			else:
+				PBSkillRules.land_around_allies(cast, attacker.pos, _attackers, _cfg, _tick)
 		PBSkill.Target.ENEMY:
 			_outcome.kills += PBSkillRules.land_on_enemy(cast, _enemies, _cfg, _tick)
 		_:
-			_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _cfg, _tick)
+			if skill.affects == PBSkill.Party.ALLIES:
+				PBSkillRules.land_around_allies(cast, cast.spot, _attackers, _cfg, _tick)
+			else:
+				_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _cfg, _tick)
 	if skill.slow_ticks > 0 and skill.slow_scale < 1.0:
 		_slow_scale = skill.slow_scale
 		_slow_until = _tick + skill.slow_ticks
 	PBSkillRules.apply_team_buff(skill, _attackers, _tick)
 	PBSkillRules.reset_other_cooldowns(skill, cast, _attackers, _tick)
 	cast.land(_tick)
+
+
+## 刚倒下的人把阵亡技能放掉（[member PBAttacker.death_casts]）。落点是尸体。
+##
+## 走 [method _land_skill]，和手动施法同一条路：伤害按他的战力、打死的怪照常记账、
+## 回血圈照样按半径圈人。不进 [PBSkillOrders]，也不查冷却和蓝 —— 死人没有这两样。
+func _fire_death_casts() -> void:
+	for attacker: PBAttacker in _attackers:
+		if not attacker.death_pending:
+			continue
+		attacker.death_pending = false
+		for cast: PBSkillCast in attacker.death_casts:
+			cast.spot = attacker.pos
+			if log_to != null:
+				log_to.ultimate(_tick, attacker.slot, cast.skill.affects == PBSkill.Party.ALLIES)
+			_land_skill(attacker, cast)
+	_skip_dead()
 
 
 ## 一发子弹技能出膛。池子满了或目标已经不在名单里就当空放 ——
@@ -398,7 +422,10 @@ func _speed_scale() -> float:
 ## 敌人那一趟从 [member _front] 起扫、碰到没出场的就停（数组按出场顺序排）。
 func _advance_buffs() -> void:
 	for attacker: PBAttacker in _attackers:
-		PBBuffRules.advance_ally(attacker, _tick)
+		var drain: float = PBBuffRules.advance_ally(attacker, _tick)
+		# 自身掉血（地之咒印）。扣血与阵亡记账走和挨打同一个落点。
+		if drain > 0.0 and attacker.alive:
+			PBStrikeRules.wound_ally(attacker, drain, _cfg, _tick, null, log_to, _outcome)
 	for i: int in range(_front, _enemies.size()):
 		var enemy: PBEnemy = _enemies[i]
 		if not enemy.has_spawned(_tick):

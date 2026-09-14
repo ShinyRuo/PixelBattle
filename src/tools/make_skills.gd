@@ -241,6 +241,9 @@ func _write_skill(row: PackedStringArray, owned: Dictionary) -> String:
 	if err != OK:
 		return "%s 存不下来（%d）" % [key, err]
 	var owner_key: String = row[S_OWNER]
+	# `-` = 不进任何人的指令卡：阵亡时放的那几个，由羁绊补丁 `on_death` 发给成员。
+	if owner_key == "-":
+		return ""
 	if not owned.has(owner_key):
 		owned[owner_key] = PackedStringArray()
 	owned[owner_key].append(key)

@@ -66,14 +66,14 @@
 # 键	显示名	满档	功能键	载体	成员
 haku_and_zabuza	随雪而逝	2			haku,zabuza
 immortal_pair	不死二人组	2	revive	hidan	kakuzu,hidan
-akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu
+akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu		deidara:clay_spider:power_scale=1.35
 kai_squad	凯班	4	gather	rock_lee	might_guy,rock_lee,tenten,neji_hyuga
 hyuga_pair	日向兄妹	2			neji_hyuga,hinata	neji_hyuga:crit_chance=0.09;hinata:crit_chance=0.15,bite_current=0.12
 sand_siblings	砂忍三巨头	3	slow_field	gaara	gaara,temari,kankuro
-earth_curse	地之咒印	2			kimimaro,orochimaru
-my_cage	吾之牢笼	2			kimimaro,jugo
+earth_curse	地之咒印	2			kimimaro,orochimaru		kimimaro:bracken_dance:on_death=1
+my_cage	吾之牢笼	2			kimimaro,jugo	kimimaro:low_hp=0.90,drain_cut=1
 five_kage	五影齐聚	5			tsunade,gaara,mei,raikage,onoki
-lightning_blades	绝牛雷犁热刀	2	crit_on_hit	raikage	raikage,killer_bee
+lightning_blades	绝牛雷犁热刀	2	crit_on_hit	raikage	raikage,killer_bee	killer_bee:crit_damage=0.75
 hokage_line	历代火影	5			hashirama,tobirama,hiruzen,minato,tsunade	hashirama:defence=30;tobirama:defence=30;hiruzen:defence=30;minato:defence=30;tsunade:defence=30
 senju_brothers	千手兄弟	2			hashirama,tobirama
 brothers_bond	兄弟的爱恨	2	crit_chance	itachi	itachi,sasuke	itachi:defence=15
@@ -99,3 +99,6 @@ child_of_prophecy	预言之子	2			naruto,jiraiya	naruto:dodge=0.20
 three_of_them	三人的羁绊	3			obito,kakashi,rin_nohara		rin_nohara:inspire:targets_add=4
 team_eight	第八班·集合	4			kurenai,hinata,shino,kiba		kurenai:haze_illusion:targets_add=3;shino:vampire_bugs:summon_add=5,summon_secs_scale=1.5
 uchiha_clan	宇智波一族	5			madara,obito,itachi,sasuke,shisui	madara:damage_bonus=0.40;obito:damage_bonus=0.40;itachi:damage_bonus=0.40;sasuke:damage_bonus=0.40;shisui:damage_bonus=0.40	
+destined_couple	终成眷属	2			naruto_sage,hinata		hinata:palm_rotation:radius_scale=2
+art_duo	艺术二人组	2			sasori,deidara		deidara:clay_self_destruct:on_death=1
+peace_wish	和平的期望	2			tendo,naruto_sage		tendo:samsara_rebirth:on_death=1

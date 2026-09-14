@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_rdkv7"]
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_rwkk6"]
+[ext_resource type="Resource" path="res://data/buffs/danzo_izanagi.tres" id="2_dajpk"]
+[ext_resource type="Resource" path="res://data/buffs/danzo_blur.tres" id="3_smt1o"]
 
 [resource]
 script = ExtResource("1_rdkv7")
@@ -31,3 +33,4 @@ rarity = 1
 reach = 2
 attack_range = 600.0
 skill_ids = Array[StringName]([&"root_burial"])
+lethal_buffs = Array[ExtResource("1_rwkk6")]([ExtResource("2_dajpk"), ExtResource("3_smt1o")])

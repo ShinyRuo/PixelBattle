@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_3e6j8"]
+
+[resource]
+script = ExtResource("1_3e6j8")
+id = &"destined_couple"
+name_key = "bond.destined_couple"
+member_ids = Array[StringName]([&"naruto_sage", &"hinata"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"hinata": {
+&"palm_rotation": {
+&"radius_scale": 2.0
+}
+}
+}

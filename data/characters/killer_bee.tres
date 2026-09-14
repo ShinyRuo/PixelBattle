@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_3bwf6"]
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
+[ext_resource type="Resource" path="res://data/buffs/bee_cloak.tres" id="2_b554b"]
 
 [resource]
 script = ExtResource("1_char")
@@ -30,3 +31,8 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 attack_range = 125.0
+passives = {
+&"crit_chance": 0.2,
+&"low_hp": 0.75
+}
+low_hp_buffs = Array[ExtResource("1_3bwf6")]([ExtResource("2_b554b")])

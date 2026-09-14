@@ -195,6 +195,13 @@ enum Party {
 ## 召唤物在场上待多久。0 = 不散（今天没有这种）。
 @export var summon_seconds: float = 0.0
 
+## 这一份**不进指令卡**，在施法者倒下那一刻以尸体为落点放出去（〔地之咒印〕「在死亡时释放【早蕨之舞】」）。
+##
+## 只由羁绊的技能补丁打开（[constant PBSkillPatchRules.ON_DEATH]），不写在技能表里：
+## 同一个技能「谁在什么羁绊下死了会放」是羁绊的事，表里写死的话没有羁绊也会放。
+## 放的路径和手动施法同一条（[method PBBattleSim._land_skill]），落点档照 [member target] 走。
+var fires_on_death: bool = false
+
 
 ## 复制一份**设定**。[PBSkillCast] 不跟着复制 —— 复制品是「这一波都还没放过的它」。
 ##

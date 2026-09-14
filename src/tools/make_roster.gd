@@ -14,8 +14,12 @@ const OUT_DIR := "res://data/characters"
 const ACTOR_DIR := "res://data/actors"
 const BUFF_DIR := "res://data/buffs"
 
-## 被动那一列里指一份效果的写法。其余的键全是 `键=量`。
+## 被动那一列里指一份效果的两种写法。其余的键全是 `键=量`。
+## `on_hit`：打出要害时挂在目标身上；`on_low_hp`：血量掉到 `low_hp` 以下时挂在自己身上；
+## `on_lethal`：受致命伤那一下挡住、挂在自己身上。
 const ON_HIT := "on_hit"
+const ON_LOW_HP := "on_low_hp"
+const ON_LETHAL := "on_lethal"
 
 const PRIMARIES := {
 	"力量": PBCharacter.Primary.STRENGTH,
@@ -150,17 +154,31 @@ func _row_error(row: PackedStringArray) -> String:
 	return "" if shot == "" else "的普攻子弹：%s" % shot
 
 
-## 把被动那一列的两半都填进去（`键=量` 进 [member PBCharacter.passives]，
-## `on_hit=<效果键>` 进 [member PBCharacter.on_hit_buffs]）。**返回错误信息，空串 = 成功。**
+## 把被动那一列的几部分都填进去（`键=量` 进 [member PBCharacter.passives]，
+## `on_hit=<效果键>` 进 [member PBCharacter.on_hit_buffs]，`on_low_hp=<效果键>` 进
+## [member PBCharacter.low_hp_buffs]，`on_lethal=<效果键>` 进 [member PBCharacter.lethal_buffs]）。
+## **返回错误信息，空串 = 成功。**
 func _fill_passives(character: PBCharacter, cell: String) -> String:
 	var passives: Variant = _parse_passives(cell)
 	if passives is String:
 		return passives
-	var hung: Variant = _parse_on_hit(cell)
+	var hung: Variant = _parse_refs(cell, ON_HIT)
 	if hung is String:
 		return hung
+	var low: Variant = _parse_refs(cell, ON_LOW_HP)
+	if low is String:
+		return low
+	# 阈值和效果必须成对：只写一半的话那一半这辈子不生效，而它不报错。
+	var has_low: bool = (passives as Dictionary).has(PBPassiveRules.LOW_HP)
+	if has_low == (low as Array).is_empty():
+		return "`low_hp=阈值` 和 `on_low_hp=效果键` 要一起写"
+	var lethal: Variant = _parse_refs(cell, ON_LETHAL)
+	if lethal is String:
+		return lethal
 	character.passives = passives as Dictionary
 	character.on_hit_buffs = hung as Array[PBBuff]
+	character.low_hp_buffs = low as Array[PBBuff]
+	character.lethal_buffs = lethal as Array[PBBuff]
 	return ""
 
 
@@ -177,8 +195,8 @@ func _parse_passives(cell: String) -> Variant:
 		if pair.size() != 2:
 			return "「%s」不是 键=量 的样子" % piece
 		var name := StringName(pair[0].strip_edges())
-		# `on_hit=` 那几个由 [method _parse_on_hit] 收，这里跳过。
-		if name == ON_HIT:
+		# 指效果的那几个由 [method _parse_refs] 收，这里跳过。
+		if name == ON_HIT or name == ON_LOW_HP or name == ON_LETHAL:
 			continue
 		if not PBModRules.is_known(name):
 			return "不认识的键「%s」" % name
@@ -188,15 +206,15 @@ func _parse_passives(cell: String) -> Variant:
 	return out
 
 
-## 被动那一列里的 `on_hit=<效果键>`。返回 [Array] = 成功，[String] = 错误信息。
+## 被动那一列里的 `<ref_key>=<效果键>`（`on_hit` / `on_low_hp` / `on_lethal`）。返回 [Array] = 成功，[String] = 错误信息。
 ## **查不到那份效果就报错退出**。效果由 `make_skills.gd` 从 `data/buffs.tsv` 铺出来，所以那一支要先跑。
-func _parse_on_hit(cell: String) -> Variant:
+func _parse_refs(cell: String, ref_key: String) -> Variant:
 	var out: Array[PBBuff] = []
 	if cell == "" or cell == PBRosterSheet.NONE:
 		return out
 	for piece: String in cell.split(";", false):
 		var pair: PackedStringArray = piece.split("=")
-		if pair.size() != 2 or pair[0].strip_edges() != ON_HIT:
+		if pair.size() != 2 or pair[0].strip_edges() != ref_key:
 			continue
 		var path: String = "%s/%s.tres" % [BUFF_DIR, pair[1].strip_edges()]
 		if not ResourceLoader.exists(path):

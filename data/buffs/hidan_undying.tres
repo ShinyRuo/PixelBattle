@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_8plkc"]
+
+[resource]
+script = ExtResource("1_8plkc")
+id = &"hidan_undying"
+name_key = "buff.hidan_undying"
+icon_key = "buff.hidan_undying"
+kind = 1
+duration_seconds = 2.0
+mods = {
+&"undying": 1.0
+}

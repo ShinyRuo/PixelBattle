@@ -64,9 +64,31 @@ const ENEMY_HIT_SCALE: StringName = &"enemy_hit_scale"
 ## 掉血：中毒、灼烧那一类。读点在 [method advance_enemy] 与
 ## [method PBSkillRules.apply_one_enemy]，都最终走 [method PBEnemy.take_damage]（记账的门）。
 ##
-## 己方**故意没有对应的键**：忍者掉血要走 [method PBAttacker.take_damage] 那一整套
-## （阵亡记账、日志、`allies_lost`），而没有技能要给自己人上 DoT。
+## 己方用的是 [constant DRAIN_MAX]，不是这一个：忍者掉血按最大生命的几成算（原版的写法），
+## 而且要走 [method PBStrikeRules.wound_ally] 那一整套（阵亡记账、重生、`allies_lost`）。
 const HARM: StringName = &"harm"
+
+## 己方**每一跳**回复最大生命的几成（百豪之术「5 秒内恢复 50% 最大生命」）。读点在 [method advance_ally]。
+##
+## 和 [constant HEAL] 分开：那一个是点数、随施法者等级长；这一个跟着**挨治疗那个人**的血量走，
+## 装备、羁绊把血抬高之后比例照样对。
+const HEAL_MAX: StringName = &"heal_max"
+
+## 己方**每一跳**损失最大生命的几成（地之咒印「每秒损失 2% 的生命值」）。
+##
+## [method advance_ally] 只算出该掉多少、**不当场扣**，扣血交给 [method PBStrikeRules.wound_ally]
+## （同 [method advance_enemy] 返回伤害的理由：掉死了要记账，账在 [PBBattleSim] 手上）。
+## 它**照样吃无敌和护盾**（走的是 [method PBAttacker.take_damage]），被
+## [member PBAttacker.drain_cut] 按比例抵掉。
+const DRAIN_MAX: StringName = &"drain_max"
+
+## 防御临时加多少（尾兽外衣「提升 4-40 点防御」）。量型，和 [member PBAttacker.defence] 相加。
+## 读点在 [method PBStrikeRules.hurt_ally] 算护甲那一句 —— 敌人伤害落到忍者身上只有那一处。
+const DEFENCE: StringName = &"defence"
+
+## 不死：大于 0 时这一下打不死他，血停在 1（死司凭血「受致命伤害时 N 秒内不会死亡」）。
+## 读点在 [method PBAttacker.take_damage] **里面**，排在重生之前 —— 同闪避、同减伤，调用方不判。
+const UNDYING: StringName = &"undying"
 
 ## 暴击率**临时**加多少。读点在 [method PBCritRules.chance_of]。
 ##
@@ -110,6 +132,10 @@ const ALL: Array[StringName] = [
 	CRIT_DAMAGE,
 	SHIELD,
 	DAMAGE_TAKEN,
+	HEAL_MAX,
+	DRAIN_MAX,
+	DEFENCE,
+	UNDYING,
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
@@ -250,15 +276,20 @@ static func to_ticks(seconds: float, cfg: PBSimConfig) -> int:
 ## （[method PBBuffState.is_live]），[method PBBuffBag.sweep] 只回收槽位，
 ## 漏跑、早跑、晚跑都不改变结算结果。
 ##
-## 这一支只做回复，不做伤害（理由见 [constant HARM]）。
-static func advance_ally(unit: PBAttacker, at_tick: int) -> void:
+## 回复当场加上；**掉血只返回、不扣**（见 [constant DRAIN_MAX]），调用方交给
+## [method PBStrikeRules.wound_ally]。返回的是抵扣（[member PBAttacker.drain_cut]）之后的数。
+static func advance_ally(unit: PBAttacker, at_tick: int) -> float:
+	var drain: float = 0.0
 	for state: PBBuffState in unit.buffs.states():
 		if not state.is_due(at_tick):
 			continue
 		state.on_fired(at_tick)
 		unit.heal(float(state.mods.get(HEAL, 0.0)))
+		unit.heal(unit.max_hp * float(state.mods.get(HEAL_MAX, 0.0)))
 		unit.restore_mana(float(state.mods.get(MANA, 0.0)))
+		drain += unit.max_hp * float(state.mods.get(DRAIN_MAX, 0.0))
 	unit.buffs.sweep(at_tick)
+	return drain * (1.0 - clampf(unit.drain_cut, 0.0, 1.0))
 
 
 ## 一个敌人身上的效果过了一个 tick。返回这一 tick 它**该掉多少血**。

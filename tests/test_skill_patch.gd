@@ -101,6 +101,12 @@ func test_the_real_table_only_names_skills_their_owner_actually_has() -> void:
 			var character := characters.by_id(who)
 			assert_not_null(character, "「%s」不在名册里" % who)
 			for skill_id: StringName in bond.member_skill_patches[who]:
+				# 阵亡技能是羁绊发给他的，本来就不在他的技能表里 —— 那一种只要求技能表里查得到。
+				if (bond.member_skill_patches[who][skill_id] as Dictionary).has(
+					PBSkillPatchRules.ON_DEATH
+				):
+					assert_true(_cfg.skills.has(skill_id), "阵亡技能「%s」不存在" % skill_id)
+					continue
 				assert_true(
 					character.skill_ids.has(skill_id),
 					"「%s」身上没有技能「%s」，%s 那条补丁打不上" % [who, skill_id, bond.id]
@@ -143,4 +149,5 @@ func _snapshot(skill: PBSkill) -> Array:
 		skill.slow_ticks,
 		skill.summon_power,
 		skill.summon_seconds,
+		skill.fires_on_death,
 	]

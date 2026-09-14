@@ -37,6 +37,8 @@ const RATE_KEYS: Array[StringName] = [
 	PBPassiveRules.REFLECT,
 	PBPassiveRules.DAMAGE_BONUS,
 	PBPassiveRules.MOVE_SPEED_BONUS,
+	PBPassiveRules.LOW_HP,
+	PBPassiveRules.DRAIN_CUT,
 ]
 
 

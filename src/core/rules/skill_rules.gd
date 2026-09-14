@@ -153,6 +153,19 @@ static func land_on_ally(
 	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick)
 
 
+## 落在**一圈己方单位**身上：圆心 [param center]、半径 [member PBSkill.radius] 内每个还站着的人各挂一份
+## [member PBSkill.on_hit]（含施法者自己）。半径 0 = 只有站在圆心上的那一个。
+##
+## 「不用点」的光环（圆心是施法者）、「点地面」的治疗圈、阵亡时放的回血（圆心是尸体）都走这里。
+## **缺了它的表现是按了扣蓝进冷却、谁身上都没有效果**，而它不报错。
+static func land_around_allies(
+	cast: PBSkillCast, center: Vector2, attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int
+) -> void:
+	for unit: PBAttacker in attackers:
+		if unit.is_targetable() and unit.pos.distance_to(center) <= cast.skill.radius:
+			_apply_all(unit, cast.skill.on_hit, cast.caster_level, cfg, tick)
+
+
 ## 落在一个**锁定的敌人**身上（[constant PBSkill.Target.ENEMY]）。返回打死了几个（0 或 1）。
 ## 和 [method land_on_ally] 对称，目标没了就空放。
 static func land_on_enemy(
@@ -224,6 +237,7 @@ static func apply_one(
 		return
 	if buff.kind == PBBuff.Kind.INSTANT:
 		unit.heal(float(mods.get(PBBuffRules.HEAL, 0.0)))
+		unit.heal(unit.max_hp * float(mods.get(PBBuffRules.HEAL_MAX, 0.0)))
 		unit.restore_mana(float(mods.get(PBBuffRules.MANA, 0.0)))
 		return
 	unit.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))

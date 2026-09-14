@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_0eju2"]
+
+[resource]
+script = ExtResource("1_0eju2")
+id = &"bee_cloak"
+name_key = "buff.bee_cloak"
+icon_key = "buff.bee_cloak"
+kind = 1
+duration_seconds = 999.0
+mods = {
+&"damage_scale": 1.25,
+&"defence": 20.0
+}

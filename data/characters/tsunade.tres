@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_eid4k"]
+[ext_resource type="Resource" path="res://data/buffs/tsunade_byakugou.tres" id="2_jk45u"]
+[ext_resource type="Resource" path="res://data/buffs/tsunade_guard.tres" id="3_jncsc"]
 
 [resource]
 script = ExtResource("1_char")
@@ -29,3 +31,7 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 attack_range = 125.0
+passives = {
+&"low_hp": 0.25
+}
+low_hp_buffs = Array[ExtResource("1_eid4k")]([ExtResource("2_jk45u"), ExtResource("3_jncsc")])

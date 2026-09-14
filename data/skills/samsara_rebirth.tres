@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_8pgv2"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_7u035"]
+
+[sub_resource type="Resource" id="Resource_jwv0x"]
+script = ExtResource("1_8pgv2")
+id = &"pein_rebirth"
+name_key = "buff.pein_rebirth"
+icon_key = "buff.pein_rebirth"
+mods = {
+&"heal_max": 0.1
+}
+
+[resource]
+script = ExtResource("2_7u035")
+id = &"samsara_rebirth"
+name_key = "skill.samsara_rebirth"
+affects = 0
+on_hit = Array[ExtResource("1_8pgv2")]([SubResource("Resource_jwv0x")])
+element = 6
+radius = 0.6

@@ -17,7 +17,8 @@ extends RefCounted
 ## **溅射不再触发溅射**：它直接走 [method PBEnemy.take_damage] 不回头调 [method land]，
 ## 否则高倍溅射在密集波里指数展开。
 
-## 溅射够得到多远（[member PBAttacker.splash_damage]，B15 神赐予的伤痛）。
+## 溅射**默认**够得到多远（[member PBAttacker.splash_damage]，B15 神赐予的伤痛）。
+## 自带原版溅射范围的人（[member PBAttacker.splash_radius]）不用它，见 [method splash_reach]。
 ##
 ## 0.06 是三倍的防挤间距（[member PBSimConfig.unit_min_gap] 约 0.012 ×
 ## 敌人那一侧的围攻环），也就是「贴着他站的那一圈」。
@@ -153,7 +154,7 @@ static func land(
 		out.kills += 1
 	if attacker == null:
 		return
-	out.kills += _splash(attacker, enemy, enemies, damage, tick)
+	out.kills += _splash(attacker, enemy, enemies, damage, cfg, tick)
 	_arm_crit(attacker, cfg, tick)
 	out.kills += _hang_on_hit(attacker, enemy, crit, cfg, tick)
 
@@ -194,11 +195,32 @@ static func hurt_ally(
 	book: PBBattleLog,
 	out: PBCombatOutcome
 ) -> void:
-	var hurt: float = PBStatRules.strike_damage(
-		raw, element, target.defence, target.def_element, cfg
-	)
+	# 临时防御（[constant PBBuffRules.DEFENCE]）在这里加：护甲只在这一句折算。
+	var armour: float = target.defence + target.buffs.amount(PBBuffRules.DEFENCE, tick)
+	var hurt: float = PBStatRules.strike_damage(raw, element, armour, target.def_element, cfg)
 	if book != null:
 		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true)
+	wound_ally(target, hurt, cfg, tick, rng, book, out)
+	_reflect(target, source, hurt, tick, book, out)
+
+
+## 一个忍者**掉血**的唯一落点：扣血、阵亡记账、血量阈值触发。返回这一下有没有让他倒下。
+##
+## 进来的两条路是敌人的攻击（[method hurt_ally]，近战和子弹都走它）与自身掉血
+## （[constant PBBuffRules.DRAIN_MAX]，[PBBattleSim] 每 tick 调）。**阈值判在这里、调用方不判**：
+## 判在 `hurt_ally` 的话，自己掉血掉过线的那一下就不触发。
+##
+## [param hurt] 是折算完护甲与克制之后的数。播报（挨了多少）归调用方 —— 自身掉血每秒一跳，
+## 记进去会把另外几种冲掉；**倒下**那一条在这里记，否则掉血掉死的人没有播报。
+static func wound_ally(
+	target: PBAttacker,
+	hurt: float,
+	cfg: PBSimConfig,
+	tick: int,
+	rng: RandomNumberGenerator,
+	book: PBBattleLog,
+	out: PBCombatOutcome
+) -> bool:
 	if target.take_damage(hurt, tick, rng):
 		# **召唤物没了不算「折了一个」**（玩家定的）：`allies_lost` 是玩家要心疼的数，
 		# 影分身本来就是拿来炸的；播报同理，否则「忍者倒下」那一档会被冲干净。
@@ -206,7 +228,34 @@ static func hurt_ally(
 			out.allies_lost += 1
 			if book != null:
 				book.ally_down(tick, target.slot)
-	_reflect(target, source, hurt, tick, book, out)
+		# 阵亡技能在这里只记一笔：放出去要全场的敌我名单，那在 [PBBattleSim] 手上。
+		target.death_pending = not target.death_casts.is_empty()
+		return true
+	if target.lethal_pending:
+		target.lethal_pending = false
+		_hang_self(target, target.lethal_buffs, cfg, tick)
+	_arm_low_hp(target, cfg, tick)
+	return false
+
+
+## 血量掉到阈值以下那一刻，把他自带的那几份效果挂到自己身上。**一波一次**（[member PBAttacker.low_hp_fired]）。
+##
+static func _arm_low_hp(target: PBAttacker, cfg: PBSimConfig, tick: int) -> void:
+	if target.low_hp_fired or target.low_hp_at <= 0.0 or target.low_hp_buffs.is_empty():
+		return
+	if not target.alive or target.hp >= target.max_hp * target.low_hp_at:
+		return
+	target.low_hp_fired = true
+	_hang_self(target, target.low_hp_buffs, cfg, tick)
+
+
+## 把他自带的一串效果挂到自己身上。等级读法同 [method _hang_on_hit]。
+static func _hang_self(
+	target: PBAttacker, buffs: Array[PBBuff], cfg: PBSimConfig, tick: int
+) -> void:
+	var level: int = 1 if target.ultimate == null else target.ultimate.caster_level
+	for buff: PBBuff in buffs:
+		PBSkillRules.apply_one(target, buff, PBBuffRules.resolve(buff, level), cfg, tick)
 
 
 ## 把挨的这一下按比例还回去。没配就是 0。
@@ -278,6 +327,14 @@ static func _bite_extra(
 	return minf(share, damage * BITE_CAP)
 
 
+## 这个人的溅射够得到多远（战场坐标）。配了原版码数（[member PBAttacker.splash_radius]）就按它换算，
+## 没配就是 [constant SPLASH_RADIUS]。**换算只在这里**，同 [method PBSimConfig.reach_of]。
+static func splash_reach(attacker: PBAttacker, cfg: PBSimConfig) -> float:
+	if attacker == null or attacker.splash_radius <= 0.0 or cfg == null:
+		return SPLASH_RADIUS
+	return cfg.units_to_field(attacker.splash_radius)
+
+
 ## 溅射。返回这一下顺带打死了几个。
 ##
 ## **不回头调 [method land]**（溅射不触发溅射），也不记播报 —— 被溅到的那几个
@@ -287,17 +344,19 @@ static func _splash(
 	center: PBEnemy,
 	enemies: Array[PBEnemy],
 	damage: float,
+	cfg: PBSimConfig,
 	tick: int
 ) -> int:
 	if attacker.splash_damage <= 0.0 or damage <= 0.0:
 		return 0
 	var each: float = damage * attacker.splash_damage
 	var spot: Vector2 = center.pos()
+	var reach: float = splash_reach(attacker, cfg)
 	var killed: int = 0
 	for other: PBEnemy in enemies:
 		if other == center or not other.alive or not other.has_spawned(tick):
 			continue
-		if spot.distance_to(other.pos()) > SPLASH_RADIUS:
+		if spot.distance_to(other.pos()) > reach:
 			continue
 		if other.take_damage(each, tick):
 			killed += 1

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_686mq"]
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_y8a8x"]
+[ext_resource type="Resource" path="res://data/buffs/kimimaro_curse.tres" id="2_wrn15"]
 
 [resource]
 script = ExtResource("1_686mq")
@@ -28,3 +29,7 @@ rarity = 1
 reach = 1
 attack_range = 125.0
 skill_ids = Array[StringName]([&"dance_of_pines"])
+passives = {
+&"low_hp": 0.75
+}
+low_hp_buffs = Array[ExtResource("1_y8a8x")]([ExtResource("2_wrn15")])

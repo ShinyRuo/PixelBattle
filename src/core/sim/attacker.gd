@@ -136,6 +136,10 @@ var crit_on_hit: float = 0.0
 ## 命中时对目标周围的其他敌人各打这一下伤害的几成（B15 神赐予的伤痛）。0 = 不溅射。
 var splash_damage: float = 0.0
 
+## 溅射半径，**原版码数**。0 = 用默认半径（[constant PBStrikeRules.SPLASH_RADIUS]）。
+## 存码数不存战场坐标，换算只在 [method PBStrikeRules.splash_reach] 一处。
+var splash_radius: float = 0.0
+
 ## 打**血还很多**的敌人时额外多打几成（B05 日向兄妹）。0 = 没有。
 ##
 ## §7 的原话是「柔拳百分比伤害对高血量敌人必定触发」。做成一笔追加伤害
@@ -191,6 +195,36 @@ var move_speed_bonus: float = 0.0
 ## 打出要害那一下顺带挂在目标身上的效果。读点在 [method PBStrikeRules.land]。
 ## 被动那条通道带得了一份效果靠它（名册 `on_hit=<效果键>`）。**骑在暴击那个掷点上。**
 var on_hit_buffs: Array[PBBuff] = []
+
+## 生命掉到最大生命的几成以下时触发 [member low_hp_buffs]。**0 = 不触发。** 读点在 [method PBStrikeRules.wound_ally]。
+var low_hp_at: float = 0.0
+
+## 血量掉到阈值那一刻挂在自己身上的效果（名册 `on_hit` 同一列的 `on_low_hp=<效果键>`）。
+var low_hp_buffs: Array[PBBuff] = []
+
+## 这一波触发过没有。**一波一次**（玩家定的），开波清（[method revive]）。
+## 不做「回到阈值以上就重新待命」：百豪之术被奶回来再掉下去就能反复刷。
+var low_hp_fired: bool = false
+
+## 自身掉血（[constant PBBuffRules.DRAIN_MAX]）抵掉几成。1.0 = 一点不掉。中性 0.0。
+var drain_cut: float = 0.0
+
+## 受致命伤那一下挂在自己身上的效果（名册「被动」列的 `on_lethal=<效果键>`）。
+## 配了就有**一波一次**抵挡：那一下不死、血停在 1，效果由 [method PBStrikeRules.wound_ally] 挂上。
+var lethal_buffs: Array[PBBuff] = []
+
+## 这一波的抵挡还在不在。开波按 [member lethal_buffs] 重填（[method revive]）。
+var lethal_ready: bool = false
+
+## [method take_damage] 刚替他挡下一次致命伤，等 [method PBStrikeRules.wound_ally] 挂效果。
+## 分两步是因为挂效果要 [PBSimConfig]（时长换 tick），而 `take_damage` 手上没有。
+var lethal_pending: bool = false
+
+## 他倒下那一刻要放的技能（羁绊补丁 `on_death`，[member PBSkill.fires_on_death]）。不进指令卡。
+var death_casts: Array[PBSkillCast] = []
+
+## 刚倒下、阵亡技能还没放。[method PBStrikeRules.wound_ally] 记，[PBBattleSim] 同一 tick 放掉。
+var death_pending: bool = false
 
 ## 这个位子是给召唤物留的，不是一张卡。**一辈子不会变**，跑动中只在「空着」和「站着人」之间切。
 ## 为什么预留而不是跑动中往数组里塞人，见 [PBSummonRules] 顶部。
@@ -304,6 +338,7 @@ func clone() -> PBAttacker:
 	# **`revives` 不拷贝，`revives_max` 才拷贝**：复制品是「一个刚站起来的他」，同 `hp` 取 `max_hp`。
 	out.crit_on_hit = crit_on_hit
 	out.splash_damage = splash_damage
+	out.splash_radius = splash_radius
 	out.heavy_bonus = heavy_bonus
 	out.revives_max = revives_max
 	# 闪避、按生命百分比那一笔、反弹、增伤同理，漏掉的话探出来的悬崖偏保守。
@@ -316,6 +351,11 @@ func clone() -> PBAttacker:
 	# 折算只发生在 [method PBPassiveRules.equip]，复制品不走建人那条路。
 	out.move_speed_bonus = move_speed_bonus
 	out.on_hit_buffs = on_hit_buffs
+	# 触发标记不拷贝（同 `revives`）：复制品是「一个刚站起来的他」。
+	out.low_hp_at = low_hp_at
+	out.low_hp_buffs = low_hp_buffs
+	out.drain_cut = drain_cut
+	out.lethal_buffs = lethal_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at
 	out.attack_speed = attack_speed
@@ -340,6 +380,8 @@ func clone() -> PBAttacker:
 	# 角色自己那几个技能同理。**等级要跟过来**：效果数值按它现算，漏掉的话复制品的治疗量恒等于 1 级。
 	for cast: PBSkillCast in skills:
 		out.skills.append(PBSkillCast.new(cast.skill.clone(), cast.caster_level))
+	for cast: PBSkillCast in death_casts:
+		out.death_casts.append(PBSkillCast.new(cast.skill.clone(), cast.caster_level))
 	# **不复制身上挂着的效果**，给一个空的 —— 和 `hp` 取 `max_hp` 同一条：
 	# 复制品是「一个刚站起来的他」，不是「他现在这个样子」。
 	out.buffs = PBBuffBag.new()
@@ -358,6 +400,10 @@ func revive() -> void:
 	mp = max_mp
 	# 重生次数一波一份，不重填的话上一波用掉的那一次会漏进这一波。
 	revives = revives_max
+	low_hp_fired = false
+	lethal_ready = not lethal_buffs.is_empty()
+	lethal_pending = false
+	death_pending = false
 	pos = home if move_speed > 0.0 else pos
 	# **按槽位错开第一发**：全队同时开火的话子弹叠成一道。用槽位不掷骰 —— 同种子两次回放必须一样（§13）。
 	next_shot_at = posmod(slot, _interval_ticks)
@@ -417,6 +463,12 @@ func take_damage(
 	hurt = buffs.absorb(hurt, at_tick)
 	hp -= hurt
 	if hp > 0.0:
+		return false
+	# 不死与致命伤抵挡排在重生之前：挡得住就不该花掉一次重生。
+	if buffs.amount(PBBuffRules.UNDYING, at_tick) > 0.0 or lethal_ready:
+		lethal_pending = lethal_ready
+		lethal_ready = false
+		hp = minf(1.0, max_hp)
 		return false
 	if revives > 0:
 		revives -= 1

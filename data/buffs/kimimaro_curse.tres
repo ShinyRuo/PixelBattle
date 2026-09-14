@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_w5wxg"]
+
+[resource]
+script = ExtResource("1_w5wxg")
+id = &"kimimaro_curse"
+name_key = "buff.kimimaro_curse"
+icon_key = "buff.kimimaro_curse"
+kind = 2
+duration_seconds = 999.0
+period_seconds = 1.0
+mods = {
+&"defence": 80.0,
+&"drain_max": 0.02
+}

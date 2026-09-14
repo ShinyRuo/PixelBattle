@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_1boyv"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ivq7p"]
+
+[resource]
+script = ExtResource("2_ivq7p")
+id = &"bracken_dance"
+name_key = "skill.bracken_dance"
+power_mult = 3.0
+radius = 0.3

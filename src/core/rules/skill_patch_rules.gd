@@ -50,6 +50,12 @@ const SLOW_SET: StringName = &"slow_set"
 ## 合成一个的话那种效果表达不了。
 const SLOW_SECS_SET: StringName = &"slow_secs_set"
 
+## 这个技能**改成阵亡时放**（[member PBSkill.fires_on_death]），量写 1。
+##
+## 点的技能**不必在他的技能表里**：阵亡技能本来就不进指令卡，是羁绊发给他的。
+## 读点在 [method PBCombatRules._equip_skills]（装进 [member PBAttacker.death_casts]）。
+const ON_DEATH: StringName = &"on_death"
+
 ## 认得的全部键。**同 [constant PBBuffRules.ALL] 顶上那条**：
 ## 键跟着读点一起进来，不先把词汇表铺满 —— 拼对了却没人读的键
 ## 比拼错更难查（数据、界面、日志全正常，只有那一发的强度不对）。
@@ -64,6 +70,7 @@ const ALL: Array[StringName] = [
 	SUMMON_SECS_SCALE,
 	SLOW_SET,
 	SLOW_SECS_SET,
+	ON_DEATH,
 ]
 
 
@@ -110,6 +117,8 @@ static func _one(skill: PBSkill, key: StringName, amount: float, rate: int) -> b
 			skill.summon_seconds *= amount
 		SLOW_SET:
 			skill.slow_scale = amount
+		ON_DEATH:
+			skill.fires_on_death = amount > 0.0
 		SLOW_SECS_SET:
 			skill.slow_ticks = maxi(int(round(amount * float(rate))), 1)
 		_:

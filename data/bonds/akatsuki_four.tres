@@ -11,3 +11,10 @@ tier_counts = Array[int]([4])
 tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"deidara": {
+&"clay_spider": {
+&"power_scale": 1.35
+}
+}
+}

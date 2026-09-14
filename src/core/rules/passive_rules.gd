@@ -18,6 +18,7 @@ extends RefCounted
 ## | `crit_damage` | [member PBAttacker.crit_bonus] | [method PBCritRules.multiplier_of] |
 ## | `crit_on_hit` | [member PBAttacker.crit_on_hit] | [method PBStrikeRules.land] |
 ## | `splash` | [member PBAttacker.splash_damage] | [method PBStrikeRules.land] |
+## | `splash_radius` | [member PBAttacker.splash_radius] | [method PBStrikeRules.splash_reach] |
 ## | `heavy_hit` | [member PBAttacker.heavy_bonus] | [method PBStrikeRules.land] |
 ## | `revive` | [member PBAttacker.revives_max] | [method PBAttacker.take_damage] |
 ## | `dodge` | [member PBAttacker.dodge] | [method dodges] |
@@ -26,6 +27,8 @@ extends RefCounted
 ## | `reflect` | [member PBAttacker.reflect] | [method PBStrikeRules.hurt_ally] |
 ## | `damage_bonus` | [member PBAttacker.damage_bonus] | [method PBAttacker.strike_for] |
 ## | `move_speed_bonus` | [member PBAttacker.move_speed_bonus] | [method equip] 折进 `move_speed` |
+## | `low_hp` | [member PBAttacker.low_hp_at] | [method PBStrikeRules.wound_ally] |
+## | `drain_cut` | [member PBAttacker.drain_cut] | [method PBBuffRules.advance_ally] |
 ##
 ## **属性（力敏智、攻击力、防御、生命、攻速）不在这张表里**，在 [PBStatRules]：
 ## 属性在算三围那一刻注入，行为建人之后装。**移速留在这里**：它是全队一个数，
@@ -52,6 +55,9 @@ const CRIT_ON_HIT: StringName = &"crit_on_hit"
 ## 普攻附带的范围伤害，值是主伤害的几成。
 const SPLASH: StringName = &"splash"
 
+## 溅射够得到多远，**原版码数**（275 / 250 …）。0 = 没配，用默认半径。见 [method PBStrikeRules.splash_reach]。
+const SPLASH_RADIUS: StringName = &"splash_radius"
+
 ## 对血还很多的敌人追加的那一笔，值是主伤害的几成。
 const HEAVY_HIT: StringName = &"heavy_hit"
 
@@ -76,12 +82,20 @@ const DAMAGE_BONUS: StringName = &"damage_bonus"
 ## 移动速度多几成。中性 0.0，折算在 [method equip] 末尾。
 const MOVE_SPEED_BONUS: StringName = &"move_speed_bonus"
 
+## 生命掉到最大生命的几成以下时，挂上他自带的那几份效果（[member PBAttacker.low_hp_buffs]）。
+## 效果本身写在名册同一列的 `on_low_hp=<效果键>`，这个键只管阈值。
+const LOW_HP: StringName = &"low_hp"
+
+## 自身掉血（[constant PBBuffRules.DRAIN_MAX]）抵掉几成。1.0 = 不再掉血（〔吾之牢笼〕那一句）。
+const DRAIN_CUT: StringName = &"drain_cut"
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
 	CRIT_CHANCE,
 	CRIT_DAMAGE,
 	CRIT_ON_HIT,
 	SPLASH,
+	SPLASH_RADIUS,
 	HEAVY_HIT,
 	REVIVE,
 	DODGE,
@@ -90,6 +104,8 @@ const ALL: Array[StringName] = [
 	REFLECT,
 	DAMAGE_BONUS,
 	MOVE_SPEED_BONUS,
+	LOW_HP,
+	DRAIN_CUT,
 ]
 
 
@@ -115,6 +131,10 @@ static func is_known(key: StringName) -> bool:
 ## **一律是 `+=` 不是 `=`。** 同一个人可以既是某组羁绊的载体、又自带一个被动，
 ## 而「后装的那一份把先装的覆盖掉」不报错 —— 屏幕上照样有溅射，只是少了一份。
 ##
+## **例外是 [constant SPLASH_RADIUS] 与 [constant LOW_HP]，取大**：一个是距离、一个是门槛，都不是一份量。
+## 两个来源各给 275 码加起来成了 550 码；75% 加 90% 成了 165%，开波第一下就触发。
+## 羁绊把某个人自带的 75% 改成 90%，靠的正是取大。
+##
 ## [param amount] 不做范围检查：负数是合法的（原版有「降低自身暴击率」这种
 ## 代价型被动），而拦在这里等于把设计决定写死在规则层。
 static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
@@ -129,6 +149,8 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.crit_on_hit += amount
 		SPLASH:
 			attacker.splash_damage += amount
+		SPLASH_RADIUS:
+			attacker.splash_radius = maxf(attacker.splash_radius, amount)
 		HEAVY_HIT:
 			attacker.heavy_bonus += amount
 		REVIVE:
@@ -145,6 +167,10 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.damage_bonus += amount
 		MOVE_SPEED_BONUS:
 			attacker.move_speed_bonus += amount
+		LOW_HP:
+			attacker.low_hp_at = maxf(attacker.low_hp_at, amount)
+		DRAIN_CUT:
+			attacker.drain_cut += amount
 		_:
 			return false
 	return true

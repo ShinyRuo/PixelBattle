@@ -30,3 +30,8 @@ attack_speed_per_agility = 0.009
 rarity = 1
 reach = 2
 attack_range = 600.0
+skill_ids = Array[StringName]([&"clay_spider"])
+passives = {
+&"splash": 0.5,
+&"splash_radius": 275.0
+}

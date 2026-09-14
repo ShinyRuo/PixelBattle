@@ -215,6 +215,9 @@ static func build_attackers(
 		)
 		# 名册「被动」列里 `on_hit=<效果键>` 那一半。这份是定义，直接共用引用。
 		attacker.on_hit_buffs = unit.character.on_hit_buffs
+		# `on_low_hp=<效果键>` 那一半，同上。阈值（`low_hp`）已经跟着被动表装上了。
+		attacker.low_hp_buffs = unit.character.low_hp_buffs
+		attacker.lethal_buffs = unit.character.lethal_buffs
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)
@@ -278,6 +281,31 @@ static func _equip_skills(
 		PBSkillPatchRules.apply(mine, patches.get(id, {}), cfg.tick_rate)
 		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
 		attacker.skills.append(PBSkillCast.new(mine, unit.level))
+	_equip_death_casts(attacker, unit, wave_element, mult, cfg, patches)
+
+
+## 羁绊补丁 `on_death` 点到的技能装进 [member PBAttacker.death_casts]。**不进指令卡**，所以不占
+## [constant PBCharacter.MAX_SKILLS]，也不要求在他的技能表里。伤害换算和普通技能同一句。
+static func _equip_death_casts(
+	attacker: PBAttacker,
+	unit: PBUnit,
+	wave_element: PBElement.Type,
+	mult: float,
+	cfg: PBSimConfig,
+	patches: Dictionary
+) -> void:
+	attacker.death_casts.clear()
+	for id: StringName in patches:
+		if not (patches[id] as Dictionary).has(PBSkillPatchRules.ON_DEATH):
+			continue
+		var skill: PBSkill = cfg.skills.by_id(id)
+		if skill == null:
+			push_error("羁绊补丁点了一个不存在的阵亡技能：%s" % id)
+			continue
+		var mine := skill.clone()
+		PBSkillPatchRules.apply(mine, patches[id], cfg.tick_rate)
+		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
+		attacker.death_casts.append(PBSkillCast.new(mine, unit.level))
 
 
 ## 造一个单位这一波的大招（§02）。

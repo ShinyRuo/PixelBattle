@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_oeods"]
+
+[resource]
+script = ExtResource("1_oeods")
+id = &"danzo_blur"
+name_key = "buff.danzo_blur"
+icon_key = "buff.danzo_blur"
+kind = 1
+friendly = false
+duration_seconds = 999.0
+mods = {
+&"damage_scale": 0.65
+}

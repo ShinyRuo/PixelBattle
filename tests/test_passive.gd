@@ -62,6 +62,10 @@ func test_two_sources_stack_instead_of_overwriting() -> void:
 	PBPassiveRules.grant(attacker, PBPassiveRules.SPLASH, 0.2)
 	PBPassiveRules.grant(attacker, PBPassiveRules.SPLASH, 0.3)
 	assert_almost_eq(attacker.splash_damage, 0.5, 0.0001, "两份该加起来")
+	# 溅射范围是那条规矩唯一的例外：它是距离不是量，两份 275 码加成 550 码就盖住了四分之一个战场。
+	PBPassiveRules.grant(attacker, PBPassiveRules.SPLASH_RADIUS, 275.0)
+	PBPassiveRules.grant(attacker, PBPassiveRules.SPLASH_RADIUS, 250.0)
+	assert_eq(attacker.splash_radius, 275.0, "溅射范围取大，不累加")
 
 
 func test_every_key_in_the_vocabulary_actually_moves_something() -> void:
@@ -188,6 +192,7 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.crit_bonus,
 		one.crit_on_hit,
 		one.splash_damage,
+		one.splash_radius,
 		one.heavy_bonus,
 		one.revives_max,
 		one.dodge,
@@ -196,6 +201,8 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.reflect,
 		one.damage_bonus,
 		one.move_speed_bonus,
+		one.low_hp_at,
+		one.drain_cut,
 	]
 
 

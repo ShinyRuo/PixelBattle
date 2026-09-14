@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_0t01e"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_qcu2e"]
+
+[sub_resource type="Resource" id="Resource_eh53r"]
+script = ExtResource("1_0t01e")
+id = &"asuma_ash"
+name_key = "buff.asuma_ash"
+icon_key = "buff.asuma_ash"
+kind = 1
+friendly = false
+duration_seconds = 2.5
+mods = {
+&"enemy_hit_scale": 0.0
+}
+
+[resource]
+script = ExtResource("2_qcu2e")
+id = &"ash_burn"
+name_key = "skill.ash_burn"
+on_hit = Array[ExtResource("1_0t01e")]([SubResource("Resource_eh53r")])
+element = 0
+power_mult = 2.4
+radius = 0.15
+cooldown_ticks = 320
+delay_ticks = 8
+mp_cost = 10.0

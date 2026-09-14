@@ -45,6 +45,15 @@ func _unit_of(character: PBCharacter) -> PBUnit:
 	return PBUnit.new(character)
 
 
+## 名单里第一个**第 1 格技能不用点**（按下去就放）的角色。没有就返回 null。
+func _self_cast_carrier() -> PBCharacter:
+	for character: PBCharacter in _carriers():
+		var skill: PBSkill = _cfg.skills.by_id(character.skill_ids[0])
+		if skill != null and skill.target == PBSkill.Target.NONE:
+			return character
+	return null
+
+
 ## 名单里第一个**技能真的打伤害**的角色。治疗那一类不算 ——
 ## 上面那两条量的是伤害，而 `power_mult` 为 0 的技能量不出比值。
 func _skill_carrier() -> PBCharacter:
@@ -263,6 +272,12 @@ func test_every_skill_in_the_table_has_an_owner() -> void:
 	for character: PBCharacter in PBCharacterLoader.table().all():
 		for id: StringName in character.skill_ids:
 			owned[id] = character.id
+	# 阵亡时放的那几个不进任何人的指令卡，主是羁绊补丁 `on_death`。
+	for bond: PBBond in PBBondLoader.table().all():
+		for who: StringName in bond.member_skill_patches:
+			for id: StringName in bond.member_skill_patches[who]:
+				if (bond.member_skill_patches[who][id] as Dictionary).has(PBSkillPatchRules.ON_DEATH):
+					owned[id] = who
 	var table := PBSkillLoader.table()
 	for id: StringName in table.ids():
 		assert_true(owned.has(id), "技能 %s 没有主 —— 哪一边拼错了？" % id)
@@ -284,6 +299,10 @@ func test_every_buff_in_the_folder_is_reachable_from_some_skill() -> void:
 	# 会被当成孤儿报出来 —— 而它实际上正在生效。
 	for character: PBCharacter in PBCharacterLoader.table().all():
 		for buff: PBBuff in character.on_hit_buffs:
+			used[buff.id] = true
+		for buff: PBBuff in character.low_hp_buffs:
+			used[buff.id] = true
+		for buff: PBBuff in character.lethal_buffs:
 			used[buff.id] = true
 	var dir := DirAccess.open("res://data/buffs")
 	assert_not_null(dir, "buffs 目录该在")
@@ -344,7 +363,10 @@ func test_a_wave_runs_bit_identically_with_and_without_the_skill_table() -> void
 
 func test_the_skill_only_goes_off_when_a_player_orders_it() -> void:
 	# 上一条对拍的前提。这一条把前提本身钉住：**没有人下令就一发都不出去。**
-	var character: PBCharacter = _carriers()[0]
+	# 下令那一句对着自己放，所以挑一个「不用点」的 —— 名单里第一个人的技能要点地面的话，
+	# 下令会被拒，而那不是这条要量的事。
+	var character: PBCharacter = _self_cast_carrier()
+	assert_not_null(character, "前提：名册里至少有一个「不用点」的技能")
 	var units: Array[PBUnit] = [_unit_of(character)]
 	var squad := _squad(units, true)
 	var sim := PBBattleSim.new(PBWaveRules.build(7, _cfg, _rng), 0.0, 0.0, _cfg, squad)
