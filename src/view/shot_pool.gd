@@ -183,7 +183,7 @@ func _place_shot(
 	)
 	_travelled[slot] = travelled
 	_from[slot] = shot.from
-	var art := _shot_skin(shot.source, not shot.at_ally, deployed)
+	var art := _shot_skin(shot.source, not shot.at_ally, deployed, battle)
 	var spot := from.lerp(to, gone)
 	_show(_fly[slot], art, spot, to - from, shot.at_ally, &"", fresh)
 	_spots[_shown] = spot
@@ -258,7 +258,7 @@ func _echo(
 		if spot == PBSkillCast.NO_SPOT:
 			continue
 		var chest: Vector2 = NO_SKIN_CHEST if victim == null else victim.chest()
-		var art := _shot_skin(int(entry.get("source", -1)), not to_ally, deployed)
+		var art := _shot_skin(int(entry.get("source", -1)), not to_ally, deployed, battle)
 		_spark(art, spot + chest, to_ally)
 	_echoed = book.total
 
@@ -396,13 +396,21 @@ func _actor_skin(
 
 
 ## [param slot] 那个单位的普攻子弹长什么样：己方读名册配的 [member PBCharacter.shot_key]，
-## 敌人、没配的、配了查不到的一律白模。
+## 敌人按它的皮键查敌人子弹表（[PBEnemyShotTable]）。没配的、配了查不到的一律白模。
 ##
-## **读角色，不读形象**：同一张形象可以换一颗子弹，而子弹是逐个忍者配的（不按属性推）。
-func _shot_skin(slot: int, ally: bool, deployed: Array[PBUnit]) -> PBShotSkin:
+## **己方读角色，不读形象**：同一张形象可以换一颗子弹，而子弹是逐个忍者配的（不按属性推）。
+## **敌人读皮键**：它没有角色，皮键就是「这一种怪」—— 和画它的 [PBEnemyPool] 同一个键，
+## 各拼各的话「火系 BOSS 拿着水系小怪的子弹」迟早发生。**槽位号敌我重叠**，所以先分敌我再查。
+func _shot_skin(
+	slot: int, ally: bool, deployed: Array[PBUnit], battle: PBBattleSim
+) -> PBShotSkin:
 	var key: StringName = &""
-	if ally and slot >= 0 and slot < deployed.size():
-		key = deployed[slot].character.shot_key
+	if ally:
+		if slot >= 0 and slot < deployed.size():
+			key = deployed[slot].character.shot_key
+	elif battle != null and slot >= 0 and slot < battle.enemies().size():
+		var enemy: PBEnemy = battle.enemies()[slot]
+		key = PBEnemyShotTable.shot_for(PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged))
 	var art := PBShotLibrary.skin_for(key)
 	return PBWhiteModel.shot() if art == null else art
 

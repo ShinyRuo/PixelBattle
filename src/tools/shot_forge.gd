@@ -20,10 +20,17 @@ const HD_FACTOR: int = 3
 ## 键只许小写英文、数字、下划线：它同时是目录名、文件名和表里的一格。
 const KEY_PATTERN := "^[a-z0-9_]+$"
 
+## 敌人皮键里的属性、形态写成人话（面板下拉框用）。皮键的拼法在 [method PBEnemyPool.key_for]。
+const ENEMY_ELEMENT_WORDS := {
+	"fire": "火", "wind": "风", "thunder": "雷", "earth": "土", "water": "水", "physical": "物理"
+}
+const ENEMY_FORM_WORDS := {"ranged": "远程小怪", "elite_ranged": "远程精英", "boss": "BOSS"}
+
 var assets_dir: String = "res://assets/fx"
 var data_dir: String = PBShotLibrary.DIR
 var roster_path: String = PBRosterSheet.PATH
 var characters_dir: String = "res://data/characters"
+var enemy_table_path: String = PBEnemyShotTable.PATH
 
 var fly_fps: float = 12.0
 var hit_fps: float = 20.0
@@ -142,6 +149,51 @@ func assign(id: String, key: String) -> String:
 	character.shot_key = PBRosterSheet.shot_key_of(cell)
 	var saved := ResourceSaver.save(character, path)
 	return "" if saved == OK else "角色数据存不下来（%d）：%s" % [saved, path]
+
+
+## 敌人子弹表那一格：**皮键这一种敌人**打 [param key] 这颗子弹（空串或 `-` = 取消，退回白模）。
+## **返回错误信息，空串 = 成功。** 表不经过生成器（见 [PBEnemyShotTable]），改完这一格就生效。
+func assign_enemy(skin_key: String, key: String) -> String:
+	var cell: String = key.strip_edges()
+	if cell == "":
+		cell = PBRosterSheet.NONE
+	var missing := PBRosterSheet.shot_error(cell, data_dir)
+	if missing != "":
+		return missing
+	var sheet := PBRosterSheet.read(enemy_table_path)
+	if sheet.rows().is_empty():
+		return "敌人子弹表是空的或不在：%s" % enemy_table_path
+	if sheet.cell(skin_key, 0) == "":
+		return "敌人子弹表里没有这一种：%s" % skin_key
+	var err := sheet.set_cell(skin_key, 1, cell)
+	if err == "":
+		err = sheet.save(enemy_table_path)
+	return err
+
+
+## 敌人子弹表里每一种现在配的子弹：`[{id, name, shot}]`（形状同 [method roster_shots]），按表里的顺序。
+## `id` 是皮键，`name` 是「火 · BOSS」这种人话，`shot` 为空 = 白模。
+func enemy_shots() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for row: PackedStringArray in PBRosterSheet.read(enemy_table_path).rows():
+		var shot := &""
+		if row.size() > 1:
+			shot = PBRosterSheet.shot_key_of(row[1])
+		out.append({"id": row[0], "name": enemy_label(row[0]), "shot": shot})
+	return out
+
+
+## `enemy_fire_elite_ranged` → 「火 · 远程精英」。认不出来就原样返回。
+static func enemy_label(skin_key: String) -> String:
+	var rest: String = skin_key.trim_prefix("enemy_")
+	var cut: int = rest.find("_")
+	if cut < 0:
+		return skin_key
+	var element: String = ENEMY_ELEMENT_WORDS.get(rest.substr(0, cut), "")
+	var form: String = ENEMY_FORM_WORDS.get(rest.substr(cut + 1), "")
+	if element == "" or form == "":
+		return skin_key
+	return "%s · %s" % [element, form]
 
 
 ## 名册里每个忍者现在配的普攻子弹：`[{id, name, shot}]`，按名册顺序。`shot` 为空 = 白模。

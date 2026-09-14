@@ -27,6 +27,7 @@ var _spin_check: CheckBox
 var _fly_fps: SpinBox
 var _hit_fps: SpinBox
 var _ninja_pick: OptionButton
+var _enemy_pick: OptionButton
 var _users_label: Label
 var _status: RichTextLabel
 var _preview: PBFxPreview
@@ -40,6 +41,7 @@ func _ready() -> void:
 	_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(_preview)
 	_refresh_ninjas()
+	_refresh_enemies()
 	_say(
 		"新子弹：填键 → 飞行段选图、切图 →（要爆炸特效再切命中段）→ 看预览"
 		+ " → 生成子弹资源 → 选忍者、设为普攻子弹。"
@@ -98,6 +100,13 @@ func _build_side() -> Control:
 	side.add_child(_titled("忍者（括号里是现在配的普攻子弹）", _ninja_pick))
 	side.add_child(_button("设为普攻子弹", _on_assign))
 	side.add_child(_button("取消这个忍者的普攻子弹（回白模）", _on_unassign))
+
+	side.add_child(HSeparator.new())
+	_enemy_pick = OptionButton.new()
+	_enemy_pick.fit_to_longest_item = false
+	side.add_child(_titled("敌人（只列会开枪的那 18 种，括号里是现在配的子弹）", _enemy_pick))
+	side.add_child(_button("设为这种敌人的子弹", _on_assign_enemy))
+	side.add_child(_button("取消这种敌人的子弹（回白模）", _on_unassign_enemy))
 	_users_label = Label.new()
 	_users_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	side.add_child(_users_label)
@@ -231,16 +240,56 @@ func _apply(key: String) -> void:
 		_say(_green("%s 的普攻子弹换成了 %s。" % [id, key]) + "进游戏看一眼。")
 
 
+func _on_assign_enemy() -> void:
+	var key := _key()
+	var bad := PBShotForge.key_error(key)
+	if bad != "":
+		_say(_red(bad))
+		return
+	_apply_enemy(key)
+
+
+func _on_unassign_enemy() -> void:
+	_apply_enemy("")
+
+
+func _apply_enemy(key: String) -> void:
+	var skin := _picked(_enemy_pick)
+	if skin == "":
+		_say(_red("先选一种敌人。"))
+		return
+	var err := _forge.assign_enemy(skin, key)
+	if err != "":
+		_say(_red(err))
+		return
+	_refresh_enemies()
+	var label := PBShotForge.enemy_label(skin)
+	if key == "":
+		_say(_green("%s 的子弹取消了，回到白模。" % label))
+	else:
+		_say(_green("%s 的子弹换成了 %s。" % [label, key]) + "进游戏打一波看看。")
+
+
+## 重铺敌人下拉框，保住当前选中的那一种。
+func _refresh_enemies() -> void:
+	_fill_pick(_enemy_pick, _forge.enemy_shots())
+
+
 ## 重铺忍者下拉框，保住当前选中的那个。
 func _refresh_ninjas() -> void:
-	var keep := _picked_ninja()
-	_ninja_pick.clear()
-	for one: Dictionary in _forge.roster_shots():
+	_fill_pick(_ninja_pick, _forge.roster_shots())
+
+
+## 铺一个下拉框：每一项「键 人话（子弹）」，元数据是键。保住当前选中的那一项，铺完刷新「谁在用」。
+func _fill_pick(pick: OptionButton, entries: Array[Dictionary]) -> void:
+	var keep := _picked(pick)
+	pick.clear()
+	for one: Dictionary in entries:
 		var shot: String = String(one["shot"])
-		_ninja_pick.add_item("%s %s（%s）" % [one["id"], one["name"], "白模" if shot == "" else shot])
-		_ninja_pick.set_item_metadata(_ninja_pick.item_count - 1, one["id"])
+		pick.add_item("%s %s（%s）" % [one["id"], one["name"], "白模" if shot == "" else shot])
+		pick.set_item_metadata(pick.item_count - 1, one["id"])
 		if one["id"] == keep:
-			_ninja_pick.select(_ninja_pick.item_count - 1)
+			pick.select(pick.item_count - 1)
 	_refresh_users()
 
 
@@ -254,6 +303,9 @@ func _refresh_users() -> void:
 	for one: Dictionary in _forge.roster_shots():
 		if String(one["shot"]) == key:
 			users.append("%s %s" % [one["id"], one["name"]])
+	for one: Dictionary in _forge.enemy_shots():
+		if String(one["shot"]) == key:
+			users.append(String(one["name"]))
 	_users_label.text = (
 		"%s 还没有忍者在用。" % key if users.is_empty() else "在用 %s 的：%s" % [key, "、".join(users)]
 	)
@@ -282,9 +334,13 @@ func _key() -> String:
 
 
 func _picked_ninja() -> String:
-	if _ninja_pick == null or _ninja_pick.selected < 0:
+	return _picked(_ninja_pick)
+
+
+func _picked(pick: OptionButton) -> String:
+	if pick == null or pick.selected < 0:
 		return ""
-	return String(_ninja_pick.get_item_metadata(_ninja_pick.selected))
+	return String(pick.get_item_metadata(pick.selected))
 
 
 func _say(text: String) -> void:

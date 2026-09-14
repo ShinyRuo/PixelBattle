@@ -55,7 +55,7 @@ const ELEMENT_NAMES := {
 }
 
 ## 五种形态，按 [method form_of] 的下标排（玩家定的）。**BOSS 只有一种，不分近远**。
-## BOSS 实际上落在远程那一档（[method PBSimConfig.enemy_is_ranged] 按槽位取模），
+## BOSS 一律远程（[method PBSpawnRules.fill]，射程 [member PBSimConfig.enemy_reach_boss]），
 ## 所以 `*_boss` 那张皮的 `attack` 段要按放术画，画成挥拳的话游戏里就是隔着距离打空气。
 const FORM_NAMES: Array[String] = ["melee", "ranged", "elite_melee", "elite_ranged", "boss"]
 

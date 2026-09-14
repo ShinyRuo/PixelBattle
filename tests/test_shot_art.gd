@@ -44,8 +44,9 @@ func _pool() -> PBShotPool:
 
 
 func after_each() -> void:
-	# 下面几条往子弹表里塞了假资源，换回盘上那一份。
+	# 下面几条往子弹表、敌人子弹表里塞了假资源，换回盘上那一份。
 	PBShotLibrary.reload()
+	PBEnemyShotTable.reload()
 
 
 ## 往子弹表里塞一份假资源，键 [param key]。飞行段 [param fly_frames] 帧，[param with_hit] 为假就不配命中段。
@@ -100,16 +101,23 @@ func test_an_ally_bullet_uses_the_shot_its_ninja_is_configured_with() -> void:
 	assert_eq(pool._fly[0].sprite_frames, PBWhiteModel.shot().frames, "没配的退回白模")
 
 
-func test_an_enemy_bullet_stays_white() -> void:
-	# 敌人没有名册那一格。**槽位号和己方重叠**（都从 0 起）—— 不分敌我去查出战席的话，
-	# 0 号敌人会拿着 0 号忍者的子弹打过来。
-	_fake_shot(&"probe_shot", true, true)
+func test_an_enemy_bullet_uses_the_shot_configured_for_its_skin() -> void:
+	# 敌人没有名册那一格，按皮键查敌人子弹表。**槽位号和己方重叠**（都从 0 起）——
+	# 不分敌我去查出战席的话，0 号敌人会拿着 0 号忍者的子弹打过来。
+	var art := _fake_shot(&"probe_shot", true, true)
 	var squad: Array[PBAttacker] = [_shooter()]
 	var sim := _sim(squad)
 	var pool := _pool()
-	sim.shots()[0].launch(sim.enemies()[0].pos(), 0, 10.0, 0.01, true, PBElement.Type.FIRE, 0)
+	var enemy: PBEnemy = sim.enemies()[0]
+	sim.shots()[0].launch(enemy.pos(), 0, 10.0, 0.01, true, PBElement.Type.FIRE, 0)
+	PBEnemyShotTable._cached = {}
+	PBEnemyShotTable._loaded = true
 	pool.sync_shots(sim, _deployed(&"probe_shot"), null, _field())
-	assert_eq(pool._fly[0].sprite_frames, PBWhiteModel.shot().frames, "敌人的子弹是白模")
+	assert_eq(pool._fly[0].sprite_frames, PBWhiteModel.shot().frames, "表里没配：敌人的子弹是白模，不拿 0 号忍者那颗")
+	var skin := PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged)
+	PBEnemyShotTable._cached = {skin: &"probe_shot"}
+	pool.sync_shots(sim, _deployed(&""), null, _field())
+	assert_eq(pool._fly[0].sprite_frames, art.frames, "配了就画这一种敌人配的那颗")
 
 
 func test_blending_follows_each_segment_and_is_cleared_on_reuse() -> void:

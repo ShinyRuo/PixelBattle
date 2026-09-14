@@ -62,15 +62,36 @@ func test_ranged_is_recorded_not_inferred_from_the_reach() -> void:
 		assert_almost_eq(enemy.reach, want, 1e-9, "第 %d 只的射程要跟着它自己那一档走" % i)
 
 
-func test_both_bosses_are_ranged_today() -> void:
-	# **这条钉的是一个会咬人的事实**（M9-c）：`boss_count = 2`，槽位 0 和 1，
-	# 而 `enemy_is_ranged` 判的是 `posmod(slot, 10) < 3` —— 两只都落在远程那一档。
-	#
-	# 所以 `*_boss` 那张皮的 `attack` 段要按**放术**画。画成挥拳的话，
-	# 游戏里就是隔着 0.15 打空气，而没有任何一处会报错。
-	# 哪天这个数变了，这条会红，那时该跟着改的是出图提示词。
-	for enemy: PBEnemy in _spawned(PBWave.Shape.BOSS, _cfg.boss_count):
-		assert_true(enemy.ranged, "BOSS 现在是远程的 —— 变了就要回头改 BOSS 那张图")
+func test_every_boss_is_ranged_with_its_own_reach() -> void:
+	# **BOSS 一律远程是规则**（玩家定的），不是槽位取模碰巧落进远程那一档：
+	# 远程占比调成 0、BOSS 再多几只，照样全是远程、全用 BOSS 那一档射程。
+	# `*_boss` 那张皮的 `attack` 段因此要按**放术**画。
+	_cfg.enemy_ranged_share = 0.0
+	for shape: PBWave.Shape in [PBWave.Shape.BOSS, PBWave.Shape.MEGA_BOSS]:
+		for enemy: PBEnemy in _spawned(shape, 12):
+			assert_true(enemy.ranged, "BOSS 一律远程")
+			assert_almost_eq(enemy.reach, _cfg.enemy_reach_boss, 1e-9, "BOSS 用自己那一档射程")
+	for enemy: PBEnemy in _spawned(PBWave.Shape.ELITE, 12):
+		assert_false(enemy.ranged, "前提：远程占比 0 时别的波一个远程都没有")
+
+
+func test_the_enemy_shot_table_lists_exactly_the_kinds_that_shoot() -> void:
+	# 会开枪的是远程小怪、远程精英、BOSS（BOSS 一律远程），× 6 种属性 = 18 种。
+	# 表里多一行近战的，面板上就能给一种不开枪的怪配子弹；少一行，那一种就配不了 —— 两样都不报错。
+	var want: Array[StringName] = []
+	for element: PBElement.Type in PBEnemyPool.ELEMENT_NAMES:
+		for rank: int in [PBEnemy.Rank.MINION, PBEnemy.Rank.ELITE, PBEnemy.Rank.BOSS]:
+			var key := PBEnemyPool.skin_key(element, rank, true)
+			if not want.has(key):
+				want.append(key)
+	var have: Array[StringName] = []
+	for cells: PackedStringArray in PBEnemyShotTable.rows():
+		have.append(StringName(cells[0]))
+	assert_eq(have.size(), 18, "18 种")
+	for key: StringName in want:
+		assert_true(have.has(key), "敌人子弹表里少了 %s" % key)
+	for key: StringName in have:
+		assert_true(want.has(key), "敌人子弹表里的 %s 不开枪" % key)
 
 
 func test_there_are_thirty_distinct_skin_keys() -> void:

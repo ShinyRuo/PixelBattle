@@ -52,6 +52,7 @@ func test_the_panel_builds_with_a_shot_page() -> void:
 	assert_eq(page._fly.anim, PBShotForge.FLY, "上面那段是飞行段")
 	assert_eq(page._hit.anim, PBShotForge.HIT, "下面那段是命中段")
 	assert_gt(page._ninja_pick.item_count, 0, "忍者下拉框读的是真名册")
+	assert_eq(page._enemy_pick.item_count, PBEnemyShotTable.rows().size(), "敌人下拉框读的是敌人子弹表")
 
 
 func test_a_segment_cuts_frames_and_the_preview_shows_them() -> void:

@@ -32,11 +32,13 @@ static func fill(
 		# 出生在方阵里：第一列在战场边缘，后面几列排在战场之外。
 		enemy.spawn(wave, enemy_speed, cfg.enemy_start_x(i), at_tick, cfg.enemy_lane(i))
 		# 远近两种打法。谁是远程按槽位定死，不掷骰 —— 理由见
-		# [member PBSimConfig.enemy_ranged_share]。**一个 `far` 喂四个参数**：
-		# 拆成两支的话漏改一支，就是近战怪发子弹或远程怪贴脸站着。
-		var far: bool = cfg.enemy_is_ranged(i)
+		# [member PBSimConfig.enemy_ranged_share]。**BOSS 一律远程**，射程另有一档（玩家定的）。
+		# **一个 `far` 喂四个参数**：拆成两支的话漏改一支，就是近战怪发子弹或远程怪贴脸站着。
+		var boss: bool = enemy.rank == PBEnemy.Rank.BOSS
+		var far: bool = boss or cfg.enemy_is_ranged(i)
+		var reach: float = cfg.enemy_reach_ranged if far else cfg.enemy_reach
 		enemy.arm(
-			cfg.enemy_reach_ranged if far else cfg.enemy_reach,
+			cfg.enemy_reach_boss if boss else reach,
 			interval,
 			per_shot,
 			shot_speed if far else 0.0,

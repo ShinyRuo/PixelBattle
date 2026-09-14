@@ -1,0 +1,32 @@
+# 敌人子弹表 —— 哪一种会开枪的敌人打哪一颗子弹。读它的是 `PBEnemyShotTable`（渲染层），写它的是「战场特效」面板。
+#
+# 字段（Tab 分隔，共 2 列）：
+#   皮键  子弹键
+#
+# 皮键是敌人形象的键（`PBEnemyPool.skin_key`：`enemy_<属性>_<形态>`），**只列会开枪的那 18 种**：
+# 6 种属性 × 远程小怪 / 远程精英 / BOSS（BOSS 一律远程）。近战那 12 种不发子弹，不在表里。
+# `tests/test_enemy_kinds.gd` 钉着「表里正好是这 18 种」。
+#
+# 子弹键填 `data/shots/<键>.tres` 的键，`-` = 没配（照旧是代码画的白模子弹，按敌我染色）。
+# **按皮逐个配，不按属性推**（玩家定的）。填了却找不到那份子弹时面板会拦下；
+# 渲染层查不到就退回白模，不报错 —— 子弹素材不进版本控制，干净机器上就是这样。
+
+#皮键	子弹键
+enemy_fire_ranged	-
+enemy_fire_elite_ranged	-
+enemy_fire_boss	-
+enemy_wind_ranged	-
+enemy_wind_elite_ranged	-
+enemy_wind_boss	-
+enemy_thunder_ranged	-
+enemy_thunder_elite_ranged	-
+enemy_thunder_boss	-
+enemy_earth_ranged	-
+enemy_earth_elite_ranged	-
+enemy_earth_boss	-
+enemy_water_ranged	-
+enemy_water_elite_ranged	-
+enemy_water_boss	-
+enemy_physical_ranged	-
+enemy_physical_elite_ranged	-
+enemy_physical_boss	-
