@@ -59,10 +59,6 @@ enum Facing { RIGHT, LEFT }
 ## 而所有坐标看起来都正确。
 @export var foot_offset: Vector2 = Vector2.ZERO
 
-## 这个人的普攻子弹用哪一份 [PBShotSkin]，空着退回 [method PBWhiteModel.shot]。
-## 挂在**形象**上：一发苦无长什么样是这份素材的性质。技能自己的子弹另配（[member PBSkill.shot_key]）。
-@export var shot_key: StringName = &""
-
 ## **枪口在哪**（像素，相对脚底，**向上为负 y**；未乘 [member pixel_scale]）。
 ## [constant Vector2.ZERO] 表示按 [member height_px] 派生（约六成身高）。**x 跟着朝向翻转**，填正数就是「身前」。
 ##

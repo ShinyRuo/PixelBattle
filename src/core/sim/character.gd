@@ -50,6 +50,12 @@ const MAX_SKILLS: int = 2
 ## 合成一个键的话「只画了一样」就没有地方表达。
 @export var actor_key: StringName = &""
 
+## 普攻子弹用哪一份，对上 [member PBShotSkin.key]。**空着 = 白模子弹。** 来自名册的「普攻子弹」列。
+##
+## **挂在角色上，不挂在形象上，也不按属性推**：同一张形象换一颗子弹、同是火系一个吐火球一个扔苦无，
+## 都是逐个配的事。技能的子弹另配（[member PBSkill.shot_key]）。
+@export var shot_key: StringName = &""
+
 ## **攻元素**：这个角色打出去的伤害算哪一系（§03 / §03A）。
 ## 真正的 `element` 挂在伤害事件上（铁律 4），大招可以另配一系（[member ultimate_element_override]）。
 @export var element: PBElement.Type = PBElement.Type.PHYSICAL

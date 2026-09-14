@@ -1,3 +1,4 @@
+@tool
 class_name PBPortraitForge
 extends RefCounted
 ## 把一张「N 列 × M 行」的头像表切成一人一张的卡面头像。

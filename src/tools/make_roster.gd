@@ -7,41 +7,15 @@ extends SceneTree
 ##
 ## **不抄一遍规则**：换算直接调规则层（[method PBStatRules.apply_original_scale]）。
 ## **名字不在这个文件里**（铁律 5，`tests/test_character_data.gd` 扫整个 `src/`、注释也算），这里只认列号。
-## 形象键映射在名册最后一列；`skill_ids` 由 `make_skills.gd` 维护，重铺时从旧文件读回来。
+## 列号在 [PBRosterSheet]；`skill_ids` 由 `make_skills.gd` 维护，重铺时从旧文件读回来。
 
-const ROSTER := "res://data/roster.tsv"
+const ROSTER := PBRosterSheet.PATH
 const OUT_DIR := "res://data/characters"
 const ACTOR_DIR := "res://data/actors"
 const BUFF_DIR := "res://data/buffs"
 
 ## 被动那一列里指一份效果的写法。其余的键全是 `键=量`。
 const ON_HIT := "on_hit"
-
-## 表头那十四列的列号。**列号只在这里出现一次** —— 散在下面的话，
-## 名册加一列时改漏一处会读到相邻那一栏，而它照样是个合法的数。
-const COL_ID: int = 0
-const COL_NAME: int = 1
-const COL_RARITY: int = 2
-const COL_REACH: int = 3
-const COL_ATTACK: int = 4
-const COL_DEFENCE: int = 5
-const COL_PRIMARY: int = 6
-const COL_STR: int = 7
-const COL_AGI: int = 8
-const COL_INT: int = 9
-const COL_STR_GROW: int = 10
-const COL_AGI_GROW: int = 11
-const COL_INT_GROW: int = 12
-const COL_INTERVAL: int = 13
-const COL_ACTOR: int = 14
-const COL_PASSIVE: int = 15
-
-## 表一共几列。少一列就整行不要 —— 用默认值兜底的表现是
-## 「那个角色的三围全是 0」，而 0 力量算出来是一个合法的血量。
-const COLUMNS: int = 16
-
-## 形象键那一列写这个 = 和角色键同名；被动那一列写这个 = 没有被动。
-const SAME_AS_ID := "-"
 
 const PRIMARIES := {
 	"力量": PBCharacter.Primary.STRENGTH,
@@ -75,25 +49,21 @@ func _init() -> void:
 			printerr(err)
 			quit(1)
 			return
-		wanted[row[COL_ID]] = true
+		wanted[row[PBRosterSheet.COL_ID]] = true
 	print("写好 ", rows.size(), " 个角色")
 	_sweep(wanted)
 	quit(0)
 
 
-## 读名册。**空行和 `#` 开头的行跳过**，同 `aires/headshots.txt` 的规矩。
+## 读名册（[PBRosterSheet]）。**列数不够的行整行不要**，并且说出来。
 func _read_roster() -> Array:
-	var text := FileAccess.get_file_as_string(ROSTER)
 	var out: Array = []
-	for line: String in text.split("\n"):
-		var trimmed: String = line.strip_edges()
-		if trimmed == "" or trimmed.begins_with("#"):
-			continue
-		var cells: PackedStringArray = trimmed.split("\t")
-		for i: int in cells.size():
-			cells[i] = cells[i].strip_edges()
-		if cells.size() < COLUMNS:
-			printerr("这一行少了列（要 %d 列，实际 %d）：%s" % [COLUMNS, cells.size(), trimmed])
+	for cells: PackedStringArray in PBRosterSheet.read(ROSTER).rows():
+		if cells.size() < PBRosterSheet.COLUMNS:
+			printerr(
+				"这一行少了列（要 %d 列，实际 %d）：%s"
+				% [PBRosterSheet.COLUMNS, cells.size(), "\t".join(cells)]
+			)
 			continue
 		out.append(cells)
 	return out
@@ -101,7 +71,7 @@ func _read_roster() -> Array:
 
 ## 铺一个角色。**返回错误信息，空串 = 成功。**
 func _write_one(row: PackedStringArray) -> String:
-	var key: String = row[COL_ID]
+	var key: String = row[PBRosterSheet.COL_ID]
 	var path: String = "%s/%s.tres" % [OUT_DIR, key]
 	var character := PBCharacter.new()
 	# `skill_ids` 从旧文件里捞回来（由 `make_skills.gd` 维护）。`actor_key` 只从名册读 ——
@@ -119,43 +89,60 @@ func _write_one(row: PackedStringArray) -> String:
 	# 形象键：名册那一列写 `-` 就按角色键找。**盘上没有就留空** ——
 	# 留一个查不到的键和留空是同一个结果（退回白模），
 	# 但留空时预览台的信息栏会照实说「来源：白模兜底」。
-	var actor: String = key
-	if row.size() > COL_ACTOR and row[COL_ACTOR] != SAME_AS_ID and row[COL_ACTOR] != "":
-		actor = row[COL_ACTOR]
+	var actor: String = row[PBRosterSheet.COL_ACTOR]
+	if actor == PBRosterSheet.NONE or actor == "":
+		actor = key
 	if ResourceLoader.exists("%s/%s.tres" % [ACTOR_DIR, actor]):
 		character.actor_key = StringName(actor)
-	if not RARITIES.has(row[COL_RARITY]):
-		return "%s 的稀有度不认识：%s" % [key, row[COL_RARITY]]
-	if not REACHES.has(row[COL_REACH]):
-		return "%s 的攻击距离不认识：%s" % [key, row[COL_REACH]]
-	if not ELEMENTS.has(row[COL_ATTACK]) or not ELEMENTS.has(row[COL_DEFENCE]):
-		return "%s 的攻/防属性不认识：%s / %s" % [key, row[COL_ATTACK], row[COL_DEFENCE]]
-	if not PRIMARIES.has(row[COL_PRIMARY]):
-		return "%s 的主属性不认识：%s" % [key, row[COL_PRIMARY]]
-	character.rarity = RARITIES[row[COL_RARITY]]
-	character.reach = REACHES[row[COL_REACH]]
-	character.element = ELEMENTS[row[COL_ATTACK]]
-	character.def_element = ELEMENTS[row[COL_DEFENCE]]
-	character.primary = PRIMARIES[row[COL_PRIMARY]]
+	character.shot_key = PBRosterSheet.shot_key_of(row[PBRosterSheet.COL_SHOT])
+
+	var bad := _row_error(row)
+	if bad != "":
+		return "%s %s" % [key, bad]
+	character.rarity = RARITIES[row[PBRosterSheet.COL_RARITY]]
+	character.reach = REACHES[row[PBRosterSheet.COL_REACH]]
+	character.element = ELEMENTS[row[PBRosterSheet.COL_ATTACK]]
+	character.def_element = ELEMENTS[row[PBRosterSheet.COL_DEFENCE]]
+	character.primary = PRIMARIES[row[PBRosterSheet.COL_PRIMARY]]
 
 	# 三围与成长是**数据**，逐个从名册读。
-	character.strength = float(row[COL_STR])
-	character.agility = float(row[COL_AGI])
-	character.intellect = float(row[COL_INT])
-	character.strength_growth = float(row[COL_STR_GROW])
-	character.agility_growth = float(row[COL_AGI_GROW])
-	character.intellect_growth = float(row[COL_INT_GROW])
+	character.strength = float(row[PBRosterSheet.COL_STR])
+	character.agility = float(row[PBRosterSheet.COL_AGI])
+	character.intellect = float(row[PBRosterSheet.COL_INT])
+	character.strength_growth = float(row[PBRosterSheet.COL_STR_GROW])
+	character.agility_growth = float(row[PBRosterSheet.COL_AGI_GROW])
+	character.intellect_growth = float(row[PBRosterSheet.COL_INT_GROW])
 
 	# **换算走规则层那一份，不在这里再算一遍**。也**不调 `fill_placeholder`**：它会按稀有度覆盖三围、
 	# 把 DPS 拉回阶梯，刚读进来的三围在最后一步被抹平，而属性栏里每个数都对、不报错。
-	PBStatRules.apply_original_scale(character, float(row[COL_INTERVAL]))
+	PBStatRules.apply_original_scale(character, float(row[PBRosterSheet.COL_INTERVAL]))
 
-	var trouble := _fill_passives(character, row[COL_PASSIVE])
+	var trouble := _fill_passives(character, row[PBRosterSheet.COL_PASSIVE])
 	if trouble != "":
 		return "%s 的被动：%s" % [key, trouble]
 
 	var err := ResourceSaver.save(character, path)
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
+
+
+## 这一行里查表的那几格（稀有度、攻击距离、攻防属性、主属性、普攻子弹）有没有不认识的值。
+## **返回错误信息，空串 = 没有。**
+##
+## 普攻子弹**填了却找不到就报错**，和形象键相反：形象缺了是素材还没画，
+## 子弹键是人在表里（或面板里）亲手填的，找不到只能是填错了。
+func _row_error(row: PackedStringArray) -> String:
+	if not RARITIES.has(row[PBRosterSheet.COL_RARITY]):
+		return "的稀有度不认识：%s" % row[PBRosterSheet.COL_RARITY]
+	if not REACHES.has(row[PBRosterSheet.COL_REACH]):
+		return "的攻击距离不认识：%s" % row[PBRosterSheet.COL_REACH]
+	var attack: String = row[PBRosterSheet.COL_ATTACK]
+	var defence: String = row[PBRosterSheet.COL_DEFENCE]
+	if not ELEMENTS.has(attack) or not ELEMENTS.has(defence):
+		return "的攻/防属性不认识：%s / %s" % [attack, defence]
+	if not PRIMARIES.has(row[PBRosterSheet.COL_PRIMARY]):
+		return "的主属性不认识：%s" % row[PBRosterSheet.COL_PRIMARY]
+	var shot := PBRosterSheet.shot_error(row[PBRosterSheet.COL_SHOT])
+	return "" if shot == "" else "的普攻子弹：%s" % shot
 
 
 ## 把被动那一列的两半都填进去（`键=量` 进 [member PBCharacter.passives]，
@@ -178,7 +165,7 @@ func _fill_passives(character: PBCharacter, cell: String) -> String:
 ## 战斗中途 `push_error` 没人看得见，两处各拦一次就是两把尺子。
 func _parse_passives(cell: String) -> Variant:
 	var out: Dictionary = {}
-	if cell == "" or cell == SAME_AS_ID:
+	if cell == "" or cell == PBRosterSheet.NONE:
 		return out
 	for piece: String in cell.split(";", false):
 		var pair: PackedStringArray = piece.split("=")
@@ -200,7 +187,7 @@ func _parse_passives(cell: String) -> Variant:
 ## **查不到那份效果就报错退出**。效果由 `make_skills.gd` 从 `data/buffs.tsv` 铺出来，所以那一支要先跑。
 func _parse_on_hit(cell: String) -> Variant:
 	var out: Array[PBBuff] = []
-	if cell == "" or cell == SAME_AS_ID:
+	if cell == "" or cell == PBRosterSheet.NONE:
 		return out
 	for piece: String in cell.split(";", false):
 		var pair: PackedStringArray = piece.split("=")

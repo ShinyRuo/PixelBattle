@@ -3,10 +3,12 @@ extends Resource
 ## 一发子弹**长什么样**，以及它命中那一下**炸开长什么样**。
 ##
 ## **两样放在同一份资源里**：分开的话「配了子弹忘了配特效」的表现是打中之后什么都不发生，而它不报错。
-## 和 [PBActorSkin] 同构：换皮只往 `data/shots/` 丢一份 `.tres`、填 [member PBActorSkin.shot_key]，`src/` 一行不动。
+## 和 [PBActorSkin] 同构：换皮只往 `data/shots/` 丢一份 `.tres`、在表里填键，`src/` 一行不动。
+## 普攻子弹填名册（[member PBCharacter.shot_key]），技能子弹填技能表（[member PBSkill.shot_key]）。
+## 编辑器底栏「战场特效」面板从图集一路生成到这份资源（[PBShotForge]）。
 ## 空着也能跑：[method PBWhiteModel.shot] 按同一套字段现造一份。
 
-## 查这份子弹用的键，对上 [member PBActorSkin.shot_key]。
+## 查这份子弹用的键，对上 [member PBCharacter.shot_key] / [member PBSkill.shot_key]。
 @export var key: StringName = &""
 
 @export var frames: SpriteFrames = null
@@ -14,7 +16,7 @@ extends Resource
 ## 飞行中那一段。**源图一律朝右**（和 [member spin] 一起用）。
 @export var anim_fly: StringName = &"fly"
 
-## 命中那一下。播一遍就收，不循环。
+## 命中那一下。播一遍就收，不循环。**可以不配**：没有这一段时命中用默认火花（见 [method PBShotPool._spark]）。
 @export var anim_hit: StringName = &"hit"
 
 ## 放大几倍。规矩同 [member PBActorSkin.pixel_scale]：
@@ -35,6 +37,16 @@ extends Resource
 ## 真素材再染一层会把美术定的颜色拉偏。
 @export var tint_by_side: bool = true
 
+## 飞行段用**加法混合**叠上去。黑底出图的发光类（火球、查克拉弹）为真，洋红底的实体（苦无）为假 ——
+## 规格见 `Docs/素材规格_特效.md` §2.2。
+##
+## **两段各一个开关**：一枚苦无（实体、普通混合）打中炸开的是一团火花（发光、加法混合），合成一个的话总有一段是错的。
+## 实体用加法混合的表现是「钢刃半透明、压在亮处就看不见」；发光类用普通混合在暗处还凑合，亮处会发灰。
+@export var additive_fly: bool = false
+
+## 命中段用加法混合，见 [member additive_fly]。
+@export var additive_hit: bool = false
+
 
 ## 这段动画在不在。
 func has(anim: StringName) -> bool:
@@ -53,6 +65,11 @@ func resolve(anim: StringName) -> StringName:
 		return anim
 	var names: PackedStringArray = frames.get_animation_names()
 	return StringName(names[0]) if names.size() > 0 else anim
+
+
+## [param anim] 这一段该不该用加法混合，见 [member additive_fly]。**认不出是哪一段就按飞行段算。**
+func additive_for(anim: StringName) -> bool:
+	return additive_hit if has(anim_hit) and anim == anim_hit else additive_fly
 
 
 ## 命中那一段播完要多少秒。没配就返回 0（调用方退回自己的默认时长）。

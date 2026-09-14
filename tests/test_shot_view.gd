@@ -256,7 +256,7 @@ func test_the_pool_is_built_once_and_never_grows() -> void:
 	# §14：热路径一次 `.new()` 都不许有。子弹与火花两个池子都按上限一次建满。
 	var pool := _pool()
 	var built: int = pool.get_child_count()
-	assert_eq(built, PBShotPool.CAPACITY + PBShotPool.IMPACTS, "两个池子一次建满")
+	assert_eq(built, PBShotPool.CAPACITY + PBShotPool.CASTS + PBShotPool.IMPACTS, "三个池子一次建满")
 
 	var squad: Array[PBAttacker] = [_shooter()]
 	var sim := _sim(squad)
