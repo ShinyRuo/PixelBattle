@@ -120,6 +120,31 @@ func test_every_actor_key_on_a_character_can_actually_be_found() -> void:
 		)
 
 
+func test_every_skin_file_is_named_after_its_key() -> void:
+	# 战斗画面按 `<键>.tres` 一份一份读（[method PBActorLibrary.skin_for]）。
+	# 文件名和键对不上的那一份，按键永远找不到 —— 表现是「接了素材还是白模」。
+	for key: StringName in _skins():
+		assert_true(
+			ResourceLoader.exists("%s/%s.tres" % [DIR, key]),
+			"形象 %s 的文件名得是 %s.tres" % [key, key]
+		)
+
+
+func test_looking_up_one_skin_loads_only_that_one() -> void:
+	# 一次读全目录的表现：开局第一次点选忍者卡住好几秒（编辑器里十几秒）。
+	var keys := _skins().keys()
+	if keys.is_empty():
+		pending("盘上没有形象素材，量不了")
+		return
+	PBActorLibrary.reload()
+	assert_not_null(PBActorLibrary.skin_for(keys[0]), "按键查得到")
+	assert_eq(PBActorLibrary._cached.size(), 1, "只读了这一份")
+	assert_null(PBActorLibrary.skin_for(&"no_such_actor_here"), "没有的键是 null")
+	assert_eq(PBActorLibrary._cached.size(), 1, "查一个没有的键也不去读整个目录")
+	assert_true(PBActorLibrary._missing.has(&"no_such_actor_here"), "没有的键记下来，下一帧不再问磁盘")
+	PBActorLibrary.reload()
+
+
 func test_a_missing_folder_is_not_an_error() -> void:
 	# **空 = 白模**，这是 [PBActorLibrary] 敢在没有任何素材时落地的前提。
 	# 角色表打不开要 `push_error`（没有角色表就没有游戏），这里恰恰不能。
