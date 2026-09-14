@@ -14,5 +14,8 @@ tier_function_carriers = Array[StringName]([&"konan"])
 member_functions = {
 &"konan": {
 &"splash": 0.35
+},
+&"tendo": {
+&"lifesteal": 0.12
 }
 }

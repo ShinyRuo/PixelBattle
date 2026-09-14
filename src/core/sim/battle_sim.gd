@@ -634,7 +634,8 @@ func _enemies_attack() -> void:
 			_tick,
 			_crit_rng,
 			log_to,
-			_outcome
+			_outcome,
+			_attackers
 		)
 
 

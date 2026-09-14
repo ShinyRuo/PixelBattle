@@ -218,6 +218,7 @@ static func build_attackers(
 		# `on_low_hp=<效果键>` 那一半，同上。阈值（`low_hp`）已经跟着被动表装上了。
 		attacker.low_hp_buffs = unit.character.low_hp_buffs
 		attacker.lethal_buffs = unit.character.lethal_buffs
+		attacker.struck_buffs = unit.character.struck_buffs
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)
@@ -280,6 +281,8 @@ static func _equip_skills(
 		var mine := skill.clone()
 		PBSkillPatchRules.apply(mine, patches.get(id, {}), cfg.tick_rate)
 		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
+		# 被动已经在这之前装好了（[method PBPassiveRules.equip]），治疗倍率跟着写到这一份上。
+		mine.heal_scale = 1.0 + attacker.heal_power
 		attacker.skills.append(PBSkillCast.new(mine, unit.level))
 	_equip_death_casts(attacker, unit, wave_element, mult, cfg, patches)
 
@@ -305,6 +308,7 @@ static func _equip_death_casts(
 		var mine := skill.clone()
 		PBSkillPatchRules.apply(mine, patches[id], cfg.tick_rate)
 		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
+		mine.heal_scale = 1.0 + attacker.heal_power
 		attacker.death_casts.append(PBSkillCast.new(mine, unit.level))
 
 

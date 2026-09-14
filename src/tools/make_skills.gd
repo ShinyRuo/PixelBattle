@@ -84,6 +84,7 @@ const EXTRA_KEYS: Array[String] = [
 	"summon_power",
 	"summon_hp",
 	"summon_secs",
+	"summon_lifesteal",
 ]
 
 var _buffs: Dictionary = {}
@@ -297,6 +298,8 @@ func _apply_extra(skill: PBSkill, text: String) -> String:
 				skill.summon_hp_share = float(value)
 			"summon_secs":
 				skill.summon_seconds = float(value)
+			"summon_lifesteal":
+				skill.summon_lifesteal = float(value)
 			"carry":
 				skill.carry_over_ticks = _ticks(float(value))
 	return ""

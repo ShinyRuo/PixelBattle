@@ -13,7 +13,8 @@ aura_ultimate_cd_scale = 1.0
 aura_def_reduction = 0.0
 aura_passives = {
 &"defence": 4.0,
-&"dodge": 0.02
+&"dodge": 0.02,
+&"lifesteal": 0.015
 }
 ultimate_cooldown_seconds = 0.0
 ultimate_damage_seconds = 0.0

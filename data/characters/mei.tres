@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_8c5yb"]
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_g7yhg"]
+[ext_resource type="Resource" path="res://data/buffs/mei_charm.tres" id="3_e718u"]
 
 [resource]
 script = ExtResource("1_g7yhg")
@@ -31,3 +32,4 @@ rarity = 1
 reach = 2
 attack_range = 600.0
 skill_ids = Array[StringName]([&"boil_acid"])
+struck_buffs = Array[ExtResource("1_8c5yb")]([ExtResource("3_e718u")])

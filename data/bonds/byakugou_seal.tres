@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_cb327"]
+
+[resource]
+script = ExtResource("1_cb327")
+id = &"byakugou_seal"
+name_key = "bond.byakugou_seal"
+member_ids = Array[StringName]([&"tsunade", &"sakura"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"sakura": {
+&"heal_power": 0.5
+},
+&"tsunade": {
+&"heal_power": 0.5
+}
+}

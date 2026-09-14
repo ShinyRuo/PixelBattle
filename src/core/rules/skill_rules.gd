@@ -89,7 +89,7 @@ static func apply_hit(
 static func apply_hit_ally(
 	unit: PBAttacker, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
 ) -> void:
-	_apply_all(unit, skill.on_hit, level, cfg, tick)
+	_apply_all(unit, skill.on_hit, level, cfg, tick, skill.heal_scale)
 
 
 ## 一发落地：范围内每个敌人各吃一份完整伤害，聚拢/击退的还会被挪位置。
@@ -150,7 +150,7 @@ static func land_on_ally(
 	var target: PBAttacker = attackers[cast.target_slot]
 	if not target.is_targetable():
 		return
-	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick)
+	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick, cast.skill.heal_scale)
 
 
 ## 落在**一圈己方单位**身上：圆心 [param center]、半径 [member PBSkill.radius] 内每个还站着的人各挂一份
@@ -163,7 +163,7 @@ static func land_around_allies(
 ) -> void:
 	for unit: PBAttacker in attackers:
 		if unit.is_targetable() and unit.pos.distance_to(center) <= cast.skill.radius:
-			_apply_all(unit, cast.skill.on_hit, cast.caster_level, cfg, tick)
+			_apply_all(unit, cast.skill.on_hit, cast.caster_level, cfg, tick, cast.skill.heal_scale)
 
 
 ## 落在一个**锁定的敌人**身上（[constant PBSkill.Target.ENEMY]）。返回打死了几个（0 或 1）。
@@ -211,15 +211,22 @@ static func land_on_field(
 static func apply_on_self(
 	attacker: PBAttacker, cast: PBSkillCast, cfg: PBSimConfig, tick: int
 ) -> void:
-	_apply_all(attacker, cast.skill.on_self, cast.caster_level, cfg, tick)
+	_apply_all(attacker, cast.skill.on_self, cast.caster_level, cfg, tick, cast.skill.heal_scale)
 
 
-## 把一串效果挂到一个己方单位身上，数值按 [param level] 现算（决策 7）。
+## 把一串效果挂到一个己方单位身上，数值按 [param level] 现算（决策 7），
+## 回血量再乘施法者的治疗倍率（[member PBSkill.heal_scale]）。
 static func _apply_all(
-	unit: PBAttacker, buffs: Array[PBBuff], level: int, cfg: PBSimConfig, tick: int
+	unit: PBAttacker,
+	buffs: Array[PBBuff],
+	level: int,
+	cfg: PBSimConfig,
+	tick: int,
+	heal_scale: float = 1.0
 ) -> void:
 	for buff: PBBuff in buffs:
-		apply_one(unit, buff, PBBuffRules.resolve(buff, level), cfg, tick)
+		var mods := PBBuffRules.scale_heal(PBBuffRules.resolve(buff, level), heal_scale)
+		apply_one(unit, buff, mods, cfg, tick)
 
 
 ## 把**一份**效果挂到一个己方单位身上。

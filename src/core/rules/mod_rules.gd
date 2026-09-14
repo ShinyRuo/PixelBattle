@@ -39,6 +39,10 @@ const RATE_KEYS: Array[StringName] = [
 	PBPassiveRules.MOVE_SPEED_BONUS,
 	PBPassiveRules.LOW_HP,
 	PBPassiveRules.DRAIN_CUT,
+	PBPassiveRules.LIFESTEAL,
+	PBPassiveRules.DODGE_HEAL,
+	PBPassiveRules.HEAL_POWER,
+	PBPassiveRules.STRUCK_BOOST,
 ]
 
 

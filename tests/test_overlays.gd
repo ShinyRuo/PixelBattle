@@ -285,6 +285,25 @@ func test_picking_a_beast_takes_two_steps() -> void:
 	assert_false(root._beasts.visible, "定完这一层就没有内容了，该收起来")
 
 
+func test_every_beast_aura_shows_up_in_its_description() -> void:
+	# 走被动词汇表的光环（防御、闪避、吸血……）以前在这里一个字都不写，一半尾兽读起来是「光环：无」，
+	# 而战斗里它们一直在生效。
+	var root := _prepared()
+	root._open_modal(root._beasts)
+	root._beasts.refresh(root._state, root._cfg)
+	var seen: int = 0
+	for i: int in root._cfg.beasts.all().size():
+		var beast: PBBeast = root._cfg.beasts.all()[i]
+		if beast.aura_passives.is_empty():
+			continue
+		root._beasts._describe(i)
+		var aura := PBBeastRules.aura_passives(beast, 1, root._cfg)
+		for word: String in PBShopLabels.mod_words(aura):
+			assert_string_contains(root._beasts._detail.text, word, "%s 的光环没写出来" % beast.id)
+		seen += 1
+	assert_gt(seen, 0, "前提：有尾兽带被动光环")
+
+
 func test_escape_opens_the_menu_only_after_everything_else_is_closed() -> void:
 	# `Esc` 已经有一条链（说明卡 → 弹层 → 瞄准 → 选中），菜单排在**最后**。
 	# 排到前面的话，手上挡着一张说明卡时按 `Esc` 会弹出设置，

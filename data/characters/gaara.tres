@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_n74xp"]
+[ext_resource type="Resource" path="res://data/buffs/gaara_sand_guard.tres" id="3_jiy5w"]
 
 [resource]
 script = ExtResource("1_char")
@@ -31,3 +32,7 @@ rarity = 1
 reach = 2
 attack_range = 600.0
 skill_ids = Array[StringName]([&"sand_burial"])
+passives = {
+&"struck_cd": 999.0
+}
+struck_buffs = Array[ExtResource("1_n74xp")]([ExtResource("3_jiy5w")])

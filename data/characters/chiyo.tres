@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="PBCharacter" format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3 uid="uid://dx6hqtoxptamf"]
 
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_7rcdc"]
-[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_aktxh"]
+[ext_resource type="Script" uid="uid://ddd8oi1dk6gti" path="res://src/core/sim/character.gd" id="1_7rcdc"]
+[ext_resource type="Script" uid="uid://b2t0pcg1dtj2q" path="res://src/core/sim/buff.gd" id="1_aktxh"]
 
 [resource]
 script = ExtResource("1_7rcdc")

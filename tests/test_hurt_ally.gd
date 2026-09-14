@@ -154,10 +154,10 @@ func test_nobody_dodges_without_a_chance_and_no_dice_are_rolled() -> void:
 	rng.seed = 20260912
 	var before: int = rng.state
 	var plain := _hurtable(0.0)
-	assert_false(PBPassiveRules.dodges(plain, rng), "没配就不该闪")
+	assert_false(PBPassiveRules.dodges(plain, rng, 0), "没配就不该闪")
 	assert_eq(rng.state, before, "没配就一步都不许走")
 	var lucky := _hurtable(0.6)
-	PBPassiveRules.dodges(lucky, rng)
+	PBPassiveRules.dodges(lucky, rng, 0)
 	assert_ne(rng.state, before, "配了就该拨动那条流")
 
 

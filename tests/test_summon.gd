@@ -113,6 +113,19 @@ func test_they_go_away_when_their_time_is_up() -> void:
 	assert_eq(built[1].expires_at, PBSummonRules.GONE, "位子空回来了")
 
 
+func test_a_summon_takes_its_lifesteal_from_the_skill_that_raised_it() -> void:
+	# 位子会被别的召唤技能复用：吸血跟着这一发技能走，不重设的话上一只的吸血会串到下一只。
+	var built := _build(_units([_summoner(1)]))
+	built[0].revive()
+	var leech := _summon_skill(1)
+	leech.summon_lifesteal = 0.2
+	PBSummonRules.raise_from(built, built[0], leech, 0, _cfg)
+	assert_almost_eq(built[1].lifesteal, 0.2, 0.0001, "吸血虫带着吸血站起来")
+	PBSummonRules.expire(built, built[1].expires_at)
+	PBSummonRules.raise_from(built, built[0], _summon_skill(1), 1000, _cfg)
+	assert_eq(built[1].lifesteal, 0.0, "换一个不吸血的召唤技能，同一个位子不再吸血")
+
+
 func test_a_freed_slot_can_be_used_again() -> void:
 	# 散场排在技能落地之前，所以本体可以在同一 tick 再召一批。
 	var built := _build(_units([_summoner(1)]))

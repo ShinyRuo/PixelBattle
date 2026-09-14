@@ -61,6 +61,7 @@
 # **血量阈值触发**写成一对：`low_hp=0.75;on_low_hp=<效果键>`（效果在 `data/buffs.tsv`，
 # 可以写好几个 `on_low_hp=`）。一波一次，只写一半生成器报错。
 # **受致命伤那一下挡住**写 `on_lethal=<效果键>`：那一下不死、血停在 1，再挂上效果。一波一次。
+# **受击触发**写 `on_struck=<效果键>;struck_cd=<秒>`：增益挂自己、减益挂打他的敌人；不写冷却 = 每下都触发，999 = 一波一次。
 #
 # **「X% 几率打出更多伤害」就写成暴击**（`crit_chance` + `crit_damage`），
 # 不另开一个概率键 —— 另开的话屏幕上会有两套各自掷骰的暴击，
@@ -129,13 +130,13 @@ sasori	蝎	SR	远程	风	风	敏捷	22	30	15	22.0	32.0	15.0	1.5	-	-	-	600
 deidara	迪达拉	SR	远程	土	土	智力	22	15	33	21.0	15.0	33.0	1.5	-	splash=0.5;splash_radius=275	-	600
 hidan	飞段	SR	近战	物理	物理	力量	34	18	12	34.0	18.0	12.0	1.5	-	splash=0.35;splash_radius=250;reflect=0.25;on_lethal=hidan_undying	-	245
 kakuzu	角都	SR	近战	雷	雷	力量	32	21	12	32.5	20.0	12.0	1.5	-	-	-	125
-gaara	我爱罗	SR	远程	风	风	智力	20	20	31	20.0	20.0	31.0	1.5	-	-	-	600
+gaara	我爱罗	SR	远程	风	风	智力	20	20	31	20.0	20.0	31.0	1.5	-	on_struck=gaara_sand_guard;struck_cd=999	-	600
 temari	手鞠	SR	远程	风	风	敏捷	21	32	15	21.0	32.0	15.0	1.5	-	crit_chance=0.25	-	600
 neji_hyuga	日向宁次	SR	近战	水	土	敏捷	26	33	16	26.0	33.0	16.0	1.5	neji	crit_chance=0.18;bite_current=0.16	-	125
 asuma	猿飞阿斯玛	SR	近战	风	火	敏捷	28	31	14	27.5	30.0	14.0	1.5	-	-	-	125
-mei	照美冥	SR	远程	水	水	敏捷	23	32	15	23.0	32.0	15.0	1.5	-	-	-	600
+mei	照美冥	SR	远程	水	水	敏捷	23	32	15	23.0	32.0	15.0	1.5	-	on_struck=mei_charm	-	600
 onoki	大野木	SR	远程	土	土	智力	22	18	34	22.0	18.0	34.0	1.5	-	-	-	600
-zetsu	黑绝	SR	远程	土	土	敏捷	22	33	17	21.0	34.0	17.0	1.45	-	-	-	600
+zetsu	黑绝	SR	远程	土	土	敏捷	22	33	17	21.0	34.0	17.0	1.45	-	on_struck=zetsu_ephemera;struck_cd=13	-	600
 chojuro	长十郎	SR	近战	水	水	敏捷	24	30	15	24.0	30.0	15.0	1.5	-	crit_chance=0.15;bite_lost=0.15	-	125
 jugo	重吾	SR	近战	物理	仙	力量	30	20	15	30.0	20.0	15.0	1.5	-	-	-	125
 suigetsu	鬼灯水月	SR	近战	水	水	敏捷	25	32	15	25.0	32.0	15.0	1.5	-	-	-	125
@@ -147,7 +148,7 @@ kurotsuchi	黑土	SR	远程	水	土	敏捷	22	33	15	22.0	33.0	15.0	1.5	-	-	-	600
 shino	油女志乃	SR	远程	土	土	智力	21	15	32	21.5	15.0	32.5	1.5	-	-	-	600
 
 itachi	宇智波鼬	SSR	远程	火	火	智力	22	18	37	22.5	18.0	37.0	1.5	-	-	-	600
-obito	宇智波带土	SSR	近战	火	火	敏捷	26	37	18	26.5	37.0	18.0	1.45	-	crit_chance=0.15;on_hit=obito_warp	-	125
+obito	宇智波带土	SSR	近战	火	火	敏捷	26	37	18	26.5	37.0	18.0	1.45	-	crit_chance=0.15;on_hit=obito_warp;on_struck=obito_kamui;struck_cd=5	-	125
 madara	宇智波斑	SSR	近战	火	火	力量	36	23	14	35.0	23.0	14.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.40;reflect=0.30	-	125
 hashirama	千手柱间	SSR	近战	土	水	力量	38	18	18	38.0	18.0	18.0	1.5	-	-	-	125
 tendo	天道佩恩	SSR	近战	仙	物理	敏捷	27	34	15	26.5	34.5	15.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.22	-	125

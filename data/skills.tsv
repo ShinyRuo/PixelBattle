@@ -46,6 +46,7 @@
 #   slow=<倍率>              把敌人速度压到几成（0 = 定住）
 #   slow_secs=<秒>           上面那个持续多久
 #   carry=<秒>               跨波保留的冷却
+#   summon_lifesteal=<成>    召唤物的普攻吸血
 #
 # 角色键写 `-` = 不进任何人的指令卡（阵亡时放的那几个，由羁绊补丁 `on_death=1` 发给成员）。
 
@@ -166,13 +167,12 @@ tsukuyomi	itachi	月读	火	点敌人	敌方	0	0	15	10	fly=0.3;on_hit=itachi_moo
 # 规则在 `PBSummonRules`。`summon_hp` 是**本体血的几成** ——
 # 原版写的是「承受 600% 伤害」，换算成一六的血，两者等价而后者不要新机制。
 #
-# 降级记一笔：**吸血虫那句「将 20% 的伤害值转换为生命给自己」缺读点**
-# （吸血）；影分身原版持续 6~15 秒、吸血虫 5+等级×1.5 秒，
+# 降级记一笔：影分身原版持续 6~15 秒、吸血虫 5+等级×1.5 秒，
 # 而我们今天只写得下一个定数（技能表没有「随等级变」这一档）。
 shadow_clones	naruto	多重影分身之术	风	不用点	我方	0	0	22	10	summon=3;summon_power=0.40;summon_hp=0.18;summon_secs=10
 white_copy	zetsu	白绝复制体	土	不用点	我方	0	0	20	10	summon=1;summon_power=0.50;summon_hp=0.29;summon_secs=6
 puppet_crow	kankuro	傀儡术·乌鸦	土	不用点	我方	0	0	25	10	summon=1;summon_power=0.50;summon_hp=0.50;summon_secs=12
-vampire_bugs	shino	通灵术·吸血虫	土	不用点	我方	0	0	25	14	summon=10;summon_power=0.12;summon_hp=0.08;summon_secs=12
+vampire_bugs	shino	通灵术·吸血虫	土	不用点	我方	0	0	25	14	summon=10;summon_power=0.12;summon_hp=0.08;summon_secs=12;summon_lifesteal=0.2
 
 # ── M12-c4：分诊过期的那批 ───────────────────────────────
 #

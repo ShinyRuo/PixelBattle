@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_tvc1d"]
+
+[resource]
+script = ExtResource("1_tvc1d")
+id = &"obito_kamui"
+name_key = "buff.obito_kamui"
+icon_key = "buff.obito_kamui"
+kind = 1
+duration_seconds = 1.0
+mods = {
+&"damage_taken": 0.0
+}

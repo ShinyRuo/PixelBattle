@@ -121,6 +121,15 @@ static func _hit_ally(
 		return
 	# 折算、播报、扣血、阵亡、反弹全走 [method PBStrikeRules.hurt_ally]，近战那一路调的是同一个。
 	PBStrikeRules.hurt_ally(
-		target, _shooter(shot, enemies), shot.damage, shot.element, cfg, tick, rng, book, out
+		target,
+		_shooter(shot, enemies),
+		shot.damage,
+		shot.element,
+		cfg,
+		tick,
+		rng,
+		book,
+		out,
+		attackers
 	)
 	shot.retire()

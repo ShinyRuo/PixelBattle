@@ -17,7 +17,11 @@ const TARGET_WORDS := {
 
 ## 按成数记、显示时要乘 100 的效果键（句式里是 `%`）。
 const PERCENT_KEYS: Array[StringName] = [
-	PBBuffRules.CRIT_CHANCE, PBBuffRules.CRIT_DAMAGE, PBBuffRules.HEAL_MAX, PBBuffRules.DRAIN_MAX
+	PBBuffRules.CRIT_CHANCE,
+	PBBuffRules.CRIT_DAMAGE,
+	PBBuffRules.HEAL_MAX,
+	PBBuffRules.DRAIN_MAX,
+	PBBuffRules.DODGE,
 ]
 
 

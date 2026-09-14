@@ -203,6 +203,12 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.move_speed_bonus,
 		one.low_hp_at,
 		one.drain_cut,
+		one.lifesteal,
+		one.dodge_heal,
+		one.struck_cd,
+		one.heal_power,
+		one.struck_aura,
+		one.struck_boost,
 	]
 
 

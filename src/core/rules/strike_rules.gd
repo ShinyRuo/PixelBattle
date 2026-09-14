@@ -150,10 +150,12 @@ static func land(
 	total += _bite_extra(attacker, enemy, damage, crit)
 	if book != null:
 		book.hit(tick, -1 if attacker == null else attacker.slot, enemy.slot, total, false, crit)
+	var before: float = enemy.hp
 	if enemy.take_damage(total, tick):
 		out.kills += 1
 	if attacker == null:
 		return
+	_leech(attacker, before - maxf(enemy.hp, 0.0))
 	out.kills += _splash(attacker, enemy, enemies, damage, cfg, tick)
 	_arm_crit(attacker, cfg, tick)
 	out.kills += _hang_on_hit(attacker, enemy, crit, cfg, tick)
@@ -193,7 +195,8 @@ static func hurt_ally(
 	tick: int,
 	rng: RandomNumberGenerator,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	team: Array[PBAttacker] = []
 ) -> void:
 	# 临时防御（[constant PBBuffRules.DEFENCE]）在这里加：护甲只在这一句折算。
 	var armour: float = target.defence + target.buffs.amount(PBBuffRules.DEFENCE, tick)
@@ -201,7 +204,65 @@ static func hurt_ally(
 	if book != null:
 		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true)
 	wound_ally(target, hurt, cfg, tick, rng, book, out)
+	if target.alive and not target.struck_buffs.is_empty() and tick >= target.struck_ready_at:
+		target.struck_ready_at = tick + _struck_ticks(target, cfg)
+		_trigger_struck(target, target, source, cfg, tick, out)
+	_struck_auras(target, source, team, cfg, tick, out)
 	_reflect(target, source, hurt, tick, book, out)
+
+
+## 受击效果按 [param owner] 的配置触发一次：**增益挂 [param on]（挨打的那个人），减益挂打他的那个敌人**。
+## 等级和数值加成（[member PBAttacker.struck_boost]）都取 owner 的 —— 光环那一路 owner 是带光环的人。
+##
+## 排在扣血之后：触发的那一下照常结算，效果从下一下起生效（神威「受到攻击时消失 1 秒」挡不住那一下本身）。
+## 闪掉的那一下也算「受攻击」。死了就不挂。
+static func _trigger_struck(
+	owner: PBAttacker,
+	on: PBAttacker,
+	source: PBEnemy,
+	cfg: PBSimConfig,
+	tick: int,
+	out: PBCombatOutcome
+) -> void:
+	var level: int = 1 if owner.ultimate == null else owner.ultimate.caster_level
+	for buff: PBBuff in owner.struck_buffs:
+		var mods := PBBuffRules.scale_amounts(PBBuffRules.resolve(buff, level), 1.0 + owner.struck_boost)
+		if buff.friendly:
+			PBSkillRules.apply_one(on, buff, mods, cfg, tick)
+		elif source != null and source.alive:
+			if PBSkillRules.apply_one_enemy(source, buff, mods, cfg, tick):
+				out.kills += 1
+
+
+## 受击效果的光环（[member PBAttacker.struck_aura]）：[param target] 站在谁的圈里，就按谁的受击效果再触发一次。
+## **带光环的人自己挨打不算在这里**（上面那条已经触发过）；带光环的人死了光环就没了。
+## 冷却按「带光环的人 × 挨打的队友」各算各的（[member PBAttacker.aura_ready_at]）。
+static func _struck_auras(
+	target: PBAttacker,
+	source: PBEnemy,
+	team: Array[PBAttacker],
+	cfg: PBSimConfig,
+	tick: int,
+	out: PBCombatOutcome
+) -> void:
+	if not target.alive:
+		return
+	for carrier: PBAttacker in team:
+		if carrier == target or not carrier.alive or carrier.struck_aura <= 0.0:
+			continue
+		if carrier.struck_buffs.is_empty():
+			continue
+		if carrier.pos.distance_to(target.pos) > cfg.units_to_field(carrier.struck_aura):
+			continue
+		if tick < int(carrier.aura_ready_at.get(target.slot, 0)):
+			continue
+		carrier.aura_ready_at[target.slot] = tick + _struck_ticks(carrier, cfg)
+		_trigger_struck(carrier, target, source, cfg, tick, out)
+
+
+## 受击触发的冷却换成 tick。至少 1：同一 tick 挨两下不触发两次。
+static func _struck_ticks(owner: PBAttacker, cfg: PBSimConfig) -> int:
+	return maxi(int(round(owner.struck_cd * float(cfg.tick_rate))), 1)
 
 
 ## 一个忍者**掉血**的唯一落点：扣血、阵亡记账、血量阈值触发。返回这一下有没有让他倒下。
@@ -255,7 +316,11 @@ static func _hang_self(
 ) -> void:
 	var level: int = 1 if target.ultimate == null else target.ultimate.caster_level
 	for buff: PBBuff in buffs:
-		PBSkillRules.apply_one(target, buff, PBBuffRules.resolve(buff, level), cfg, tick)
+		var mods := PBBuffRules.resolve(buff, level)
+		# 他自己放出去的回血，吃他自己的治疗倍率（羁绊「百豪之术的恢复量提升 50%」那一类）。
+		PBSkillRules.apply_one(
+			target, buff, PBBuffRules.scale_heal(mods, 1.0 + target.heal_power), cfg, tick
+		)
 
 
 ## 把挨的这一下按比例还回去。没配就是 0。
@@ -325,6 +390,15 @@ static func _bite_extra(
 	if share <= 0.0:
 		return 0.0
 	return minf(share, damage * BITE_CAP)
+
+
+## 普攻吸血（[member PBAttacker.lifesteal]）。[param dealt] 是目标**实际掉的血**：
+## 打死时溢出的那一截不算（否则一刀秒小怪回满血），易伤算（那是真掉的）。溅射那几下不算 ——
+## 原版写的是「普攻造成伤害」，溅射是另一件事的伤害。
+static func _leech(attacker: PBAttacker, dealt: float) -> void:
+	if attacker.lifesteal <= 0.0 or dealt <= 0.0:
+		return
+	attacker.heal(dealt * attacker.lifesteal)
 
 
 ## 这个人的溅射够得到多远（战场坐标）。配了原版码数（[member PBAttacker.splash_radius]）就按它换算，

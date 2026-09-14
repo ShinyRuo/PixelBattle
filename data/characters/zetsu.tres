@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_elset"]
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_r4nwb"]
+[ext_resource type="Resource" path="res://data/buffs/zetsu_ephemera.tres" id="3_cv1qi"]
 
 [resource]
 script = ExtResource("1_elset")
@@ -31,3 +32,7 @@ rarity = 1
 reach = 2
 attack_range = 600.0
 skill_ids = Array[StringName]([&"white_copy"])
+passives = {
+&"struck_cd": 13.0
+}
+struck_buffs = Array[ExtResource("1_r4nwb")]([ExtResource("3_cv1qi")])

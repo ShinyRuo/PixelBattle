@@ -29,6 +29,12 @@ extends RefCounted
 ## | `move_speed_bonus` | [member PBAttacker.move_speed_bonus] | [method equip] 折进 `move_speed` |
 ## | `low_hp` | [member PBAttacker.low_hp_at] | [method PBStrikeRules.wound_ally] |
 ## | `drain_cut` | [member PBAttacker.drain_cut] | [method PBBuffRules.advance_ally] |
+## | `lifesteal` | [member PBAttacker.lifesteal] | [method PBStrikeRules.land] |
+## | `dodge_heal` | [member PBAttacker.dodge_heal] | [method PBAttacker.take_damage] |
+## | `struck_cd` | [member PBAttacker.struck_cd] | [method PBStrikeRules.hurt_ally] |
+## | `heal_power` | [member PBAttacker.heal_power] | [method PBBuffRules.scale_heal] |
+## | `struck_aura` | [member PBAttacker.struck_aura] | [method PBStrikeRules.hurt_ally] |
+## | `struck_boost` | [member PBAttacker.struck_boost] | [method PBStrikeRules.hurt_ally] |
 ##
 ## **属性（力敏智、攻击力、防御、生命、攻速）不在这张表里**，在 [PBStatRules]：
 ## 属性在算三围那一刻注入，行为建人之后装。**移速留在这里**：它是全队一个数，
@@ -89,6 +95,24 @@ const LOW_HP: StringName = &"low_hp"
 ## 自身掉血（[constant PBBuffRules.DRAIN_MAX]）抵掉几成。1.0 = 不再掉血（〔吾之牢笼〕那一句）。
 const DRAIN_CUT: StringName = &"drain_cut"
 
+## 普攻吸血：这一下让目标**实际掉的血**有几成回到自己身上（尾兽光环、羁绊、装备都给）。
+const LIFESTEAL: StringName = &"lifesteal"
+
+## 闪避成功时回复**这一下本该挨的伤害**的几成（〔和平的期望〕「每次成功闪避都能恢复本次伤害 35% 的生命值」）。
+const DODGE_HEAL: StringName = &"dodge_heal"
+
+## 受击触发（名册同一列的 `on_struck=<效果键>`）的冷却，秒。0 = 每挨一下都触发；999 = 一波一次。
+const STRUCK_CD: StringName = &"struck_cd"
+
+## 这个人**放出去**的治疗量多几成（技能挂的回血、被动挂给自己的回血）。**不是「受到的治疗」**。
+const HEAL_POWER: StringName = &"heal_power"
+
+## 受击效果变成光环：周围多少**原版码数**内的队友挨打时，也按他的受击效果触发。取大。
+const STRUCK_AURA: StringName = &"struck_aura"
+
+## 受击效果里的量型数值多几成（防御、回血……，率型不乘）。
+const STRUCK_BOOST: StringName = &"struck_boost"
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
 	CRIT_CHANCE,
@@ -106,6 +130,12 @@ const ALL: Array[StringName] = [
 	MOVE_SPEED_BONUS,
 	LOW_HP,
 	DRAIN_CUT,
+	LIFESTEAL,
+	DODGE_HEAL,
+	STRUCK_CD,
+	HEAL_POWER,
+	STRUCK_AURA,
+	STRUCK_BOOST,
 ]
 
 
@@ -115,10 +145,14 @@ const ALL: Array[StringName] = [
 ## 掷了就算没闪也拨动了那条流，对拍退化路径靠「该掷几次就掷几次」。
 ##
 ## [param rng] 为 null 时（批量扫描、探测）恒不闪避且不掷骰。
-static func dodges(attacker: PBAttacker, rng: RandomNumberGenerator) -> bool:
-	if attacker == null or rng == null or attacker.dodge <= 0.0:
+## 常驻那一份加上效果袋里临时的那一份（[constant PBBuffRules.DODGE]），两者都是 0 才不掷。
+static func dodges(attacker: PBAttacker, rng: RandomNumberGenerator, at_tick: int) -> bool:
+	if attacker == null or rng == null:
 		return false
-	return rng.randf() < attacker.dodge
+	var chance: float = attacker.dodge + attacker.buffs.amount(PBBuffRules.DODGE, at_tick)
+	if chance <= 0.0:
+		return false
+	return rng.randf() < chance
 
 
 ## 这个键认不认得。
@@ -131,7 +165,8 @@ static func is_known(key: StringName) -> bool:
 ## **一律是 `+=` 不是 `=`。** 同一个人可以既是某组羁绊的载体、又自带一个被动，
 ## 而「后装的那一份把先装的覆盖掉」不报错 —— 屏幕上照样有溅射，只是少了一份。
 ##
-## **例外是 [constant SPLASH_RADIUS] 与 [constant LOW_HP]，取大**：一个是距离、一个是门槛，都不是一份量。
+## **例外取大**：[constant SPLASH_RADIUS]、[constant LOW_HP]、[constant STRUCK_CD]、
+## [constant STRUCK_AURA] —— 距离、门槛、冷却都不是一份量。
 ## 两个来源各给 275 码加起来成了 550 码；75% 加 90% 成了 165%，开波第一下就触发。
 ## 羁绊把某个人自带的 75% 改成 90%，靠的正是取大。
 ##
@@ -171,6 +206,18 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.low_hp_at = maxf(attacker.low_hp_at, amount)
 		DRAIN_CUT:
 			attacker.drain_cut += amount
+		LIFESTEAL:
+			attacker.lifesteal += amount
+		DODGE_HEAL:
+			attacker.dodge_heal += amount
+		STRUCK_CD:
+			attacker.struck_cd = maxf(attacker.struck_cd, amount)
+		HEAL_POWER:
+			attacker.heal_power += amount
+		STRUCK_AURA:
+			attacker.struck_aura = maxf(attacker.struck_aura, amount)
+		STRUCK_BOOST:
+			attacker.struck_boost += amount
 		_:
 			return false
 	return true

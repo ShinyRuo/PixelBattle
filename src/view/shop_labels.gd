@@ -130,12 +130,16 @@ static func detail_of(kind: StringName, state: PBRunState, cfg: PBSimConfig) -> 
 
 ## 一份词条表写成人看得懂的几个词。**两块面板共用这一处** —— 各写一份的话
 ## 「攻速 +30%」和「攻速 +0%」会同时出现（成数忘了乘 100，见 [method PBModRules.display_value]）。
+##
+## **不是整数就写一位小数**：句式是 `%.0f`，尾兽光环 1 级的吸血 1.5% 会被四舍五入成「2%」。
 static func mod_words(mods: Dictionary) -> PackedStringArray:
 	var out := PackedStringArray()
 	for key: StringName in mods:
-		out.append(
-			PBLocale.text("mod.%s" % key) % PBModRules.display_value(key, float(mods[key]))
-		)
+		var shown: float = PBModRules.display_value(key, float(mods[key]))
+		var pattern: String = PBLocale.text("mod.%s" % key)
+		if not is_equal_approx(shown, roundf(shown)):
+			pattern = pattern.replace("%.0f", "%.1f")
+		out.append(pattern % shown)
 	return out
 
 

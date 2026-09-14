@@ -145,6 +145,29 @@ func test_an_original_splash_radius_reaches_farther_than_the_default() -> void:
 	assert_almost_eq(before - enemies[1].hp, 50.0, 0.001, "配了原版溅射范围就够得着")
 
 
+func test_lifesteal_heals_a_share_of_what_the_target_really_lost() -> void:
+	# 按目标**实际掉的血**算：一刀打死小怪时溢出的那一截不算，否则吸血在潮水波里等于满血。
+	var attacker := _striker()
+	attacker.lifesteal = 0.5
+	attacker.hp = 100.0
+	var enemies := _pack(1)
+	var out := PBCombatOutcome.new()
+	PBStrikeRules.land(attacker, enemies[0], 100.0, false, enemies, _cfg, 0, null, out)
+	assert_almost_eq(attacker.hp, 150.0, 0.001, "打掉 100，回 50")
+	enemies[0].hp = 10.0
+	PBStrikeRules.land(attacker, enemies[0], 100.0, false, enemies, _cfg, 1, null, out)
+	assert_almost_eq(attacker.hp, 155.0, 0.001, "只剩 10 血的那个只算 10")
+
+
+func test_a_dodge_heals_a_share_of_the_blow_it_avoided() -> void:
+	var attacker := _striker()
+	attacker.dodge = 1.0
+	attacker.dodge_heal = 0.35
+	attacker.hp = 100.0
+	assert_false(attacker.take_damage(200.0, 0, _rng), "必定闪掉")
+	assert_almost_eq(attacker.hp, 170.0, 0.001, "回这一下的 35%")
+
+
 func test_hitting_a_healthy_enemy_lands_the_extra_but_a_hurt_one_does_not() -> void:
 	# 判据看的是**这一下之前**的血量比 —— 打完再看的话，一记正好把人
 	# 打到半血以下的攻击会拿不到加成，而玩家读到的是「有时候触发有时候不」。

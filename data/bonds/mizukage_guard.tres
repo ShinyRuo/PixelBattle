@@ -14,5 +14,8 @@ tier_function_carriers = Array[StringName]([&""])
 member_functions = {
 &"chojuro": {
 &"bite_current": 0.08
+},
+&"mei": {
+&"struck_aura": 450.0
 }
 }

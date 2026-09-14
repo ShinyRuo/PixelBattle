@@ -69,7 +69,7 @@ immortal_pair	不死二人组	2	revive	hidan	kakuzu,hidan
 akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu		deidara:clay_spider:power_scale=1.35
 kai_squad	凯班	4	gather	rock_lee	might_guy,rock_lee,tenten,neji_hyuga
 hyuga_pair	日向兄妹	2			neji_hyuga,hinata	neji_hyuga:crit_chance=0.09;hinata:crit_chance=0.15,bite_current=0.12
-sand_siblings	砂忍三巨头	3	slow_field	gaara	gaara,temari,kankuro
+sand_siblings	砂忍三巨头	3	slow_field	gaara	gaara,temari,kankuro	gaara:struck_aura=400,struck_boost=0.5
 earth_curse	地之咒印	2			kimimaro,orochimaru		kimimaro:bracken_dance:on_death=1
 my_cage	吾之牢笼	2			kimimaro,jugo	kimimaro:low_hp=0.90,drain_cut=1
 five_kage	五影齐聚	5			tsunade,gaara,mei,raikage,onoki
@@ -78,7 +78,7 @@ hokage_line	历代火影	5			hashirama,tobirama,hiruzen,minato,tsunade	hashirama
 senju_brothers	千手兄弟	2			hashirama,tobirama
 brothers_bond	兄弟的爱恨	2	crit_chance	itachi	itachi,sasuke	itachi:defence=15
 vermilion_pair	朱雀与南斗	2			itachi,kisame
-divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo
+divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo	tendo:lifesteal=0.12
 masterminds	幕后黑手	5	crit_chance	madara	madara,obito,kabuto,tendo,zetsu
 team_seven	第七班	4	pull	kakashi	naruto,sasuke,sakura,kakashi
 ino_shika_cho	第十班	4	root	shikamaru	shikamaru,choji,ino,asuma	choji:hp_bonus=0.50	ino:mind_transfer:targets_add=1;choji:human_bullet:radius_scale=1.5
@@ -92,7 +92,7 @@ crimson_dusk	夕阳之红	2			asuma,kurenai		kurenai:mirror_ward:targets_add=4
 master_and_pupil	师徒决战	2			orochimaru,hiruzen		orochimaru:great_breakthrough:radius_scale=1.5
 shadow_and_blade	影与玉	2			asuma,shikamaru		shikamaru:strategist:radius_scale=1.5
 truest_friends	最真的挚友	2			itachi,shisui	itachi:crit_chance=0.22	
-mizukage_guard	水影护卫	2			mei,chojuro	chojuro:bite_current=0.08	
+mizukage_guard	水影护卫	2			mei,chojuro	chojuro:bite_current=0.08;mei:struck_aura=450	
 eternal_rivals	永远的对手	2			might_guy,kakashi		kakashi:pursuing_fangs:summon_power_scale=1.7
 power_of_youth	青春的力量	2			might_guy,rock_lee		rock_lee:leaf_whirl:power_scale=1.5,radius_scale=1.5
 child_of_prophecy	预言之子	2			naruto,jiraiya	naruto:dodge=0.20	
@@ -101,4 +101,5 @@ team_eight	第八班·集合	4			kurenai,hinata,shino,kiba		kurenai:haze_illusio
 uchiha_clan	宇智波一族	5			madara,obito,itachi,sasuke,shisui	madara:damage_bonus=0.40;obito:damage_bonus=0.40;itachi:damage_bonus=0.40;sasuke:damage_bonus=0.40;shisui:damage_bonus=0.40	
 destined_couple	终成眷属	2			naruto_sage,hinata		hinata:palm_rotation:radius_scale=2
 art_duo	艺术二人组	2			sasori,deidara		deidara:clay_self_destruct:on_death=1
-peace_wish	和平的期望	2			tendo,naruto_sage		tendo:samsara_rebirth:on_death=1
+peace_wish	和平的期望	2			tendo,naruto_sage	naruto_sage:dodge_heal=0.35	tendo:samsara_rebirth:on_death=1
+byakugou_seal	百豪之印	2			tsunade,sakura	tsunade:heal_power=0.5;sakura:heal_power=0.5

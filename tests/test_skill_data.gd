@@ -302,7 +302,7 @@ func test_every_buff_in_the_folder_is_reachable_from_some_skill() -> void:
 			used[buff.id] = true
 		for buff: PBBuff in character.low_hp_buffs:
 			used[buff.id] = true
-		for buff: PBBuff in character.lethal_buffs:
+		for buff: PBBuff in character.lethal_buffs + character.struck_buffs:
 			used[buff.id] = true
 	var dir := DirAccess.open("res://data/buffs")
 	assert_not_null(dir, "buffs 目录该在")

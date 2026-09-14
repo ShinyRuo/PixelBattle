@@ -209,6 +209,34 @@ var low_hp_fired: bool = false
 ## 自身掉血（[constant PBBuffRules.DRAIN_MAX]）抵掉几成。1.0 = 一点不掉。中性 0.0。
 var drain_cut: float = 0.0
 
+## 普攻吸血：目标实际掉的血有几成回给自己。0 = 不吸。读点在 [method PBStrikeRules.land]。
+var lifesteal: float = 0.0
+
+## 闪避成功时回复这一下伤害的几成。0 = 不回。读点在 [method take_damage] 的闪避那一支。
+var dodge_heal: float = 0.0
+
+## 挨敌人一下时挂出去的效果（名册「被动」列的 `on_struck=<效果键>`）。**增益挂自己，减益挂打他的那个敌人。**
+## 读点在 [method PBStrikeRules.hurt_ally] —— 只有敌人的攻击算「受攻击」，自身掉血不算。
+var struck_buffs: Array[PBBuff] = []
+
+## 受击触发的冷却，秒（[constant PBPassiveRules.STRUCK_CD]）。
+var struck_cd: float = 0.0
+
+## 下一次受击触发最早在哪个 tick。开波清零（[method revive]）。
+var struck_ready_at: int = 0
+
+## 他放出去的治疗量多几成（[constant PBPassiveRules.HEAL_POWER]）。中性 0.0。
+var heal_power: float = 0.0
+
+## 受击效果罩住周围多少原版码数内的队友（[constant PBPassiveRules.STRUCK_AURA]）。0 = 只管自己。
+var struck_aura: float = 0.0
+
+## 受击效果里量型数值多几成（[constant PBPassiveRules.STRUCK_BOOST]）。中性 0.0。
+var struck_boost: float = 0.0
+
+## 光环那一路的冷却：`{队友槽位: 下一次最早的 tick}`。**按队友各算各的**（沙之守护每人一波一次）。开波清空。
+var aura_ready_at: Dictionary = {}
+
 ## 受致命伤那一下挂在自己身上的效果（名册「被动」列的 `on_lethal=<效果键>`）。
 ## 配了就有**一波一次**抵挡：那一下不死、血停在 1，效果由 [method PBStrikeRules.wound_ally] 挂上。
 var lethal_buffs: Array[PBBuff] = []
@@ -355,6 +383,13 @@ func clone() -> PBAttacker:
 	out.low_hp_at = low_hp_at
 	out.low_hp_buffs = low_hp_buffs
 	out.drain_cut = drain_cut
+	out.lifesteal = lifesteal
+	out.dodge_heal = dodge_heal
+	out.struck_buffs = struck_buffs
+	out.struck_cd = struck_cd
+	out.heal_power = heal_power
+	out.struck_aura = struck_aura
+	out.struck_boost = struck_boost
 	out.lethal_buffs = lethal_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at
@@ -404,6 +439,8 @@ func revive() -> void:
 	lethal_ready = not lethal_buffs.is_empty()
 	lethal_pending = false
 	death_pending = false
+	struck_ready_at = 0
+	aura_ready_at.clear()
 	pos = home if move_speed > 0.0 else pos
 	# **按槽位错开第一发**：全队同时开火的话子弹叠成一道。用槽位不掷骰 —— 同种子两次回放必须一样（§13）。
 	next_shot_at = posmod(slot, _interval_ticks)
@@ -457,7 +494,9 @@ func take_damage(
 ) -> bool:
 	if not is_targetable():
 		return false
-	if PBPassiveRules.dodges(self, rng):
+	if PBPassiveRules.dodges(self, rng, at_tick):
+		# 闪避回血（〔和平的期望〕）排在这里：闪掉了才回，回的是这一下本该挨的量。
+		heal(amount * dodge_heal)
 		return false
 	var hurt: float = amount * buffs.amount(PBBuffRules.DAMAGE_TAKEN, at_tick)
 	hurt = buffs.absorb(hurt, at_tick)

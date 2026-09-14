@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_luhk1"]
+
+[resource]
+script = ExtResource("1_luhk1")
+id = &"mei_charm"
+name_key = "buff.mei_charm"
+icon_key = "buff.mei_charm"
+kind = 1
+friendly = false
+duration_seconds = 3.0
+mods = {
+&"enemy_attack_speed_scale": 0.35
+}

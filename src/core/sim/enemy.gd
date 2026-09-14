@@ -168,7 +168,10 @@ func ready_to_fire(current_tick: int) -> bool:
 ## [method PBAttacker.on_fired]。
 func on_fired(current_tick: int) -> void:
 	swinging = false
-	next_shot_at = current_tick + maxi(attack_interval - windup_ticks, 1)
+	# 攻速被压低（[constant PBBuffRules.ENEMY_ATTACK_SPEED_SCALE]）时下一次间隔拉长。下限防除零。
+	var pace: float = maxf(buffs.amount(PBBuffRules.ENEMY_ATTACK_SPEED_SCALE, current_tick), 0.05)
+	var interval: int = int(round(float(attack_interval) / pace))
+	next_shot_at = current_tick + maxi(interval - windup_ticks, 1)
 
 
 ## 抬手，同 [method PBAttacker.begin_swing]。

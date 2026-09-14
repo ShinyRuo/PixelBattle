@@ -137,12 +137,18 @@ func _aura_text(beast: PBBeast) -> String:
 		parts.append("%s伤害 +%.0f%%" % [_aura_scope(beast), beast.aura_power * 100.0])
 	if beast.aura_ultimate_cd_scale < 1.0:
 		parts.append("全队大招冷却 ×%.2f" % beast.aura_ultimate_cd_scale)
+	# 走被动词汇表的那一份（防御、闪避、吸血、攻速……）。**写 1 级的量**：开局选的时候就是 1 级，
+	# 升级放大多少写在行首。漏掉这一段的话，一半尾兽的光环在这里读起来是「无」。
+	var words := PBShopLabels.mod_words(PBBeastRules.aura_passives(beast, 1, _cfg))
+	if not words.is_empty():
+		parts.append("全体　%s" % "、".join(words))
 	if beast.aura_def_reduction > 0.0:
 		# §11 / §10 的规矩：防御向效果在当前模型下诚实地等于 0，不折算成伤害。
 		parts.append("基地减伤 +%.0f%%（敌人还手做出来之前恒为 0）" % (beast.aura_def_reduction * 100.0))
 	if parts.is_empty():
 		return PBSkin.tint("光环：无", PBSkin.DIM)
-	return PBSkin.tint("光环（全程生效）　", PBSkin.DIM) + "　".join(parts)
+	var head: String = "光环（全程生效，1 级；每升一级 +%.0f%%）　" % (_cfg.beast_level_gain * 100.0)
+	return PBSkin.tint(head, PBSkin.DIM) + "　".join(parts)
 
 
 ## 光环打在谁身上。三只带筛选的（水系 / 土系 / 点名）正是尾兽和 §03 属性系统

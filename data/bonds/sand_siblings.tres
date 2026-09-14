@@ -11,3 +11,9 @@ tier_counts = Array[int]([3])
 tier_power = Array[float]([0.28])
 tier_function_keys = Array[StringName]([&"slow_field"])
 tier_function_carriers = Array[StringName]([&"gaara"])
+member_functions = {
+&"gaara": {
+&"struck_aura": 400.0,
+&"struck_boost": 0.5
+}
+}

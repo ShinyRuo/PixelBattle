@@ -16,3 +16,4 @@ summon_count = 10
 summon_power = 0.12
 summon_hp_share = 0.08
 summon_seconds = 12.0
+summon_lifesteal = 0.2

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_au4th"]
+
+[resource]
+script = ExtResource("1_au4th")
+id = &"zetsu_ephemera"
+name_key = "buff.zetsu_ephemera"
+icon_key = "buff.zetsu_ephemera"
+kind = 1
+duration_seconds = 2.0
+mods = {
+&"dodge": 1.0
+}

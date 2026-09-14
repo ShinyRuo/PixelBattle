@@ -90,6 +90,14 @@ const DEFENCE: StringName = &"defence"
 ## 读点在 [method PBAttacker.take_damage] **里面**，排在重生之前 —— 同闪避、同减伤，调用方不判。
 const UNDYING: StringName = &"undying"
 
+## 己方**临时**闪避率加多少（蜉蝣「受攻击时提升 100% 的普攻闪避率，持续 2 秒」）。量型。
+## 和常驻那一份（[member PBAttacker.dodge]）在 [method PBPassiveRules.dodges] 里相加。
+const DODGE: StringName = &"dodge"
+
+## 敌人的攻速倍率（妩媚「降低其 65% 的攻击速度」= 0.35）。率型，读点在 [method PBEnemy.on_fired]：
+## 下一次出手的间隔除以它。**判在排间隔那一句，不在出手判定里** —— 同晕眩那条「冷却不偷跑」。
+const ENEMY_ATTACK_SPEED_SCALE: StringName = &"enemy_attack_speed_scale"
+
 ## 暴击率**临时**加多少。读点在 [method PBCritRules.chance_of]。
 ##
 ## **量型不是率型**：概率是加法量，+15% 和 +10% 摞起来是 +25%；
@@ -136,11 +144,13 @@ const ALL: Array[StringName] = [
 	DRAIN_MAX,
 	DEFENCE,
 	UNDYING,
+	DODGE,
+	ENEMY_ATTACK_SPEED_SCALE,
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
 const SCALES: Array[StringName] = [
-	DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE, ENEMY_HIT_SCALE, DAMAGE_TAKEN
+	DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE, ENEMY_HIT_SCALE, DAMAGE_TAKEN, ENEMY_ATTACK_SPEED_SCALE
 ]
 
 ## 「全队短时增伤」那一份的定义。见 [method team_damage]。
@@ -180,6 +190,34 @@ static func misses(enemy: PBEnemy, at_tick: int, rng: RandomNumberGenerator) -> 
 	if hit >= 1.0:
 		return false
 	return rng.randf() >= hit
+
+
+## 把一份已经按等级算好的效果里的**回血量**乘上 [param scale]（〔百豪之印〕「医疗量提升 50%」）。
+## 返回新的一份，不改传进来的那份（它可能是挂在别人身上那一份的 `mods`）。
+##
+## 只乘 [constant HEAL] 与 [constant HEAL_MAX]：护盾、回蓝不是「治疗量」。
+## **放大只在这里做**，技能那一路（[method PBSkillRules._apply_all]）和被动挂给自己那一路
+## （[method PBStrikeRules._hang_self]）都调它 —— 各乘各的话迟早一个乘了一个没乘。
+static func scale_heal(mods: Dictionary, scale: float) -> Dictionary:
+	if is_equal_approx(scale, 1.0) or not (mods.has(HEAL) or mods.has(HEAL_MAX)):
+		return mods
+	var out: Dictionary = mods.duplicate()
+	for key: StringName in [HEAL, HEAL_MAX]:
+		if out.has(key):
+			out[key] = float(out[key]) * scale
+	return out
+
+
+## 把一份效果里的**量型**数值乘上 [param scale]（〔沙忍三巨头〕「沙之守护增加数值提升 50%」）。
+## **率型不乘**：攻速 ×0.35 乘 1.5 成了 ×0.525，是变弱不是变强。返回新的一份，不改传进来的那份。
+static func scale_amounts(mods: Dictionary, scale: float) -> Dictionary:
+	if is_equal_approx(scale, 1.0):
+		return mods
+	var out: Dictionary = mods.duplicate()
+	for key: StringName in out:
+		if not is_scale(key):
+			out[key] = float(out[key]) * scale
+	return out
 
 
 ## 这个键认不认得。

@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_75d8y"]
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_char"]
 [ext_resource type="Resource" path="res://data/buffs/obito_warp.tres" id="2_4tsuy"]
+[ext_resource type="Resource" path="res://data/buffs/obito_kamui.tres" id="4_qe0hv"]
 
 [resource]
 script = ExtResource("1_char")
@@ -33,6 +34,8 @@ reach = 1
 attack_range = 125.0
 skill_ids = Array[StringName]([&"flame_formation"])
 passives = {
-&"crit_chance": 0.15
+&"crit_chance": 0.15,
+&"struck_cd": 5.0
 }
 on_hit_buffs = Array[ExtResource("1_75d8y")]([ExtResource("2_4tsuy")])
+struck_buffs = Array[ExtResource("1_75d8y")]([ExtResource("4_qe0hv")])

@@ -152,6 +152,9 @@ const MAX_SKILLS: int = 2
 ## 被动里「受致命伤那一下挡住、给自己挂上」的效果（名册同一列的 `on_lethal=<效果键>`）。一波一次。
 @export var lethal_buffs: Array[PBBuff] = []
 
+## 被动里「挨敌人一下时挂出去」的效果（名册同一列的 `on_struck=<效果键>`）。增益挂自己，减益挂打他的敌人。
+@export var struck_buffs: Array[PBBuff] = []
+
 
 ## 大招实际打什么属性。见 [member ultimate_element_override]。
 func ultimate_element() -> PBElement.Type:

@@ -97,6 +97,8 @@ static func _stand_up(
 	one.attack = caster.attack * maxf(skill.summon_power, 0.0)
 	one.dps = caster.dps * maxf(skill.summon_power, 0.0)
 	one.max_hp = caster.max_hp * maxf(skill.summon_hp_share, 0.0)
+	# 吸血跟着**这一发技能**走，不抄本体：位子会被别的召唤技能复用，抄本体或者不重设都会串。
+	one.lifesteal = maxf(skill.summon_lifesteal, 0.0)
 	one.defence = caster.defence
 	one.def_element = caster.def_element
 	one.reach = caster.reach
