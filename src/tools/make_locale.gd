@@ -24,6 +24,11 @@ const SKILLS := "res://data/skills.tsv"
 const BUFFS := "res://data/buffs.tsv"
 const LOCALE := "res://data/locale/zh_CN.json"
 
+## 显示名在第几列。**不是每张表都在第 2 列**：技能表第 2 列是角色键、第 3 列才是显示名 ——
+## 取错列的表现是指令卡上的技能格写着角色的英文键，而它不报错。
+const NAME_COL: int = 1
+const SKILL_NAME_COL: int = 2
+
 
 func _init() -> void:
 	var file := FileAccess.open(LOCALE, FileAccess.READ)
@@ -48,10 +53,11 @@ func _init() -> void:
 		out[key] = table[key]
 	var bonds: int = _fill(out, BONDS, "bond.")
 	var characters: int = _fill(out, ROSTER, "char.")
-	var skills: int = _fill(out, SKILLS, "skill.")
+	var skills: int = _fill(out, SKILLS, "skill.", SKILL_NAME_COL)
 	var buffs: int = _fill(out, BUFFS, "buff.")
 
-	var text := JSON.stringify(out, "\t")
+	# 缩进用一个空格：仓库里那一份就是这个格式，换成 Tab 的话每跑一次整张表都算改过。
+	var text := JSON.stringify(out, " ")
 	var write := FileAccess.open(LOCALE, FileAccess.WRITE)
 	if write == null:
 		printerr("写不进语言表")
@@ -68,16 +74,16 @@ func _init() -> void:
 	quit(0)
 
 
-## 从一张 tsv 的前两列铺 `<前缀><键> = 显示名`，返回铺了几条。
-func _fill(out: Dictionary, path: String, prefix: String) -> int:
+## 从一张 tsv 铺 `<前缀><第 1 列> = <第 name_col 列>`，返回铺了几条。
+func _fill(out: Dictionary, path: String, prefix: String, name_col: int = NAME_COL) -> int:
 	var count: int = 0
 	for line: String in FileAccess.get_file_as_string(path).split("\n"):
 		var trimmed: String = line.strip_edges()
 		if trimmed == "" or trimmed.begins_with("#"):
 			continue
 		var cells: PackedStringArray = trimmed.split("\t")
-		if cells.size() < 2:
+		if cells.size() <= name_col:
 			continue
-		out["%s%s" % [prefix, cells[0].strip_edges()]] = cells[1].strip_edges()
+		out["%s%s" % [prefix, cells[0].strip_edges()]] = cells[name_col].strip_edges()
 		count += 1
 	return count

@@ -7,7 +7,16 @@ extends Control
 ## `field_height` 或撑大 B，两条都改配平。
 ##
 ## 和战场上的染色分工：染色（[method tinted]）答「**谁**身上有东西」，这一条答「**是什么、还剩多久**」。
-## 几何：正文右边界在面板内偏移 162，血蓝条 42..118，这一条摆在 122..162，四格 10 像素步距。
+## 几何在 [PBUnitInfo] 那边（[constant PBUnitInfo.STRIP_AT]）：血蓝条和右上角头像之间，四格 10 像素步距。
+##
+## **鼠标停在一格上弹出那一份的详情**（[method PBEffectWords.buff_body]）。图标暂时是纯色方块，
+## 所以名字和效果只能靠这张卡说。
+
+## 鼠标停在第几格上。参数顺序对齐 [method PBTooltip.show_hint]。
+signal hint_requested(at: Rect2, title: String, body: String)
+
+## 鼠标离开了那一格。
+signal hint_closed
 
 ## 摆得下几个。第 [constant SLOTS] 格在超出时变成「还有几个」的记号。
 const SLOTS: int = 4
@@ -46,9 +55,19 @@ var _left: PackedFloat32Array = PackedFloat32Array()
 ## 超出的那几个有没有。
 var _overflow: bool = false
 
+## 画着的那几格各是哪一份，下标同 [member _friendly]。**只给悬停卡用** —— 重不重画仍然只看上面那三个量，
+## 拿引用比的话暂停中每帧都算「变了」。
+var _states: Array[PBBuffState] = []
+var _tick: int = 0
+var _cfg: PBSimConfig = null
+
+## 鼠标正停在第几格。-1 = 不在任何一格上。
+var _hovered: int = -1
+
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# `PASS` 而不是 `STOP`：自己要收悬停，但不替底下的东西拦点击。
+	mouse_filter = Control.MOUSE_FILTER_PASS
 	size = Vector2(float(SLOTS) * PITCH, CELL)
 
 
@@ -60,6 +79,9 @@ func show_bag(bag: PBBuffBag, at_tick: int, cfg: PBSimConfig) -> void:
 	var friendly: Array[bool] = []
 	var left := PackedFloat32Array()
 	var extra: bool = false
+	_states = []
+	_tick = at_tick
+	_cfg = cfg
 	for state: PBBuffState in bag.states():
 		if not state.is_live(at_tick):
 			continue
@@ -72,12 +94,50 @@ func show_bag(bag: PBBuffBag, at_tick: int, cfg: PBSimConfig) -> void:
 			break
 		friendly.append(state.buff.friendly)
 		left.append(_share(state, at_tick, cfg))
+		_states.append(state)
 	_apply(friendly, left, extra)
 
 
 ## 一格都不画。
 func clear() -> void:
+	_states = []
 	_apply([], PackedFloat32Array(), false)
+	_hover_at(Vector2(-1.0, -1.0))
+
+
+## 鼠标在这一条上的 [param local] 处（本地坐标）。停在哪一格上就要那一格的卡，**格与格之间那 1 像素不算**。
+func _hover_at(local: Vector2) -> void:
+	var index: int = floori(local.x / PITCH)
+	var inside: bool = (
+		local.y >= 0.0
+		and local.y <= CELL
+		and index >= 0
+		and index < _states.size()
+		and local.x - float(index) * PITCH <= CELL
+	)
+	if not inside:
+		if _hovered >= 0:
+			_hovered = -1
+			hint_closed.emit()
+		return
+	if index == _hovered or _cfg == null:
+		return
+	_hovered = index
+	var state: PBBuffState = _states[index]
+	var at := Rect2(global_position + Vector2(float(index) * PITCH, 0.0), Vector2(CELL, CELL))
+	hint_requested.emit(
+		at, PBEffectWords.buff_title(state.buff), PBEffectWords.buff_body(state, _tick, _cfg)
+	)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_hover_at((event as InputEventMouseMotion).position)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_MOUSE_EXIT:
+		_hover_at(Vector2(-1.0, -1.0))
 
 
 ## 现在画着几个图标（不含「还有」那一格）。测试拿它确认满了会收口。

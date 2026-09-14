@@ -154,10 +154,11 @@ func _ready() -> void:
 	_parts.tip_requested.connect(_tip.show_card)
 	_parts.scrolled.connect(_refresh_panels)
 	_gear.tip_requested.connect(_tip.show_card)
-	# 羁绊那几行两条路都通：悬停一瞥即走；点开的那张吃掉下一次点击（手机上没有悬停）。
+	# 羁绊那几行、buff 格、技能格都只有悬停（玩家定的：不点开）。
 	_unit_info.hint_requested.connect(_tip.show_hint)
 	_unit_info.hint_closed.connect(_tip.hide_card)
-	_unit_info.tip_requested.connect(_tip.show_card)
+	_command.hint_requested.connect(_tip.show_hint)
+	_command.hint_closed.connect(_tip.hide_card)
 	_bay.unit_picked.connect(func(id: StringName) -> void: _select(PBSelection.Kind.UNIT, id))
 	_beasts.beast_chosen.connect(_on_beast_chosen)
 	_menu.resumed.connect(_close_menu)

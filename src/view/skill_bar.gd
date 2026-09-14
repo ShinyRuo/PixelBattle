@@ -25,6 +25,8 @@ static func show_on(
 	var names := PackedStringArray()
 	var ready: Array[bool] = []
 	var wait := PackedInt32Array()
+	var skills: Array[PBSkill] = []
+	var level: int = 1
 	if battle != null:
 		for i: int in PBSkillRules.cast_count(live):
 			var cast := PBSkillRules.cast_at(live, i)
@@ -33,6 +35,9 @@ static func show_on(
 			names.append(label_of(cast.skill, i))
 			ready.append(battle.can_cast(live, i))
 			wait.append(maxi(cast.ready_at - battle.current_tick(), 0))
+			skills.append(cast.skill)
+			level = maxi(level, cast.caster_level)
+	card.set_skills(skills, level)
 	card.set_battle(
 		true,
 		picker.aim_mode,

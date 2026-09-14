@@ -2,9 +2,13 @@ class_name PBUnitInfo
 extends Control
 ## 底部中间的忍者信息栏：**选中谁就显示谁的全部属性**；没选人时显示整队的账（生效的羁绊）。
 ##
-## 兑现 §03 那条改进（原版信息不透明）：头像、名字、稀有度、等级、血/蓝、攻/防、力/敏/智、
-## 攻元素与防元素、射程、羁绊、装备词条。**这些数字真的进战斗**，显示不参与战斗的数字比不显示更糟。
-## **攻元素和防元素分两行写**：它们指向不同的波次。
+## 兑现 §03 那条改进（原版信息不透明）：头像、名字、稀有度、等级、血/蓝、攻/防（带攻防属性）、
+## 力/敏/智、攻速、羁绊。**这些数字真的进战斗**，显示不参与战斗的数字比不显示更糟。
+##
+## **框只有 94 高、168 宽，放不下的就不放**（玩家定的）：克制倍率、站位、装备都不在这张卡上 ——
+## 装备的效果已经算进属性数字里，挂了哪几件看装备栏。正文前两行是数字，**剩下三行全给羁绊**；
+## 羁绊每组只写「名字 人数」，不带下划线、点不开，成员名单在鼠标悬停的卡里（[method _bond_body]）。
+## 多塞一行的表现是最底下的羁绊被挤出框外，而它不报错。
 
 ## 鼠标停在一行羁绊上。参数顺序对齐 [method PBTooltip.show_hint]。
 signal hint_requested(at: Rect2, title: String, body: String)
@@ -12,26 +16,33 @@ signal hint_requested(at: Rect2, title: String, body: String)
 ## 鼠标从那一行上移开了，把卡收掉。
 signal hint_closed
 
-## 点在一行羁绊上。**和悬停走两条路**：点开的那张会吃掉下一次点击
-## （[method PBTooltip.show_card]），那是触屏上唯一收得掉它的办法 ——
-## 而 §01 要 PC + 手机双端，手机上压根没有悬停。
-signal tip_requested(at: Rect2, title: String, body: String)
-
 ## 面板占底栏中段，右边留给指令卡（[constant PBCommandCard.PANEL_RECT]）。
 const PANEL_RECT := PBLayout.H_INFO
 const FONT_SIZE: int = 8
+
+## 自己折行时给右边留的余量（像素）。正好卡满的话，字体度量和排版差半个像素就会被引擎再折一次。
+const WRAP_SLACK: float = 2.0
 
 ## 羁绊那一行的链接前缀。RichTextLabel 的 `[url=…]` 是这一栏唯一能
 ## **按行**收鼠标的东西 —— 自己摆一排隐形按钮的话，行高、换行、
 ## 字体度量三样都要复算一遍，而算错的表现是「有时候悬停不出来」。
 const BOND_META := "bond:"
 
-## 血条与蓝条。**先画满血的底再画当前值**。宽度让出右边给 buff 图标条（[PBBuffStrip] 有这笔几何账）；
+## 头像摆在**右上角**（玩家定的），底边落到正文第一行的顶上。
+## 摆在左边的话它比名字和两条条子加起来还高，底下那一截会压住正文第一行开头的「血」字。
+const PORTRAIT_AT := Vector2(132.0, 1.0)
+
+## 名字那一行多宽：让出右上角的头像（[constant PORTRAIT_AT] 起再留 2 像素）。
+const HEAD_WIDTH: float = 124.0
+
+## 血条与蓝条，从左边距起。**先画满血的底再画当前值**。宽度让出右边给 buff 图标条（[PBBuffStrip] 有这笔几何账）；
 ## 它是百分比条不是刻度尺，窄一点仍然读得出比例。
 const BAR_SIZE := Vector2(76.0, 6.0)
+const HP_AT := Vector2(6.0, 17.0)
+const MP_AT := Vector2(6.0, 26.0)
 
-## 图标条摆在条的右边。x 从 122 起、宽 40，正好接到正文右边界 162。
-const STRIP_AT := Vector2(122.0, 20.0)
+## 图标条摆在条的右边。x 从 86 起、宽 40（四格），右边到 126，不碰头像。
+const STRIP_AT := Vector2(86.0, 20.0)
 
 const HP_COLOR := Color(0.85, 0.30, 0.30)
 const MP_COLOR := Color(0.35, 0.55, 0.90)
@@ -71,7 +82,7 @@ func _ready() -> void:
 	# 头像复用编队页那套白模（属性底色 + 稀有度边框 + 星级角标）——
 	# 换真美术时只改 [PBUnitTile] 一个类，这一栏一行不动。
 	_portrait = PBUnitTile.new()
-	_portrait.position = PANEL_RECT.position + Vector2(6.0, 14.0)
+	_portrait.position = PANEL_RECT.position + PORTRAIT_AT
 	add_child(_portrait)
 	# **在 add_child 之后设**：格子的 `_ready` 会把自己设回 STOP（它在别处要
 	# 自己收拖放），而这里它只是一张头像，收了事件就会挡住底下的东西。
@@ -80,20 +91,24 @@ func _ready() -> void:
 	_head = PBSkin.label(
 		self,
 		PANEL_RECT.position + Vector2(6.0, 1.0),
-		PANEL_RECT.size.x - 12.0,
+		HEAD_WIDTH,
 		PBSkin.FONT_TITLE,
 		PBSkin.TITLE
 	)
-	_hp_back = _add_bar(PANEL_RECT.position + Vector2(42.0, 17.0), BAR_BACK)
-	_hp_fill = _add_bar(PANEL_RECT.position + Vector2(42.0, 17.0), HP_COLOR)
-	_mp_back = _add_bar(PANEL_RECT.position + Vector2(42.0, 26.0), BAR_BACK)
-	_mp_fill = _add_bar(PANEL_RECT.position + Vector2(42.0, 26.0), MP_COLOR)
+	_hp_back = _add_bar(PANEL_RECT.position + HP_AT, BAR_BACK)
+	_hp_fill = _add_bar(PANEL_RECT.position + HP_AT, HP_COLOR)
+	_mp_back = _add_bar(PANEL_RECT.position + MP_AT, BAR_BACK)
+	_mp_fill = _add_bar(PANEL_RECT.position + MP_AT, MP_COLOR)
 	_strip = PBBuffStrip.new()
 	_strip.position = PANEL_RECT.position + STRIP_AT
 	add_child(_strip)
+	# buff 格的悬停卡和羁绊行走同一张卡、同一对信号。
+	_strip.hint_requested.connect(
+		func(at: Rect2, title: String, body: String) -> void: hint_requested.emit(at, title, body)
+	)
+	_strip.hint_closed.connect(func() -> void: hint_closed.emit())
 
-	# **正文要五行**（属性 / 力敏智 / 攻防元素 / 射程装备 / 羁绊），框只有 94 高：上下留白已经收到最紧，
-	# 头像再往上挪会盖住数字。
+	# **正文最多五行**（血蓝攻防 / 力敏智攻速 / 羁绊三行），框只有 94 高：上下留白已经收到最紧。
 	_body = PBSkin.rich(
 		self,
 		Rect2(PANEL_RECT.position + Vector2(6.0, 34.0), PANEL_RECT.size - Vector2(12.0, 36.0)),
@@ -104,10 +119,11 @@ func _ready() -> void:
 	_body.mouse_filter = Control.MOUSE_FILTER_PASS
 	_body.meta_hover_started.connect(_on_meta_hover)
 	_body.meta_hover_ended.connect(func(_meta: Variant) -> void: hint_closed.emit())
-	_body.meta_clicked.connect(_on_meta_click)
+	# 链接只是为了收悬停：**不画下划线、不接点击**（玩家定的）。
+	_body.meta_underlined = false
 
 
-## 按当前选中重画。[param deployed] 是「现在开打的话会是谁」，用来算装备。
+## 按当前选中重画。[param deployed] 是「现在开打的话会是谁」，羁绊成员名单按它标「在场」。
 ## [param bond_aware] 是玩家现在用哪种带人方式（`B` 键切换），只在队伍账那一档用。
 func refresh(
 	selection: PBSelection,
@@ -126,11 +142,11 @@ func refresh(
 	if unit == null:
 		_show_team(state, cfg, wave, bond_aware)
 		return
-	_show_unit(unit, selection, state, cfg, wave, deployed)
+	_show_unit(unit, selection, state, cfg, wave)
 
 
 ## 战斗中把血蓝条与效果图标刷成真值（§02）。**每渲染帧调一次。**
-## 单独一条便宜的路：[method refresh] 要重排整块文字、跑一次装备分配，一秒六十次太贵，而会变的只有这几样。
+## 单独一条便宜的路：[method refresh] 要重排整块文字、数一遍羁绊，一秒六十次太贵，而会变的只有这几样。
 ## [param live] 为 null（没选人、或选中的人这一波没上场）就把条收掉。
 func show_live(live: PBAttacker, at_tick: int = 0) -> void:
 	if live == null:
@@ -191,12 +207,7 @@ func _link(bond: PBBond, label: String) -> String:
 
 
 func _show_unit(
-	unit: PBUnit,
-	selection: PBSelection,
-	state: PBRunState,
-	cfg: PBSimConfig,
-	wave: PBWave,
-	deployed: Array[PBUnit]
+	unit: PBUnit, selection: PBSelection, state: PBRunState, cfg: PBSimConfig, wave: PBWave
 ) -> void:
 	var stats := unit.stats(cfg)
 	_portrait.visible = true
@@ -215,12 +226,20 @@ func _show_unit(
 	_set_bar(_mp_back, _mp_fill, 1.0)
 
 	var lines := PackedStringArray()
-	lines.append("血 %.0f　蓝 %.0f　攻 %.0f　防 %.0f　攻速 %.2f" % [
-		stats.hp, stats.mp, stats.atk, stats.def, stats.attack_speed
-	])
-	lines.append(_secondary_line(unit, stats))
-	lines.append(_element_line(unit, wave, cfg))
-	lines.append("%s　%s" % [_reach_name(unit), _equipment_text(unit, deployed, state, cfg)])
+	# 攻防属性跟在攻、防后面（玩家定的），省出来的那一行给羁绊。攻速在第二行：放第一行末尾会折行。
+	# **防属性必须写**：头像上只标了攻属性，而很多人攻防不同系。括号用半角，全角的第一行放不下。
+	lines.append(
+		"血 %.0f　蓝 %.0f　攻 %.0f(%s)　防 %.0f(%s)"
+		% [
+			stats.hp,
+			stats.mp,
+			stats.atk,
+			PBUnitTile.ELEMENT_NAMES.get(unit.element, "?"),
+			stats.def,
+			PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?"),
+		]
+	)
+	lines.append("%s　攻速 %.2f" % [_secondary_line(unit, stats), stats.attack_speed])
 	lines.append(_bond_line(unit, state, cfg))
 	_body.text = "\n".join(lines)
 
@@ -241,75 +260,56 @@ func _secondary_line(unit: PBUnit, stats: PBStats) -> String:
 	return "　".join(parts)
 
 
-## 攻元素与防元素分两截写 —— 合成一行的话玩家读到的还是旧模型（§03A）。
-func _element_line(unit: PBUnit, wave: PBWave, cfg: PBSimConfig) -> String:
-	var attack := PBElement.relation(unit.element, wave.element)
-	var defend := PBElement.relation(wave.element, unit.def_element)
-	return "攻 %s系 本波×%.2f　　防 %s系 挨打×%.2f" % [
-		PBUnitTile.ELEMENT_NAMES.get(unit.element, "?"),
-		cfg.damage_multiplier(attack),
-		PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?"),
-		cfg.damage_multiplier(defend),
-	]
-
-
-func _reach_name(unit: PBUnit) -> String:
-	match unit.character.reach_tier():
-		PBCharacter.Reach.MELEE:
-			return "近战·顶前排"
-		PBCharacter.Reach.LONG:
-			return "超远程·站后排"
-		_:
-			return "远程·中排"
-
-
-## 这个人身上挂着哪几件、给了什么词条。**分类匹配意味着「挂不上」是常态**（§10），所以挂不上要说出来。
-func _equipment_text(
-	unit: PBUnit, deployed: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
-) -> String:
-	var index: int = deployed.find(unit)
-	if index < 0:
-		return "装备：未上场不分配"
-	var held: PackedStringArray = PBEquipRules.assign(
-		deployed, state.equip_parts, cfg, state.equipped
-	)[index]
-	if held.is_empty():
-		return "装备：没挂上"
-	# **列词条，不列倍率**：玩家要对的是属性栏上的数。
-	var worn := PBEquipRules.unit_mods(deployed, state.equip_parts, cfg, state.equipped)[index]
-	var names := PackedStringArray()
-	for item_id: String in held:
-		var item := cfg.equipment.item(StringName(item_id))
-		names.append(PBLocale.text(item.name_key) if item != null else item_id)
-	var words := PBShopLabels.mod_words(worn)
-	return "装备：%s\n　%s" % ["·".join(names), "　".join(words)]
-
-
-## 这张卡进了哪几组羁绊，每组**到了几个 / 要几个**。
+## 这张卡进了哪几组羁绊，每组只写**名字和人数**（`名字到了几个/要几个`，玩家定的）。
 ##
 ## 每一组都是一个 `[url]`：停上去弹出成员名单，绿的在场、黄的在仓库、
-## 灰的还没抽到（[method _bond_body]）。**「他还差谁」是这一栏最值钱的
-## 一句话** —— 而它太长，写在行里会把攻防那几行挤没。
+## 灰的还没抽到（[method _bond_body]）。「还差谁」太长，写在行里会把别的行挤出框。
+##
+## **折行自己做，一组不拆开**：交给 RichTextLabel 自动折行的话，中文在任何两个字之间都能断，
+## 一组羁绊的名字会被劈成两半、分在两行（玩家报的）。
 func _bond_line(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> String:
 	if cfg.bonds == null:
 		return "羁绊：无"
 	var counted := state.bonded_units(cfg)
-	var parts := PackedStringArray()
+	var plain := PackedStringArray()
+	var marked := PackedStringArray()
 	for bond: PBBond in cfg.bonds.all():
 		if not bond.counts_character(unit.character):
 			continue
 		var active: int = PBBondRules.active_count(bond, counted)
 		var need: int = bond.full_tier_count()
-		var text: String = "%s %d/%d" % [PBLocale.of_bond(bond), active, need]
-		# 生效的标一下：「3/3」和「2/3」在一行小字里几乎分不出来，而那是这一组值不值钱的全部区别。
-		text = PBSkin.tint(text + "✓", PBSkin.GOOD) if active >= need else text
-		parts.append(_link(bond, text))
-	if parts.is_empty():
+		var text: String = "%s%d/%d" % [PBLocale.of_bond(bond), active, need]
+		plain.append(text)
+		# 生效的染绿：「3/3」和「2/3」在一行小字里几乎分不出来，而那是这一组值不值钱的全部区别。
+		marked.append(_link(bond, PBSkin.tint(text, PBSkin.GOOD) if active >= need else text))
+	if plain.is_empty():
 		return "羁绊：无"
-	return "羁绊　" + "　".join(parts)
+	return _pack("羁绊", plain, marked)
 
 
-## 悬停卡的正文：这一组都有谁，各自在哪儿。
+## 把一串词按正文的宽度排成几行，**词与词之间才换行**。[param plain] 量宽度用，[param marked] 是真正写出去的（带标签）。
+func _pack(lead: String, plain: PackedStringArray, marked: PackedStringArray) -> String:
+	const GAP := "　"
+	var font: Font = _body.get_theme_font(&"normal_font")
+	var width: float = _body.size.x - WRAP_SLACK
+	var out: String = lead
+	var used: float = _width_of(font, lead)
+	for i: int in plain.size():
+		var step: float = _width_of(font, GAP + plain[i])
+		if used + step > width:
+			out += "\n" + marked[i]
+			used = _width_of(font, plain[i])
+		else:
+			out += GAP + marked[i]
+			used += step
+	return out
+
+
+func _width_of(font: Font, text: String) -> float:
+	return font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
+
+
+## 悬停卡的正文：**满档给什么**（[method PBEffectWords.bond_effects]），然后这一组都有谁、各自在哪儿。
 ##
 ## [constant PBBond.Match.ELEMENT] 那几组没有点名的成员表，成员是
 ## **角色表里所有这个属性的人** —— 现算而不是往数据里抄一份：
@@ -323,6 +323,12 @@ func _bond_body(bond: PBBond) -> String:
 		for unit: PBUnit in _state.all_units():
 			owned[unit.character.id] = true
 	var lines := PackedStringArray()
+	var effects := PBEffectWords.bond_effects(bond, _cfg)
+	if not effects.is_empty():
+		lines.append(PBSkin.tint("满档效果", PBSkin.TITLE))
+		for one: String in effects:
+			lines.append("　" + one)
+		lines.append(PBSkin.tint("成员", PBSkin.TITLE))
 	for character: PBCharacter in _cfg.characters.all():
 		if not bond.counts_character(character):
 			continue
@@ -353,12 +359,6 @@ func _on_meta_hover(meta: Variant) -> void:
 	var bond := _bond_of(meta)
 	if bond != null:
 		hint_requested.emit(PANEL_RECT, _bond_head(bond), _bond_body(bond))
-
-
-func _on_meta_click(meta: Variant) -> void:
-	var bond := _bond_of(meta)
-	if bond != null:
-		tip_requested.emit(PANEL_RECT, _bond_head(bond), _bond_body(bond))
 
 
 func _bond_of(meta: Variant) -> PBBond:

@@ -8,6 +8,12 @@ extends Control
 ## 玩家点了某一格。[param command] 是下面那几组常量里的一个。
 signal command(command_id: StringName)
 
+## 鼠标停在一格技能上，要一张说明卡（[method PBEffectWords.skill_body]）。参数顺序对齐 [method PBTooltip.show_hint]。
+signal hint_requested(at: Rect2, title: String, body: String)
+
+## 鼠标离开了那一格。
+signal hint_closed
+
 ## 大本营的指令：花钱那六项 + 「科技 ▸」 + 重抽任务 + 开打。
 const CMD_REROLL_QUEST: StringName = &"reroll_quest"
 const CMD_START: StringName = &"start"
@@ -56,6 +62,9 @@ const SKILL_COMMANDS: Array[StringName] = [CMD_ULTIMATE, CMD_SKILL_1, CMD_SKILL_
 ## 指令卡上摆出来的第一格技能对应 `cast_at` 的哪个下标。**只是不摆，不是重新编号** ——
 ## 否则按钮、瞄准状态机、施放入口三处又各有一套编号。
 const FIRST_SKILL: int = 1
+
+## 准备阶段「派去任务」那一格。第 2、3 格留给技能（和战斗中同位置，见 [method _fill_skills]）。
+const DISPATCH_SLOT: int = 4
 
 ## 3×3。和原版一致 —— 九格装得下任何一种上下文，多了就该拆界面了。
 const COLUMNS: int = 3
@@ -137,6 +146,11 @@ var _queued: int = -1
 var _skill_names: PackedStringArray = PackedStringArray()
 var _skill_ready: Array[bool] = []
 var _skill_wait: PackedInt32Array = PackedInt32Array()
+
+## 每一格技能是哪一份、施法者几级，下标同上。**只给说明卡用**。
+## 战斗中是这一波打过补丁、算好伤害的那一份（[method PBSkillBar.show_on] 给）；准备阶段是表里那一份（[method _fill_skills]）。
+var _skills: Array[PBSkill] = []
+var _skill_level: int = 1
 
 
 func _ready() -> void:
@@ -246,6 +260,12 @@ func set_battle(
 	_skill_ready = ready
 	_skill_wait = wait
 	_queued = queued
+
+
+## 战斗中每一格技能是哪一份（下标同 [method PBSkillRules.cast_at]，0 号大招可以是 null）、施法者几级。只给说明卡用。
+func set_skills(skills: Array[PBSkill], level: int) -> void:
+	_skills = skills
+	_skill_level = level
 
 
 ## 这一格现在绑着哪个指令。测试拿它确认「选中什么就该出现什么」。
@@ -408,6 +428,21 @@ func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 		)
 	# 没有「装备」格：装备栏（[PBEquipBay]）跟着选中常驻显示，打开一直开着的东西的按钮只会让人以为漏了一步。
 	_fill_dispatch(unit, state, cfg)
+	_fill_skills(unit, cfg)
+
+
+## 准备阶段也把技能格摆出来，**和战斗中同一个位置**（第 2 格起），**灰着、按不下去** —— 只为了悬停看说明（玩家定的）。
+## 「派去任务」因此让到第 4 格。
+func _fill_skills(unit: PBUnit, cfg: PBSimConfig) -> void:
+	var skills: Array[PBSkill] = [null]
+	if cfg.skills != null:
+		for id: StringName in unit.character.skill_ids:
+			var skill: PBSkill = cfg.skills.by_id(id)
+			if skill != null and skills.size() < SKILL_COMMANDS.size():
+				skills.append(skill)
+	set_skills(skills, unit.level)
+	for i: int in range(FIRST_SKILL, skills.size()):
+		_bind(2 + i - FIRST_SKILL, SKILL_COMMANDS[i], PBLocale.of_skill(skills[i]), false)
 
 
 ## 「派去任务」那一格（§06）。代价大小完全取决于派的是谁，所以派谁必须是玩家能点的。
@@ -416,13 +451,15 @@ func _fill_dispatch(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	var chosen: int = state.dispatch_manual.size()
 	var going: bool = state.dispatch_manual.has(unit.key())
 	if going:
-		_bind(3, CMD_DISPATCH, "取消派遣\n%d/%d" % [chosen, need], true)
+		_bind(DISPATCH_SLOT, CMD_DISPATCH, "取消派遣\n%d/%d" % [chosen, need], true)
 		_hint.text = "去做任务：不上场，羁绊也不算他。"
 		return
 	# 仓库里的人派出去一分代价都没有（他本来就不给羁绊），那样任务就是白送 ——
 	# §06 整节的张力在于「派谁」要付羁绊，所以门槛是「在不在场」。
 	var on_field: bool = state.field_units(cfg).has(unit)
-	_bind(3, CMD_DISPATCH, "派去任务\n%d/%d" % [chosen, need], on_field and chosen < need)
+	_bind(
+		DISPATCH_SLOT, CMD_DISPATCH, "派去任务\n%d/%d" % [chosen, need], on_field and chosen < need
+	)
 	if not on_field:
 		_hint.text = "他不在场上 —— 派他去等于白送，先派上场。"
 	elif chosen >= need:
@@ -454,12 +491,16 @@ func _make_slot(index: int, at: Vector2) -> Button:
 	PBSkin.style_button(button)
 	button.pressed.connect(func() -> void: _on_slot_pressed(index))
 	button.mouse_entered.connect(func() -> void: _on_slot_hovered(index))
+	button.mouse_exited.connect(func() -> void: hint_closed.emit())
 	add_child(button)
 	return button
 
 
 func _on_slot_pressed(index: int) -> void:
 	var id: StringName = _bound[index]
+	# 准备阶段的技能格只看不按。按钮本来就是灰的，这一道是防有人把它点亮了之后发出一条施放指令。
+	if not _battle_mode and SKILL_COMMANDS.has(id):
+		return
 	if id == CMD_TECH_PAGE or id == CMD_BACK:
 		_tech_page = id == CMD_TECH_PAGE
 		if _selection != null:
@@ -473,6 +514,15 @@ func _on_slot_pressed(index: int) -> void:
 func _on_slot_hovered(index: int) -> void:
 	var id: StringName = _bound[index]
 	if id == &"" or _state == null:
+		return
+	var skill_index: int = SKILL_COMMANDS.find(id)
+	if skill_index >= FIRST_SKILL and skill_index < _skills.size() and _skills[skill_index] != null:
+		var skill: PBSkill = _skills[skill_index]
+		hint_requested.emit(
+			_slots[index].get_global_rect(),
+			PBEffectWords.skill_title(skill),
+			PBEffectWords.skill_body(skill, _cfg, _skill_level)
+		)
 		return
 	if PBShopLabels.KINDS.has(id):
 		_hint.text = PBShopLabels.detail_of(id, _state, _cfg)

@@ -186,10 +186,9 @@ func test_dispatching_always_costs_dps_and_costs_more_the_more_you_send() -> voi
 	assert_gt(three, one, "派得越多越贵")
 
 
-func test_the_info_panel_shows_both_element_multipliers() -> void:
-	# §03 说原版最大的短板是克制关系不可见，而 §03A 把它拆成了两条线：
-	# **攻元素克不克得动这一波、防元素扛不扛得住这一波**。
-	# 只写一个「火系」的话，玩家读到的还是旧模型。
+func test_the_info_card_keeps_only_what_fits() -> void:
+	# 框只有 94 高：多塞一行，最底下的羁绊就被挤出框外，而它不报错（玩家报的）。
+	# 所以克制倍率、站位、装备都不上这张卡；攻防属性跟在攻、防后面，羁绊留着。
 	var state := _roster_of(12)
 	var wave := PBWaveRules.build(3, _cfg, RandomNumberGenerator.new())
 	var deployed := PBValuation.deployed_for(state, wave.element, _cfg)
@@ -201,10 +200,13 @@ func test_the_info_panel_shows_both_element_multipliers() -> void:
 	panel.refresh(PBSelection.of_unit(unit.key()), state, _cfg, wave, deployed)
 
 	var text: String = panel._body.text
-	var attack: float = _cfg.damage_multiplier(PBElement.relation(unit.element, wave.element))
-	var defend: float = _cfg.damage_multiplier(PBElement.relation(wave.element, unit.def_element))
-	assert_true(text.contains("×%.2f" % attack), "该写明攻元素对本波的倍率：%s" % text)
-	assert_true(text.contains("×%.2f" % defend), "也该写明挨打的倍率：%s" % text)
+	assert_false(text.contains("×"), "不写克制倍率：%s" % text)
+	assert_false(text.contains("装备"), "不写装备：%s" % text)
+	assert_false(text.contains("排"), "不写站位：%s" % text)
+	var defence: String = PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?")
+	assert_true(text.contains("(%s)" % defence), "防属性要写出来（头像上只标了攻属性）：%s" % text)
+	assert_true(text.contains("羁绊"), "羁绊那一行要在：%s" % text)
+	assert_lte(text.split("\n").size(), 5, "正文最多五行，多了会挤出框")
 
 
 func test_the_info_panel_falls_back_to_the_team_account_with_nobody_selected() -> void:

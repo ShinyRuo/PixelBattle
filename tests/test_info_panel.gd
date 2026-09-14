@@ -77,6 +77,44 @@ func test_hovering_a_bond_asks_for_a_card_of_its_members() -> void:
 	assert_signal_emit_count(info, "hint_requested", 1, "认不出来的 meta 不该弹")
 
 
+func test_a_ninja_with_many_bonds_still_fits_and_no_name_is_split() -> void:
+	# 玩家报的：羁绊多的人最后一组显示不全，而且中文自动折行把一组的名字劈成了两行。
+	var root := _prepared()
+	var most: PBCharacter = null
+	var count: int = -1
+	for character: PBCharacter in root._cfg.characters.all():
+		var mine: int = 0
+		for bond: PBBond in root._cfg.bonds.all():
+			if bond.counts_character(character):
+				mine += 1
+		if mine > count:
+			most = character
+			count = mine
+	var unit := PBUnit.new(most)
+	root._state.add_unit(unit)
+	root._select(PBSelection.Kind.UNIT, unit.key())
+	var info: PBUnitInfo = root._unit_info
+	await wait_frames(2)
+	var lines := info._body.get_parsed_text().split("\n")
+	for bond: PBBond in root._cfg.bonds.all():
+		if not bond.counts_character(most):
+			continue
+		var whole: bool = false
+		for line: String in lines:
+			whole = whole or line.contains(PBLocale.of_bond(bond))
+		assert_true(whole, "「%s」该完整地落在某一行里：%s" % [PBLocale.of_bond(bond), lines])
+	assert_lte(info._body.get_line_count(), 5, "排出来最多五行，多了会挤出框（%d 组羁绊）" % count)
+
+
+func test_bonds_on_the_card_are_hover_only() -> void:
+	# 玩家定的：羁绊名不要下划线、点不开，悬停才弹名单。
+	var root := _prepared()
+	var info := _with_a_squad(root, 4)
+	assert_false(info._body.meta_underlined, "不画下划线")
+	assert_false(info.has_signal("tip_requested"), "没有「点开」那条路")
+	assert_eq(info._body.meta_clicked.get_connections().size(), 0, "点击不接任何东西")
+
+
 func test_the_card_colours_members_by_where_they_are() -> void:
 	# 玩家的原话：「场上有的人物和没有的用颜色区分」。
 	# **三档不是两档**：在场 / 抽到了但不在场上 / 压根没抽到 ——
