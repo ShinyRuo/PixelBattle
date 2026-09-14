@@ -251,7 +251,7 @@ var enemy_attack_speed: float = 0.8
 ## 子弹飞完全场要几秒。**0 表示子弹瞬时命中**。
 ## 短到不会觉得「打了没反应」，长到看得出是一发飞过去的东西。
 ## 飞行时间也是离散出手唯一的损耗来源：目标在这几 tick 里死了，那一发就白放。
-var projectile_cross_seconds: float = 0.35
+var projectile_cross_seconds: float = 0.8
 
 ## **近战**敌人打得到多远，与 [member field_length] 同轴。
 ##
