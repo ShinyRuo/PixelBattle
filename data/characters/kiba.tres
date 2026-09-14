@@ -28,4 +28,5 @@ mp_per_intellect = 0.7
 atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 reach = 1
+attack_range = 125.0
 skill_ids = Array[StringName]([&"fang_pass"])

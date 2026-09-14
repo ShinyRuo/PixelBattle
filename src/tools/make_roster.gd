@@ -95,6 +95,7 @@ func _write_one(row: PackedStringArray) -> String:
 	if ResourceLoader.exists("%s/%s.tres" % [ACTOR_DIR, actor]):
 		character.actor_key = StringName(actor)
 	character.shot_key = PBRosterSheet.shot_key_of(row[PBRosterSheet.COL_SHOT])
+	character.attack_range = float(row[PBRosterSheet.COL_RANGE])
 
 	var bad := _row_error(row)
 	if bad != "":
@@ -125,7 +126,7 @@ func _write_one(row: PackedStringArray) -> String:
 	return "" if err == OK else "%s 存不下来（%d）" % [key, err]
 
 
-## 这一行里查表的那几格（稀有度、攻击距离、攻防属性、主属性、普攻子弹）有没有不认识的值。
+## 这一行里查表的那几格（稀有度、攻击距离、攻防属性、主属性、射程、普攻子弹）有没有不认识的值。
 ## **返回错误信息，空串 = 没有。**
 ##
 ## 普攻子弹**填了却找不到就报错**，和形象键相反：形象缺了是素材还没画，
@@ -141,6 +142,10 @@ func _row_error(row: PackedStringArray) -> String:
 		return "的攻/防属性不认识：%s / %s" % [attack, defence]
 	if not PRIMARIES.has(row[PBRosterSheet.COL_PRIMARY]):
 		return "的主属性不认识：%s" % row[PBRosterSheet.COL_PRIMARY]
+	# 射程必须是正数：填成 0 或者写错成字的话 `float()` 给 0，那个人就站在怪堆里一发都打不出去，而它不报错。
+	var range_cell: String = row[PBRosterSheet.COL_RANGE]
+	if not range_cell.is_valid_float() or float(range_cell) <= 0.0:
+		return "的射程不是正数：%s（填原版码数，近战 125、远程 600）" % range_cell
 	var shot := PBRosterSheet.shot_error(row[PBRosterSheet.COL_SHOT])
 	return "" if shot == "" else "的普攻子弹：%s" % shot
 

@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="PBCharacter" format=3]
+[gd_resource type="Resource" script_class="PBCharacter" format=3 uid="uid://c8y10xqijfkp8"]
 
-[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_dc6y7"]
-[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_ssf3f"]
+[ext_resource type="Script" uid="uid://b2t0pcg1dtj2q" path="res://src/core/sim/buff.gd" id="1_dc6y7"]
+[ext_resource type="Script" uid="uid://ddd8oi1dk6gti" path="res://src/core/sim/character.gd" id="1_ssf3f"]
 
 [resource]
 script = ExtResource("1_ssf3f")
@@ -28,4 +28,5 @@ atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 rarity = 1
 reach = 2
+attack_range = 800.0
 skill_ids = Array[StringName]([&"paper_wings"])

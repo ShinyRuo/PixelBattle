@@ -25,4 +25,5 @@ mp_per_intellect = 0.7
 atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 reach = 2
+attack_range = 600.0
 skill_ids = Array[StringName]([&"reincarnation"])

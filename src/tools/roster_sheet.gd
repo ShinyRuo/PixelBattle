@@ -28,10 +28,11 @@ const COL_INTERVAL: int = 13
 const COL_ACTOR: int = 14
 const COL_PASSIVE: int = 15
 const COL_SHOT: int = 16
+const COL_RANGE: int = 17
 
 ## 表一共几列。少一列就整行不要 —— 用默认值兜底的表现是
 ## 「那个角色的三围全是 0」，而 0 力量算出来是一个合法的血量。
-const COLUMNS: int = 17
+const COLUMNS: int = 18
 
 ## 形象键那一列写这个 = 和角色键同名；被动、普攻子弹那两列写这个 = 没有。
 const NONE := "-"

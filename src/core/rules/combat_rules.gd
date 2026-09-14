@@ -107,8 +107,8 @@ static func unit_multipliers(
 ## 每个攻击者的 `dps` 就是 [method team_dps] 那个求和的一项 ——
 ## 界面上报的战力和这批对象必须同源，`test_attacker.gd` 锁着这个恒等式。
 ##
-## 射程档来自角色（[method PBCharacter.reach_tier]），具体距离来自配置
-## （[method PBSimConfig.reach_distance]）—— 分开才扫得动。
+## 站哪一列来自射程档（[method PBCharacter.reach_tier]），打多远来自角色自己的原版射程
+## （[method PBSimConfig.reach_of]，换算比例在配置里）。
 ##
 ## **尾兽**：带了就在末尾多挂一个 `dps = 0` 的攻击者，只有大招。它的伤害以
 ## 「全队几秒输出」计量，分母只有全部角色摊开之后才知道。
@@ -176,7 +176,7 @@ static func build_attackers(
 		# 蓝：智力抬池子，回速按池子的比例走。
 		attacker.max_mp = stats.mp
 		attacker.mp_regen = stats.mp * cfg.mp_regen_rate / float(cfg.tick_rate)
-		attacker.reach = cfg.reach_distance(tier)
+		attacker.reach = cfg.reach_of(unit.character)
 		# 站位：x 由射程档派生（§02），y 是泳道，玩家拖动过的由 [PBFormationRules] 覆盖。
 		attacker.pos = Vector2(cfg.reach_column(tier), cfg.ally_lane(i, deployed.size()))
 		# 跑动：站位是「从哪一列出发」，皮带绳默认不拴（见 [member PBSimConfig.unit_leash]）。

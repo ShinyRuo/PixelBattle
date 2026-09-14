@@ -814,7 +814,7 @@ func _sync_placed(field: Vector2) -> void:
 	# 选中谁就画谁的射程圈 —— 摆位要有依据，而依据就是「他够得到哪」。
 	_allies.show_range(
 		PBLayout.to_screen(spots[live], field),
-		_cfg.reach_distance(units[live].character.reach_tier()) * PBLayout.px_per_unit(field)
+		_cfg.reach_of(units[live].character) * PBLayout.px_per_unit(field)
 	)
 
 

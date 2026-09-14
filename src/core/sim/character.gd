@@ -107,7 +107,14 @@ const MAX_SKILLS: int = 2
 @export var rarity: PBUnit.Rarity = PBUnit.Rarity.R
 
 ## 射程档（§02）。默认 [constant Reach.AUTO] —— 见 [method reach_tier]。
+## **只决定站前排、中排还是后排**；打多远看 [member attack_range]。
 @export var reach: Reach = Reach.AUTO
+
+## 攻击距离，**原版码数**（125 / 600 / 245 …，照抄原版物编）。换算成战场坐标走
+## [method PBSimConfig.reach_of]，那里是唯一的换算点。**0 = 没配**，按 [member reach] 那一档的默认距离。
+##
+## 存码数不存战场坐标：改战场尺寸或换算比例时表里一个数都不用动，而且和原版文档逐个对得上。
+@export var attack_range: float = 0.0
 
 ## 单体还是范围（§04 靠它把潮水波与精英波的价值分开）。
 ## 枚举借用 [enum PBAttacker.Shape]：调用点都在战斗层，数据层再定义一个同义枚举只会多一处要同步。

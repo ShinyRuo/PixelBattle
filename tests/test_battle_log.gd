@@ -89,7 +89,8 @@ func test_a_dead_ninja_is_announced_but_a_dead_monster_is_not() -> void:
 	# 玩家的原话：**忍者死亡（怪物死亡不算）**。
 	# 一波死几十只怪，每只一行会把另外五种播报全部冲掉。
 	var log := PBBattleLog.new()
-	var squad: Array[PBAttacker] = [_unit(0.30, 1.0, 50.0)]
+	# 血和伤害都要留余量：1 血的人在敌人一够着就倒，一只怪都来不及打死（前提断言会红，而播报没错）。
+	var squad: Array[PBAttacker] = [_unit(0.30, 200.0, 500.0)]
 	var sim := _sim(_wave(9), squad, log)
 	sim.run_to_end()
 	assert_eq(sim.result().allies_lost, 1, "前提：这个忍者真的被打死了")

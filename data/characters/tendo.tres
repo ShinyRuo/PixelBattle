@@ -28,6 +28,7 @@ atk_per_primary = 3.5
 attack_speed_per_agility = 0.009
 rarity = 2
 reach = 1
+attack_range = 125.0
 skill_ids = Array[StringName]([&"almighty_push"])
 passives = {
 &"crit_chance": 0.15,

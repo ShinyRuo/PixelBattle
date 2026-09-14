@@ -138,14 +138,20 @@ var column_back: float = 0.10
 ## 取屏幕中线：玩家一眼看得出规则，准备阶段战场上那条竖线（`Limit`）就是它。只作用于摆位，不管战斗中的跑动。
 var deploy_limit_x: float = 0.5
 
-## 三档射程各覆盖多远（[enum PBCharacter.Reach]）。**近战真的要贴上去，远程是它的 15 倍。**
+## 原版多少码算我们的 1 个战场长度（[member field_length]）。**射程和技能范围共用这一把尺子**：
+## 原版射程 600 = 0.30，技能范围 600 也是 0.30，两者之间的比例和原版一样（玩家定的：射程按原版比例套）。
 ##
-## **0.02 是贴身能取的最小值**：防挤间距是 [member unit_min_gap]（0.012），射程比它还短的话
-## 近战会「走进射程 → 被推开 → 又够不着」来回抖。
-## 超远程没有角色在用（名册全是 AUTO），按 1.5 倍远程排，保持档序。
-var reach_melee: float = 0.02
+## 这个数不是量原版战场量出来的（地图文件不在手边），是技能表一直在用的换算（`data/skills.tsv` 的「范围」列逐条对过）。
+## 改它等于同时改所有忍者的射程，而技能表的「范围」是写死的战场坐标、不跟着变 —— 两边会脱节。
+var war3_units_per_field: float = 2000.0
+
+## 三档射程的**默认**距离，只给没配 [member PBCharacter.attack_range] 的角色用（代码现造的测试角色、合成名册）。
+## 真名册每个人都有自己的原版射程（[method reach_of]）。取的是原版三档的代表值：近战 125、远程 600、超远程 800 码。
+##
+## 下限是防挤间距 [member unit_min_gap]（0.012）：射程比它还短的话近战会「走进射程 → 被推开 → 又够不着」来回抖。
+var reach_melee: float = 0.0625
 var reach_ranged: float = 0.30
-var reach_long: float = 0.45
+var reach_long: float = 0.40
 
 # ── §02 大招与落点 ──────────────────────────────────────────────
 ## 大招冷却（秒）。§02 给的是 15–30。取 20：单波约 16 秒，大部分波次每人只放得出一发，
@@ -255,9 +261,10 @@ var projectile_cross_seconds: float = 0.8
 
 ## **近战**敌人打得到多远，与 [member field_length] 同轴。
 ##
-## **必须等于 [member reach_melee]，不能比它长**：敌人一走进射程就站住，这个数就是它停在离忍者多远的地方。
-## 比忍者的近战射程长的话，近战忍者结构上永远够不着他，站在怪堆里整场一发打不出去，而测试全绿。
-var enemy_reach: float = 0.02
+## **不能比任何一个近战忍者的射程长**：敌人一走进射程就站住，这个数就是它停在离忍者多远的地方。
+## 比忍者的近战射程长的话，那个近战忍者结构上永远够不着他，站在怪堆里整场一发打不出去，而测试全绿。
+## 取原版 100 码（玩家定的；原版怪物的射程文档里没有），等于己方最短的近战射程。`tests/test_attack_range.gd` 钉着。
+var enemy_reach: float = 0.05
 
 ## 一段动画有几帧。四段（idle / run / attack / dead）都是这个数，出图那一侧是六格图集。
 ##
@@ -507,7 +514,20 @@ func shape_hp_mult(shape: PBWave.Shape) -> float:
 			return 1.0
 
 
-## 某个射程档能覆盖多远。
+## 原版 [param units] 码换成战场坐标。**全项目只有这一处换算**，见 [member war3_units_per_field]。
+func units_to_field(units: float) -> float:
+	return units / maxf(war3_units_per_field, 1.0)
+
+
+## 这个角色打得多远（战场坐标）。配了原版射程就按它换算，没配就按射程档的默认距离。
+## **战斗和画射程圈都走这里**，各算各的话「圈画到了、人却打不到」。
+func reach_of(character: PBCharacter) -> float:
+	if character != null and character.attack_range > 0.0:
+		return units_to_field(character.attack_range)
+	return reach_distance(PBCharacter.Reach.AUTO if character == null else character.reach_tier())
+
+
+## 某个射程档的默认距离（没配原版射程的角色用，见 [method reach_of]）。
 func reach_distance(tier: PBCharacter.Reach) -> float:
 	match tier:
 		PBCharacter.Reach.LONG:

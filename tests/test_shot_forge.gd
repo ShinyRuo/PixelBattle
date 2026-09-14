@@ -10,8 +10,8 @@ const SHEET := (
 	"# 表头注释，改一格时不能丢\n"
 	+ "\n"
 	+ "#角色键\t显示名\n"
-	+ "alpha_one\tA\tR\t远程\t火\t火\t力量\t1\t1\t1\t1\t1\t1\t1.5\t-\t-\t-\n"
-	+ "beta_two\tB\tR\t远程\t火\t火\t力量\t1\t1\t1\t1\t1\t1\t1.5\t-\t-\tkunai\n"
+	+ "alpha_one\tA\tR\t远程\t火\t火\t力量\t1\t1\t1\t1\t1\t1\t1.5\t-\t-\t-\t600\n"
+	+ "beta_two\tB\tR\t远程\t火\t火\t力量\t1\t1\t1\t1\t1\t1\t1.5\t-\t-\tkunai\t600\n"
 	+ "gamma_three\tC\tR\t远程\t火\t火\t力量\t1\t1\t1\t1\t1\t1\t1.5\t-\t-\n"
 )
 
@@ -78,7 +78,7 @@ func test_setting_a_cell_touches_only_that_cell() -> void:
 	assert_eq(lines.size(), before.size(), "行数不变")
 	for i: int in before.size():
 		if before[i].begins_with("alpha_one"):
-			assert_true(lines[i].ends_with("\t-\t-\tfire_ball"), "只换了最后那一格：%s" % lines[i])
+			assert_true(lines[i].ends_with("\t-\t-\tfire_ball\t600"), "只换了普攻子弹那一格：%s" % lines[i])
 			assert_eq(lines[i].split("\t").size(), PBRosterSheet.COLUMNS, "列数不变")
 		else:
 			assert_eq(lines[i], before[i], "别的行（包括注释）原样留着：%s" % before[i])
@@ -89,7 +89,7 @@ func test_a_short_row_is_padded_with_nothing() -> void:
 	var sheet := _sheet()
 	assert_eq(sheet.set_cell("gamma_three", PBRosterSheet.COL_SHOT, "kunai"), "", "列数不够也改得动")
 	var row: PackedStringArray = sheet.rows()[2]
-	assert_eq(row.size(), PBRosterSheet.COLUMNS, "补齐到那一格")
+	assert_eq(row.size(), PBRosterSheet.COL_SHOT + 1, "补齐到那一格")
 	assert_eq(row[PBRosterSheet.COL_SHOT], "kunai", "那一格是新值")
 
 

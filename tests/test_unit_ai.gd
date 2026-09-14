@@ -194,8 +194,12 @@ func test_a_parked_shooter_beyond_the_leash_gets_chased_down() -> void:
 	assert_true(enemy.engaged, "它已经站定了 —— 这是那个例外的前提")
 	# **停在射程的九成上**（M6-q，[constant PBAttacker.STOP_RING]）：
 	# 停在正好 `reach` 上的话浮点会让他判成够不着，于是站在敌人脸上一枪不放。
-	assert_almost_eq(
-		squad[0].pos.x, enemy.distance - squad[0].stop_gap(), 1e-3, "站定的是个静止靶，就该走过去打"
+	# 走进射程就开打、不再往前挪，所以站在「九成那一圈」和「射程边」之间 —— 一步比那一圈宽的时候落在哪都对。
+	assert_between(
+		squad[0].pos.x,
+		enemy.distance - squad[0].reach - 1e-6,
+		enemy.distance - squad[0].stop_gap() + 1e-6,
+		"站定的是个静止靶，就该走过去打"
 	)
 	assert_true(squad[0].can_reach(enemy.pos()), "走到位了就必须真的够得着 —— 这条才是重点")
 
@@ -286,7 +290,8 @@ func test_the_released_leash_is_a_spring_not_a_ratchet() -> void:
 	_leash_on()
 	var mine := _fighter(Vector2(0.30, 0.0), _cfg.reach_melee, 0.0)
 	var near := PBEnemy.new()
-	near.distance = 0.30 + mine.leash + 0.05
+	# 摆在「绳长 + 射程」外面一点点：够得着的话绳子本来就不用放；太远的话一放就顶到天花板，和远的那个分不出来。
+	near.distance = 0.30 + mine.leash + mine.reach + 0.01
 	near.engaged = true
 	var far := PBEnemy.new()
 	far.distance = 0.95
