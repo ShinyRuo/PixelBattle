@@ -55,15 +55,23 @@ static func dismiss(one: PBAttacker) -> void:
 ##
 ## **位子不够只可能是数漏了**（[method reserve] 按技能逐个数过），
 ## 所以这里静默少召是安全的兜底，不是设计。
+##
+## [param count] 大于等于 0 时只召这么多个（受击时召一个分身那一路），属性照这份技能。
 static func raise_from(
-	attackers: Array[PBAttacker], caster: PBAttacker, skill: PBSkill, tick: int, cfg: PBSimConfig
+	attackers: Array[PBAttacker],
+	caster: PBAttacker,
+	skill: PBSkill,
+	tick: int,
+	cfg: PBSimConfig,
+	count: int = -1
 ) -> int:
 	if skill.summon_count <= 0 or caster == null:
 		return 0
+	var want: int = skill.summon_count if count < 0 else count
 	var life: int = int(round(skill.summon_seconds * float(cfg.tick_rate)))
 	var made: int = 0
 	for one: PBAttacker in attackers:
-		if made >= skill.summon_count:
+		if made >= want:
 			break
 		if not one.summoned or one.expires_at != GONE:
 			continue

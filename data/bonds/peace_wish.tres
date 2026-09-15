@@ -6,7 +6,9 @@
 script = ExtResource("1_ofj3p")
 id = &"peace_wish"
 name_key = "bond.peace_wish"
+match_mode = 0
 member_ids = Array[StringName]([&"tendo", &"naruto_sage"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])

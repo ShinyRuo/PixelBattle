@@ -69,6 +69,8 @@ static func build(wave_index: int, cfg: PBSimConfig, rng: RandomNumberGenerator)
 	var scale: float = growth_scale(wave_index, cfg)
 	wave.hp_each = cfg.hp_base * scale * cfg.shape_hp_mult(wave.shape)
 	wave.atk_each = cfg.atk_base * scale
+	wave.armor_each = cfg.enemy_armor(wave.shape, wave_index)
+	wave.resist_each = cfg.enemy_resist(wave.shape, wave_index)
 	wave.count = count_of(wave_index, cfg, wave.shape)
 	wave.reward_gold = cfg.gold_base + cfg.gold_rate * wave_index
 	return wave

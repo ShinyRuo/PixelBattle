@@ -237,6 +237,65 @@ var struck_boost: float = 0.0
 ## 光环那一路的冷却：`{队友槽位: 下一次最早的 tick}`。**按队友各算各的**（沙之守护每人一波一次）。开波清空。
 var aura_ready_at: Dictionary = {}
 
+## 挨敌人一下时召出一个分身的几率（[constant PBPassiveRules.STRUCK_SUMMON]）。0 = 不召，也不掷骰。
+var struck_summon: float = 0.0
+
+## 大于 0 = 开波就挂上血量阈值效果（[constant PBPassiveRules.OPEN_LOW_HP]）。
+var open_low_hp: float = 0.0
+
+## 「不死」到期那一刻回复最大生命的几成（[constant PBPassiveRules.UNDYING_END_HEAL]）。中性 0.0。
+var undying_end_heal: float = 0.0
+
+## 每秒回复最大生命的几成（[constant PBPassiveRules.REGEN_MAX]）。中性 0.0。
+var regen_max: float = 0.0
+
+## 挨各系敌人攻击时伤害多几成：`{PBElement.Type: 成数}`（[constant PBPassiveRules.TAKEN_ELEMENTS]）。空 = 不增不减。
+var taken_by_element: Dictionary = {}
+
+## 每一下普攻打中都挂在目标身上的效果（名册 `on_attack=<效果键>`）。**不骑暴击**，读点在 [method PBStrikeRules.land]。
+var attack_buffs: Array[PBBuff] = []
+
+## 闪避成功时反打那个敌人一下，量是自己一发普攻的几成（[constant PBPassiveRules.DODGE_COUNTER]）。
+var dodge_counter: float = 0.0
+
+## 这一波闪掉过几下。**只由 [method take_damage] 写**，[method PBStrikeRules.hurt_ally] 前后比一次
+## 就知道「刚才那一下闪掉了」—— 闪避判在挨打里面，调用方不再掷一次。
+## 记次数不记 tick：同一 tick 挨两下、只闪掉第一下时，记 tick 的话第二下也会被当成闪掉。
+var dodge_count: int = 0
+
+## 挨**近战**攻击时伤害多几成（负数 = 少几成）。远近程看打他的那个敌人（[method PBStrikeRules.hurt_ally]）。
+var melee_taken: float = 0.0
+
+## 只反弹近战攻击的那一份（[constant PBPassiveRules.MELEE_REFLECT]），和 [member reflect] 相加。
+var melee_reflect: float = 0.0
+
+## 大于 0 = 受击效果只认**远程**攻击（[constant PBPassiveRules.STRUCK_RANGED]）。
+var struck_ranged: float = 0.0
+
+## 大于 0 = 受击效果触发时跳到打他的那个敌人身前（[constant PBPassiveRules.STRUCK_LEAP]）。
+var struck_leap: float = 0.0
+
+## 普攻子弹打中目标后接着往前穿多远，原版码数（[constant PBPassiveRules.PIERCE]）。0 = 打中就消失。
+var pierce: float = 0.0
+
+## 体术无视目标几成护甲（[constant PBPassiveRules.ARMOR_PEN]）。中性 0.0，读点在 [method PBStrikeRules.mitigated]。
+var armor_pen: float = 0.0
+
+## 忍术无视目标几成忍术抗性（[constant PBPassiveRules.NINJUTSU_PEN]）。中性 0.0。
+var ninjutsu_pen: float = 0.0
+
+## 忍术伤害多几成（[constant PBPassiveRules.NINJUTSU_BONUS]）。中性 0.0，读点在 [method PBCritRules.hit]。
+var ninjutsu_bonus: float = 0.0
+
+## 忍术暴击率（常驻）。和 [member crit_chance]（体术那一份）是两个数，见 [PBDamageKind]。
+var ninjutsu_crit_chance: float = 0.0
+
+## 忍术暴击倍数的加数。**中性值是 0.0**，同 [member crit_bonus]。
+var ninjutsu_crit_bonus: float = 0.0
+
+## 大于 0 = 普攻按忍术算（[constant PBPassiveRules.ATTACK_NINJUTSU]）。判据在 [method PBCritRules.attack_kind]。
+var attack_ninjutsu: float = 0.0
+
 ## 受致命伤那一下挂在自己身上的效果（名册「被动」列的 `on_lethal=<效果键>`）。
 ## 配了就有**一波一次**抵挡：那一下不死、血停在 1，效果由 [method PBStrikeRules.wound_ally] 挂上。
 var lethal_buffs: Array[PBBuff] = []
@@ -390,6 +449,25 @@ func clone() -> PBAttacker:
 	out.heal_power = heal_power
 	out.struck_aura = struck_aura
 	out.struck_boost = struck_boost
+	out.struck_summon = struck_summon
+	out.open_low_hp = open_low_hp
+	out.undying_end_heal = undying_end_heal
+	out.regen_max = regen_max
+	# 字典要复制：共享的话复制品上再 `grant` 一次会改到本体。
+	out.taken_by_element = taken_by_element.duplicate()
+	out.attack_buffs = attack_buffs
+	out.dodge_counter = dodge_counter
+	out.melee_taken = melee_taken
+	out.melee_reflect = melee_reflect
+	out.struck_ranged = struck_ranged
+	out.struck_leap = struck_leap
+	out.pierce = pierce
+	out.armor_pen = armor_pen
+	out.ninjutsu_pen = ninjutsu_pen
+	out.ninjutsu_bonus = ninjutsu_bonus
+	out.ninjutsu_crit_chance = ninjutsu_crit_chance
+	out.ninjutsu_crit_bonus = ninjutsu_crit_bonus
+	out.attack_ninjutsu = attack_ninjutsu
 	out.lethal_buffs = lethal_buffs
 	out.summoned = summoned
 	out.expires_at = expires_at
@@ -441,6 +519,7 @@ func revive() -> void:
 	death_pending = false
 	struck_ready_at = 0
 	aura_ready_at.clear()
+	dodge_count = 0
 	pos = home if move_speed > 0.0 else pos
 	# **按槽位错开第一发**：全队同时开火的话子弹叠成一道。用槽位不掷骰 —— 同种子两次回放必须一样（§13）。
 	next_shot_at = posmod(slot, _interval_ticks)
@@ -497,6 +576,7 @@ func take_damage(
 	if PBPassiveRules.dodges(self, rng, at_tick):
 		# 闪避回血（〔和平的期望〕）排在这里：闪掉了才回，回的是这一下本该挨的量。
 		heal(amount * dodge_heal)
+		dodge_count += 1
 		return false
 	var hurt: float = amount * buffs.amount(PBBuffRules.DAMAGE_TAKEN, at_tick)
 	hurt = buffs.absorb(hurt, at_tick)

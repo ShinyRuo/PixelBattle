@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://bhon4o5k3wc2q"]
+
+[ext_resource type="Texture2D" uid="uid://ci2hlt0k01j1p" path="res://assets/actors/naruto_sage/attack_0.png" id="1_ico3d"]
+[ext_resource type="Texture2D" uid="uid://yvqw428tdj6x" path="res://assets/actors/naruto_sage/attack_1.png" id="2_gcs4c"]
+[ext_resource type="Texture2D" uid="uid://vrutrgwfkqbs" path="res://assets/actors/naruto_sage/attack_2.png" id="3_0lo1g"]
+[ext_resource type="Texture2D" uid="uid://iihqqofwsa0l" path="res://assets/actors/naruto_sage/attack_3.png" id="4_md0y4"]
+[ext_resource type="Texture2D" uid="uid://b3xyouiiop65d" path="res://assets/actors/naruto_sage/attack_4.png" id="5_dhbkh"]
+[ext_resource type="Texture2D" uid="uid://cu5hty5sr5mqs" path="res://assets/actors/naruto_sage/attack_5.png" id="6_pagn6"]
+[ext_resource type="Texture2D" uid="uid://2rm5m7a5jw5e" path="res://assets/actors/naruto_sage/dead_0.png" id="7_db6wl"]
+[ext_resource type="Texture2D" uid="uid://dgs3wi18t05kj" path="res://assets/actors/naruto_sage/dead_1.png" id="8_2ywnj"]
+[ext_resource type="Texture2D" uid="uid://ciud6myemnd72" path="res://assets/actors/naruto_sage/dead_2.png" id="9_wchrk"]
+[ext_resource type="Texture2D" uid="uid://b2e7h4jakdj0n" path="res://assets/actors/naruto_sage/dead_3.png" id="10_onf4n"]
+[ext_resource type="Texture2D" uid="uid://b4l43u2iap80k" path="res://assets/actors/naruto_sage/dead_4.png" id="11_4luj5"]
+[ext_resource type="Texture2D" uid="uid://56qm133alc86" path="res://assets/actors/naruto_sage/dead_5.png" id="12_hh4us"]
+[ext_resource type="Texture2D" uid="uid://c4h1hgbg276ss" path="res://assets/actors/naruto_sage/idle_0.png" id="13_nl24i"]
+[ext_resource type="Texture2D" uid="uid://dma5lpesu47vv" path="res://assets/actors/naruto_sage/idle_1.png" id="14_ou0a5"]
+[ext_resource type="Texture2D" uid="uid://b2gfcug35wnlf" path="res://assets/actors/naruto_sage/idle_2.png" id="15_rde72"]
+[ext_resource type="Texture2D" uid="uid://bk4ssbidc16lv" path="res://assets/actors/naruto_sage/idle_3.png" id="16_lkrds"]
+[ext_resource type="Texture2D" uid="uid://p75kg0jeil51" path="res://assets/actors/naruto_sage/idle_4.png" id="17_736b8"]
+[ext_resource type="Texture2D" uid="uid://b6b2myy6xsvs2" path="res://assets/actors/naruto_sage/idle_5.png" id="18_25lit"]
+[ext_resource type="Texture2D" uid="uid://bwwmfi1cdxkhe" path="res://assets/actors/naruto_sage/run_0.png" id="19_byql0"]
+[ext_resource type="Texture2D" uid="uid://uoh0duhxn27d" path="res://assets/actors/naruto_sage/run_1.png" id="20_segy6"]
+[ext_resource type="Texture2D" uid="uid://c6vggqlntwnjx" path="res://assets/actors/naruto_sage/run_2.png" id="21_pqkns"]
+[ext_resource type="Texture2D" uid="uid://ceb7ylis4y7py" path="res://assets/actors/naruto_sage/run_3.png" id="22_vgwsy"]
+[ext_resource type="Texture2D" uid="uid://jldcv2qk4s61" path="res://assets/actors/naruto_sage/run_4.png" id="23_o1xrw"]
+[ext_resource type="Texture2D" uid="uid://dk2mpwcyikbqk" path="res://assets/actors/naruto_sage/run_5.png" id="24_2a0pt"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ico3d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_gcs4c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_0lo1g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_md0y4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_dhbkh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_pagn6")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_db6wl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_2ywnj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_wchrk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_onf4n")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_4luj5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_hh4us")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_nl24i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_ou0a5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_rde72")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_lkrds")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_736b8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_25lit")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_byql0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_segy6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_pqkns")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_vgwsy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_o1xrw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_2a0pt")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://cwku5xico1jkf"]
+
+[ext_resource type="Texture2D" uid="uid://c2tbgubenww4w" path="res://assets/fx/waterarrow/fly_0.png" id="1_r2k2m"]
+[ext_resource type="Texture2D" uid="uid://dpt0xkwk8whfk" path="res://assets/fx/waterarrow/fly_1.png" id="2_ca23c"]
+[ext_resource type="Texture2D" uid="uid://dh7cvp2fhsc25" path="res://assets/fx/waterarrow/fly_2.png" id="3_eoslu"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_ruva3"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_iweos"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_r2k2m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_ca23c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_eoslu")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 3.0
+}]
+
+[resource]
+script = ExtResource("4_ruva3")
+key = &"waterarrow"
+frames = SubResource("SpriteFrames_iweos")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_p3yi2"]
+
+[resource]
+script = ExtResource("1_p3yi2")
+id = &"joint_training"
+name_key = "bond.joint_training"
+match_mode = 0
+member_ids = Array[StringName]([&"naruto", &"killer_bee"])
+match_element = 5
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"killer_bee": {
+&"damage_bonus": 0.2,
+&"open_low_hp": 1.0
+},
+&"naruto": {
+&"struck_cd": 3.0,
+&"struck_summon": 0.15
+}
+}
+member_skill_patches = {}

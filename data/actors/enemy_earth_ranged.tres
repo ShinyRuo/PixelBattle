@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/attack_0.png" id="1_ouepu"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/attack_1.png" id="2_sl6m5"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/attack_2.png" id="3_8v134"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/attack_3.png" id="4_x2d3d"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/attack_4.png" id="5_q3spk"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/attack_5.png" id="6_rnres"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/dead_0.png" id="7_7524g"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/dead_1.png" id="8_qkgew"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/dead_2.png" id="9_aohp6"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/dead_3.png" id="10_fxv3p"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/dead_4.png" id="11_1o7xv"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/dead_5.png" id="12_5rfuo"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/idle_0.png" id="13_q02v5"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/idle_1.png" id="14_86hn5"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/idle_2.png" id="15_sodp5"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/idle_3.png" id="16_vch5t"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/idle_4.png" id="17_tqnj1"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/idle_5.png" id="18_xq15s"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/run_0.png" id="19_ge2s2"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/run_1.png" id="20_k54il"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/run_2.png" id="21_oknkv"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/run_3.png" id="22_5b52f"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/run_4.png" id="23_dkxog"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_ranged/run_5.png" id="24_xds0h"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_y2c2n"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_7oxpd"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ouepu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_sl6m5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_8v134")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_x2d3d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_q3spk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_rnres")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_7524g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_qkgew")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_aohp6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_fxv3p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_1o7xv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_5rfuo")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_q02v5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_86hn5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_sodp5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_vch5t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_tqnj1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_xq15s")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_ge2s2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_k54il")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_oknkv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_5b52f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_dkxog")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_xds0h")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_y2c2n")
+key = &"enemy_earth_ranged"
+frames = SubResource("SpriteFrames_7oxpd")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

@@ -235,11 +235,12 @@ func test_the_log_line_for_a_hit_is_written_in_exactly_one_place() -> void:
 	# 记播报和扣血是同一件事的两半（那条播报要带上加成之后的总额、
 	# 还要带暴击标记）。分开的话「日志上写 100、血掉了 150」不报错。
 	#
-	# **数的是事件不是函数。** 这个文件里今天有三种会见血的事，
+	# **数的是事件不是函数。** 这个文件里今天有四种会见血的事，
 	# **每种各有且只有一处记播报**：我方打敌人（[method PBStrikeRules.land]）、
-	# 敌人打我方（`hurt_ally`，M12-c2）、反弹还回去那一笔（`_reflect`）。
-	# 多出第四处就要回来看看它是不是又把同一件事写了两遍。
-	assert_eq(_calls(STRIKE_PATH, "book.hit("), 3, "三种见血的事，每种只许一处记播报")
+	# 敌人打我方（`hurt_ally`，M12-c2）、反弹还回去那一笔（`_reflect`）、
+	# 闪避之后反打那一笔（`_counter`，M12-c4）。
+	# 多出第五处就要回来看看它是不是又把同一件事写了两遍。
+	assert_eq(_calls(STRIKE_PATH, "book.hit("), 4, "四种见血的事，每种只许一处记播报")
 
 
 func test_a_ranged_carrier_triggers_on_the_frame_the_bullet_arrives() -> void:
@@ -289,6 +290,8 @@ func _pack(count: int, gap: float = 0.5) -> Array[PBEnemy]:
 		enemy.slot = i
 		enemy.max_hp = 100000.0
 		enemy.hp = enemy.max_hp
+		# 护甲清零：这个文件量的是溅射、吸血、追加伤害本身，护甲另在 `test_enemy_armor.gd`。
+		enemy.armor = 0.0
 		out.append(enemy)
 	return out
 

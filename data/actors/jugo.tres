@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bfp2mthh0htu1"]
+
+[ext_resource type="Texture2D" uid="uid://wbnew0bdgmh8" path="res://assets/actors/jugo/attack_0.png" id="1_lq1qc"]
+[ext_resource type="Texture2D" uid="uid://pyp6jmvcqcm0" path="res://assets/actors/jugo/attack_1.png" id="2_a4qoh"]
+[ext_resource type="Texture2D" uid="uid://c1uh43rx8fr5r" path="res://assets/actors/jugo/attack_2.png" id="3_sfeqw"]
+[ext_resource type="Texture2D" uid="uid://csy41isgvyfnb" path="res://assets/actors/jugo/attack_3.png" id="4_vme72"]
+[ext_resource type="Texture2D" uid="uid://bmc7bj4gnypt7" path="res://assets/actors/jugo/attack_4.png" id="5_50vgu"]
+[ext_resource type="Texture2D" uid="uid://bbi8luyx4iql0" path="res://assets/actors/jugo/attack_5.png" id="6_3jrmv"]
+[ext_resource type="Texture2D" uid="uid://ceb2kv680jok" path="res://assets/actors/jugo/dead_0.png" id="7_m82y5"]
+[ext_resource type="Texture2D" uid="uid://gtl4xvaqygsk" path="res://assets/actors/jugo/dead_1.png" id="8_5302y"]
+[ext_resource type="Texture2D" uid="uid://cspjfawnttfkf" path="res://assets/actors/jugo/dead_2.png" id="9_u8poa"]
+[ext_resource type="Texture2D" uid="uid://bo47fichced23" path="res://assets/actors/jugo/dead_3.png" id="10_0u660"]
+[ext_resource type="Texture2D" uid="uid://bruy0mbig2r" path="res://assets/actors/jugo/dead_4.png" id="11_qhxwd"]
+[ext_resource type="Texture2D" uid="uid://lr46aiv17up8" path="res://assets/actors/jugo/dead_5.png" id="12_iltfm"]
+[ext_resource type="Texture2D" uid="uid://b0evjbmtlmh1h" path="res://assets/actors/jugo/idle_0.png" id="13_jibf4"]
+[ext_resource type="Texture2D" uid="uid://dofb0v1r5bepv" path="res://assets/actors/jugo/idle_1.png" id="14_ij7e6"]
+[ext_resource type="Texture2D" uid="uid://b67e1bgqsb4gk" path="res://assets/actors/jugo/idle_2.png" id="15_420m3"]
+[ext_resource type="Texture2D" uid="uid://l0kpbcwnk8xq" path="res://assets/actors/jugo/idle_3.png" id="16_03y1u"]
+[ext_resource type="Texture2D" uid="uid://keydg3arrisd" path="res://assets/actors/jugo/idle_4.png" id="17_a6qhc"]
+[ext_resource type="Texture2D" uid="uid://d33vqxr2qx6xy" path="res://assets/actors/jugo/idle_5.png" id="18_6ax0a"]
+[ext_resource type="Texture2D" uid="uid://8oghl6yqpbsw" path="res://assets/actors/jugo/run_0.png" id="19_f7vjs"]
+[ext_resource type="Texture2D" uid="uid://b5l3nj41dtn4e" path="res://assets/actors/jugo/run_1.png" id="20_sj4hs"]
+[ext_resource type="Texture2D" uid="uid://dqluf5vy8jtw" path="res://assets/actors/jugo/run_2.png" id="21_6be11"]
+[ext_resource type="Texture2D" uid="uid://dvuyacn0el56" path="res://assets/actors/jugo/run_3.png" id="22_ureln"]
+[ext_resource type="Texture2D" uid="uid://ctpajty1642oi" path="res://assets/actors/jugo/run_4.png" id="23_b1eqe"]
+[ext_resource type="Texture2D" uid="uid://oonuhmp8kpel" path="res://assets/actors/jugo/run_5.png" id="24_o563s"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_arj0n"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_5xt2i"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_lq1qc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_a4qoh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_sfeqw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_vme72")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_50vgu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_3jrmv")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_m82y5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_5302y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_u8poa")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_0u660")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_qhxwd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_iltfm")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_jibf4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_ij7e6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_420m3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_03y1u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_a6qhc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_6ax0a")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_f7vjs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_sj4hs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_6be11")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_ureln")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_b1eqe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_o563s")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_arj0n")
+key = &"jugo"
+frames = SubResource("SpriteFrames_5xt2i")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

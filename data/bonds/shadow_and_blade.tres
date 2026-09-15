@@ -6,11 +6,14 @@
 script = ExtResource("1_4sbo1")
 id = &"shadow_and_blade"
 name_key = "bond.shadow_and_blade"
+match_mode = 0
 member_ids = Array[StringName]([&"asuma", &"shikamaru"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_functions = {}
 member_skill_patches = {
 &"shikamaru": {
 &"strategist": {

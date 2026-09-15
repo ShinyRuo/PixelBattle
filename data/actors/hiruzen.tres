@@ -5,18 +5,28 @@
 [ext_resource type="Texture2D" uid="uid://c6qopdmsirsqg" path="res://assets/actors/hiruzen/attack_2.png" id="3_k040o"]
 [ext_resource type="Texture2D" uid="uid://bmheawfil1t1y" path="res://assets/actors/hiruzen/attack_3.png" id="4_d21tc"]
 [ext_resource type="Texture2D" uid="uid://d2kj8dwt6njui" path="res://assets/actors/hiruzen/dead_0.png" id="5_djutb"]
+[ext_resource type="Texture2D" uid="uid://bx3ohtdr3nfdg" path="res://assets/actors/hiruzen/attack_4.png" id="5_kahcp"]
 [ext_resource type="Texture2D" uid="uid://da1ynqejhgkys" path="res://assets/actors/hiruzen/dead_1.png" id="6_k8rtl"]
-[ext_resource type="Texture2D" uid="uid://lj6mj7o2fspp" path="res://assets/actors/hiruzen/idle_0.png" id="7_aotak"]
-[ext_resource type="Texture2D" uid="uid://dwxpeno3kg0v2" path="res://assets/actors/hiruzen/idle_1.png" id="8_kahcp"]
-[ext_resource type="Texture2D" uid="uid://byqmwchgq8qn" path="res://assets/actors/hiruzen/idle_2.png" id="9_uaher"]
-[ext_resource type="Texture2D" uid="uid://cgr043y6d7cp1" path="res://assets/actors/hiruzen/idle_3.png" id="10_s0ibc"]
-[ext_resource type="Texture2D" uid="uid://cb1v5vxlfvssk" path="res://assets/actors/hiruzen/run_0.png" id="11_da8bf"]
-[ext_resource type="Texture2D" uid="uid://5xvev2eyx1j5" path="res://assets/actors/hiruzen/run_1.png" id="12_2ih5x"]
-[ext_resource type="Texture2D" uid="uid://dfijy24sjxct6" path="res://assets/actors/hiruzen/run_2.png" id="13_hnh68"]
-[ext_resource type="Texture2D" uid="uid://dxvigdh6vr7id" path="res://assets/actors/hiruzen/run_3.png" id="14_ai712"]
+[ext_resource type="Texture2D" uid="uid://cj4yrpefbvudb" path="res://assets/actors/hiruzen/attack_5.png" id="6_uaher"]
+[ext_resource type="Texture2D" uid="uid://b8vf4ourg37lu" path="res://assets/actors/hiruzen/dead_2.png" id="7_aotak"]
+[ext_resource type="Texture2D" uid="uid://lj6mj7o2fspp" path="res://assets/actors/hiruzen/idle_0.png" id="8_kahcp"]
+[ext_resource type="Texture2D" uid="uid://dwxpeno3kg0v2" path="res://assets/actors/hiruzen/idle_1.png" id="9_uaher"]
+[ext_resource type="Texture2D" uid="uid://di2u84v34obgv" path="res://assets/actors/hiruzen/dead_3.png" id="10_da8bf"]
+[ext_resource type="Texture2D" uid="uid://byqmwchgq8qn" path="res://assets/actors/hiruzen/idle_2.png" id="10_s0ibc"]
+[ext_resource type="Texture2D" uid="uid://dfvjcuw0bisex" path="res://assets/actors/hiruzen/dead_4.png" id="11_2ih5x"]
+[ext_resource type="Texture2D" uid="uid://cgr043y6d7cp1" path="res://assets/actors/hiruzen/idle_3.png" id="11_da8bf"]
+[ext_resource type="Texture2D" uid="uid://cb1v5vxlfvssk" path="res://assets/actors/hiruzen/run_0.png" id="12_2ih5x"]
+[ext_resource type="Texture2D" uid="uid://l1p0iskq4cc5" path="res://assets/actors/hiruzen/dead_5.png" id="12_hnh68"]
+[ext_resource type="Texture2D" uid="uid://xg5wucdl0fe5" path="res://assets/actors/hiruzen/idle_4.png" id="12_k040o"]
+[ext_resource type="Texture2D" uid="uid://bthyrb6hm087m" path="res://assets/actors/hiruzen/idle_5.png" id="13_d21tc"]
+[ext_resource type="Texture2D" uid="uid://5xvev2eyx1j5" path="res://assets/actors/hiruzen/run_1.png" id="13_hnh68"]
+[ext_resource type="Texture2D" uid="uid://dfijy24sjxct6" path="res://assets/actors/hiruzen/run_2.png" id="14_ai712"]
 [ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="15_hnl68"]
+[ext_resource type="Texture2D" uid="uid://ci5e2n6cc6aep" path="res://assets/actors/hiruzen/run_3.png" id="17_k8rtl"]
+[ext_resource type="Texture2D" uid="uid://b6dhoa8ef1eg8" path="res://assets/actors/hiruzen/run_4.png" id="18_aotak"]
+[ext_resource type="Texture2D" uid="uid://cum2rgw6c8t6h" path="res://assets/actors/hiruzen/run_5.png" id="19_kahcp"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_yh5yc"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_da8bf"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -30,6 +40,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("4_d21tc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_kahcp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_uaher")
 }],
 "loop": 0,
 "name": &"attack",
@@ -41,15 +57,24 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("6_k8rtl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_aotak")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_da8bf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_2ih5x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_hnh68")
 }],
 "loop": 0,
 "name": &"dead",
 "speed": 4.0
 }, {
 "frames": [{
-"duration": 1.0,
-"texture": ExtResource("7_aotak")
-}, {
 "duration": 1.0,
 "texture": ExtResource("8_kahcp")
 }, {
@@ -58,15 +83,21 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("10_s0ibc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_da8bf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_k040o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_d21tc")
 }],
 "loop": 1,
 "name": &"idle",
 "speed": 4.0
 }, {
 "frames": [{
-"duration": 1.0,
-"texture": ExtResource("11_da8bf")
-}, {
 "duration": 1.0,
 "texture": ExtResource("12_2ih5x")
 }, {
@@ -75,6 +106,15 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("14_ai712")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_k8rtl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_aotak")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_kahcp")
 }],
 "loop": 1,
 "name": &"run",
@@ -84,7 +124,7 @@ animations = [{
 [resource]
 script = ExtResource("15_hnl68")
 key = &"hiruzen"
-frames = SubResource("SpriteFrames_yh5yc")
+frames = SubResource("SpriteFrames_da8bf")
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

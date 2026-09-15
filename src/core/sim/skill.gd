@@ -80,6 +80,10 @@ enum Party {
 ## 伤害属性。**铁律 4：element 挂在伤害事件上，不挂在单位上** —— 本体土属性、技能火系的角色靠它。
 @export var element: PBElement.Type = PBElement.Type.PHYSICAL
 
+## 伤害类型：**默认忍术**，原版写明「物理伤害」的是体术（技能表额外列 `kind=体术`）。
+## 决定这一发吃护甲还是忍术抗性、掷哪一种暴击、吃哪一种增伤，见 [PBDamageKind]。
+@export var kind: PBDamageKind.Type = PBDamageKind.Type.NINJUTSU
+
 ## 一发打**施法者战力的几倍**。`data/skills/*.tres` 里配的是这一项。
 ##
 ## **伤害必须是派生量**（走 [method PBCombatRules.skill_damage]）：写成绝对值的话，属性克制与队伍倍率

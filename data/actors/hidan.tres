@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://dm0q1yoekbfwu"]
+
+[ext_resource type="Texture2D" uid="uid://blhixslyi0cku" path="res://assets/actors/hidan/attack_0.png" id="1_y8li6"]
+[ext_resource type="Texture2D" uid="uid://1fed0qswgc8a" path="res://assets/actors/hidan/attack_1.png" id="2_0mkps"]
+[ext_resource type="Texture2D" uid="uid://da44yxwq3mbhh" path="res://assets/actors/hidan/attack_2.png" id="3_kpsv1"]
+[ext_resource type="Texture2D" uid="uid://bviiq01sf3r8c" path="res://assets/actors/hidan/attack_3.png" id="4_ruo5g"]
+[ext_resource type="Texture2D" uid="uid://buepc6w5je36e" path="res://assets/actors/hidan/attack_4.png" id="5_8p8yh"]
+[ext_resource type="Texture2D" uid="uid://dsxikcpgk0so3" path="res://assets/actors/hidan/attack_5.png" id="6_ekps2"]
+[ext_resource type="Texture2D" uid="uid://21k3hogggmse" path="res://assets/actors/hidan/dead_0.png" id="7_uwgf3"]
+[ext_resource type="Texture2D" uid="uid://cw2notxesjyny" path="res://assets/actors/hidan/dead_1.png" id="8_tj8v5"]
+[ext_resource type="Texture2D" uid="uid://dak1axqi1dws0" path="res://assets/actors/hidan/dead_2.png" id="9_v84fd"]
+[ext_resource type="Texture2D" uid="uid://d3xkikedwkgwx" path="res://assets/actors/hidan/dead_3.png" id="10_evnlk"]
+[ext_resource type="Texture2D" uid="uid://vqimawgqg6yx" path="res://assets/actors/hidan/dead_4.png" id="11_xbiyf"]
+[ext_resource type="Texture2D" uid="uid://m2eotfmixot2" path="res://assets/actors/hidan/dead_5.png" id="12_ppe84"]
+[ext_resource type="Texture2D" uid="uid://c4ifndubfo7e0" path="res://assets/actors/hidan/idle_0.png" id="13_lbg8h"]
+[ext_resource type="Texture2D" uid="uid://crfc8mxo3jq21" path="res://assets/actors/hidan/idle_1.png" id="14_tmliw"]
+[ext_resource type="Texture2D" uid="uid://ci3l8be6i6q56" path="res://assets/actors/hidan/idle_2.png" id="15_b57uv"]
+[ext_resource type="Texture2D" uid="uid://cpyh00fbg8r6d" path="res://assets/actors/hidan/idle_3.png" id="16_yokrq"]
+[ext_resource type="Texture2D" uid="uid://c5cxewg1t0m3q" path="res://assets/actors/hidan/idle_4.png" id="17_g0drr"]
+[ext_resource type="Texture2D" uid="uid://df16ffl80yjgu" path="res://assets/actors/hidan/idle_5.png" id="18_qg4bk"]
+[ext_resource type="Texture2D" uid="uid://cdvhqxe7nyugd" path="res://assets/actors/hidan/run_0.png" id="19_5wsbx"]
+[ext_resource type="Texture2D" uid="uid://drnbp50t5xnyl" path="res://assets/actors/hidan/run_1.png" id="20_uum6w"]
+[ext_resource type="Texture2D" uid="uid://cj13ki4e1m2t1" path="res://assets/actors/hidan/run_2.png" id="21_rvsiy"]
+[ext_resource type="Texture2D" uid="uid://cmctg326k8q06" path="res://assets/actors/hidan/run_3.png" id="22_o6btr"]
+[ext_resource type="Texture2D" uid="uid://ba5pxnxek3ipd" path="res://assets/actors/hidan/run_4.png" id="23_4yh1h"]
+[ext_resource type="Texture2D" uid="uid://cpyubmablu4kc" path="res://assets/actors/hidan/run_5.png" id="24_wpkae"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_15jcm"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_htb2e"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_y8li6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_0mkps")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_kpsv1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ruo5g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_8p8yh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ekps2")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_uwgf3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_tj8v5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_v84fd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_evnlk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_xbiyf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ppe84")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_lbg8h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_tmliw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_b57uv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_yokrq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_g0drr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_qg4bk")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_5wsbx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_uum6w")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_rvsiy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_o6btr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_4yh1h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_wpkae")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_15jcm")
+key = &"hidan"
+frames = SubResource("SpriteFrames_htb2e")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

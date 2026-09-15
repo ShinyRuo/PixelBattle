@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://cqi6240xoka4v"]
+
+[ext_resource type="Texture2D" uid="uid://bu76n0chs1gty" path="res://assets/fx/rockarrow/fly_0.png" id="1_scrrt"]
+[ext_resource type="Texture2D" uid="uid://jcdhfm3d65fc" path="res://assets/fx/rockarrow/fly_1.png" id="2_q77fv"]
+[ext_resource type="Texture2D" uid="uid://bwkfeqj3dkyrn" path="res://assets/fx/rockarrow/fly_2.png" id="3_rsd5w"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_y2ofa"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_gde5e"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_scrrt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_q77fv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_rsd5w")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 3.0
+}]
+
+[resource]
+script = ExtResource("4_y2ofa")
+key = &"rockarrow"
+frames = SubResource("SpriteFrames_gde5e")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

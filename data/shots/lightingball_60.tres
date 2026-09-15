@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://dh3r45gf874ws"]
+
+[ext_resource type="Texture2D" uid="uid://ddux6nm1x336c" path="res://assets/fx/lightingball_60/fly_0.png" id="1_br120"]
+[ext_resource type="Texture2D" uid="uid://b76iwtql1017p" path="res://assets/fx/lightingball_60/fly_1.png" id="2_u6x1f"]
+[ext_resource type="Texture2D" uid="uid://dc5n0b0s16mxb" path="res://assets/fx/lightingball_60/fly_2.png" id="3_ahduk"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_rqk41"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ovbdb"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_br120")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_u6x1f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ahduk")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 12.0
+}]
+
+[resource]
+script = ExtResource("4_rqk41")
+key = &"lightingball_60"
+frames = SubResource("SpriteFrames_ovbdb")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_fly = true
+additive_hit = true

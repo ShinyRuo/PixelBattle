@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://pmqc1wrfa5t5"]
+
+[ext_resource type="Texture2D" uid="uid://cdifocjqqn58f" path="res://assets/actors/kurotsuchi/attack_0.png" id="1_p3c6l"]
+[ext_resource type="Texture2D" uid="uid://bidlv6y50dmih" path="res://assets/actors/kurotsuchi/attack_1.png" id="2_bv6rv"]
+[ext_resource type="Texture2D" uid="uid://lpxqmg8nbvbe" path="res://assets/actors/kurotsuchi/attack_2.png" id="3_2o7p1"]
+[ext_resource type="Texture2D" uid="uid://cxpl008qnyfys" path="res://assets/actors/kurotsuchi/attack_3.png" id="4_ea2mt"]
+[ext_resource type="Texture2D" uid="uid://44v7byud3jn7" path="res://assets/actors/kurotsuchi/attack_4.png" id="5_mhdry"]
+[ext_resource type="Texture2D" uid="uid://uoedxtg6t00r" path="res://assets/actors/kurotsuchi/attack_5.png" id="6_vsq47"]
+[ext_resource type="Texture2D" uid="uid://dtcqluacxgbw4" path="res://assets/actors/kurotsuchi/dead_0.png" id="7_ejb8m"]
+[ext_resource type="Texture2D" uid="uid://8wtnry7toh7" path="res://assets/actors/kurotsuchi/dead_1.png" id="8_8srre"]
+[ext_resource type="Texture2D" uid="uid://dps61ghxek406" path="res://assets/actors/kurotsuchi/dead_2.png" id="9_1eqb3"]
+[ext_resource type="Texture2D" uid="uid://dcbj1npnusjwi" path="res://assets/actors/kurotsuchi/dead_3.png" id="10_5g1ru"]
+[ext_resource type="Texture2D" uid="uid://dmc1h57tevxt4" path="res://assets/actors/kurotsuchi/dead_4.png" id="11_ovhu7"]
+[ext_resource type="Texture2D" uid="uid://q8d5qj8yxwc0" path="res://assets/actors/kurotsuchi/dead_5.png" id="12_ksu7i"]
+[ext_resource type="Texture2D" uid="uid://uh240d2f8utj" path="res://assets/actors/kurotsuchi/idle_0.png" id="13_3s7mb"]
+[ext_resource type="Texture2D" uid="uid://c6horkjtk6swu" path="res://assets/actors/kurotsuchi/idle_1.png" id="14_ehknt"]
+[ext_resource type="Texture2D" uid="uid://b200xbfkc3q85" path="res://assets/actors/kurotsuchi/idle_2.png" id="15_tn4rc"]
+[ext_resource type="Texture2D" uid="uid://2n0s6jry7efw" path="res://assets/actors/kurotsuchi/idle_3.png" id="16_fokr7"]
+[ext_resource type="Texture2D" uid="uid://bdf08h0a25sdi" path="res://assets/actors/kurotsuchi/idle_4.png" id="17_wstmi"]
+[ext_resource type="Texture2D" uid="uid://dx7k43tt2672l" path="res://assets/actors/kurotsuchi/idle_5.png" id="18_fyst8"]
+[ext_resource type="Texture2D" uid="uid://dng55b5gqvxq0" path="res://assets/actors/kurotsuchi/run_0.png" id="19_r0vif"]
+[ext_resource type="Texture2D" uid="uid://6squ2xjsl7vq" path="res://assets/actors/kurotsuchi/run_1.png" id="20_37gia"]
+[ext_resource type="Texture2D" uid="uid://bqb0o8ciix6mv" path="res://assets/actors/kurotsuchi/run_2.png" id="21_y3mnc"]
+[ext_resource type="Texture2D" uid="uid://bh3gp8pflwjgc" path="res://assets/actors/kurotsuchi/run_3.png" id="22_nmoy1"]
+[ext_resource type="Texture2D" uid="uid://dnnkx4dkbaurl" path="res://assets/actors/kurotsuchi/run_4.png" id="23_8qpi8"]
+[ext_resource type="Texture2D" uid="uid://cmu8qleuqum2n" path="res://assets/actors/kurotsuchi/run_5.png" id="24_qmjl2"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_txjwf"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_aiatp"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_p3c6l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_bv6rv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_2o7p1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ea2mt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_mhdry")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_vsq47")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_ejb8m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_8srre")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_1eqb3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_5g1ru")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ovhu7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ksu7i")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_3s7mb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_ehknt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_tn4rc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_fokr7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_wstmi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_fyst8")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_r0vif")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_37gia")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_y3mnc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_nmoy1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_8qpi8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_qmjl2")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_txjwf")
+key = &"kurotsuchi"
+frames = SubResource("SpriteFrames_aiatp")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

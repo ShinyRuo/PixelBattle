@@ -25,6 +25,7 @@ id = &"iron_sand"
 name_key = "skill.iron_sand"
 on_hit = Array[ExtResource("1_88sdc")]([SubResource("Resource_brtil")])
 element = 1
+kind = 0
 power_mult = 1.6
 radius = 0.2
 cooldown_ticks = 460

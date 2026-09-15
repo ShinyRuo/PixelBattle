@@ -2,7 +2,10 @@
   "mcpServers": {
     "godot": {
       "command": "npx",
-      "args": ["-y", "@satelliteoflove/godot-mcp"]
+      "args": ["-y", "@satelliteoflove/godot-mcp@4.1.9"],
+      "env": {
+        "NPM_CONFIG_CACHE": "F:\\CodexData\\npm-cache"
+      }
     }
   }
 }

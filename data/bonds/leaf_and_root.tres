@@ -6,11 +6,14 @@
 script = ExtResource("1_kv4iq")
 id = &"leaf_and_root"
 name_key = "bond.leaf_and_root"
+match_mode = 0
 member_ids = Array[StringName]([&"hiruzen", &"danzo"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_functions = {}
 member_skill_patches = {
 &"danzo": {
 &"root_burial": {

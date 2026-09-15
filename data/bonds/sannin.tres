@@ -6,8 +6,22 @@
 script = ExtResource("1_wqlqd")
 id = &"sannin"
 name_key = "bond.sannin"
+match_mode = 0
 member_ids = Array[StringName]([&"jiraiya", &"orochimaru", &"tsunade"])
+match_element = 5
 tier_counts = Array[int]([3])
 tier_power = Array[float]([0.28])
 tier_function_keys = Array[StringName]([&"gold_floor"])
 tier_function_carriers = Array[StringName]([&"tsunade"])
+member_functions = {
+&"jiraiya": {
+&"all_stats_bonus": 0.2
+},
+&"orochimaru": {
+&"all_stats_bonus": 0.2
+},
+&"tsunade": {
+&"all_stats_bonus": 0.2
+}
+}
+member_skill_patches = {}

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bmajjqw6osn"]
+
+[ext_resource type="Texture2D" uid="uid://cqpgdjm6sf1eu" path="res://assets/actors/deidara/attack_0.png" id="1_uf4gs"]
+[ext_resource type="Texture2D" uid="uid://br5j75ospbp7a" path="res://assets/actors/deidara/attack_1.png" id="2_o5y22"]
+[ext_resource type="Texture2D" uid="uid://ccehli8npwlym" path="res://assets/actors/deidara/attack_2.png" id="3_j0yxw"]
+[ext_resource type="Texture2D" uid="uid://j5i4p07nequr" path="res://assets/actors/deidara/attack_3.png" id="4_u5r7u"]
+[ext_resource type="Texture2D" uid="uid://b2mfc38wjlofu" path="res://assets/actors/deidara/attack_4.png" id="5_nqexn"]
+[ext_resource type="Texture2D" uid="uid://7jphvceknev2" path="res://assets/actors/deidara/dead_0.png" id="6_5lk3t"]
+[ext_resource type="Texture2D" uid="uid://bv0lv2h0q2t04" path="res://assets/actors/deidara/attack_5.png" id="6_ewvfl"]
+[ext_resource type="Texture2D" uid="uid://bncomcoudqosk" path="res://assets/actors/deidara/dead_1.png" id="7_ewvfl"]
+[ext_resource type="Texture2D" uid="uid://di6x2qa0qgv3c" path="res://assets/actors/deidara/idle_0.png" id="8_be8jb"]
+[ext_resource type="Texture2D" uid="uid://ce48au0hv0sbq" path="res://assets/actors/deidara/idle_1.png" id="9_8nrnd"]
+[ext_resource type="Texture2D" uid="uid://05jks0ivhnr5" path="res://assets/actors/deidara/dead_2.png" id="9_vtm5a"]
+[ext_resource type="Texture2D" uid="uid://c5bh5ut71bmhb" path="res://assets/actors/deidara/dead_3.png" id="10_lrjl5"]
+[ext_resource type="Texture2D" uid="uid://dumlskhyxbc5j" path="res://assets/actors/deidara/idle_2.png" id="10_vtm5a"]
+[ext_resource type="Texture2D" uid="uid://eerwhkgkskvg" path="res://assets/actors/deidara/dead_4.png" id="11_as8bq"]
+[ext_resource type="Texture2D" uid="uid://cthtj2m24mq3u" path="res://assets/actors/deidara/run_0.png" id="11_lrjl5"]
+[ext_resource type="Texture2D" uid="uid://b6xncmchn5drq" path="res://assets/actors/deidara/idle_3.png" id="11_u5r7u"]
+[ext_resource type="Texture2D" uid="uid://y0do74gues3a" path="res://assets/actors/deidara/dead_5.png" id="12_0p4rd"]
+[ext_resource type="Texture2D" uid="uid://hfafq2fqafgo" path="res://assets/actors/deidara/run_1.png" id="12_as8bq"]
+[ext_resource type="Texture2D" uid="uid://2edqcc7sxfpc" path="res://assets/actors/deidara/idle_4.png" id="12_nqexn"]
+[ext_resource type="Texture2D" uid="uid://ckfwuqkjq0rja" path="res://assets/actors/deidara/run_2.png" id="13_0p4rd"]
+[ext_resource type="Texture2D" uid="uid://18umawi6ebjg" path="res://assets/actors/deidara/idle_5.png" id="13_5lk3t"]
+[ext_resource type="Texture2D" uid="uid://b5a4dn8shsrm1" path="res://assets/actors/deidara/run_3.png" id="14_2ahan"]
+[ext_resource type="Texture2D" uid="uid://fonjg1ewrfgf" path="res://assets/actors/deidara/run_4.png" id="15_5tno5"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="16_5ttxi"]
+[ext_resource type="Texture2D" uid="uid://56jghumhi6kp" path="res://assets/actors/deidara/run_5.png" id="19_nqexn"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_vtm5a"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_uf4gs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_o5y22")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_j0yxw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_u5r7u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_nqexn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ewvfl")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_5lk3t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_ewvfl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_vtm5a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_lrjl5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_as8bq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_0p4rd")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_be8jb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_8nrnd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_vtm5a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_u5r7u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_nqexn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_5lk3t")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_lrjl5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_as8bq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_0p4rd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_2ahan")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_5tno5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_nqexn")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("16_5ttxi")
+key = &"deidara"
+frames = SubResource("SpriteFrames_vtm5a")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

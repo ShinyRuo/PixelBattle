@@ -6,7 +6,9 @@
 script = ExtResource("1_2mtko")
 id = &"my_cage"
 name_key = "bond.my_cage"
+match_mode = 0
 member_ids = Array[StringName]([&"kimimaro", &"jugo"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
@@ -17,3 +19,4 @@ member_functions = {
 &"low_hp": 0.9
 }
 }
+member_skill_patches = {}

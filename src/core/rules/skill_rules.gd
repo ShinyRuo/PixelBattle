@@ -76,13 +76,26 @@ static func _check_shot(skill: PBSkill) -> String:
 	return ""
 
 
-## 一发**子弹**打在敌人身上。返回它有没有被这一下打死。
-## 伤害由 [method PBShotRules._hit_enemy] 先结算，这里只挂 [member PBSkill.on_hit] ——
-## 「打死了几个」只有一个来源。
-static func apply_hit(
-	enemy: PBEnemy, skill: PBSkill, level: int, cfg: PBSimConfig, tick: int
-) -> bool:
-	return apply_all_enemy(enemy, skill.on_hit, level, cfg, tick)
+## 一发**技能子弹**打在敌人身上：按技能的伤害类型减伤、扣血、记播报，没打死再挂 [member PBSkill.on_hit]。
+## 返回打死了几个（0 或 1）。
+##
+## **不走 [method PBStrikeRules.land]**：那是普攻的落点，走它的话技能子弹会吃护甲、
+## 还会触发施法者的吸血、溅射、命中挂效果 —— 那几样只属于普攻。
+## [param damage] 是出膛时已经乘过增伤、掷过暴击的数（[method PBCritRules.hit]）；[param caster] 死了是 null，那时不算穿透。
+static func hit_by_shot(
+	enemy: PBEnemy,
+	shot: PBProjectile,
+	caster: PBAttacker,
+	cfg: PBSimConfig,
+	tick: int,
+	book: PBBattleLog
+) -> int:
+	var dealt: float = PBStrikeRules.mitigated(caster, enemy, shot.damage, shot.skill.kind, cfg, tick)
+	if book != null:
+		book.hit(tick, shot.source, enemy.slot, dealt, false, shot.crit)
+	if enemy.take_damage(dealt, tick):
+		return 1
+	return 1 if apply_all_enemy(enemy, shot.skill.on_hit, shot.level, cfg, tick) else 0
 
 
 ## 一发**子弹**落在己方单位身上（治疗那一类）。
@@ -98,8 +111,17 @@ static func apply_hit_ally(
 ## 和 [method PBStrikeRules._strike_area] 一样**不结算溢出** —— 技能的价值
 ## 写在命中数上（§02 那条 `实际清怪效率 = AOE伤害 × 命中敌人数 × 属性系数`），
 ## 再让它吃溢出的话，一发范围技能在密集波里等于无限伤害。
+##
+## [param damage] 是这一发掷完暴击、乘完增伤的数（[method PBCritRules.hit]，**一发只掷一次**），
+## 每个敌人各按自己的护甲 / 忍术抗性减（[method PBStrikeRules.mitigated]）。[param caster] 给穿透用。
 static func land(
-	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, cfg: PBSimConfig, tick: int
+	cast: PBSkillCast,
+	enemies: Array[PBEnemy],
+	front: int,
+	cfg: PBSimConfig,
+	tick: int,
+	caster: PBAttacker,
+	damage: float
 ) -> int:
 	var skill := cast.skill
 	var kills: int = 0
@@ -116,7 +138,7 @@ static func land(
 		if enemy.pos().distance_to(cast.spot) > skill.radius:
 			continue
 		hits += 1
-		if enemy.take_damage(skill.damage, tick):
+		if enemy.take_damage(PBStrikeRules.mitigated(caster, enemy, damage, skill.kind, cfg, tick), tick):
 			kills += 1
 			continue
 		# 命中之后才挂 [member PBSkill.on_hit]：给尸体挂减速会让「定住了几个」虚高。
@@ -169,14 +191,20 @@ static func land_around_allies(
 ## 落在一个**锁定的敌人**身上（[constant PBSkill.Target.ENEMY]）。返回打死了几个（0 或 1）。
 ## 和 [method land_on_ally] 对称，目标没了就空放。
 static func land_on_enemy(
-	cast: PBSkillCast, enemies: Array[PBEnemy], cfg: PBSimConfig, tick: int
+	cast: PBSkillCast,
+	enemies: Array[PBEnemy],
+	cfg: PBSimConfig,
+	tick: int,
+	caster: PBAttacker,
+	damage: float
 ) -> int:
 	if cast.target_slot < 0 or cast.target_slot >= enemies.size():
 		return 0
 	var enemy: PBEnemy = enemies[cast.target_slot]
 	if not enemy.alive or not enemy.has_spawned(tick):
 		return 0
-	if enemy.take_damage(cast.skill.damage, tick):
+	var dealt: float = PBStrikeRules.mitigated(caster, enemy, damage, cast.skill.kind, cfg, tick)
+	if enemy.take_damage(dealt, tick):
 		return 1
 	return 1 if apply_all_enemy(enemy, cast.skill.on_hit, cast.caster_level, cfg, tick) else 0
 
@@ -185,7 +213,13 @@ static func land_on_enemy(
 ## （[constant PBSkill.Target.NONE] + [constant PBSkill.Party.ENEMIES]）。返回打死了几个。
 ## 和 [method land] 只差「不按半径圈人」，[member PBSkill.max_targets] 仍然管用（0 = 不限）。
 static func land_on_field(
-	cast: PBSkillCast, enemies: Array[PBEnemy], front: int, cfg: PBSimConfig, tick: int
+	cast: PBSkillCast,
+	enemies: Array[PBEnemy],
+	front: int,
+	cfg: PBSimConfig,
+	tick: int,
+	caster: PBAttacker,
+	damage: float
 ) -> int:
 	var skill := cast.skill
 	var kills: int = 0
@@ -199,7 +233,7 @@ static func land_on_field(
 		if not enemy.alive:
 			continue
 		hits += 1
-		if enemy.take_damage(skill.damage, tick):
+		if enemy.take_damage(PBStrikeRules.mitigated(caster, enemy, damage, skill.kind, cfg, tick), tick):
 			kills += 1
 			continue
 		if apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
@@ -274,7 +308,12 @@ static func apply_one_enemy(
 		return false
 	if buff.kind == PBBuff.Kind.INSTANT:
 		var harm: float = float(mods.get(PBBuffRules.HARM, 0.0))
-		return harm > 0.0 and enemy.take_damage(harm, tick)
+		if harm <= 0.0:
+			return false
+		# 瞬间伤害算忍术，吃忍术抗性（同持续伤害，见 [PBDamageKind]）。
+		var kind := PBDamageKind.Type.NINJUTSU
+		var dealt: float = PBStrikeRules.mitigated(null, enemy, harm, kind, cfg, tick)
+		return enemy.take_damage(dealt, tick)
 	enemy.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
 	return false
 

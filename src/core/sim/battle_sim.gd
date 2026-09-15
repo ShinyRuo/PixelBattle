@@ -114,6 +114,8 @@ func _init(
 		# 开波满血（§03A）。和大招的冷却一样，攻击者对象会跨波、跨探测复用，
 		# 不重置的话上一场的残血会漏进这一场，表现为「同一支队伍越探越弱」。
 		attacker.revive()
+		# 「开局即开」的阈值效果排在满血之后（满血那一句会清效果袋）。
+		PBStrikeRules.open_wave(attacker, cfg)
 		# 技能对象跨波、跨探测复用，**每一格都要清**，漏一格就是「某个技能开波就是灰的」。
 		for i: int in PBSkillRules.cast_count(attacker):
 			var cast := PBSkillRules.cast_at(attacker, i)
@@ -340,23 +342,28 @@ func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 		_launch_skill(attacker, cast)
 		cast.land(_tick)
 		return
+	var damage: float = float(_roll_skill(attacker, skill)[PBCritRules.DAMAGE])
 	match skill.target:
 		PBSkill.Target.ALLY:
 			PBSkillRules.land_on_ally(cast, _attackers, _cfg, _tick)
 		PBSkill.Target.NONE:
 			if skill.affects == PBSkill.Party.ENEMIES:
 				_outcome.kills += PBSkillRules.land_on_field(
-					cast, _enemies, _front, _cfg, _tick
+					cast, _enemies, _front, _cfg, _tick, attacker, damage
 				)
 			else:
 				PBSkillRules.land_around_allies(cast, attacker.pos, _attackers, _cfg, _tick)
 		PBSkill.Target.ENEMY:
-			_outcome.kills += PBSkillRules.land_on_enemy(cast, _enemies, _cfg, _tick)
+			_outcome.kills += PBSkillRules.land_on_enemy(
+				cast, _enemies, _cfg, _tick, attacker, damage
+			)
 		_:
 			if skill.affects == PBSkill.Party.ALLIES:
 				PBSkillRules.land_around_allies(cast, cast.spot, _attackers, _cfg, _tick)
 			else:
-				_outcome.kills += PBSkillRules.land(cast, _enemies, _front, _cfg, _tick)
+				_outcome.kills += PBSkillRules.land(
+					cast, _enemies, _front, _cfg, _tick, attacker, damage
+				)
 	if skill.slow_ticks > 0 and skill.slow_scale < 1.0:
 		_slow_scale = skill.slow_scale
 		_slow_until = _tick + skill.slow_ticks
@@ -382,6 +389,14 @@ func _fire_death_casts() -> void:
 	_skip_dead()
 
 
+## 一发技能这一次打多少、暴没暴（[method PBCritRules.hit]）。**一发只掷一次**，范围里的每个敌人吃同一个结果。
+## 不打敌人或者没有伤害的技能不掷 —— 掷了就算不暴也拨动了那条流（同 [PBCritRules] 顶部那条）。
+func _roll_skill(attacker: PBAttacker, skill: PBSkill) -> Dictionary:
+	if skill.affects != PBSkill.Party.ENEMIES or skill.damage <= 0.0:
+		return {PBCritRules.DAMAGE: skill.damage, PBCritRules.CRIT: false}
+	return PBCritRules.hit(attacker, skill.damage, skill.kind, _tick, _crit_rng)
+
+
 ## 一发子弹技能出膛。池子满了或目标已经不在名单里就当空放 ——
 ## **不退回「瞬间结算」**，否则同一个技能在池子满的时候变成另一种技能。
 func _launch_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
@@ -399,16 +414,19 @@ func _launch_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 	var per_tick: float = _cfg.field_length / maxf(
 		skill.shot_cross_seconds * float(_cfg.tick_rate), 1.0
 	)
+	# 暴击和增伤在**出膛那一刻**定下来（同普攻子弹）：飞到时施法者可能已经死了。
+	var rolled := _roll_skill(attacker, skill)
 	shot.launch(
 		attacker.pos,
 		cast.target_slot,
-		skill.damage,
+		float(rolled[PBCritRules.DAMAGE]),
 		per_tick,
 		at_ally,
 		skill.element,
 		attacker.slot,
 		skill,
-		cast.caster_level
+		cast.caster_level,
+		bool(rolled[PBCritRules.CRIT])
 	)
 
 
@@ -422,7 +440,7 @@ func _speed_scale() -> float:
 ## 敌人那一趟从 [member _front] 起扫、碰到没出场的就停（数组按出场顺序排）。
 func _advance_buffs() -> void:
 	for attacker: PBAttacker in _attackers:
-		var drain: float = PBBuffRules.advance_ally(attacker, _tick)
+		var drain: float = PBBuffRules.advance_ally(attacker, _tick, _cfg.tick_rate)
 		# 自身掉血（地之咒印）。扣血与阵亡记账走和挨打同一个落点。
 		if drain > 0.0 and attacker.alive:
 			PBStrikeRules.wound_ally(attacker, drain, _cfg, _tick, null, log_to, _outcome)
@@ -433,7 +451,13 @@ func _advance_buffs() -> void:
 		if not enemy.alive:
 			continue
 		var harm: float = PBBuffRules.advance_enemy(enemy, _tick)
-		if harm > 0.0 and enemy.take_damage(harm, _tick):
+		if harm <= 0.0:
+			continue
+		# 持续伤害算忍术（[PBDamageKind]），吃忍术抗性；挂上去的时候就没有出手的人，不算穿透。
+		var dealt: float = PBStrikeRules.mitigated(
+			null, enemy, harm, PBDamageKind.Type.NINJUTSU, _cfg, _tick
+		)
+		if enemy.take_damage(dealt, _tick):
 			_outcome.kills += 1
 	_skip_dead()
 

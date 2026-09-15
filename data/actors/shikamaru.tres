@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://dflkyqwpvhtxg"]
+
+[ext_resource type="Texture2D" uid="uid://b8i2irwb0o3ki" path="res://assets/actors/shikamaru/attack_0.png" id="1_yadt6"]
+[ext_resource type="Texture2D" uid="uid://cdl6h1u5u8x08" path="res://assets/actors/shikamaru/attack_1.png" id="2_stjk1"]
+[ext_resource type="Texture2D" uid="uid://cnh5jqefaudnv" path="res://assets/actors/shikamaru/attack_2.png" id="3_w6hxt"]
+[ext_resource type="Texture2D" uid="uid://16pj4uj6eak4" path="res://assets/actors/shikamaru/attack_3.png" id="4_ycuod"]
+[ext_resource type="Texture2D" uid="uid://cnxar3dn07rp8" path="res://assets/actors/shikamaru/attack_4.png" id="5_hmc5x"]
+[ext_resource type="Texture2D" uid="uid://bx73tyku5tvgn" path="res://assets/actors/shikamaru/dead_0.png" id="5_kyrai"]
+[ext_resource type="Texture2D" uid="uid://c56ogyq0o07p5" path="res://assets/actors/shikamaru/dead_1.png" id="6_tn1hi"]
+[ext_resource type="Texture2D" uid="uid://cd2kj5k40o6nd" path="res://assets/actors/shikamaru/attack_5.png" id="6_xajn1"]
+[ext_resource type="Texture2D" uid="uid://dv5tfbukaetpf" path="res://assets/actors/shikamaru/dead_2.png" id="7_hmc5x"]
+[ext_resource type="Texture2D" uid="uid://ceq3f76hln6d4" path="res://assets/actors/shikamaru/idle_0.png" id="8_xajn1"]
+[ext_resource type="Texture2D" uid="uid://dmi3arbrva0oj" path="res://assets/actors/shikamaru/idle_1.png" id="9_bvqql"]
+[ext_resource type="Texture2D" uid="uid://bns38bwr642sp" path="res://assets/actors/shikamaru/dead_3.png" id="10_cti4v"]
+[ext_resource type="Texture2D" uid="uid://8qi640xna53y" path="res://assets/actors/shikamaru/idle_2.png" id="10_q0nrt"]
+[ext_resource type="Texture2D" uid="uid://dk2mb11yg2qcn" path="res://assets/actors/shikamaru/idle_3.png" id="11_cti4v"]
+[ext_resource type="Texture2D" uid="uid://cti1cli3y5lue" path="res://assets/actors/shikamaru/dead_4.png" id="11_pfjhl"]
+[ext_resource type="Texture2D" uid="uid://6tomwwfc7jro" path="res://assets/actors/shikamaru/run_0.png" id="12_pfjhl"]
+[ext_resource type="Texture2D" uid="uid://llworilqgd7o" path="res://assets/actors/shikamaru/idle_4.png" id="12_w6hxt"]
+[ext_resource type="Texture2D" uid="uid://x6cwmnv6o16r" path="res://assets/actors/shikamaru/dead_5.png" id="12_yms6w"]
+[ext_resource type="Texture2D" uid="uid://jjwyramfum27" path="res://assets/actors/shikamaru/idle_5.png" id="13_ycuod"]
+[ext_resource type="Texture2D" uid="uid://dnx442fdxrk7" path="res://assets/actors/shikamaru/run_1.png" id="13_yms6w"]
+[ext_resource type="Texture2D" uid="uid://s723ycr8sosc" path="res://assets/actors/shikamaru/run_2.png" id="14_puhww"]
+[ext_resource type="Texture2D" uid="uid://8jykqpjpxj34" path="res://assets/actors/shikamaru/run_3.png" id="15_71gvx"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="16_a7gol"]
+[ext_resource type="Texture2D" uid="uid://dry0l0e865dsm" path="res://assets/actors/shikamaru/run_4.png" id="18_kyrai"]
+[ext_resource type="Texture2D" uid="uid://ddgkhx8oysxpo" path="res://assets/actors/shikamaru/run_5.png" id="19_tn1hi"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_puhww"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_yadt6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_stjk1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_w6hxt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ycuod")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_hmc5x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_xajn1")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_kyrai")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_tn1hi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_hmc5x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_cti4v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_pfjhl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_yms6w")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_xajn1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_bvqql")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_q0nrt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_cti4v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_w6hxt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_ycuod")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("12_pfjhl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_yms6w")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_puhww")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_71gvx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_kyrai")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_tn1hi")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("16_a7gol")
+key = &"shikamaru"
+frames = SubResource("SpriteFrames_puhww")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://cvhx3685dj2ci"]
+
+[ext_resource type="Texture2D" uid="uid://c0lm68dposgh1" path="res://assets/actors/gaara/attack_0.png" id="1_p1ln3"]
+[ext_resource type="Texture2D" uid="uid://ctl3i3suoa8ua" path="res://assets/actors/gaara/attack_1.png" id="2_6w82v"]
+[ext_resource type="Texture2D" uid="uid://didmherfxnqid" path="res://assets/actors/gaara/attack_2.png" id="3_3bja6"]
+[ext_resource type="Texture2D" uid="uid://c7ptss533mheu" path="res://assets/actors/gaara/attack_3.png" id="4_uyowe"]
+[ext_resource type="Texture2D" uid="uid://dd0jefbi3vlcy" path="res://assets/actors/gaara/attack_4.png" id="5_8y2dw"]
+[ext_resource type="Texture2D" uid="uid://ckp56r88nyjw" path="res://assets/actors/gaara/attack_5.png" id="6_m03yf"]
+[ext_resource type="Texture2D" uid="uid://dvv5akonirr6q" path="res://assets/actors/gaara/dead_0.png" id="7_o8y6l"]
+[ext_resource type="Texture2D" uid="uid://c2quv3bpymang" path="res://assets/actors/gaara/dead_1.png" id="8_itan2"]
+[ext_resource type="Texture2D" uid="uid://cgpgc2uuun06q" path="res://assets/actors/gaara/dead_2.png" id="9_g1te5"]
+[ext_resource type="Texture2D" uid="uid://cgy06o8bfos55" path="res://assets/actors/gaara/dead_3.png" id="10_i17je"]
+[ext_resource type="Texture2D" uid="uid://lew53cbghktf" path="res://assets/actors/gaara/dead_4.png" id="11_fynfb"]
+[ext_resource type="Texture2D" uid="uid://577t4dc8sm82" path="res://assets/actors/gaara/dead_5.png" id="12_segly"]
+[ext_resource type="Texture2D" uid="uid://dmrspicdo0j4f" path="res://assets/actors/gaara/idle_0.png" id="13_jsqr4"]
+[ext_resource type="Texture2D" uid="uid://c3w7lyhyqehkt" path="res://assets/actors/gaara/idle_1.png" id="14_pb72r"]
+[ext_resource type="Texture2D" uid="uid://fevtd8p2xrq8" path="res://assets/actors/gaara/idle_2.png" id="15_4l8gw"]
+[ext_resource type="Texture2D" uid="uid://dsr3panbl5ax1" path="res://assets/actors/gaara/idle_3.png" id="16_b1t1d"]
+[ext_resource type="Texture2D" uid="uid://b41wr0rqw7ek1" path="res://assets/actors/gaara/idle_4.png" id="17_rik5m"]
+[ext_resource type="Texture2D" uid="uid://cu2y40e8b6jrt" path="res://assets/actors/gaara/idle_5.png" id="18_tgo1h"]
+[ext_resource type="Texture2D" uid="uid://cdclii2xhy4o7" path="res://assets/actors/gaara/run_0.png" id="19_p164l"]
+[ext_resource type="Texture2D" uid="uid://g8ppelqx2n1h" path="res://assets/actors/gaara/run_1.png" id="20_5q81j"]
+[ext_resource type="Texture2D" uid="uid://d4g3bghfebhah" path="res://assets/actors/gaara/run_2.png" id="21_qqlj0"]
+[ext_resource type="Texture2D" uid="uid://brtfho6hpr6mi" path="res://assets/actors/gaara/run_3.png" id="22_ehdgh"]
+[ext_resource type="Texture2D" uid="uid://dr8rsxjvl74v2" path="res://assets/actors/gaara/run_4.png" id="23_wsrhu"]
+[ext_resource type="Texture2D" uid="uid://d0doll3gmwp0w" path="res://assets/actors/gaara/run_5.png" id="24_3xuxu"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_6xex8"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_p1ln3"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_p1ln3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_6w82v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_3bja6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_uyowe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_8y2dw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_m03yf")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_o8y6l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_itan2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_g1te5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_i17je")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_fynfb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_segly")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_jsqr4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_pb72r")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_4l8gw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_b1t1d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_rik5m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_tgo1h")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_p164l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_5q81j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_qqlj0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_ehdgh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_wsrhu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_3xuxu")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_6xex8")
+key = &"gaara"
+frames = SubResource("SpriteFrames_p1ln3")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

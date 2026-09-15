@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://bvggdbptrhsbx"]
+
+[ext_resource type="Texture2D" uid="uid://bl1af2ptxa6wq" path="res://assets/fx/shoulijian_zhi/fly_0.png" id="1_y1h6s"]
+[ext_resource type="Texture2D" uid="uid://b01tntgugpyh1" path="res://assets/fx/shoulijian_zhi/fly_1.png" id="2_m5qcj"]
+[ext_resource type="Texture2D" uid="uid://bmtrdww0x60f8" path="res://assets/fx/shoulijian_zhi/fly_2.png" id="3_5mbpw"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_e3nd1"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_y1h6s"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_y1h6s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_m5qcj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_5mbpw")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 3.0
+}]
+
+[resource]
+script = ExtResource("4_e3nd1")
+key = &"shoulijian_zhi"
+frames = SubResource("SpriteFrames_y1h6s")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

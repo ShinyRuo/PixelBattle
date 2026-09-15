@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://bmi2dfaae0271"]
+
+[ext_resource type="Texture2D" uid="uid://cgphlxl28pyt3" path="res://assets/fx/qianben/fly_0.png" id="1_5efpy"]
+[ext_resource type="Texture2D" uid="uid://yalhaj8jdssg" path="res://assets/fx/qianben/fly_1.png" id="2_7047b"]
+[ext_resource type="Texture2D" uid="uid://c43k0opepr4iw" path="res://assets/fx/qianben/fly_2.png" id="3_mvjxj"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_adkjs"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_cm1dj"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_5efpy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_7047b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_mvjxj")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 3.0
+}]
+
+[resource]
+script = ExtResource("4_adkjs")
+key = &"qianben"
+frames = SubResource("SpriteFrames_cm1dj")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

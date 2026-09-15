@@ -6,7 +6,9 @@
 script = ExtResource("1_n53j6")
 id = &"mizukage_guard"
 name_key = "bond.mizukage_guard"
+match_mode = 0
 member_ids = Array[StringName]([&"mei", &"chojuro"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
@@ -19,3 +21,4 @@ member_functions = {
 &"struck_aura": 450.0
 }
 }
+member_skill_patches = {}

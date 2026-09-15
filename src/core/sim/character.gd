@@ -155,6 +155,10 @@ const MAX_SKILLS: int = 2
 ## 被动里「挨敌人一下时挂出去」的效果（名册同一列的 `on_struck=<效果键>`）。增益挂自己，减益挂打他的敌人。
 @export var struck_buffs: Array[PBBuff] = []
 
+## 被动里「每一下普攻打中都给目标挂上」的效果（名册同一列的 `on_attack=<效果键>`）。
+## 和 [member on_hit_buffs] 的区别只在**不骑暴击**：那一份只在打出要害时挂。
+@export var attack_buffs: Array[PBBuff] = []
+
 
 ## 大招实际打什么属性。见 [member ultimate_element_override]。
 func ultimate_element() -> PBElement.Type:

@@ -6,7 +6,9 @@
 script = ExtResource("1_0drge")
 id = &"sand_siblings"
 name_key = "bond.sand_siblings"
+match_mode = 0
 member_ids = Array[StringName]([&"gaara", &"temari", &"kankuro"])
+match_element = 5
 tier_counts = Array[int]([3])
 tier_power = Array[float]([0.28])
 tier_function_keys = Array[StringName]([&"slow_field"])
@@ -17,3 +19,4 @@ member_functions = {
 &"struck_boost": 0.5
 }
 }
+member_skill_patches = {}

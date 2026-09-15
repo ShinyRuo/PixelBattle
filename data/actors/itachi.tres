@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://cmic5ea7lesvi"]
+
+[ext_resource type="Texture2D" uid="uid://d2vkjdxctxdjj" path="res://assets/actors/itachi/attack_0.png" id="1_af0ll"]
+[ext_resource type="Texture2D" uid="uid://bu374qvhxocg4" path="res://assets/actors/itachi/attack_1.png" id="2_4lgh7"]
+[ext_resource type="Texture2D" uid="uid://d0r54l1q65pbf" path="res://assets/actors/itachi/attack_2.png" id="3_ip5ft"]
+[ext_resource type="Texture2D" uid="uid://bcnt1kqguap84" path="res://assets/actors/itachi/attack_3.png" id="4_y41n0"]
+[ext_resource type="Texture2D" uid="uid://chvwd76skrm6d" path="res://assets/actors/itachi/dead_0.png" id="5_j3k3o"]
+[ext_resource type="Texture2D" uid="uid://dnc6j0ek2psi7" path="res://assets/actors/itachi/attack_4.png" id="5_s07vr"]
+[ext_resource type="Texture2D" uid="uid://5a7edseguysh" path="res://assets/actors/itachi/attack_5.png" id="6_ci8yp"]
+[ext_resource type="Texture2D" uid="uid://d07gmwppoy5cf" path="res://assets/actors/itachi/dead_1.png" id="6_s07vr"]
+[ext_resource type="Texture2D" uid="uid://bmcncowtijxcw" path="res://assets/actors/itachi/dead_2.png" id="7_ci8yp"]
+[ext_resource type="Texture2D" uid="uid://cflo1t2od3vg7" path="res://assets/actors/itachi/dead_3.png" id="8_l5ijd"]
+[ext_resource type="Texture2D" uid="uid://cr8l2jblcd47j" path="res://assets/actors/itachi/idle_0.png" id="9_jex7o"]
+[ext_resource type="Texture2D" uid="uid://fik2ytdxieix" path="res://assets/actors/itachi/idle_1.png" id="10_6o3f4"]
+[ext_resource type="Texture2D" uid="uid://c0jiwc2oi3u7g" path="res://assets/actors/itachi/dead_4.png" id="11_ci8yp"]
+[ext_resource type="Texture2D" uid="uid://sj7d28wl73r5" path="res://assets/actors/itachi/idle_2.png" id="11_i3jjl"]
+[ext_resource type="Texture2D" uid="uid://dut33mgrwiwbj" path="res://assets/actors/itachi/dead_5.png" id="12_l5ijd"]
+[ext_resource type="Texture2D" uid="uid://cgnx5ac0re40j" path="res://assets/actors/itachi/idle_3.png" id="12_mcg2x"]
+[ext_resource type="Texture2D" uid="uid://uhaabmdlu5ju" path="res://assets/actors/itachi/idle_4.png" id="13_ip5ft"]
+[ext_resource type="Texture2D" uid="uid://bb30see4gitkq" path="res://assets/actors/itachi/run_0.png" id="13_shb70"]
+[ext_resource type="Texture2D" uid="uid://o4fagi1hh1v0" path="res://assets/actors/itachi/run_1.png" id="14_h5wsd"]
+[ext_resource type="Texture2D" uid="uid://nj4ugjdn07vm" path="res://assets/actors/itachi/idle_5.png" id="14_y41n0"]
+[ext_resource type="Texture2D" uid="uid://cembs50tji4ft" path="res://assets/actors/itachi/run_2.png" id="15_nh3uu"]
+[ext_resource type="Texture2D" uid="uid://bnj4kjrj2tolh" path="res://assets/actors/itachi/run_3.png" id="16_umaxt"]
+[ext_resource type="Texture2D" uid="uid://dyh3w2i2rwo48" path="res://assets/actors/itachi/run_4.png" id="17_idvn0"]
+[ext_resource type="Texture2D" uid="uid://l5gv7qh347yj" path="res://assets/actors/itachi/run_5.png" id="18_j0ywx"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="19_4wbj2"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_jex7o"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_af0ll")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_4lgh7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ip5ft")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_y41n0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_s07vr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ci8yp")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_j3k3o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_s07vr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_ci8yp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_l5ijd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ci8yp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_l5ijd")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_jex7o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_6o3f4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_i3jjl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_mcg2x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_ip5ft")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_y41n0")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_shb70")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_h5wsd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_nh3uu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_umaxt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_idvn0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_j0ywx")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("19_4wbj2")
+key = &"itachi"
+frames = SubResource("SpriteFrames_jex7o")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

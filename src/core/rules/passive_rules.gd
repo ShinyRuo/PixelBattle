@@ -35,6 +35,23 @@ extends RefCounted
 ## | `heal_power` | [member PBAttacker.heal_power] | [method PBBuffRules.scale_heal] |
 ## | `struck_aura` | [member PBAttacker.struck_aura] | [method PBStrikeRules.hurt_ally] |
 ## | `struck_boost` | [member PBAttacker.struck_boost] | [method PBStrikeRules.hurt_ally] |
+## | `struck_summon` | [member PBAttacker.struck_summon] | [method PBStrikeRules.hurt_ally] |
+## | `open_low_hp` | [member PBAttacker.open_low_hp] | [method PBStrikeRules.open_wave] |
+## | `undying_end_heal` | [member PBAttacker.undying_end_heal] | [method PBBuffRules.advance_ally] |
+## | `regen_max` | [member PBAttacker.regen_max] | [method PBBuffRules.advance_ally] |
+## | `fire_taken` 等六个 | [member PBAttacker.taken_by_element] | [method taken_scale] |
+## | `dodge_counter` | [member PBAttacker.dodge_counter] | [method PBStrikeRules.hurt_ally] |
+## | `melee_taken` | [member PBAttacker.melee_taken] | [method PBStrikeRules.hurt_ally] |
+## | `melee_reflect` | [member PBAttacker.melee_reflect] | [method PBStrikeRules.hurt_ally] |
+## | `struck_ranged` | [member PBAttacker.struck_ranged] | [method PBStrikeRules.hurt_ally] |
+## | `struck_leap` | [member PBAttacker.struck_leap] | [method PBStrikeRules.hurt_ally] |
+## | `pierce` | [member PBAttacker.pierce] | [method PBShotRules.advance] |
+## | `armor_pen` | [member PBAttacker.armor_pen] | [method PBStrikeRules.mitigated] |
+## | `ninjutsu_pen` | [member PBAttacker.ninjutsu_pen] | [method PBStrikeRules.mitigated] |
+## | `ninjutsu_bonus` | [member PBAttacker.ninjutsu_bonus] | [method PBCritRules.hit] |
+## | `ninjutsu_crit_chance` | [member PBAttacker.ninjutsu_crit_chance] | [PBCritRules] |
+## | `ninjutsu_crit_damage` | [member PBAttacker.ninjutsu_crit_bonus] | [PBCritRules] |
+## | `attack_ninjutsu` | [member PBAttacker.attack_ninjutsu] | [method PBCritRules.attack_kind] |
 ##
 ## **属性（力敏智、攻击力、防御、生命、攻速）不在这张表里**，在 [PBStatRules]：
 ## 属性在算三围那一刻注入，行为建人之后装。**移速留在这里**：它是全队一个数，
@@ -44,8 +61,8 @@ extends RefCounted
 ##
 ## ## 两件有意不做的事
 ##
-## - **忍术抗性**：要求敌人的伤害分类型，今天敌人只有一种伤害，
-##   加了字段也没有任何一条伤害会去查它 —— 配了不生效。
+## - **己方的忍术抗性**：伤害已经分类型（[PBDamageKind]），但敌人今天只会普攻（体术），
+##   没有一下忍术伤害会打到忍者身上 —— 加了也配了不生效。等敌人会放忍术再加。
 ## - **「X% 几率打出更多伤害」不另开键**：那就是暴击（前两个键写得出来）。
 ##   另开一个概率键等于同一次出手掷两遍骰，破了 [PBCritRules] 那条「一个掷点」。
 
@@ -113,6 +130,77 @@ const STRUCK_AURA: StringName = &"struck_aura"
 ## 受击效果里的量型数值多几成（防御、回血……，率型不乘）。
 const STRUCK_BOOST: StringName = &"struck_boost"
 
+## 挨敌人一下时有几成几率从他自己的召唤技能里召出**一个**（〔共同修行〕「受攻击时 15% 几率出一个影分身」）。
+## 冷却复用 [constant STRUCK_CD]。
+const STRUCK_SUMMON: StringName = &"struck_summon"
+
+## 开波就当血量已经掉过线，挂上他的血量阈值效果（〔共同修行〕「尾兽外衣开局即可开启」）。量写 1。
+const OPEN_LOW_HP: StringName = &"open_low_hp"
+
+## 「不死」效果（[constant PBBuffRules.UNDYING]）到期那一刻，还活着就回复最大生命的几成
+## （〔不死二人组〕「死司凭血持续时间结束后能够恢复 20% 的生命值」）。
+const UNDYING_END_HEAL: StringName = &"undying_end_heal"
+
+## 每秒回复最大生命的几成（原版「每秒恢复 2% 的生命值」）。按 tick 均摊，死人不回。
+const REGEN_MAX: StringName = &"regen_max"
+
+## 挨某一系敌人攻击时伤害多几成（负数 = 少几成）。−0.55 = 「降低 55% 的风属性伤害」，2.0 = 「额外提升 200%」。
+##
+## **没有仙那一格**：敌人的攻击属性只在五系 + 物理里轮转（[method PBWaveRules.element_of]），
+## 配了仙也没有一下伤害会去查它 —— 配了不生效。
+const FIRE_TAKEN: StringName = &"fire_taken"
+const WIND_TAKEN: StringName = &"wind_taken"
+const THUNDER_TAKEN: StringName = &"thunder_taken"
+const EARTH_TAKEN: StringName = &"earth_taken"
+const WATER_TAKEN: StringName = &"water_taken"
+const PHYSICAL_TAKEN: StringName = &"physical_taken"
+
+## 闪避成功时反打那个敌人一下，量是自己一发普攻的几成（蛙组手）。
+const DODGE_COUNTER: StringName = &"dodge_counter"
+
+## 挨近战攻击时伤害多几成，负数 = 少几成（针地藏「永久降低近战普攻伤害」）。
+const MELEE_TAKEN: StringName = &"melee_taken"
+
+## 只反弹近战攻击的那一份（针地藏「将所受近战攻击伤害反弹给攻击方」），和 `reflect` 相加。
+const MELEE_REFLECT: StringName = &"melee_reflect"
+
+## 量写 1：受击效果（`on_struck`）只认远程攻击（雷梨热刀「在受远程攻击时」）。取大。
+const STRUCK_RANGED: StringName = &"struck_ranged"
+
+## 量写 1：受击效果触发时跳到打他的那个敌人身前（雷梨热刀「突袭跳跃到目标身前」）。取大。
+const STRUCK_LEAP: StringName = &"struck_leap"
+
+## 普攻子弹打中目标后接着往前穿多远，原版码数（纸手里剑「穿透距离：500」）。取大。只对放子弹的人有意义。
+const PIERCE: StringName = &"pierce"
+
+## 普攻无视目标几成护甲（〔艺术二人组〕蝎「获得 60% 的护甲穿透」= 0.6）。封在 0~1。
+const ARMOR_PEN: StringName = &"armor_pen"
+
+## 忍术无视目标几成忍术抗性。封在 0~1。
+const NINJUTSU_PEN: StringName = &"ninjutsu_pen"
+
+## 忍术伤害多几成（原版装备「忍术伤害 +25%」）。作用于技能、忍术普攻；持续伤害不吃（挂上去时没有出手的人）。
+const NINJUTSU_BONUS: StringName = &"ninjutsu_bonus"
+
+## 忍术暴击率（万花筒写轮眼「+15% 的忍术暴击率」）。和普攻那一份（`crit_chance`）是两个数。
+const NINJUTSU_CRIT_CHANCE: StringName = &"ninjutsu_crit_chance"
+
+## 忍术暴击倍数的加数（原版装备「忍术暴击倍数 +1.0」）。中性 0.0，基础倍数见 [constant PBCritRules.NINJUTSU_CRIT_BASE]。
+const NINJUTSU_CRIT_DAMAGE: StringName = &"ninjutsu_crit_damage"
+
+## 量写 1：普攻的伤害类型从体术改成忍术（万花筒写轮眼「普攻变为忍术伤害」）。取大。
+const ATTACK_NINJUTSU: StringName = &"attack_ninjutsu"
+
+## 上面六个键各管哪一系。
+const TAKEN_ELEMENTS: Dictionary = {
+	FIRE_TAKEN: PBElement.Type.FIRE,
+	WIND_TAKEN: PBElement.Type.WIND,
+	THUNDER_TAKEN: PBElement.Type.THUNDER,
+	EARTH_TAKEN: PBElement.Type.EARTH,
+	WATER_TAKEN: PBElement.Type.WATER,
+	PHYSICAL_TAKEN: PBElement.Type.PHYSICAL,
+}
+
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
 const ALL: Array[StringName] = [
 	CRIT_CHANCE,
@@ -136,6 +224,28 @@ const ALL: Array[StringName] = [
 	HEAL_POWER,
 	STRUCK_AURA,
 	STRUCK_BOOST,
+	STRUCK_SUMMON,
+	OPEN_LOW_HP,
+	UNDYING_END_HEAL,
+	REGEN_MAX,
+	FIRE_TAKEN,
+	WIND_TAKEN,
+	THUNDER_TAKEN,
+	EARTH_TAKEN,
+	WATER_TAKEN,
+	PHYSICAL_TAKEN,
+	DODGE_COUNTER,
+	MELEE_TAKEN,
+	MELEE_REFLECT,
+	STRUCK_RANGED,
+	STRUCK_LEAP,
+	PIERCE,
+	ARMOR_PEN,
+	NINJUTSU_PEN,
+	NINJUTSU_BONUS,
+	NINJUTSU_CRIT_CHANCE,
+	NINJUTSU_CRIT_DAMAGE,
+	ATTACK_NINJUTSU,
 ]
 
 
@@ -155,6 +265,11 @@ static func dodges(attacker: PBAttacker, rng: RandomNumberGenerator, at_tick: in
 	return rng.randf() < chance
 
 
+## 挨 [param element] 系的一下时伤害乘几（[constant TAKEN_ELEMENTS]）。没配就是 1.0，下限 0（加减伤不会变成回血）。
+static func taken_scale(attacker: PBAttacker, element: PBElement.Type) -> float:
+	return maxf(1.0 + float(attacker.taken_by_element.get(element, 0.0)), 0.0)
+
+
 ## 这个键认不认得。
 static func is_known(key: StringName) -> bool:
 	return ALL.has(key)
@@ -166,7 +281,8 @@ static func is_known(key: StringName) -> bool:
 ## 而「后装的那一份把先装的覆盖掉」不报错 —— 屏幕上照样有溅射，只是少了一份。
 ##
 ## **例外取大**：[constant SPLASH_RADIUS]、[constant LOW_HP]、[constant STRUCK_CD]、
-## [constant STRUCK_AURA] —— 距离、门槛、冷却都不是一份量。
+## [constant STRUCK_AURA]、[constant PIERCE] —— 距离、门槛、冷却都不是一份量；
+## 还有几个开关（[constant OPEN_LOW_HP]、[constant STRUCK_RANGED]、[constant STRUCK_LEAP]），量写 1。
 ## 两个来源各给 275 码加起来成了 550 码；75% 加 90% 成了 165%，开波第一下就触发。
 ## 羁绊把某个人自带的 75% 改成 90%，靠的正是取大。
 ##
@@ -175,6 +291,12 @@ static func is_known(key: StringName) -> bool:
 static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 	if attacker == null:
 		return false
+	if TAKEN_ELEMENTS.has(key):
+		var element: int = TAKEN_ELEMENTS[key]
+		attacker.taken_by_element[element] = (
+			float(attacker.taken_by_element.get(element, 0.0)) + amount
+		)
+		return true
 	match key:
 		CRIT_CHANCE:
 			attacker.crit_chance += amount
@@ -218,6 +340,38 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.struck_aura = maxf(attacker.struck_aura, amount)
 		STRUCK_BOOST:
 			attacker.struck_boost += amount
+		STRUCK_SUMMON:
+			attacker.struck_summon += amount
+		OPEN_LOW_HP:
+			attacker.open_low_hp = maxf(attacker.open_low_hp, amount)
+		UNDYING_END_HEAL:
+			attacker.undying_end_heal += amount
+		REGEN_MAX:
+			attacker.regen_max += amount
+		DODGE_COUNTER:
+			attacker.dodge_counter += amount
+		MELEE_TAKEN:
+			attacker.melee_taken += amount
+		MELEE_REFLECT:
+			attacker.melee_reflect += amount
+		STRUCK_RANGED:
+			attacker.struck_ranged = maxf(attacker.struck_ranged, amount)
+		STRUCK_LEAP:
+			attacker.struck_leap = maxf(attacker.struck_leap, amount)
+		PIERCE:
+			attacker.pierce = maxf(attacker.pierce, amount)
+		ARMOR_PEN:
+			attacker.armor_pen += amount
+		NINJUTSU_PEN:
+			attacker.ninjutsu_pen += amount
+		NINJUTSU_BONUS:
+			attacker.ninjutsu_bonus += amount
+		NINJUTSU_CRIT_CHANCE:
+			attacker.ninjutsu_crit_chance += amount
+		NINJUTSU_CRIT_DAMAGE:
+			attacker.ninjutsu_crit_bonus += amount
+		ATTACK_NINJUTSU:
+			attacker.attack_ninjutsu = maxf(attacker.attack_ninjutsu, amount)
 		_:
 			return false
 	return true

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/attack_0.png" id="1_tpbdi"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/attack_1.png" id="2_suj5c"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/attack_2.png" id="3_scxws"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/attack_3.png" id="4_4rvh8"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/attack_4.png" id="5_he1wb"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/attack_5.png" id="6_khk11"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/dead_0.png" id="7_urgcs"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/dead_1.png" id="8_0r61i"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/dead_2.png" id="9_tt3ju"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/dead_3.png" id="10_6iljk"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/dead_4.png" id="11_ibx8y"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/dead_5.png" id="12_rnt8n"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/idle_0.png" id="13_jisk8"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/idle_1.png" id="14_hmpwd"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/idle_2.png" id="15_yo70j"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/idle_3.png" id="16_rsnxn"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/idle_4.png" id="17_r41t1"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/idle_5.png" id="18_usmn2"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/run_0.png" id="19_otv0q"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/run_1.png" id="20_bcbff"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/run_2.png" id="21_j32nq"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/run_3.png" id="22_v7anj"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/run_4.png" id="23_83jxt"]
+[ext_resource type="Texture2D" path="res://assets/actors/enemy_earth_melee/run_5.png" id="24_umwsh"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_sp83n"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_qgsyv"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_tpbdi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_suj5c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_scxws")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_4rvh8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_he1wb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_khk11")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_urgcs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_0r61i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_tt3ju")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_6iljk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ibx8y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_rnt8n")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_jisk8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_hmpwd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_yo70j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_rsnxn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_r41t1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_usmn2")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_otv0q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_bcbff")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_j32nq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_v7anj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_83jxt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_umwsh")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_sp83n")
+key = &"enemy_earth_melee"
+frames = SubResource("SpriteFrames_qgsyv")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

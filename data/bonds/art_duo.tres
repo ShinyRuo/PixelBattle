@@ -6,11 +6,18 @@
 script = ExtResource("1_gii5g")
 id = &"art_duo"
 name_key = "bond.art_duo"
+match_mode = 0
 member_ids = Array[StringName]([&"sasori", &"deidara"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"sasori": {
+&"armor_pen": 0.6
+}
+}
 member_skill_patches = {
 &"deidara": {
 &"clay_self_destruct": {

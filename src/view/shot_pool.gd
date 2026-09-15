@@ -172,6 +172,12 @@ func _place_shot(
 	var gone: float = 1.0
 	if span > 0.0:
 		gone = clampf(shot.from.distance_to(shot.pos) / span, 0.0, 1.0)
+	if shot.piercing:
+		# 穿过第一个目标之后不再追人：画在子弹自己的位置，高度保持在打中那一刻的胸口，朝向沿直线。
+		# 按「飞了几成」插值的话它会钉在第一个目标身上，看起来就是打中就没了。
+		from = PBLayout.to_screen(shot.pos - shot.heading, field) + chest
+		to = PBLayout.to_screen(shot.pos, field) + chest
+		gone = 1.0
 	# 换成了新的一发：上一帧这个槽不在飞，或者出膛点变了，或者飞过的路程一下缩到不足一半
 	# （落地和重新出膛可能发生在同一个渲染帧里，射手没挪窝的话出膛点一模一样）。
 	# **不按「变短了」判**：子弹追着目标飞，目标绕到射手身后时路程会一点点变短，那样判的话它每帧都从头播。

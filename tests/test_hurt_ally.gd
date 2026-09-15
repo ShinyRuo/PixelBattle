@@ -124,6 +124,27 @@ func test_without_a_reflect_nothing_changes_at_all() -> void:
 	assert_eq(enemy.hp, full, "没配就一点都不该掉")
 
 
+func test_only_the_named_element_is_scaled() -> void:
+	# 霸气「降低 55% 的风属性伤害」：风那一下乘 0.45，别的系一点不变；减到负数也只是不掉血。
+	var out := PBCombatOutcome.new()
+	var lost := {}
+	for element: PBElement.Type in [PBElement.Type.WIND, PBElement.Type.FIRE]:
+		var plain := _hurtable(0.0)
+		var guarded := _hurtable(0.0)
+		PBPassiveRules.grant(guarded, PBPassiveRules.WIND_TAKEN, -0.55)
+		for one: PBAttacker in [plain, guarded]:
+			PBStrikeRules.hurt_ally(one, null, 100.0, element, _cfg, 0, null, null, out)
+		lost[element] = [plain.max_hp - plain.hp, guarded.max_hp - guarded.hp]
+	var wind: Array = lost[PBElement.Type.WIND]
+	assert_almost_eq(wind[1], wind[0] * 0.45, 0.001, "风系那一下少掉 55%")
+	var fire: Array = lost[PBElement.Type.FIRE]
+	assert_almost_eq(fire[1], fire[0], 0.001, "别的系不变")
+	var stone := _hurtable(0.0)
+	PBPassiveRules.grant(stone, PBPassiveRules.FIRE_TAKEN, -3.0)
+	PBStrikeRules.hurt_ally(stone, null, 100.0, PBElement.Type.FIRE, _cfg, 0, null, null, out)
+	assert_eq(stone.hp, stone.max_hp, "减过头也只是不掉，不会变成回血")
+
+
 func _enemy() -> PBEnemy:
 	var out := PBEnemy.new()
 	out.alive = true

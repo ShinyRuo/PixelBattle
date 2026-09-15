@@ -10,5 +10,6 @@ category = 1
 recipe = Array[StringName]([&"seal", &"seal", &"kunai"])
 power = 1.0
 mods = {
-&"attack": 200.0
+&"attack": 200.0,
+&"ninjutsu_bonus": 0.25
 }

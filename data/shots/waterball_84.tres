@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://b8ycpr1mc1d1r"]
+
+[ext_resource type="Texture2D" uid="uid://b7u4u3i5t0dso" path="res://assets/fx/waterball_84/fly_0.png" id="1_p7m2q"]
+[ext_resource type="Texture2D" uid="uid://wljc1ad5605l" path="res://assets/fx/waterball_84/fly_1.png" id="2_kw55g"]
+[ext_resource type="Texture2D" uid="uid://dxhwfxros05b" path="res://assets/fx/waterball_84/fly_2.png" id="3_bc7sp"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_stora"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_238v8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_p7m2q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_kw55g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_bc7sp")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 12.0
+}]
+
+[resource]
+script = ExtResource("4_stora")
+key = &"waterball_84"
+frames = SubResource("SpriteFrames_238v8")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

@@ -62,6 +62,20 @@ var source: int = -1
 ## **掷骰发生在出膛那一刻**：命中时施法者可能已经死了，而掷点必须只有一个（[PBCritRules]）。
 var crit: bool = false
 
+## 打中第一个目标之后还能往前穿多远（战场坐标）。0 = 打中就回池。
+## 出膛时由射手的 [member PBAttacker.pierce] 定下（同 [member crit]：飞到时射手可能已经死了）。
+var pierce_left: float = 0.0
+
+## 已经穿过第一个目标、正在往前飞。这一段**不再追目标**，沿 [member heading] 走直线 ——
+## [member target] 仍指着第一个目标，渲染层靠它找出膛的人和胸口高度。
+var piercing: bool = false
+
+## 穿透段往哪飞（单位向量）。
+var heading: Vector2 = Vector2.ZERO
+
+## 这一发已经打过的敌人下标。穿透段每个敌人只挨一次。**复用同一个数组**，不在热路径里分配（§14）。
+var struck: PackedInt32Array = PackedInt32Array()
+
 
 ## 把这个实例重置成一发刚出膛的子弹。对象池复用走这里，不要 `.new()`。
 func launch(
@@ -88,6 +102,25 @@ func launch(
 	skill = of_skill
 	level = caster_level
 	crit = was_crit
+	_end_pierce()
+
+
+## 打中了第一个目标 [param through]，转入穿透段：方向是出膛点指向这里，打过的记下它。
+## 出膛点和命中点重合（贴脸开火）时朝右飞 —— 敌人从右边来。
+func start_pierce(through: int) -> void:
+	piercing = true
+	heading = (pos - from).normalized()
+	if heading == Vector2.ZERO:
+		heading = Vector2.RIGHT
+	struck.append(through)
+
+
+## 穿透段走一个 tick。走完穿透距离返回 false（调用方回池）。
+func glide() -> bool:
+	var step: float = minf(speed, pierce_left)
+	pos += heading * step
+	pierce_left -= step
+	return pierce_left > 0.0
 
 
 ## 朝 [param goal] 飞一个 tick。返回这一 tick 是否够到了目标。
@@ -114,3 +147,12 @@ func retire() -> void:
 	skill = null
 	level = 1
 	crit = false
+	_end_pierce()
+
+
+## 穿透那一套清零。出膛和回池都走它：漏清一处的表现是「下一发普攻莫名其妙穿了过去」。
+func _end_pierce() -> void:
+	pierce_left = 0.0
+	piercing = false
+	heading = Vector2.ZERO
+	struck.clear()

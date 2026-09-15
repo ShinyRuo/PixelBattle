@@ -168,6 +168,70 @@ func test_the_boost_scales_amounts_but_not_rates() -> void:
 	assert_eq(one.buffs.amount(PBBuffRules.DEFENCE, 1), 150.0, "自己那一路也吃加成")
 
 
+func _summoner(chance: float) -> PBAttacker:
+	var one := _at(_ninja([] as Array[PBBuff], 3.0), 0, 0.30)
+	var clones := PBSkill.new()
+	clones.id = &"probe_clones"
+	clones.summon_count = 3
+	clones.summon_power = 0.4
+	clones.summon_hp_share = 0.2
+	clones.summon_seconds = 10.0
+	one.skills = [PBSkillCast.new(clones, 1)] as Array[PBSkillCast]
+	one.struck_summon = chance
+	return one
+
+
+func _empty_seat(slot: int) -> PBAttacker:
+	var seat := PBAttacker.new()
+	seat.slot = slot
+	seat.summoned = true
+	PBSummonRules.dismiss(seat)
+	return seat
+
+
+func _struck_by(
+	one: PBAttacker, enemy: PBEnemy, tick: int, rng: RandomNumberGenerator, team: Array[PBAttacker]
+) -> void:
+	PBStrikeRules.hurt_ally(
+		one, enemy, 1.0, PBElement.Type.PHYSICAL, _cfg, tick, rng, null, PBCombatOutcome.new(), team
+	)
+
+
+func test_being_struck_can_raise_one_clone_and_waits_for_its_cooldown() -> void:
+	# 〔共同修行〕「受攻击时 15% 几率出一个影分身，内置 CD 3 秒」。几率拉到 1 量机制。
+	var one := _summoner(1.0)
+	var team: Array[PBAttacker] = [one, _empty_seat(1), _empty_seat(2)]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var enemy := _enemy()
+	_struck_by(one, enemy, 1, rng, team)
+	assert_true(team[1].alive, "召出来一个")
+	assert_false(team[2].alive, "只召一个，不是技能那一整发")
+	_struck_by(one, enemy, 2, rng, team)
+	assert_false(team[2].alive, "冷却里不再召")
+	var none := _summoner(0.0)
+	var quiet := RandomNumberGenerator.new()
+	quiet.seed = 3
+	var before: int = quiet.state
+	_struck_by(none, enemy, 1, quiet, [none] as Array[PBAttacker])
+	assert_eq(quiet.state, before, "没配就一次骰子都不掷")
+
+
+func test_an_opening_low_hp_buff_is_on_from_the_first_tick() -> void:
+	# 〔共同修行〕「尾兽外衣开局即可开启」：开波就挂上，之后掉血不再挂第二次。
+	var one := _ninja([] as Array[PBBuff], 0.0)
+	one.low_hp_at = 0.75
+	one.low_hp_buffs = [_buff(&"probe_cloak", true, 999.0, {&"damage_scale": 1.25})]
+	one.open_low_hp = 1.0
+	var squad: Array[PBAttacker] = [one]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var sim := PBBattleSim.new(PBWaveRules.build(1, _cfg, rng), 0.0, 0.0, _cfg, squad)
+	assert_almost_eq(one.buffs.amount(PBBuffRules.DAMAGE_SCALE, 0), 1.25, 0.0001, "开波就挂上了")
+	assert_true(one.low_hp_fired, "记成这一波触发过了")
+	assert_not_null(sim, "前提：战斗建得起来")
+
+
 func test_every_struck_buff_on_the_roster_is_a_real_effect() -> void:
 	var seen: int = 0
 	for character: PBCharacter in _cfg.characters.all():

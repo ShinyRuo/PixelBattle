@@ -13,10 +13,12 @@ extends RefCounted
 ## 要与 [PBCombatRules] 的解析式排队模型逐位相同，而**掷了就算不暴击也拨动了那条流**。
 ## 由此还有一条性质：没有任何来源给暴击率时，整局一位都不动。
 ##
-## ## 只作用于普攻，忍术不吃（玩家定的）
+## ## 体术和忍术各有一套（[PBDamageKind]，玩家定的）
 ##
-## 一发 AOE 打十几个，一次掷骰决定整波伤害 —— 玩家读到的是「这一波运气好」
-## 而不是「这一下打得重」。
+## 普攻走 [method strike]，暴击率、倍数、增伤按**这个人普攻的类型**取（[method attack_kind]）；
+## 技能走 [method hit]，按**技能自己的类型**取。忍术暴击率基础为 0，只从装备、被动来。
+## **一发技能只掷一次**：范围技能圈到的每个敌人吃同一个结果 —— 一发 AOE 各掷各的，
+## 屏幕上一片黄一片白，玩家读不出「这一下暴没暴」。
 ##
 ## ## 两个来源相加
 ##
@@ -32,7 +34,8 @@ extends RefCounted
 const DAMAGE: StringName = &"damage"
 const CRIT: StringName = &"crit"
 
-## 暴击时**额外**多打几成。0.5 = 打 150%。
+## 体术暴击时**额外**多打几成。1.0 = 打 200%（原版「英雄的普攻暴击默认是 2 倍暴击」）。
+## 七刀流「暴击伤害只有 150%」就在名册里配 `crit_damage=-0.5`。
 ##
 ## ## 为什么这三个数不在 [PBSimConfig] 里
 ##
@@ -45,7 +48,13 @@ const CRIT: StringName = &"crit"
 ## 要扫它们的那一天，先把 [PBSimConfig] 里那一整段羁绊功能档搬出去 ——
 ## **别搬成一个嵌套对象**：[method PBSimConfig.clone] 是反射逐字段拷贝的，
 ## 嵌套那一份会按引用共享，于是扫描的几千个副本改的是同一份数，而它不报错。
-const CRIT_DAMAGE_BASE: float = 0.5
+const CRIT_DAMAGE_BASE: float = 1.0
+
+## 忍术暴击时额外多打几成。1.0 = 200%（原版「忍术暴击倍数 +1.0（初始 2.0）」）。
+const NINJUTSU_CRIT_BASE: float = 1.0
+
+## 一次命中的类型，见 [method strike] / [method hit] 的返回。
+const KIND: StringName = &"kind"
 
 ## [constant PBBondFunctionRules.CRIT_CHANCE] 给全队多少暴击率。
 ##
@@ -57,37 +66,81 @@ const BOND_CRIT_CHANCE: float = 0.15
 const BOND_CRIT_DAMAGE: float = 0.5
 
 
-## 这个单位这一刻的暴击率。常驻 + 临时，钳在 0~1。
+## 这个人的普攻算哪一类。**判据只在这里**：普攻暴击、增伤、减伤都问它。
+static func attack_kind(unit: PBAttacker) -> PBDamageKind.Type:
+	if unit != null and unit.attack_ninjutsu > 0.0:
+		return PBDamageKind.Type.NINJUTSU
+	return PBDamageKind.Type.PHYSICAL
+
+
+## 这个单位这一刻 [param kind] 那一类的暴击率。常驻 + 临时（临时那一份只有体术），钳在 0~1。
 ##
 ## 钳上限是必须的：两组羁绊光环 + 一个技能窗口摞起来能超过 1，
 ## 而 `randf() < 1.2` 恒为真 —— 那时暴击率这个数就没有意义了，
 ## 而屏幕上只表现为「怎么每一下都是黄的」。
-static func chance_of(unit: PBAttacker, at_tick: int) -> float:
+static func chance_of(
+	unit: PBAttacker, at_tick: int, kind: PBDamageKind.Type = PBDamageKind.Type.PHYSICAL
+) -> float:
 	if unit == null:
 		return 0.0
+	if kind == PBDamageKind.Type.NINJUTSU:
+		return clampf(unit.ninjutsu_crit_chance, 0.0, 1.0)
 	var temp: float = unit.buffs.amount(PBBuffRules.CRIT_CHANCE, at_tick)
 	return clampf(unit.crit_chance + temp, 0.0, 1.0)
 
 
-## 暴击时打几倍。基础 + 常驻加成 + 临时加成，**三份全是加法**。
-static func multiplier_of(unit: PBAttacker, at_tick: int) -> float:
+## 暴击时打几倍。基础 + 常驻加成 + 临时加成（临时那一份只有体术），**全是加法**。
+static func multiplier_of(
+	unit: PBAttacker, at_tick: int, kind: PBDamageKind.Type = PBDamageKind.Type.PHYSICAL
+) -> float:
+	if kind == PBDamageKind.Type.NINJUTSU:
+		var extra: float = 0.0 if unit == null else unit.ninjutsu_crit_bonus
+		return 1.0 + maxf(NINJUTSU_CRIT_BASE + extra, 0.0)
 	if unit == null:
 		return 1.0 + CRIT_DAMAGE_BASE
 	var temp: float = unit.buffs.amount(PBBuffRules.CRIT_DAMAGE, at_tick)
 	return 1.0 + maxf(CRIT_DAMAGE_BASE + unit.crit_bonus + temp, 0.0)
 
 
-## 这一发打多少、暴没暴。**出手的唯一入口。**
+## 这一发普攻打多少、暴没暴、算哪一类。**出手的唯一入口。**
 ##
 ## [param rng] 为 null 时（批量扫描、探测、老的构造点）恒不暴击且**不掷骰**。
 ## 暴击率为 0 时同理 —— 见本类顶部那条「一次都不掷」。
+## 忍术普攻多乘一份忍术增伤（[member PBAttacker.ninjutsu_bonus]）；体术那一份（`damage_bonus`）已经在
+## [method PBAttacker.strike_for] 里面。
 static func strike(
 	unit: PBAttacker, at_tick: int, rng: RandomNumberGenerator = null
 ) -> Dictionary:
+	var kind := attack_kind(unit)
 	var damage: float = unit.strike_for(at_tick)
-	var chance: float = chance_of(unit, at_tick)
-	if rng == null or chance <= 0.0:
-		return {DAMAGE: damage, CRIT: false}
-	if rng.randf() >= chance:
-		return {DAMAGE: damage, CRIT: false}
-	return {DAMAGE: damage * multiplier_of(unit, at_tick), CRIT: true}
+	if kind == PBDamageKind.Type.NINJUTSU:
+		damage *= 1.0 + maxf(unit.ninjutsu_bonus, -1.0)
+	return _roll(unit, damage, kind, at_tick, rng)
+
+
+## 一发**技能**打多少、暴没暴：乘上 [param kind] 那一类的增伤，再掷那一类的暴击。**技能伤害的唯一入口。**
+## 体术技能不吃 `damage_bonus`（那一份只作用普攻）。[param unit] 为 null（没有出手的人）时原样返回。
+static func hit(
+	unit: PBAttacker,
+	raw: float,
+	kind: PBDamageKind.Type,
+	at_tick: int,
+	rng: RandomNumberGenerator = null
+) -> Dictionary:
+	var damage: float = raw
+	if unit != null and kind == PBDamageKind.Type.NINJUTSU:
+		damage *= 1.0 + maxf(unit.ninjutsu_bonus, -1.0)
+	return _roll(unit, damage, kind, at_tick, rng)
+
+
+static func _roll(
+	unit: PBAttacker,
+	damage: float,
+	kind: PBDamageKind.Type,
+	at_tick: int,
+	rng: RandomNumberGenerator
+) -> Dictionary:
+	var chance: float = chance_of(unit, at_tick, kind)
+	if rng == null or chance <= 0.0 or rng.randf() >= chance:
+		return {DAMAGE: damage, CRIT: false, KIND: kind}
+	return {DAMAGE: damage * multiplier_of(unit, at_tick, kind), CRIT: true, KIND: kind}

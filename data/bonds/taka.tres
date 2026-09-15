@@ -6,7 +6,9 @@
 script = ExtResource("1_1lc3l")
 id = &"taka"
 name_key = "bond.taka"
+match_mode = 0
 member_ids = Array[StringName]([&"sasuke", &"suigetsu", &"jugo", &"karin"])
+match_element = 5
 tier_counts = Array[int]([4])
 tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&""])
@@ -20,3 +22,4 @@ member_functions = {
 &"defence": 15.0
 }
 }
+member_skill_patches = {}

@@ -137,6 +137,10 @@ static func mod_words(mods: Dictionary) -> PackedStringArray:
 	for key: StringName in mods:
 		var shown: float = PBModRules.display_value(key, float(mods[key]))
 		var pattern: String = PBLocale.text("mod.%s" % key)
+		if not pattern.contains("%"):
+			# 「开波即触发」那种不带数的句式：直接 `%` 一个没有占位符的串会报错。
+			out.append(pattern)
+			continue
 		if not is_equal_approx(shown, roundf(shown)):
 			pattern = pattern.replace("%.0f", "%.1f")
 		out.append(pattern % shown)

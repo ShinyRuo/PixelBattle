@@ -1,33 +1,50 @@
 [gd_resource type="SpriteFrames" format=3 uid="uid://w0ikk53tbwab"]
 
-[ext_resource type="Texture2D" uid="uid://bspxlb41yofyj" path="res://assets/actors/naruto/attack_0.png" id="1_wxjif"]
-[ext_resource type="Texture2D" uid="uid://bk08dtg32dihi" path="res://assets/actors/naruto/attack_1.png" id="2_b37pt"]
-[ext_resource type="Texture2D" uid="uid://qvqugcxhnjov" path="res://assets/actors/naruto/attack_2.png" id="3_oa4h5"]
-[ext_resource type="Texture2D" uid="uid://4qb2aigviteh" path="res://assets/actors/naruto/attack_3.png" id="4_hqn7p"]
-[ext_resource type="Texture2D" uid="uid://c3f6qfk54ei2f" path="res://assets/actors/naruto/dead_0.png" id="5_e0ltt"]
-[ext_resource type="Texture2D" uid="uid://dg6d47lr7cf4w" path="res://assets/actors/naruto/dead_1.png" id="6_njrty"]
-[ext_resource type="Texture2D" uid="uid://b1sk1cy6wg18k" path="res://assets/actors/naruto/idle_0.png" id="7_luvo3"]
-[ext_resource type="Texture2D" uid="uid://bmdvcuvrgers6" path="res://assets/actors/naruto/idle_1.png" id="8_b75fl"]
-[ext_resource type="Texture2D" uid="uid://cnw88d5n4ydfc" path="res://assets/actors/naruto/idle_2.png" id="9_5nvah"]
-[ext_resource type="Texture2D" uid="uid://d0dbtxdgjdfao" path="res://assets/actors/naruto/run_0.png" id="10_icu1g"]
-[ext_resource type="Texture2D" uid="uid://d0c271mqjuiv4" path="res://assets/actors/naruto/run_1.png" id="11_uwuxi"]
-[ext_resource type="Texture2D" uid="uid://1k2i577wciu6" path="res://assets/actors/naruto/run_2.png" id="12_xssg2"]
-[ext_resource type="Texture2D" uid="uid://omdbnvcdoqiq" path="res://assets/actors/naruto/run_3.png" id="13_6qcal"]
+[ext_resource type="Texture2D" uid="uid://bspxlb41yofyj" path="res://assets/actors/naruto/attack_0.png" id="1_xssg2"]
+[ext_resource type="Texture2D" uid="uid://bk08dtg32dihi" path="res://assets/actors/naruto/attack_1.png" id="2_6qcal"]
+[ext_resource type="Texture2D" uid="uid://qvqugcxhnjov" path="res://assets/actors/naruto/attack_2.png" id="3_jlper"]
+[ext_resource type="Texture2D" uid="uid://4qb2aigviteh" path="res://assets/actors/naruto/attack_3.png" id="4_heokc"]
+[ext_resource type="Texture2D" uid="uid://bkl1j2413o11p" path="res://assets/actors/naruto/attack_4.png" id="5_5boun"]
+[ext_resource type="Texture2D" uid="uid://xowontceeekq" path="res://assets/actors/naruto/attack_5.png" id="6_s1d1c"]
+[ext_resource type="Texture2D" uid="uid://c3f6qfk54ei2f" path="res://assets/actors/naruto/dead_0.png" id="7_88u4k"]
+[ext_resource type="Texture2D" uid="uid://dg6d47lr7cf4w" path="res://assets/actors/naruto/dead_1.png" id="8_37hx1"]
+[ext_resource type="Texture2D" uid="uid://b2sk3x3bcyt5j" path="res://assets/actors/naruto/dead_2.png" id="9_intwf"]
+[ext_resource type="Texture2D" uid="uid://db1w0xlimyeh5" path="res://assets/actors/naruto/dead_3.png" id="10_d3xny"]
+[ext_resource type="Texture2D" uid="uid://d1ugjbvrjpvrg" path="res://assets/actors/naruto/dead_4.png" id="11_r0o5w"]
+[ext_resource type="Texture2D" uid="uid://db7q5g4wyj4uc" path="res://assets/actors/naruto/dead_5.png" id="12_qhwi8"]
+[ext_resource type="Texture2D" uid="uid://b1sk1cy6wg18k" path="res://assets/actors/naruto/idle_0.png" id="13_ium56"]
+[ext_resource type="Texture2D" uid="uid://bmdvcuvrgers6" path="res://assets/actors/naruto/idle_1.png" id="14_rsvvm"]
+[ext_resource type="Texture2D" uid="uid://cnw88d5n4ydfc" path="res://assets/actors/naruto/idle_2.png" id="15_dgykm"]
+[ext_resource type="Texture2D" uid="uid://cvto2fcxwu2dx" path="res://assets/actors/naruto/idle_3.png" id="16_vmcth"]
+[ext_resource type="Texture2D" uid="uid://cb0ry8kwvpxh6" path="res://assets/actors/naruto/idle_4.png" id="17_eodmy"]
+[ext_resource type="Texture2D" uid="uid://cyphr6hh0smts" path="res://assets/actors/naruto/idle_5.png" id="18_pv6mo"]
+[ext_resource type="Texture2D" uid="uid://d0dbtxdgjdfao" path="res://assets/actors/naruto/run_0.png" id="19_ec17d"]
+[ext_resource type="Texture2D" uid="uid://d0c271mqjuiv4" path="res://assets/actors/naruto/run_1.png" id="20_ahvu2"]
+[ext_resource type="Texture2D" uid="uid://1k2i577wciu6" path="res://assets/actors/naruto/run_2.png" id="21_lcfsj"]
+[ext_resource type="Texture2D" uid="uid://omdbnvcdoqiq" path="res://assets/actors/naruto/run_3.png" id="22_rxsp7"]
+[ext_resource type="Texture2D" uid="uid://8hsyrywd8vj1" path="res://assets/actors/naruto/run_4.png" id="23_vy2tr"]
+[ext_resource type="Texture2D" uid="uid://bxxced1kl3bl0" path="res://assets/actors/naruto/run_5.png" id="24_sio5m"]
 
 [resource]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_wxjif")
+"texture": ExtResource("1_xssg2")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_b37pt")
+"texture": ExtResource("2_6qcal")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3_oa4h5")
+"texture": ExtResource("3_jlper")
 }, {
 "duration": 1.0,
-"texture": ExtResource("4_hqn7p")
+"texture": ExtResource("4_heokc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_5boun")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_s1d1c")
 }],
 "loop": 0,
 "name": &"attack",
@@ -35,10 +52,22 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_e0ltt")
+"texture": ExtResource("7_88u4k")
 }, {
 "duration": 1.0,
-"texture": ExtResource("6_njrty")
+"texture": ExtResource("8_37hx1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_intwf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_d3xny")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_r0o5w")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_qhwi8")
 }],
 "loop": 0,
 "name": &"dead",
@@ -46,13 +75,22 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("7_luvo3")
+"texture": ExtResource("13_ium56")
 }, {
 "duration": 1.0,
-"texture": ExtResource("8_b75fl")
+"texture": ExtResource("14_rsvvm")
 }, {
 "duration": 1.0,
-"texture": ExtResource("9_5nvah")
+"texture": ExtResource("15_dgykm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_vmcth")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_eodmy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_pv6mo")
 }],
 "loop": 1,
 "name": &"idle",
@@ -60,16 +98,22 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("10_icu1g")
+"texture": ExtResource("19_ec17d")
 }, {
 "duration": 1.0,
-"texture": ExtResource("11_uwuxi")
+"texture": ExtResource("20_ahvu2")
 }, {
 "duration": 1.0,
-"texture": ExtResource("12_xssg2")
+"texture": ExtResource("21_lcfsj")
 }, {
 "duration": 1.0,
-"texture": ExtResource("13_6qcal")
+"texture": ExtResource("22_rxsp7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_vy2tr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_sio5m")
 }],
 "loop": 1,
 "name": &"run",

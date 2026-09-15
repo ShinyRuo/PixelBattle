@@ -125,6 +125,28 @@ func test_undying_keeps_him_up_until_it_runs_out() -> void:
 	assert_true(PBStrikeRules.wound_ally(one, 5000.0, _cfg, late, null, null, out), "过期就倒")
 
 
+func test_the_end_of_undying_heals_once_if_still_standing() -> void:
+	# 〔不死二人组〕「死司凭血持续时间结束后能够恢复 20% 的生命值」。
+	var one := _fighter(Vector2(0.2, 0.0))
+	one.undying_end_heal = 0.2
+	var hold := _buff(&"probe_hold", PBBuff.Kind.DURATION, 1.0, {&"undying": 1.0})
+	PBSkillRules.apply_one(one, hold, hold.mods, _cfg, 0)
+	PBStrikeRules.wound_ally(one, 5000.0, _cfg, 1, null, null, PBCombatOutcome.new())
+	assert_eq(one.hp, 1.0, "前提：不死期间血停在 1")
+	for tick: int in range(1, _cfg.tick_rate + 1):
+		PBBuffRules.advance_ally(one, tick, _cfg.tick_rate)
+	assert_eq(one.hp, 1.0, "没到期不回")
+	for tick: int in range(_cfg.tick_rate + 1, _cfg.tick_rate * 3):
+		PBBuffRules.advance_ally(one, tick, _cfg.tick_rate)
+	assert_almost_eq(one.hp, 1.0 + 200.0, 0.001, "到期那一刻回 20% 最大生命，只回一次")
+	var plain := _fighter(Vector2(0.2, 0.0))
+	plain.hp = 1.0
+	PBSkillRules.apply_one(plain, hold, hold.mods, _cfg, 0)
+	for tick: int in range(0, _cfg.tick_rate * 3):
+		PBBuffRules.advance_ally(plain, tick, _cfg.tick_rate)
+	assert_eq(plain.hp, 1.0, "没配这个键就不回")
+
+
 # ── 阵亡时放 ────────────────────────────────────────────────────
 
 

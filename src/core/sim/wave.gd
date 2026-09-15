@@ -32,6 +32,12 @@ var count: int = 0
 var hp_each: float = 0.0
 var atk_each: float = 0.0
 
+## 单个敌人的护甲。按波型与波次定（[method PBSimConfig.enemy_armor]），只减普攻。
+var armor_each: float = 0.0
+
+## 单个敌人的忍术抗性（成数）。按波型与波次定（[method PBSimConfig.enemy_resist]），只减忍术。
+var resist_each: float = 0.0
+
 ## 清完本波的基础奖金。§04 特意让它走线性，不跟血量的指数曲线走 ——
 ## 跟着走的话后期金币会溢出到抽卡不再是决策。
 var reward_gold: int = 0

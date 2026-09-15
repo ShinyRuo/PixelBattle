@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://ccbd0dwyank36"]
+
+[ext_resource type="Texture2D" uid="uid://do6ov8u172r81" path="res://assets/actors/tendo/attack_0.png" id="1_nigac"]
+[ext_resource type="Texture2D" uid="uid://ck8j6rlwe76p2" path="res://assets/actors/tendo/attack_1.png" id="2_mvia2"]
+[ext_resource type="Texture2D" uid="uid://cdusplc7cnj2g" path="res://assets/actors/tendo/attack_2.png" id="3_bi353"]
+[ext_resource type="Texture2D" uid="uid://6le5pmxox5yv" path="res://assets/actors/tendo/attack_3.png" id="4_hmf3w"]
+[ext_resource type="Texture2D" uid="uid://b5v0yrn823tip" path="res://assets/actors/tendo/attack_4.png" id="5_uagjx"]
+[ext_resource type="Texture2D" uid="uid://bombsj6bir2yi" path="res://assets/actors/tendo/attack_5.png" id="6_6i3ln"]
+[ext_resource type="Texture2D" uid="uid://dp0xi47bg5ocv" path="res://assets/actors/tendo/dead_0.png" id="7_7wy7u"]
+[ext_resource type="Texture2D" uid="uid://f4safubx8ky4" path="res://assets/actors/tendo/dead_1.png" id="8_22320"]
+[ext_resource type="Texture2D" uid="uid://b60tat3jhjxqe" path="res://assets/actors/tendo/dead_2.png" id="9_ot88a"]
+[ext_resource type="Texture2D" uid="uid://lmeoceomvrt1" path="res://assets/actors/tendo/dead_3.png" id="10_igj7s"]
+[ext_resource type="Texture2D" uid="uid://xqjqyidjkgsf" path="res://assets/actors/tendo/dead_4.png" id="11_epksj"]
+[ext_resource type="Texture2D" uid="uid://bemvsa3jttuag" path="res://assets/actors/tendo/dead_5.png" id="12_71tc8"]
+[ext_resource type="Texture2D" uid="uid://bwuovtwo7cae0" path="res://assets/actors/tendo/idle_0.png" id="13_ttecs"]
+[ext_resource type="Texture2D" uid="uid://m6uq8p4egur2" path="res://assets/actors/tendo/idle_1.png" id="14_byfcr"]
+[ext_resource type="Texture2D" uid="uid://doqpfves781yc" path="res://assets/actors/tendo/idle_2.png" id="15_lp14a"]
+[ext_resource type="Texture2D" uid="uid://c6s8g23y4h8ti" path="res://assets/actors/tendo/idle_3.png" id="16_bsolp"]
+[ext_resource type="Texture2D" uid="uid://b41822qd1xjg6" path="res://assets/actors/tendo/idle_4.png" id="17_wkbh3"]
+[ext_resource type="Texture2D" uid="uid://bjb8wjjs2aegf" path="res://assets/actors/tendo/idle_5.png" id="18_mmnym"]
+[ext_resource type="Texture2D" uid="uid://df8cgtr8f0pv5" path="res://assets/actors/tendo/run_0.png" id="19_3wodv"]
+[ext_resource type="Texture2D" uid="uid://biyttf2w2h4iq" path="res://assets/actors/tendo/run_1.png" id="20_x6fa1"]
+[ext_resource type="Texture2D" uid="uid://bkd6yiloctbj0" path="res://assets/actors/tendo/run_2.png" id="21_2imkr"]
+[ext_resource type="Texture2D" uid="uid://c5mtu2xdkayvk" path="res://assets/actors/tendo/run_3.png" id="22_g37mt"]
+[ext_resource type="Texture2D" uid="uid://ipbmumyj5krr" path="res://assets/actors/tendo/run_4.png" id="23_pfcgl"]
+[ext_resource type="Texture2D" uid="uid://c33jxvbi7mbok" path="res://assets/actors/tendo/run_5.png" id="24_fvs4m"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_nigac")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_mvia2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_bi353")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_hmf3w")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_uagjx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_6i3ln")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_7wy7u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_22320")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ot88a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_igj7s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_epksj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_71tc8")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_ttecs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_byfcr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_lp14a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_bsolp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_wkbh3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_mmnym")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_3wodv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_x6fa1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_2imkr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_g37mt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_pfcgl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_fvs4m")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

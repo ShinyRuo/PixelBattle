@@ -98,6 +98,14 @@ const DODGE: StringName = &"dodge"
 ## 下一次出手的间隔除以它。**判在排间隔那一句，不在出手判定里** —— 同晕眩那条「冷却不偷跑」。
 const ENEMY_ATTACK_SPEED_SCALE: StringName = &"enemy_attack_speed_scale"
 
+## 敌人护甲**临时**加减几点（溶解爆酸「降低 3-30 点护甲」= −15）。量型，读点在 [method PBStrikeRules.armoured]。
+## 本身那一份在 [member PBEnemy.armor]。
+const ENEMY_DEFENCE: StringName = &"enemy_defence"
+
+## 敌人忍术抗性**临时**加减几成（负数 = 降魔抗）。量型，读点在 [method PBStrikeRules.mitigated]。
+## 本身那一份在 [member PBEnemy.ninjutsu_resist]。
+const ENEMY_RESIST: StringName = &"enemy_resist"
+
 ## 暴击率**临时**加多少。读点在 [method PBCritRules.chance_of]。
 ##
 ## **量型不是率型**：概率是加法量，+15% 和 +10% 摞起来是 +25%；
@@ -146,6 +154,8 @@ const ALL: Array[StringName] = [
 	UNDYING,
 	DODGE,
 	ENEMY_ATTACK_SPEED_SCALE,
+	ENEMY_DEFENCE,
+	ENEMY_RESIST,
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
@@ -316,9 +326,20 @@ static func to_ticks(seconds: float, cfg: PBSimConfig) -> int:
 ##
 ## 回复当场加上；**掉血只返回、不扣**（见 [constant DRAIN_MAX]），调用方交给
 ## [method PBStrikeRules.wound_ally]。返回的是抵扣（[member PBAttacker.drain_cut]）之后的数。
-static func advance_ally(unit: PBAttacker, at_tick: int) -> float:
+##
+## 常驻回血（[member PBAttacker.regen_max]）也在这里，按 [param tick_rate] 每 tick 均摊 ——
+## 放在效果之外另找一处推进的话，两处都要记得「死人不回」。
+static func advance_ally(unit: PBAttacker, at_tick: int, tick_rate: int) -> float:
+	if unit.regen_max > 0.0:
+		unit.heal(unit.max_hp * unit.regen_max / float(maxi(tick_rate, 1)))
 	var drain: float = 0.0
 	for state: PBBuffState in unit.buffs.states():
+		# **刚过期、还没清掉的那一份**：不死到期回血（[member PBAttacker.undying_end_heal]）判在这里 ——
+		# 下面那句 `sweep` 同一 tick 就把它清了，所以一份只会触发一次。
+		if state.buff != null and not state.is_live(at_tick):
+			if state.mods.has(UNDYING) and unit.undying_end_heal > 0.0:
+				unit.heal(unit.max_hp * unit.undying_end_heal)
+			continue
 		if not state.is_due(at_tick):
 			continue
 		state.on_fired(at_tick)

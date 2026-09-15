@@ -209,6 +209,23 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.heal_power,
 		one.struck_aura,
 		one.struck_boost,
+		one.struck_summon,
+		one.open_low_hp,
+		one.undying_end_heal,
+		one.regen_max,
+		one.taken_by_element.duplicate(),
+		one.dodge_counter,
+		one.melee_taken,
+		one.melee_reflect,
+		one.struck_ranged,
+		one.struck_leap,
+		one.pierce,
+		one.armor_pen,
+		one.ninjutsu_pen,
+		one.ninjutsu_bonus,
+		one.ninjutsu_crit_chance,
+		one.ninjutsu_crit_bonus,
+		one.attack_ninjutsu,
 	]
 
 

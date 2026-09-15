@@ -219,6 +219,7 @@ static func build_attackers(
 		attacker.low_hp_buffs = unit.character.low_hp_buffs
 		attacker.lethal_buffs = unit.character.lethal_buffs
 		attacker.struck_buffs = unit.character.struck_buffs
+		attacker.attack_buffs = unit.character.attack_buffs
 		# 尾兽的「团队回蓝 +25%」在没有蓝条的模型里只剩一个可观测后果：
 		# 大招放得更勤。所以它落在这里，而不是另开一条资源。
 		skill.cooldown_ticks = maxi(int(round(float(skill.cooldown_ticks) * cd_scale)), 1)

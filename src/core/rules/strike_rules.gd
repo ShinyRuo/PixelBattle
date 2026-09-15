@@ -148,6 +148,7 @@ static func land(
 ) -> void:
 	var total: float = damage + _heavy_extra(attacker, enemy, damage)
 	total += _bite_extra(attacker, enemy, damage, crit)
+	total = mitigated(attacker, enemy, total, PBCritRules.attack_kind(attacker), cfg, tick)
 	if book != null:
 		book.hit(tick, -1 if attacker == null else attacker.slot, enemy.slot, total, false, crit)
 	var before: float = enemy.hp
@@ -158,25 +159,55 @@ static func land(
 	_leech(attacker, before - maxf(enemy.hp, 0.0))
 	out.kills += _splash(attacker, enemy, enemies, damage, cfg, tick)
 	_arm_crit(attacker, cfg, tick)
-	out.kills += _hang_on_hit(attacker, enemy, crit, cfg, tick)
+	out.kills += _hang_on_enemy(attacker, enemy, attacker.attack_buffs, cfg, tick)
+	if crit:
+		out.kills += _hang_on_enemy(attacker, enemy, attacker.on_hit_buffs, cfg, tick)
 
 
-## 打出要害那一下把他自带的效果挂到目标身上（[member PBAttacker.on_hit_buffs]）。
-## 返回挂死了几个。
+## 一次伤害打在 [param enemy] 身上，按 [param kind] 那一类减完还剩多少。**敌人减伤唯一的读点**：
+## 普攻（[method land]、溅射、穿透子弹）、技能（[PBSkillRules]）、持续伤害都走它。反弹、闪避反打不走。
 ##
-## - **骑在暴击那个掷点上**，不另开骰子（同 [method _bite_extra]）。
+## - **体术**：护甲 = 本身（[member PBEnemy.armor]）+ 临时增减（[constant PBBuffRules.ENEMY_DEFENCE]），
+##   乘「1 − 护甲穿透」（[member PBAttacker.armor_pen]），走 [method PBStatRules.damage_reduction] 那条递减曲线。
+## - **忍术**：抗性 = 本身（[member PBEnemy.ninjutsu_resist]）+ 临时增减（[constant PBBuffRules.ENEMY_RESIST]），
+##   乘「1 − 忍术穿透」（[member PBAttacker.ninjutsu_pen]），直接按成数减。
+##
+## 两类都是减到 0 以下按 0 算，**不放大伤害**。[param attacker] 为 null（找不到出手的人、持续伤害）时不算穿透。
+static func mitigated(
+	attacker: PBAttacker,
+	enemy: PBEnemy,
+	raw: float,
+	kind: PBDamageKind.Type,
+	cfg: PBSimConfig,
+	tick: int
+) -> float:
+	if kind == PBDamageKind.Type.NINJUTSU:
+		var resist: float = enemy.ninjutsu_resist + enemy.buffs.amount(PBBuffRules.ENEMY_RESIST, tick)
+		if attacker != null:
+			resist *= 1.0 - clampf(attacker.ninjutsu_pen, 0.0, 1.0)
+		return raw * (1.0 - clampf(resist, 0.0, 1.0))
+	var armour: float = enemy.armor + enemy.buffs.amount(PBBuffRules.ENEMY_DEFENCE, tick)
+	if attacker != null:
+		armour *= 1.0 - clampf(attacker.armor_pen, 0.0, 1.0)
+	return raw * (1.0 - PBStatRules.damage_reduction(armour, cfg))
+
+
+## 把他自带的一串效果挂到目标身上。返回挂死了几个。
+## 两份来源：每一下都挂的（[member PBAttacker.attack_buffs]）、打出要害才挂的（[member PBAttacker.on_hit_buffs]，
+## **骑在暴击那个掷点上**，不另开骰子，同 [method _bite_extra]）。
+##
 ## - **死了就不挂**：给尸体挂减速会让「定住了几个」虚高。
 ## - **等级从大招那份上读**：[PBAttacker] 身上没有 `level`（见 [member PBSkillCast.caster_level]），
 ##   拿不到就算 1 级。
-static func _hang_on_hit(
-	attacker: PBAttacker, enemy: PBEnemy, crit: bool, cfg: PBSimConfig, tick: int
+static func _hang_on_enemy(
+	attacker: PBAttacker, enemy: PBEnemy, buffs: Array[PBBuff], cfg: PBSimConfig, tick: int
 ) -> int:
-	if not crit or not enemy.alive or attacker.on_hit_buffs.is_empty():
+	if not enemy.alive or buffs.is_empty():
 		return 0
 	var level: int = 1
 	if attacker.ultimate != null:
 		level = attacker.ultimate.caster_level
-	return 1 if PBSkillRules.apply_all_enemy(enemy, attacker.on_hit_buffs, level, cfg, tick) else 0
+	return 1 if PBSkillRules.apply_all_enemy(enemy, buffs, level, cfg, tick) else 0
 
 
 ## 一次**敌人的攻击**落在一个忍者身上的唯一落点。
@@ -186,6 +217,9 @@ static func _hang_on_hit(
 ## [method PBShotRules._hit_ally] 的子弹），各写一遍的话漏一处就是「被子弹打不反弹」。
 ##
 ## **反弹打死的那一个在这里记账**：放回调用方的话杀敌数就有了第二个来源。
+##
+## **远近程看 [param source]**：放子弹的敌人是远程（`shot_speed > 0`）。子弹那一路找不到射手时
+## 传进来的是 null，而会放子弹的只有远程 —— 所以 null 也按远程算。
 static func hurt_ally(
 	target: PBAttacker,
 	source: PBEnemy,
@@ -201,14 +235,89 @@ static func hurt_ally(
 	# 临时防御（[constant PBBuffRules.DEFENCE]）在这里加：护甲只在这一句折算。
 	var armour: float = target.defence + target.buffs.amount(PBBuffRules.DEFENCE, tick)
 	var hurt: float = PBStatRules.strike_damage(raw, element, armour, target.def_element, cfg)
+	# 按敌人攻击属性的增减伤（霸气、水化之术）也只在这一句乘，反弹按乘完的数算。
+	hurt *= PBPassiveRules.taken_scale(target, element)
+	var ranged: bool = source == null or source.shot_speed > 0.0
+	if not ranged:
+		hurt *= maxf(1.0 + target.melee_taken, 0.0)
 	if book != null:
 		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true)
+	var dodged_before: int = target.dodge_count
 	wound_ally(target, hurt, cfg, tick, rng, book, out)
-	if target.alive and not target.struck_buffs.is_empty() and tick >= target.struck_ready_at:
+	if target.dodge_count > dodged_before:
+		_counter(target, source, tick, book, out)
+	var ready: bool = target.alive and tick >= target.struck_ready_at
+	if ready and _struck_counts(target, ranged) and not target.struck_buffs.is_empty():
 		target.struck_ready_at = tick + _struck_ticks(target, cfg)
 		_trigger_struck(target, target, source, cfg, tick, out)
-	_struck_auras(target, source, team, cfg, tick, out)
-	_reflect(target, source, hurt, tick, book, out)
+		_leap(target, source)
+	_struck_auras(target, source, ranged, team, cfg, tick, out)
+	_struck_summon(target, team, cfg, tick, rng)
+	_reflect(target, source, hurt, ranged, tick, book, out)
+
+
+## 这一下算不算 [param owner] 的「受攻击」：配了只认远程（[member PBAttacker.struck_ranged]）的，近战那一下不算。
+static func _struck_counts(owner: PBAttacker, ranged: bool) -> bool:
+	return owner.struck_ranged <= 0.0 or ranged
+
+
+## 闪掉这一下就反打回去（[member PBAttacker.dodge_counter]），量是他自己一发普攻的几成。
+## 播报和记杀敌同 [method _reflect]；打他的那个死了、找不到就不打。
+static func _counter(
+	target: PBAttacker, source: PBEnemy, tick: int, book: PBBattleLog, out: PBCombatOutcome
+) -> void:
+	if target.dodge_counter <= 0.0 or source == null or not source.alive:
+		return
+	var back: float = target.damage_per_shot() * target.dodge_counter
+	if book != null:
+		book.hit(tick, target.slot, source.slot, back, false)
+	if source.take_damage(back, tick):
+		out.kills += 1
+
+
+## 受击效果触发时跳到打他的那个敌人身前（[member PBAttacker.struck_leap]）：落在两人连线上、
+## 离那个敌人自己射程的九成处（同 [constant PBAttacker.STOP_RING]），落地就够得着它。
+## 本来就站在射程里的不往后退。
+static func _leap(target: PBAttacker, source: PBEnemy) -> void:
+	if target.struck_leap <= 0.0 or source == null or not source.alive:
+		return
+	var spot: Vector2 = source.pos()
+	var gap: Vector2 = target.pos - spot
+	var keep: float = target.reach * PBAttacker.STOP_RING
+	if gap.length() > keep:
+		target.pos = spot + gap.normalized() * keep
+
+
+## 挨一下时按几率召出一个分身（[member PBAttacker.struck_summon]），属性照他自己的第一个召唤技能。
+##
+## **冷却里不掷骰**：掷了就算没中也拨动了那条流（同闪避那条）；[param rng] 为 null（扫描、探测）时不召。
+## **和技能共用预留位子**：技能召的那几个都还在场时，这一下召不出来 —— 位子按技能数（[method PBSummonRules.reserve]），
+## 不为羁绊多留，否则没凑齐这组羁绊的队伍也要空着几个位子。
+static func _struck_summon(
+	target: PBAttacker,
+	team: Array[PBAttacker],
+	cfg: PBSimConfig,
+	tick: int,
+	rng: RandomNumberGenerator
+) -> void:
+	if target.struck_summon <= 0.0 or rng == null or not target.alive or tick < target.struck_ready_at:
+		return
+	if rng.randf() >= target.struck_summon:
+		return
+	for cast: PBSkillCast in target.skills:
+		if cast.skill.summon_count > 0:
+			target.struck_ready_at = tick + _struck_ticks(target, cfg)
+			PBSummonRules.raise_from(team, target, cast.skill, tick, cfg, 1)
+			return
+
+
+## 开波那一刻挂上「开局即开」的血量阈值效果（[member PBAttacker.open_low_hp]）。[PBBattleSim] 开波时对每个人调一次。
+## 挂上就记成这一波触发过了，之后掉血不再挂第二次。
+static func open_wave(target: PBAttacker, cfg: PBSimConfig) -> void:
+	if target.open_low_hp <= 0.0 or target.low_hp_buffs.is_empty() or target.low_hp_fired:
+		return
+	target.low_hp_fired = true
+	_hang_self(target, target.low_hp_buffs, cfg, 0)
 
 
 ## 受击效果按 [param owner] 的配置触发一次：**增益挂 [param on]（挨打的那个人），减益挂打他的那个敌人**。
@@ -240,6 +349,7 @@ static func _trigger_struck(
 static func _struck_auras(
 	target: PBAttacker,
 	source: PBEnemy,
+	ranged: bool,
 	team: Array[PBAttacker],
 	cfg: PBSimConfig,
 	tick: int,
@@ -250,7 +360,7 @@ static func _struck_auras(
 	for carrier: PBAttacker in team:
 		if carrier == target or not carrier.alive or carrier.struck_aura <= 0.0:
 			continue
-		if carrier.struck_buffs.is_empty():
+		if carrier.struck_buffs.is_empty() or not _struck_counts(carrier, ranged):
 			continue
 		if carrier.pos.distance_to(target.pos) > cfg.units_to_field(carrier.struck_aura):
 			continue
@@ -310,7 +420,7 @@ static func _arm_low_hp(target: PBAttacker, cfg: PBSimConfig, tick: int) -> void
 	_hang_self(target, target.low_hp_buffs, cfg, tick)
 
 
-## 把他自带的一串效果挂到自己身上。等级读法同 [method _hang_on_hit]。
+## 把他自带的一串效果挂到自己身上。等级读法同 [method _hang_on_enemy]。
 static func _hang_self(
 	target: PBAttacker, buffs: Array[PBBuff], cfg: PBSimConfig, tick: int
 ) -> void:
@@ -332,17 +442,21 @@ static func _hang_self(
 ## **闪掉的那一下照样反弹**：[method PBAttacker.take_damage] 里闪避返回 false，
 ## 而这一句排在它外面。原版那一条正是「免疫此次伤害**并**反弹」——
 ## 两件事一起发生，只是我们把它们拆成了两个能各自单独配的键。
+##
+## 只反近战的那一份（[member PBAttacker.melee_reflect]）在 [param ranged] 为假时加上。
 static func _reflect(
 	target: PBAttacker,
 	source: PBEnemy,
 	hurt: float,
+	ranged: bool,
 	tick: int,
 	book: PBBattleLog,
 	out: PBCombatOutcome
 ) -> void:
-	if source == null or not source.alive or target.reflect <= 0.0 or hurt <= 0.0:
+	var share: float = target.reflect + (0.0 if ranged else target.melee_reflect)
+	if source == null or not source.alive or share <= 0.0 or hurt <= 0.0:
 		return
-	var back: float = hurt * target.reflect
+	var back: float = hurt * share
 	if book != null:
 		book.hit(tick, target.slot, source.slot, back, false)
 	if source.take_damage(back, tick):
@@ -432,7 +546,8 @@ static func _splash(
 			continue
 		if spot.distance_to(other.pos()) > reach:
 			continue
-		if other.take_damage(each, tick):
+		var kind := PBCritRules.attack_kind(attacker)
+		if other.take_damage(mitigated(attacker, other, each, kind, cfg, tick), tick):
 			killed += 1
 	return killed
 
@@ -489,6 +604,9 @@ static func _strike_single(
 		attacker.pos, target.slot, damage, attacker.shot_speed,
 		false, PBElement.Type.PHYSICAL, attacker.slot, null, 1, crit
 	)
+	# 穿透距离**出膛那一刻**定下来（同暴击）：飞到时出手的人可能已经死了。
+	if attacker.pierce > 0.0:
+		shot.pierce_left = cfg.units_to_field(attacker.pierce)
 	return true
 
 

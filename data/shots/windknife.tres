@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://ygrdc7yd4uxp"]
+
+[ext_resource type="Texture2D" uid="uid://xa4co053dbk5" path="res://assets/fx/windknife/fly_0.png" id="1_x3y86"]
+[ext_resource type="Texture2D" uid="uid://6acl66ywb1na" path="res://assets/fx/windknife/fly_1.png" id="2_jjl17"]
+[ext_resource type="Texture2D" uid="uid://d2bwj07jnlavl" path="res://assets/fx/windknife/fly_2.png" id="3_r4n5c"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_5su8m"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_xaawb"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_x3y86")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_jjl17")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_r4n5c")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 3.0
+}]
+
+[resource]
+script = ExtResource("4_5su8m")
+key = &"windknife"
+frames = SubResource("SpriteFrames_xaawb")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

@@ -98,7 +98,7 @@ func test_heal_max_heals_a_share_of_max_hp_each_pulse() -> void:
 	var mend := _buff(&"probe_mend", PBBuff.Kind.PERIODIC, 5.0, {&"heal_max": 0.10})
 	PBSkillRules.apply_one(one, mend, mend.mods, _cfg, 0)
 	for tick: int in range(0, _cfg.tick_rate * 5 + 1):
-		PBBuffRules.advance_ally(one, tick)
+		PBBuffRules.advance_ally(one, tick, _cfg.tick_rate)
 	assert_almost_eq(one.hp, 600.0, 0.001, "5 秒 5 跳、每跳 10% 最大生命")
 
 
@@ -160,14 +160,28 @@ func test_drain_goes_through_the_bookkeeping_and_can_be_cut() -> void:
 	PBSkillRules.apply_one(one, curse, curse.mods, _cfg, 0)
 	var drain: float = 0.0
 	for tick: int in range(0, _cfg.tick_rate + 1):
-		drain += PBBuffRules.advance_ally(one, tick)
+		drain += PBBuffRules.advance_ally(one, tick, _cfg.tick_rate)
 	assert_almost_eq(drain, 20.0, 0.001, "一秒一跳、每跳 2% 最大生命")
 	assert_eq(one.hp, 1000.0, "规则层只算不扣 —— 扣血和记账归 wound_ally")
 	one.drain_cut = 1.0
 	var cut: float = 0.0
 	for tick: int in range(_cfg.tick_rate + 1, _cfg.tick_rate * 3 + 1):
-		cut += PBBuffRules.advance_ally(one, tick)
+		cut += PBBuffRules.advance_ally(one, tick, _cfg.tick_rate)
 	assert_eq(cut, 0.0, "抵掉十成就一点不掉（〔吾之牢笼〕）")
+
+
+func test_regen_heals_a_share_of_max_hp_every_second_but_not_the_dead() -> void:
+	# 仙人模式「每秒恢复 2% 的生命值」：按 tick 均摊，一秒正好 2%。
+	var one := _guarded(0.0)
+	one.regen_max = 0.02
+	one.hp = 500.0
+	for tick: int in range(0, _cfg.tick_rate):
+		PBBuffRules.advance_ally(one, tick, _cfg.tick_rate)
+	assert_almost_eq(one.hp, 520.0, 0.001, "一秒回 2% 最大生命")
+	one.alive = false
+	one.hp = 0.0
+	PBBuffRules.advance_ally(one, _cfg.tick_rate, _cfg.tick_rate)
+	assert_eq(one.hp, 0.0, "死人不回")
 
 
 func test_a_drain_can_kill_and_is_counted_in_a_real_battle() -> void:

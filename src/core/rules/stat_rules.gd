@@ -75,6 +75,12 @@ const INTELLECT: StringName = &"intellect"
 ## 三围各加几点（原版的「全属性 +N」）。**量型**，和上面三个相加。
 const ALL_STATS: StringName = &"all_stats"
 
+## 三围各多几成（原版羁绊的「提升 20% 的全属性」）。**率型**，中性 0.0。
+##
+## **只放大角色自己的三围**（1 级值 + 等级成长），点数词条排在它后面加、不跟着放大：
+## 放大点数的话，装备的「全属性 +30」和羁绊的 +20% 连乘，越往后装备越多、这一句越强。
+const ALL_STATS_BONUS: StringName = &"all_stats_bonus"
+
 ## 攻击力加几点。**量型**。
 ##
 ## ## 它为什么非在这一层不可
@@ -104,6 +110,7 @@ const ALL: Array[StringName] = [
 	AGILITY,
 	INTELLECT,
 	ALL_STATS,
+	ALL_STATS_BONUS,
 	ATTACK,
 	DEFENCE,
 	MAX_HP,
@@ -247,7 +254,11 @@ static func of(
 	out.agility = character.agility + character.agility_growth * steps
 	out.intellect = character.intellect + character.intellect_growth * steps
 	# **一级属性的词条在这儿注入**：下面每个二级属性都从这三个数算出来。
-	# 空词条时每一句都是 `+= 0.0`，逐位不变。
+	# 空词条时每一句都是 `+= 0.0` / `*= 1.0`，逐位不变。成数先乘、点数后加（见 [constant ALL_STATS_BONUS]）。
+	var own_scale: float = 1.0 + maxf(amount(mods, ALL_STATS_BONUS), -1.0)
+	out.strength *= own_scale
+	out.agility *= own_scale
+	out.intellect *= own_scale
 	var every: float = amount(mods, ALL_STATS)
 	out.strength += amount(mods, STRENGTH) + every
 	out.agility += amount(mods, AGILITY) + every

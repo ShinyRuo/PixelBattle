@@ -90,6 +90,8 @@ func _pack(count: int) -> Array[PBEnemy]:
 		enemy.slot = i
 		enemy.max_hp = 100000.0
 		enemy.hp = enemy.max_hp
+		# 护甲清零：量的是按生命百分比那一笔本身，护甲另在 `test_enemy_armor.gd`。
+		enemy.armor = 0.0
 		out.append(enemy)
 	return out
 

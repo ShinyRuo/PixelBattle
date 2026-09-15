@@ -22,6 +22,13 @@ var alive: bool = false
 var hp: float = 0.0
 var max_hp: float = 0.0
 
+## 护甲。只减**体术**伤害（[PBDamageKind]），读点在 [method PBStrikeRules.mitigated]。
+## 临时增减（降护甲的技能）走 [constant PBBuffRules.ENEMY_DEFENCE]，不改这个数。
+var armor: float = 0.0
+
+## 忍术抗性（成数）。只减**忍术**伤害，读点同上；临时增减走 [constant PBBuffRules.ENEMY_RESIST]。
+var ninjutsu_resist: float = 0.0
+
 ## 本波的属性。同一波内所有敌人属性相同（§04），存在个体上是为了
 ## 将来的「混合属性波」（§04 的 50 波后机制）不用改结构。
 var element: PBElement.Type = PBElement.Type.FIRE
@@ -108,6 +115,8 @@ func spawn(
 	element = wave.element
 	rank = rank_of(wave)
 	atk = wave.atk_each
+	armor = wave.armor_each
+	ninjutsu_resist = wave.resist_each
 	distance = at_x
 	start_x = at_x
 	lane = at_lane

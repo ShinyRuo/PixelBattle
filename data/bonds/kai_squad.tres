@@ -6,8 +6,12 @@
 script = ExtResource("1_4cgvw")
 id = &"kai_squad"
 name_key = "bond.kai_squad"
+match_mode = 0
 member_ids = Array[StringName]([&"might_guy", &"rock_lee", &"tenten", &"neji_hyuga"])
+match_element = 5
 tier_counts = Array[int]([4])
 tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&"gather"])
 tier_function_carriers = Array[StringName]([&"rock_lee"])
+member_functions = {}
+member_skill_patches = {}

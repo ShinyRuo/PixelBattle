@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://b1muyejihivy5"]
+
+[ext_resource type="Texture2D" uid="uid://c75nid1pu15p4" path="res://assets/actors/enemy_water_elite_ranged/attack_0.png" id="1_vxolv"]
+[ext_resource type="Texture2D" uid="uid://bdh8q5h7lxgy6" path="res://assets/actors/enemy_water_elite_ranged/attack_1.png" id="2_tqm4v"]
+[ext_resource type="Texture2D" uid="uid://j0nc04amv704" path="res://assets/actors/enemy_water_elite_ranged/attack_2.png" id="3_babkd"]
+[ext_resource type="Texture2D" uid="uid://iot27mlh1jja" path="res://assets/actors/enemy_water_elite_ranged/attack_3.png" id="4_1bpwe"]
+[ext_resource type="Texture2D" uid="uid://c5e3cdfar4q0n" path="res://assets/actors/enemy_water_elite_ranged/attack_4.png" id="5_y60te"]
+[ext_resource type="Texture2D" uid="uid://du826u8eg4xa0" path="res://assets/actors/enemy_water_elite_ranged/attack_5.png" id="6_ipdbc"]
+[ext_resource type="Texture2D" uid="uid://5d1kojfpebpv" path="res://assets/actors/enemy_water_elite_ranged/dead_0.png" id="7_r1rvy"]
+[ext_resource type="Texture2D" uid="uid://b84222xovxmic" path="res://assets/actors/enemy_water_elite_ranged/dead_1.png" id="8_cr2xc"]
+[ext_resource type="Texture2D" uid="uid://bcms1xxc1t7cn" path="res://assets/actors/enemy_water_elite_ranged/dead_2.png" id="9_p2jfm"]
+[ext_resource type="Texture2D" uid="uid://1nif5g3x6lbu" path="res://assets/actors/enemy_water_elite_ranged/dead_3.png" id="10_nactb"]
+[ext_resource type="Texture2D" uid="uid://bvrxrqk8b2wsj" path="res://assets/actors/enemy_water_elite_ranged/dead_4.png" id="11_j51q7"]
+[ext_resource type="Texture2D" uid="uid://cbx3hb1aw4imu" path="res://assets/actors/enemy_water_elite_ranged/dead_5.png" id="12_qrscg"]
+[ext_resource type="Texture2D" uid="uid://uft1dajly8ok" path="res://assets/actors/enemy_water_elite_ranged/idle_0.png" id="13_h4lrk"]
+[ext_resource type="Texture2D" uid="uid://cyo0fla4pst2s" path="res://assets/actors/enemy_water_elite_ranged/idle_1.png" id="14_bej7p"]
+[ext_resource type="Texture2D" uid="uid://dvd0jqe2craer" path="res://assets/actors/enemy_water_elite_ranged/idle_2.png" id="15_bhsnv"]
+[ext_resource type="Texture2D" uid="uid://c4dlc6i6qd8rn" path="res://assets/actors/enemy_water_elite_ranged/idle_3.png" id="16_bk87m"]
+[ext_resource type="Texture2D" uid="uid://cp4dvrvj710db" path="res://assets/actors/enemy_water_elite_ranged/idle_4.png" id="17_qb8u3"]
+[ext_resource type="Texture2D" uid="uid://djhjrsn4mrpbt" path="res://assets/actors/enemy_water_elite_ranged/idle_5.png" id="18_4wfvn"]
+[ext_resource type="Texture2D" uid="uid://j4ilucj2cc4e" path="res://assets/actors/enemy_water_elite_ranged/run_0.png" id="19_bb7bf"]
+[ext_resource type="Texture2D" uid="uid://bu61qdnsumyov" path="res://assets/actors/enemy_water_elite_ranged/run_1.png" id="20_8krqh"]
+[ext_resource type="Texture2D" uid="uid://6wf3rlyk6gxm" path="res://assets/actors/enemy_water_elite_ranged/run_2.png" id="21_dpn21"]
+[ext_resource type="Texture2D" uid="uid://ch12x7iss5dy7" path="res://assets/actors/enemy_water_elite_ranged/run_3.png" id="22_846y0"]
+[ext_resource type="Texture2D" uid="uid://c3xg6gp617wt1" path="res://assets/actors/enemy_water_elite_ranged/run_4.png" id="23_hpvmm"]
+[ext_resource type="Texture2D" uid="uid://baeccm61nvymx" path="res://assets/actors/enemy_water_elite_ranged/run_5.png" id="24_8at30"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_porbu"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_c4ho8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_vxolv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_tqm4v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_babkd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_1bpwe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_y60te")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ipdbc")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_r1rvy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_cr2xc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_p2jfm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_nactb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_j51q7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_qrscg")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_h4lrk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_bej7p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_bhsnv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_bk87m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_qb8u3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_4wfvn")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_bb7bf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_8krqh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_dpn21")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_846y0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_hpvmm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_8at30")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_porbu")
+key = &"enemy_water_elite_ranged"
+frames = SubResource("SpriteFrames_c4ho8")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

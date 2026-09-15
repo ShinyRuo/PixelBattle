@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://bxxveglepllni"]
+
+[ext_resource type="Texture2D" uid="uid://bjolel6fjnhdb" path="res://assets/fx/chakela_chain_red/fly_0.png" id="1_w35vv"]
+[ext_resource type="Texture2D" uid="uid://bnp81rmtfl8h7" path="res://assets/fx/chakela_chain_red/fly_1.png" id="2_svcjs"]
+[ext_resource type="Texture2D" uid="uid://csl1aaj67s605" path="res://assets/fx/chakela_chain_red/fly_2.png" id="3_eg1oa"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_nxnic"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_hpv5c"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_w35vv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_svcjs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_eg1oa")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 3.0
+}]
+
+[resource]
+script = ExtResource("4_nxnic")
+key = &"chakela_chain_red"
+frames = SubResource("SpriteFrames_hpv5c")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_fly = true
+additive_hit = true

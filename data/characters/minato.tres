@@ -9,6 +9,7 @@ id = &"minato"
 name_key = "char.minato"
 icon_key = "minato"
 actor_key = &"minato"
+shot_key = &""
 element = 4
 def_element = 1
 primary = 1
@@ -26,8 +27,22 @@ attack_speed_base = 0.6896551724137931
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
+def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 2
 reach = 1
 attack_range = 125.0
+attack_shape = 0
+ultimate_element_override = -1
 skill_ids = Array[StringName]([&"flying_raijin_ball"])
+passives = {
+&"attack_speed": 0.75,
+&"crit_chance": 0.17,
+&"crit_damage": 1.0,
+&"move_speed_bonus": 0.75
+}
+on_hit_buffs = Array[ExtResource("1_6f8bk")]([])
+low_hp_buffs = Array[ExtResource("1_6f8bk")]([])
+lethal_buffs = Array[ExtResource("1_6f8bk")]([])
+struck_buffs = Array[ExtResource("1_6f8bk")]([])
+attack_buffs = Array[ExtResource("1_6f8bk")]([])

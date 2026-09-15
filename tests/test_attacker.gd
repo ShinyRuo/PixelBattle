@@ -88,6 +88,8 @@ func test_area_attack_hits_several_enemies_at_once() -> void:
 	_cfg.spawn_window = 0.0
 	_cfg.aoe_max_targets = 3
 	var wave := _wave(9)
+	# 一下正好是一只怪的血：护甲一减就打不死了，而这条量的是命中数不是护甲（护甲在 `test_enemy_armor.gd`）。
+	wave.armor_each = 0.0
 	assert_gt(wave.count, 4, "这一波要有足够多的敌人才测得出多目标")
 	var blast := PBAttacker.new()
 	blast.dps = wave.hp_each * float(_cfg.tick_rate)

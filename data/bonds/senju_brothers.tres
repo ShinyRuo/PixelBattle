@@ -6,8 +6,12 @@
 script = ExtResource("1_5kcnr")
 id = &"senju_brothers"
 name_key = "bond.senju_brothers"
+match_mode = 0
 member_ids = Array[StringName]([&"hashirama", &"tobirama"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_functions = {}
+member_skill_patches = {}

@@ -15,12 +15,14 @@
 .PARAMETER SkipTests
     跳过 GUT 单元测试，只做快速校验。
 
+.PARAMETER SkipLint
+    显式跳过静态检查。汇总会标明未验证项，不算完整自检。
+
 .PARAMETER Deep
     连慢档一起跑（tests/test_balance_scan.gd 那类靠整局扫描才能验的配平结论）。
 
-    默认不跑，因为它们占了整套测试 85% 的时间（98 秒里的 83 秒），
-    而它们红不红取决于**调参**，不取决于改没改代码。日常改代码等一分半钟，
-    人就会开始不跑自检 —— 那比测试慢危险得多。
+    默认不跑：慢档验证配平结论，耗时随数据与规则变化。
+    日常改代码跑默认档，具体数量和耗时以本次报告为准。
 
     **改了 PBSimConfig 的数值、改了估值口径、动了角色表分布、里程碑验收，
     就要跑这个。** 判据写在 tests/test_balance_scan.gd 开头。
@@ -57,6 +59,58 @@ if (-not (Test-Path $Godot)) {
 }
 
 $script:Failures = @()
+$script:Skipped = @()
+
+# 先检查全部必需依赖，再开始导入，避免缺工具时仍报告“全部通过”。
+function Resolve-Tool {
+    param([string]$Name)
+    $cmd = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $guesses = @(
+        "$env:LOCALAPPDATA\Python\pythoncore-3.14-64\Scripts\$Name.exe",
+        "$env:APPDATA\Python\Scripts\$Name.exe"
+    )
+    foreach ($guess in $guesses) {
+        if (Test-Path -LiteralPath $guess -PathType Leaf) { return $guess }
+    }
+    # WindowsApps 的 python.exe 可能只是商店别名，不能据此构造 Scripts 路径。
+    $python = Get-Command python.exe -CommandType Application -ErrorAction SilentlyContinue
+    if ($python -and $python.Source -notlike '*\WindowsApps\*') {
+        try {
+            $pythonPath = & $python.Source -c 'import sys;print(sys.executable)' 2>$null
+            if ($LASTEXITCODE -eq 0 -and $pythonPath) {
+                $guess = Join-Path (Split-Path ($pythonPath | Select-Object -Last 1)) "Scripts\$Name.exe"
+                if (Test-Path -LiteralPath $guess -PathType Leaf) { return $guess }
+            }
+        } catch { }
+    }
+    return $null
+}
+
+if (($Fix -and $SkipLint) -or ($Deep -and $SkipTests)) {
+    Write-Host '-Fix 不能与 -SkipLint 合用；-Deep 不能与 -SkipTests 合用。' -ForegroundColor Red
+    exit 2
+}
+$gdlint = $null
+$gdformat = $null
+$missing = @()
+if (-not $SkipLint) {
+    $gdlint = Resolve-Tool 'gdlint'
+    if (-not $gdlint) { $missing += 'gdlint（安装 gdtoolkit；只做部分检查时显式传 -SkipLint）' }
+    if ($Fix) {
+        $gdformat = Resolve-Tool 'gdformat'
+        if (-not $gdformat) { $missing += 'gdformat（-Fix 需要 gdtoolkit）' }
+    }
+}
+$gutScript = Join-Path $ProjectRoot 'addons\gut\gut_cmdln.gd'
+if (-not $SkipTests -and -not (Test-Path -LiteralPath $gutScript -PathType Leaf)) {
+    $missing += 'GUT（缺少 addons/gut/gut_cmdln.gd；只做部分检查时显式传 -SkipTests）'
+}
+if ($missing.Count -gt 0) {
+    Write-Host '自检未运行：缺少必需依赖。' -ForegroundColor Red
+    $missing | ForEach-Object { Write-Host "  · $_" -ForegroundColor Red }
+    exit 127
+}
 
 function Write-Stage {
     param([string]$Text)
@@ -82,6 +136,7 @@ function Invoke-Stage {
         [string]   $Exe,
         [string[]] $Arguments,
         [string[]] $FailPatterns = @(),
+        [string]   $RequiredPattern = '',
         # 该阶段的输出本身就是结果（例如测试报告），成功也要打印
         [switch]   $ShowOutput
     )
@@ -94,7 +149,7 @@ function Invoke-Stage {
         $proc = Start-Process -FilePath $Exe -ArgumentList $Arguments `
                               -NoNewWindow -Wait -PassThru `
                               -RedirectStandardOutput $outFile `
-                              -RedirectStandardError  $errFile
+                              -RedirectStandardError  $errFile -ErrorAction Stop
         $stdout = ''
         $stderr = ''
         if ((Get-Item $outFile).Length -gt 0) { $stdout = Get-Content $outFile -Raw -Encoding UTF8 }
@@ -113,6 +168,10 @@ function Invoke-Stage {
                 $bad = $true
                 $reasons += "输出中出现「$pat」"
             }
+        }
+        if ($RequiredPattern -and $combined -notmatch $RequiredPattern) {
+            $bad = $true
+            $reasons += '输出中缺少有效测试汇总（必须实际执行至少一个测试）'
         }
 
         if ($bad -or $Full -or $ShowOutput) {
@@ -133,6 +192,10 @@ function Invoke-Stage {
         } else {
             Write-Host "✓ $Name" -ForegroundColor Green
         }
+    }
+    catch {
+        $script:Failures += $Name
+        Write-Host "✗ ${Name}：无法完成检查。$($_.Exception.Message)" -ForegroundColor Red
     }
     finally {
         Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
@@ -220,39 +283,18 @@ Invoke-CorePurityStage
 
 # ── 阶段 3：静态检查 / 格式化 ───────────────────────────────────
 if (-not $SkipLint) {
-    # 先查 PATH；查不到就去 pip 的 Scripts 目录捞。
-    # 必须兜底：刚 pip install 完的那个终端里 PATH 还是旧的，
-    # 而 VSCode 任务继承的也可能是启动时的旧环境。
-    function Resolve-Tool {
-        param([string]$Name)
-        $cmd = Get-Command $Name -ErrorAction SilentlyContinue
-        if ($cmd) { return $cmd.Source }
-        $guesses = @(
-            (Join-Path (Split-Path (& python -c "import sys;print(sys.executable)" 2>$null)) "Scripts\$Name.exe"),
-            "$env:LOCALAPPDATA\Python\pythoncore-3.14-64\Scripts\$Name.exe",
-            "$env:APPDATA\Python\Scripts\$Name.exe"
-        )
-        foreach ($g in $guesses) {
-            if ($g -and (Test-Path $g)) { return $g }
-        }
-        return $null
-    }
-    $gdlint   = Resolve-Tool 'gdlint'
-    $gdformat = Resolve-Tool 'gdformat'
-    if ($gdlint) {
         # 两步都必须在项目根下跑 —— 参数是相对路径 'src' / 'tests'。
         # gdformat 那步以前在 Push-Location 外面，一直靠「调用者的 cwd 恰好是项目根」
         # 蒙混过关；从别处调 check.ps1 -Fix 就会报 Cannot open file 'src'。
         Push-Location $ProjectRoot
-        if ($Fix -and $gdformat) {
+        if ($Fix) {
             Invoke-Stage -Name '3/5 gdformat 格式化' -Exe $gdformat -Arguments @('src', 'tests')
         }
         Invoke-Stage -Name '3/5 gdlint 静态检查' -Exe $gdlint -Arguments @('src', 'tests')
         Pop-Location
-    } else {
-        Write-Stage '3/5 gdlint —— 跳过（未安装）'
-        Write-Host 'pip install "gdtoolkit>=4.0" 可启用' -ForegroundColor Yellow
-    }
+} else {
+    $script:Skipped += 'gdlint 静态检查（-SkipLint）'
+    Write-Stage '3/5 gdlint —— 用户显式跳过，未验证'
 }
 
 # ── 阶段 4：运行时冒烟 ──────────────────────────────────────────
@@ -264,7 +306,6 @@ Invoke-Stage -Name '4/5 运行时冒烟（主场景跑 120 帧）' `
 
 # ── 阶段 5：单元测试 ────────────────────────────────────────────
 if (-not $SkipTests) {
-    if (Test-Path (Join-Path $ProjectRoot 'addons\gut\gut_cmdln.gd')) {
         # 慢档开关。测试脚本里用 should_skip_script() 读它 ——
         # 走 GUT 的跳过机制而不是「不扫描那个目录」，是因为 GUT 会**先实例化
         # 脚本再判跳过**：慢档文件的解析错误在快档照样暴露，报告里也会打出
@@ -284,20 +325,27 @@ if (-not $SkipTests) {
                                   '-gdir=res://tests', '-ginclude_subdirs', '-gexit') `
                      -FailPatterns @('SCRIPT ERROR', 'Parse Error', 'does not extend GutTest',
                                      'Failed to load script', 'Failing Tests\s+[1-9]') `
+                     -RequiredPattern '(?m)^\s*Tests\s+[1-9][0-9]*\s*$' `
                      -ShowOutput
         if (-not $Deep) {
             Write-Host '  慢档（配平扫描）已跳过 —— 改了数值或做验收时跑 .\scripts\check.ps1 -Deep' -ForegroundColor Yellow
         }
-    } else {
-        Write-Stage '5/5 GUT —— 跳过（addons/gut 不存在）'
-    }
+} else {
+    $script:Skipped += 'GUT 单元测试（-SkipTests）'
+    Write-Stage '5/5 GUT —— 用户显式跳过，未验证'
 }
 
 # ── 汇总 ────────────────────────────────────────────────────────
 Write-Host ''
 Write-Host ("═" * 64) -ForegroundColor DarkGray
 if ($script:Failures.Count -eq 0) {
-    Write-Host '  全部通过 ✓' -ForegroundColor Green
+    if ($script:Skipped.Count -gt 0) {
+        Write-Host '  已执行项通过；这是部分检查，以下项目未验证：' -ForegroundColor Yellow
+        $script:Skipped | ForEach-Object { Write-Host "    · $_" -ForegroundColor Yellow }
+    } else {
+        $scope = if ($Deep) { '完整自检全部通过（含慢档） ✓' } else { '默认自检全部通过（慢档未运行） ✓' }
+        Write-Host "  $scope" -ForegroundColor Green
+    }
     Write-Host ("═" * 64) -ForegroundColor DarkGray
     exit 0
 } else {

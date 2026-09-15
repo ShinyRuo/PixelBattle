@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://nvq6v4jvx448"]
+
+[ext_resource type="Texture2D" uid="uid://el7hw0j4lmsc" path="res://assets/actors/danzo/attack_0.png" id="1_mavhm"]
+[ext_resource type="Texture2D" uid="uid://cvchr701liaph" path="res://assets/actors/danzo/attack_1.png" id="2_4vwps"]
+[ext_resource type="Texture2D" uid="uid://qwuq6oufgo75" path="res://assets/actors/danzo/attack_2.png" id="3_h8rpg"]
+[ext_resource type="Texture2D" uid="uid://ji6sexu1ju6b" path="res://assets/actors/danzo/attack_3.png" id="4_16ef4"]
+[ext_resource type="Texture2D" uid="uid://dvl8gbhasljdl" path="res://assets/actors/danzo/attack_4.png" id="5_7g2i3"]
+[ext_resource type="Texture2D" uid="uid://dx1bsxctisitb" path="res://assets/actors/danzo/attack_5.png" id="6_2cvq2"]
+[ext_resource type="Texture2D" uid="uid://bs0px6dc1bf3j" path="res://assets/actors/danzo/dead_0.png" id="7_6v5nt"]
+[ext_resource type="Texture2D" uid="uid://bpepbo7v72srv" path="res://assets/actors/danzo/dead_1.png" id="8_hoq6a"]
+[ext_resource type="Texture2D" uid="uid://cqscwkhsij4m8" path="res://assets/actors/danzo/dead_2.png" id="9_wyyk3"]
+[ext_resource type="Texture2D" uid="uid://dx24q808phclt" path="res://assets/actors/danzo/dead_3.png" id="10_u6k5t"]
+[ext_resource type="Texture2D" uid="uid://cfu18rlkmoh2m" path="res://assets/actors/danzo/dead_4.png" id="11_1gj41"]
+[ext_resource type="Texture2D" uid="uid://lmat1aju8wkx" path="res://assets/actors/danzo/dead_5.png" id="12_iia25"]
+[ext_resource type="Texture2D" uid="uid://buo3fqgxf4uug" path="res://assets/actors/danzo/idle_0.png" id="13_coikf"]
+[ext_resource type="Texture2D" uid="uid://dfgx00hbdy1td" path="res://assets/actors/danzo/idle_1.png" id="14_tep7p"]
+[ext_resource type="Texture2D" uid="uid://c35fvrv5hr0ar" path="res://assets/actors/danzo/idle_2.png" id="15_m7fx3"]
+[ext_resource type="Texture2D" uid="uid://h75e5ovo4pho" path="res://assets/actors/danzo/idle_3.png" id="16_ax20h"]
+[ext_resource type="Texture2D" uid="uid://xk0bv41t604r" path="res://assets/actors/danzo/idle_4.png" id="17_ijuir"]
+[ext_resource type="Texture2D" uid="uid://djgnt3mah1v7r" path="res://assets/actors/danzo/idle_5.png" id="18_juqib"]
+[ext_resource type="Texture2D" uid="uid://derfe1uoek0d2" path="res://assets/actors/danzo/run_0.png" id="19_7o5f0"]
+[ext_resource type="Texture2D" uid="uid://cya6fasjqowus" path="res://assets/actors/danzo/run_1.png" id="20_ah4fc"]
+[ext_resource type="Texture2D" uid="uid://p4owm0g0te6m" path="res://assets/actors/danzo/run_2.png" id="21_et6to"]
+[ext_resource type="Texture2D" uid="uid://d23ftgjq7ioqb" path="res://assets/actors/danzo/run_3.png" id="22_yybj6"]
+[ext_resource type="Texture2D" uid="uid://dlneh1ilw8rde" path="res://assets/actors/danzo/run_4.png" id="23_upanu"]
+[ext_resource type="Texture2D" uid="uid://1jvvati4xnew" path="res://assets/actors/danzo/run_5.png" id="24_noy8p"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_h0g3t"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_mavhm"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_mavhm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_4vwps")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_h8rpg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_16ef4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_7g2i3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_2cvq2")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_6v5nt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_hoq6a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_wyyk3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_u6k5t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_1gj41")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_iia25")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_coikf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_tep7p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_m7fx3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_ax20h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_ijuir")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_juqib")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_7o5f0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_ah4fc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_et6to")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_yybj6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_upanu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_noy8p")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_h0g3t")
+key = &"danzo"
+frames = SubResource("SpriteFrames_mavhm")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

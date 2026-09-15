@@ -1,0 +1,93 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://c5n7rhye4gauo"]
+
+[ext_resource type="Texture2D" uid="uid://7noo6wr7srq3" path="res://assets/actors/kakashi/attack_0.png" id="1_7ilio"]
+[ext_resource type="Texture2D" uid="uid://ddd5ksyd5l2ii" path="res://assets/actors/kakashi/attack_1.png" id="2_1asxw"]
+[ext_resource type="Texture2D" uid="uid://d1qbrau32yi75" path="res://assets/actors/kakashi/attack_2.png" id="3_o444d"]
+[ext_resource type="Texture2D" uid="uid://wcyt6c51k1nr" path="res://assets/actors/kakashi/attack_3.png" id="4_v728t"]
+[ext_resource type="Texture2D" uid="uid://b4ftd23rcqc5k" path="res://assets/actors/kakashi/attack_4.png" id="5_1asxw"]
+[ext_resource type="Texture2D" uid="uid://41e6bg3prue8" path="res://assets/actors/kakashi/dead_0.png" id="5_7sd1v"]
+[ext_resource type="Texture2D" uid="uid://bm5megnv34die" path="res://assets/actors/kakashi/dead_1.png" id="6_v5xyy"]
+[ext_resource type="Texture2D" uid="uid://c0iax3twbsx6u" path="res://assets/actors/kakashi/dead_2.png" id="7_60a5i"]
+[ext_resource type="Texture2D" uid="uid://66ukptpra8jg" path="res://assets/actors/kakashi/dead_3.png" id="8_4yqg3"]
+[ext_resource type="Texture2D" uid="uid://cscr638favcoo" path="res://assets/actors/kakashi/idle_0.png" id="9_k3svg"]
+[ext_resource type="Texture2D" uid="uid://qg5gcfv8dooh" path="res://assets/actors/kakashi/idle_1.png" id="10_0n2kc"]
+[ext_resource type="Texture2D" uid="uid://bd8bo8fojll51" path="res://assets/actors/kakashi/run_0.png" id="11_wogcj"]
+[ext_resource type="Texture2D" uid="uid://fnqpayg2n8p5" path="res://assets/actors/kakashi/run_1.png" id="12_sni1h"]
+[ext_resource type="Texture2D" uid="uid://dxmp0l5kdhf6f" path="res://assets/actors/kakashi/run_2.png" id="13_mysfv"]
+[ext_resource type="Texture2D" uid="uid://8frqwens3tkm" path="res://assets/actors/kakashi/run_3.png" id="14_fwn80"]
+[ext_resource type="Texture2D" uid="uid://cewo115dyl6a2" path="res://assets/actors/kakashi/run_4.png" id="15_e6rlu"]
+[ext_resource type="Texture2D" uid="uid://c5nv6yx4gcdc3" path="res://assets/actors/kakashi/run_5.png" id="16_t1kqa"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_7ilio")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_1asxw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_o444d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_v728t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_1asxw")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_7sd1v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_v5xyy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_60a5i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_4yqg3")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_k3svg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_0n2kc")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_wogcj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_sni1h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_mysfv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_fwn80")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_e6rlu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_t1kqa")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

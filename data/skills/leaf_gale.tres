@@ -3,10 +3,27 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_o1ybv"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_roecc"]
 
+[sub_resource type="Resource" id="Resource_q5etv"]
+script = ExtResource("1_o1ybv")
+id = &"guy_break"
+name_key = "buff.guy_break"
+icon_key = "buff.guy_break"
+kind = 1
+friendly = false
+duration_seconds = 10.0
+mods = {
+&"enemy_defence": -8.0
+}
+mods_growth = {
+&"enemy_defence": -8.0
+}
+
 [resource]
 script = ExtResource("2_roecc")
 id = &"leaf_gale"
 name_key = "skill.leaf_gale"
+on_hit = Array[ExtResource("1_o1ybv")]([SubResource("Resource_q5etv")])
+kind = 0
 power_mult = 2.7
 radius = 0.13
 cooldown_ticks = 300

@@ -9,6 +9,7 @@ target = 0
 id = &"sun_halo_dance"
 name_key = "skill.sun_halo_dance"
 element = 0
+kind = 0
 power_mult = 2.4
 radius = 0.35
 cooldown_ticks = 300

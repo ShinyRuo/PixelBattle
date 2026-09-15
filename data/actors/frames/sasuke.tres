@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://cb8n10205tltl"]
+
+[ext_resource type="Texture2D" uid="uid://bj3usd32xjs6q" path="res://assets/actors/sasuke/attack_0.png" id="1_wgdf0"]
+[ext_resource type="Texture2D" uid="uid://rshrbsl3y6bg" path="res://assets/actors/sasuke/attack_1.png" id="2_4lvnn"]
+[ext_resource type="Texture2D" uid="uid://dd83dve5ny3n6" path="res://assets/actors/sasuke/attack_2.png" id="3_fmynm"]
+[ext_resource type="Texture2D" uid="uid://dxe22e7aufrqr" path="res://assets/actors/sasuke/attack_3.png" id="4_nbr8q"]
+[ext_resource type="Texture2D" uid="uid://bcdqnj7u1jg4u" path="res://assets/actors/sasuke/attack_4.png" id="5_gpq21"]
+[ext_resource type="Texture2D" uid="uid://dtotohpafpv8q" path="res://assets/actors/sasuke/dead_0.png" id="6_4hvyy"]
+[ext_resource type="Texture2D" uid="uid://coiui067qnn36" path="res://assets/actors/sasuke/attack_5.png" id="6_phj2t"]
+[ext_resource type="Texture2D" uid="uid://b4bme2ekedeom" path="res://assets/actors/sasuke/dead_1.png" id="7_phj2t"]
+[ext_resource type="Texture2D" uid="uid://darkxr80ssig0" path="res://assets/actors/sasuke/dead_2.png" id="8_gwfgi"]
+[ext_resource type="Texture2D" uid="uid://d2kpym3wbt1s6" path="res://assets/actors/sasuke/idle_0.png" id="9_4114a"]
+[ext_resource type="Texture2D" uid="uid://bvojqr5xv2rwi" path="res://assets/actors/sasuke/dead_3.png" id="10_4114a"]
+[ext_resource type="Texture2D" uid="uid://ssp3e3r2p4cn" path="res://assets/actors/sasuke/idle_1.png" id="10_mbn62"]
+[ext_resource type="Texture2D" uid="uid://du6w1icmt40m7" path="res://assets/actors/sasuke/idle_2.png" id="11_1lbf4"]
+[ext_resource type="Texture2D" uid="uid://cxoirfl4auti6" path="res://assets/actors/sasuke/dead_4.png" id="11_mbn62"]
+[ext_resource type="Texture2D" uid="uid://bqhcjypwpmvk4" path="res://assets/actors/sasuke/dead_5.png" id="12_1lbf4"]
+[ext_resource type="Texture2D" uid="uid://b35ixminxb2ev" path="res://assets/actors/sasuke/idle_3.png" id="12_vnnbd"]
+[ext_resource type="Texture2D" uid="uid://bap8j8uys2ptl" path="res://assets/actors/sasuke/idle_4.png" id="13_fmynm"]
+[ext_resource type="Texture2D" uid="uid://bn42hsnewqk41" path="res://assets/actors/sasuke/run_0.png" id="13_ha7vk"]
+[ext_resource type="Texture2D" uid="uid://b0uc8eb2g78cs" path="res://assets/actors/sasuke/run_1.png" id="14_2eqdw"]
+[ext_resource type="Texture2D" uid="uid://bxul80wxxsm5h" path="res://assets/actors/sasuke/idle_5.png" id="14_nbr8q"]
+[ext_resource type="Texture2D" uid="uid://drrfecmqsegmi" path="res://assets/actors/sasuke/run_2.png" id="15_m3xc5"]
+[ext_resource type="Texture2D" uid="uid://ctiq4onua0rvm" path="res://assets/actors/sasuke/run_3.png" id="16_ea6av"]
+[ext_resource type="Texture2D" uid="uid://c13qu8kx7hx4p" path="res://assets/actors/sasuke/run_4.png" id="19_gpq21"]
+[ext_resource type="Texture2D" uid="uid://dwfvrixt1tdg" path="res://assets/actors/sasuke/run_5.png" id="20_4hvyy"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_wgdf0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_4lvnn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_fmynm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_nbr8q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_gpq21")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_phj2t")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_4hvyy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_phj2t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_gwfgi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_4114a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_mbn62")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_1lbf4")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_4114a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_mbn62")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_1lbf4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_vnnbd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_fmynm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_nbr8q")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_ha7vk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_2eqdw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_m3xc5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_ea6av")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_gpq21")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_4hvyy")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

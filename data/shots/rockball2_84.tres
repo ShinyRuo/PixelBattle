@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3 uid="uid://dsyfg0dg117vx"]
+
+[ext_resource type="Texture2D" uid="uid://dc5rgwl0jjra2" path="res://assets/fx/rockball2_84/fly_0.png" id="1_ie00r"]
+[ext_resource type="Texture2D" uid="uid://ceijl3i2x71ye" path="res://assets/fx/rockball2_84/fly_1.png" id="2_ovd0m"]
+[ext_resource type="Texture2D" uid="uid://5tc8evpbt78x" path="res://assets/fx/rockball2_84/fly_2.png" id="3_1sk3j"]
+[ext_resource type="Script" uid="uid://d05grk4i3slds" path="res://src/view/shot_skin.gd" id="4_pdbyl"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_hh5g6"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ie00r")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_ovd0m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_1sk3j")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 12.0
+}]
+
+[resource]
+script = ExtResource("4_pdbyl")
+key = &"rockball2_84"
+frames = SubResource("SpriteFrames_hh5g6")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_hit = true

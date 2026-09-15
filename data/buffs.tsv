@@ -24,7 +24,7 @@
 # 数据、界面、日志全部正常，只有那个效果这辈子没人读 ——
 # 也就是「配了不生效」，而它比「配不了」难查得多。
 #
-# 今天认的键（18 个）：
+# 今天认的键（19 个）：
 #   damage_scale  伤害倍率        heal          回血（量）
 #   mana          回蓝（量）      hurt          易伤倍率（敌人）
 #   harm          掉血（量/周期） enemy_speed_scale 敌人移速倍率
@@ -35,6 +35,7 @@
 #   heal_max      每跳回复最大生命的几成（己方）  drain_max     每跳损失最大生命的几成（己方）
 #   defence       防御（量，己方）              undying       不死（>0 = 血停在 1，己方）
 #   dodge         闪避率（量，己方）            enemy_attack_speed_scale 敌人攻速倍率
+#   enemy_defence 敌人护甲临时加减（量，负数 = 降护甲）
 #
 # **只写成长不写基数会被拦下** —— 那会静默变成「1 级时是 0」。
 
@@ -98,7 +99,7 @@ temari_gale	气流乱舞	持续	增益	20	0	damage_scale=1.13+0.13
 # 落在敌人身上的
 burn	灼烧	周期	减益	7	1	harm=60+60
 sand_coffin	砂缚柩·磨蚀	周期	减益	2	0.5	harm=50+50
-mei_acid	溶解爆酸	周期	减益	4	1	harm=30+30
+mei_acid	溶解爆酸	周期	减益	4	1	harm=30+30;enemy_defence=-3+-3
 sasori_iron	沙铁界法·磨蚀	周期	减益	4	0.5	harm=20+20
 kakashi_bind	追牙·束缚	持续	减益	5	0	enemy_speed_scale=0;stun=1
 suigetsu_bind	水龙·禁锢	持续	减益	2	0	enemy_speed_scale=0;stun=1
@@ -182,3 +183,23 @@ obito_kamui	神威·虚化	持续	增益	1	0	damage_taken=0
 gaara_sand_guard	沙之守护	持续	增益	4	0	defence=100
 # 妩媚「受敌人攻击时，降低其 65% 的攻击速度，持续 3 秒」—— 减益，挂在打她的那个敌人身上。
 mei_charm	妩媚	持续	减益	3	0	enemy_attack_speed_scale=0.35
+
+# ── M12-c4 批十三：每下普攻都挂、只认远程的受击 ────────────────────────────────
+#
+# `on_attack=<效果键>`：每一下普攻打中都挂在目标身上（不骑暴击；`on_hit` 才骑）。
+#
+# 加重岩之术「攻击时降低敌人 50% 的攻速和移速，持续 2 秒」。
+onoki_weight	加重岩之术	持续	减益	2	0	enemy_attack_speed_scale=0.5;enemy_speed_scale=0.5
+# 傀儡之体「普攻附加毒素……并降低其 30% 的攻击速度，持续 5 秒」。毒伤那一半要叠层，还没有。
+sasori_venom	傀儡之体·毒	持续	减益	5	0	enemy_attack_speed_scale=0.7
+# 雷梨热刀「受远程攻击时突袭跳跃到目标身前，提升 30% 的总力量持续 5 秒，跳跃后无敌 1 秒，CD 10 秒」。
+# 名册里配 `struck_ranged=1;struck_leap=1`。总力量 +30% 降级成伤害 ×1.3（他的攻击力几乎全由力量来），血上限那一半没有。
+raikage_blade	雷梨热刀	持续	增益	5	0	damage_scale=1.3
+raikage_blade_guard	雷梨热刀·无敌	持续	增益	1	0	damage_taken=0
+
+# ── M12-c4 批十四：敌人护甲 ────────────────────────────────
+#
+# 降护甲走 `enemy_defence`（负数）。溶解爆酸那一份并在上面 `mei_acid` 里（「降低 3-30 点护甲」）。
+#
+# 木叶刚力旋风「降低目标 8-80 点防御，持续 10 秒」。
+guy_break	木叶刚力旋风·破甲	持续	减益	10	0	enemy_defence=-8+-8

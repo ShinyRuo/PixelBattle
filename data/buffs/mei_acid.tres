@@ -12,8 +12,10 @@ friendly = false
 duration_seconds = 4.0
 period_seconds = 1.0
 mods = {
+&"enemy_defence": -3.0,
 &"harm": 30.0
 }
 mods_growth = {
+&"enemy_defence": -3.0,
 &"harm": 30.0
 }

@@ -296,6 +296,32 @@ var enemy_reach_boss: float = 0.30
 ## **按槽位定，不掷骰**：掷骰要占一条 RNG 流并移动它后面全部结果；同种子两次回放必须一样（§13）。
 var enemy_ranged_share: float = 0.3
 
+## **敌人的护甲**（玩家定的：忍者有的敌人都该有），按波型分三档起步、每过一波三档各加一点。
+##
+## 原版解包数据里没有怪物护甲。起步取忍者物编的基础护甲 4，精英翻倍、BOSS 三倍；
+## 走和忍者挨打同一条递减曲线（[method PBStatRules.damage_reduction]），第 40 波小怪 8 点约减伤 14%。
+##
+## **只减普攻**（含溅射与穿透），不减忍术、持续伤害、反弹 —— 同 War3「法术伤害无视护甲」。
+## 读点在 [method PBStrikeRules.armoured]；**解析式排队模型和估值不看它**（它们只对 `hp ÷ dps`）。
+var enemy_armor_minion: float = 4.0
+var enemy_armor_elite: float = 8.0
+var enemy_armor_boss: float = 12.0
+
+## 每过一波，上面三档各加几点。
+var enemy_armor_per_wave: float = 0.1
+
+## **敌人的忍术抗性**（玩家定的，和护甲同形）：小怪 / 精英 / BOSS 三档起步、每过一波各加一点，封顶。
+## 减的是忍术伤害（技能、忍术普攻、持续伤害），见 [PBDamageKind]。原版解包数据里没有怪物魔抗。
+var enemy_resist_minion: float = 0.0
+var enemy_resist_elite: float = 0.10
+var enemy_resist_boss: float = 0.20
+
+## 每过一波，上面三档各加几成。
+var enemy_resist_per_wave: float = 0.005
+
+## 忍术抗性封顶。**必须小于 1**：到 1 忍术一点伤害都没有，而那是随波次自己长出来的，没人会去配它。
+var enemy_resist_cap: float = 0.60
+
 # ── 跑动与防挤（§02 / §03A）─────────────────────────────────────
 
 ## 己方单位走完全场要几秒。比敌人（[member march_seconds] 12 秒）快一倍：
@@ -504,6 +530,31 @@ func damage_multiplier(rel: PBElement.Relation) -> float:
 			return mult_sage_mirror
 		_:
 			return mult_neutral
+
+
+## 第 [param wave_index] 波、[param shape] 波型的单个敌人有几点护甲。见 [member enemy_armor_minion]。
+## 潮水波算小怪、超级 BOSS 算 BOSS，同 [method PBEnemy.rank_of]。
+func enemy_armor(shape: PBWave.Shape, wave_index: int) -> float:
+	var growth_part: float = enemy_armor_per_wave * float(maxi(wave_index - 1, 0))
+	match shape:
+		PBWave.Shape.ELITE:
+			return enemy_armor_elite + growth_part
+		PBWave.Shape.BOSS, PBWave.Shape.MEGA_BOSS:
+			return enemy_armor_boss + growth_part
+		_:
+			return enemy_armor_minion + growth_part
+
+
+## 第 [param wave_index] 波、[param shape] 波型的单个敌人有几成忍术抗性。见 [member enemy_resist_minion]。
+func enemy_resist(shape: PBWave.Shape, wave_index: int) -> float:
+	var start: float = enemy_resist_minion
+	match shape:
+		PBWave.Shape.ELITE:
+			start = enemy_resist_elite
+		PBWave.Shape.BOSS, PBWave.Shape.MEGA_BOSS:
+			start = enemy_resist_boss
+	var grown: float = start + enemy_resist_per_wave * float(maxi(wave_index - 1, 0))
+	return minf(grown, enemy_resist_cap)
 
 
 ## 波型对单体血量的倍率。

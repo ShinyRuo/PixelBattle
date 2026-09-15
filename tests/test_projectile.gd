@@ -41,6 +41,8 @@ func _dummy_wave() -> PBWave:
 	var wave := PBWaveRules.build(5, _cfg, _rng)
 	wave.count = 1
 	wave.hp_each = 1e12
+	# 这个文件量的是「一发 × 发数」，护甲会把每一发打个折（护甲在 `test_enemy_armor.gd`）。
+	wave.armor_each = 0.0
 	return wave
 
 

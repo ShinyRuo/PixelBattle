@@ -10,8 +10,13 @@ id = &"hidan"
 name_key = "char.hidan"
 icon_key = "hidan"
 actor_key = &"hidan"
+shot_key = &""
+element = 5
+def_element = 5
+primary = 0
 strength = 34.0
 agility = 18.0
+intellect = 12.0
 strength_growth = 34.0
 agility_growth = 18.0
 intellect_growth = 12.0
@@ -23,13 +28,21 @@ attack_speed_base = 0.6666666666666666
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
+def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 attack_range = 245.0
+attack_shape = 0
+ultimate_element_override = -1
+skill_ids = Array[StringName]([])
 passives = {
 &"reflect": 0.25,
 &"splash": 0.35,
 &"splash_radius": 250.0
 }
+on_hit_buffs = Array[ExtResource("1_i7g2p")]([])
+low_hp_buffs = Array[ExtResource("1_i7g2p")]([])
 lethal_buffs = Array[ExtResource("1_i7g2p")]([ExtResource("2_g8u7j")])
+struck_buffs = Array[ExtResource("1_i7g2p")]([])
+attack_buffs = Array[ExtResource("1_i7g2p")]([])

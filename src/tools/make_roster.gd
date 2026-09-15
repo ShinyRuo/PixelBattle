@@ -16,14 +16,16 @@ const BUFF_DIR := "res://data/buffs"
 
 ## 被动那一列里指一份效果的两种写法。其余的键全是 `键=量`。
 ## `on_hit`：打出要害时挂在目标身上；`on_low_hp`：血量掉到 `low_hp` 以下时挂在自己身上；
-## `on_lethal`：受致命伤那一下挡住、挂在自己身上；`on_struck`：挨敌人一下时挂出去（增益挂自己、减益挂那个敌人）。
+## `on_lethal`：受致命伤那一下挡住、挂在自己身上；`on_struck`：挨敌人一下时挂出去（增益挂自己、减益挂那个敌人）；
+## `on_attack`：每一下普攻打中都挂在目标身上（不骑暴击）。
 const ON_HIT := "on_hit"
 const ON_LOW_HP := "on_low_hp"
 const ON_LETHAL := "on_lethal"
 const ON_STRUCK := "on_struck"
+const ON_ATTACK := "on_attack"
 
 ## 指效果的那几个键，[method _parse_passives] 跳过它们。
-const REF_KEYS: Array[String] = [ON_HIT, ON_LOW_HP, ON_LETHAL, ON_STRUCK]
+const REF_KEYS: Array[String] = [ON_HIT, ON_LOW_HP, ON_LETHAL, ON_STRUCK, ON_ATTACK]
 
 const PRIMARIES := {
 	"力量": PBCharacter.Primary.STRENGTH,
@@ -180,6 +182,7 @@ func _fill_passives(character: PBCharacter, cell: String) -> String:
 	character.low_hp_buffs = refs[ON_LOW_HP] as Array[PBBuff]
 	character.lethal_buffs = refs[ON_LETHAL] as Array[PBBuff]
 	character.struck_buffs = refs[ON_STRUCK] as Array[PBBuff]
+	character.attack_buffs = refs[ON_ATTACK] as Array[PBBuff]
 	return ""
 
 
@@ -189,8 +192,12 @@ func _fill_passives(character: PBCharacter, cell: String) -> String:
 func _pair_error(passives: Dictionary, refs: Dictionary) -> String:
 	if passives.has(PBPassiveRules.LOW_HP) == (refs[ON_LOW_HP] as Array).is_empty():
 		return "`low_hp=阈值` 和 `on_low_hp=效果键` 要一起写"
-	if passives.has(PBPassiveRules.STRUCK_CD) and (refs[ON_STRUCK] as Array).is_empty():
-		return "写了 `struck_cd` 却没有 `on_struck=效果键`"
+	var no_struck: bool = (refs[ON_STRUCK] as Array).is_empty()
+	for key: StringName in [
+		PBPassiveRules.STRUCK_CD, PBPassiveRules.STRUCK_RANGED, PBPassiveRules.STRUCK_LEAP
+	]:
+		if passives.has(key) and no_struck:
+			return "写了 `%s` 却没有 `on_struck=效果键`" % key
 	return ""
 
 

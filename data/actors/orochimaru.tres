@@ -4,18 +4,26 @@
 [ext_resource type="Texture2D" uid="uid://2mdr8gaofnkn" path="res://assets/actors/orochimaru/attack_1.png" id="2_j4lnr"]
 [ext_resource type="Texture2D" uid="uid://d1e5ggad74mid" path="res://assets/actors/orochimaru/attack_2.png" id="3_cenxp"]
 [ext_resource type="Texture2D" uid="uid://bqnku3spyn1jh" path="res://assets/actors/orochimaru/attack_3.png" id="4_i6070"]
+[ext_resource type="Texture2D" uid="uid://c23qd77v7on0f" path="res://assets/actors/orochimaru/attack_4.png" id="5_7ek0g"]
 [ext_resource type="Texture2D" uid="uid://ril2jxg5eyhq" path="res://assets/actors/orochimaru/dead_0.png" id="5_lbhpe"]
 [ext_resource type="Texture2D" uid="uid://bofi3k0d53nba" path="res://assets/actors/orochimaru/dead_1.png" id="6_3k1fw"]
+[ext_resource type="Texture2D" uid="uid://lscoff71vsah" path="res://assets/actors/orochimaru/attack_5.png" id="6_6ps4c"]
 [ext_resource type="Texture2D" uid="uid://7xy5bpv7s3qj" path="res://assets/actors/orochimaru/dead_2.png" id="7_wg6x7"]
 [ext_resource type="Texture2D" uid="uid://cbqquidfs2kp3" path="res://assets/actors/orochimaru/idle_0.png" id="8_s4pyu"]
 [ext_resource type="Texture2D" uid="uid://ccauiyqrsmeke" path="res://assets/actors/orochimaru/idle_1.png" id="9_7ek0g"]
 [ext_resource type="Texture2D" uid="uid://dnliknfuth3bd" path="res://assets/actors/orochimaru/run_0.png" id="10_6ps4c"]
+[ext_resource type="Texture2D" uid="uid://cob6r8yq20ir3" path="res://assets/actors/orochimaru/idle_2.png" id="10_lbhpe"]
+[ext_resource type="Texture2D" uid="uid://c6ut5ubwt0c6r" path="res://assets/actors/orochimaru/idle_3.png" id="11_3k1fw"]
 [ext_resource type="Texture2D" uid="uid://dmfony3doaf7q" path="res://assets/actors/orochimaru/run_1.png" id="11_djnpv"]
 [ext_resource type="Texture2D" uid="uid://chwpegyhpdkpx" path="res://assets/actors/orochimaru/run_2.png" id="12_lipvr"]
+[ext_resource type="Texture2D" uid="uid://cl35jixr1hrn" path="res://assets/actors/orochimaru/idle_4.png" id="12_wg6x7"]
 [ext_resource type="Texture2D" uid="uid://deossuan7pn72" path="res://assets/actors/orochimaru/run_3.png" id="13_0k2e7"]
+[ext_resource type="Texture2D" uid="uid://blkiqxnchp7ey" path="res://assets/actors/orochimaru/idle_5.png" id="13_s4pyu"]
 [ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="14_apvl1"]
+[ext_resource type="Texture2D" uid="uid://dvhmfiotqru0w" path="res://assets/actors/orochimaru/run_4.png" id="18_wg6x7"]
+[ext_resource type="Texture2D" uid="uid://dpm6bwmejlc4s" path="res://assets/actors/orochimaru/run_5.png" id="19_s4pyu"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_fw7ih"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_djnpv"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -29,6 +37,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("4_i6070")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_7ek0g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_6ps4c")
 }],
 "loop": 0,
 "name": &"attack",
@@ -54,6 +68,18 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("9_7ek0g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_lbhpe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_3k1fw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_wg6x7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_s4pyu")
 }],
 "loop": 1,
 "name": &"idle",
@@ -71,6 +97,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("13_0k2e7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_wg6x7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_s4pyu")
 }],
 "loop": 1,
 "name": &"run",
@@ -80,7 +112,7 @@ animations = [{
 [resource]
 script = ExtResource("14_apvl1")
 key = &"orochimaru"
-frames = SubResource("SpriteFrames_fw7ih")
+frames = SubResource("SpriteFrames_djnpv")
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

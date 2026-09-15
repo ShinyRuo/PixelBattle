@@ -6,11 +6,14 @@
 script = ExtResource("1_28xsm")
 id = &"strategist_couple"
 name_key = "bond.strategist_couple"
+match_mode = 0
 member_ids = Array[StringName]([&"temari", &"shikamaru"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
+member_functions = {}
 member_skill_patches = {
 &"shikamaru": {
 &"shadow_bind": {

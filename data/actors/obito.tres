@@ -1,24 +1,32 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://c5a4ka0kvdtnm"]
 
-[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_0.png" id="1_6wuwf"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_1.png" id="2_ho1hd"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_2.png" id="3_il7tl"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_3.png" id="4_lipx0"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/attack_4.png" id="5_iqxs8"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/dead_0.png" id="6_vm00u"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/dead_1.png" id="7_4bxgf"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/dead_2.png" id="8_xwwc8"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_0.png" id="9_cuvn8"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_1.png" id="10_ih00x"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_2.png" id="11_li8ph"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/idle_3.png" id="12_4psn7"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/run_0.png" id="13_wsvwi"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/run_1.png" id="14_deh2n"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/run_2.png" id="15_b0jaw"]
-[ext_resource type="Texture2D" path="res://assets/actors/obito/run_3.png" id="16_h5jak"]
-[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="17_vf4oj"]
+[ext_resource type="Texture2D" uid="uid://cxlr4ukkfsw6h" path="res://assets/actors/obito/attack_0.png" id="1_6wuwf"]
+[ext_resource type="Texture2D" uid="uid://bmo2qquq1ffxo" path="res://assets/actors/obito/attack_1.png" id="2_ho1hd"]
+[ext_resource type="Texture2D" uid="uid://skb51lmptmw3" path="res://assets/actors/obito/attack_2.png" id="3_il7tl"]
+[ext_resource type="Texture2D" uid="uid://4mmjkf1rfsvt" path="res://assets/actors/obito/attack_3.png" id="4_lipx0"]
+[ext_resource type="Texture2D" uid="uid://cwoyre12gsv4k" path="res://assets/actors/obito/attack_4.png" id="5_iqxs8"]
+[ext_resource type="Texture2D" uid="uid://euaf8s1d6ma5" path="res://assets/actors/obito/attack_5.png" id="6_4bxgf"]
+[ext_resource type="Texture2D" uid="uid://b4rsigk7i0g7v" path="res://assets/actors/obito/dead_0.png" id="6_vm00u"]
+[ext_resource type="Texture2D" uid="uid://dmhs675x1k08k" path="res://assets/actors/obito/dead_1.png" id="7_4bxgf"]
+[ext_resource type="Texture2D" uid="uid://dynuw661pluuj" path="res://assets/actors/obito/dead_2.png" id="8_xwwc8"]
+[ext_resource type="Texture2D" uid="uid://cb7hpnj1alem1" path="res://assets/actors/obito/idle_0.png" id="9_cuvn8"]
+[ext_resource type="Texture2D" uid="uid://d8hjsi7jdqus" path="res://assets/actors/obito/dead_3.png" id="10_cuvn8"]
+[ext_resource type="Texture2D" uid="uid://bogv1trn5bxmo" path="res://assets/actors/obito/idle_1.png" id="10_ih00x"]
+[ext_resource type="Texture2D" uid="uid://bck5yk8lnkn30" path="res://assets/actors/obito/dead_4.png" id="11_ih00x"]
+[ext_resource type="Texture2D" uid="uid://ca67joibyq7es" path="res://assets/actors/obito/idle_2.png" id="11_li8ph"]
+[ext_resource type="Texture2D" uid="uid://b8nftfnjl1l0w" path="res://assets/actors/obito/idle_3.png" id="12_4psn7"]
+[ext_resource type="Texture2D" uid="uid://cj63scag6xj4h" path="res://assets/actors/obito/dead_5.png" id="12_li8ph"]
+[ext_resource type="Texture2D" uid="uid://bhhg04tlf7l0a" path="res://assets/actors/obito/idle_4.png" id="13_il7tl"]
+[ext_resource type="Texture2D" uid="uid://de5bvm73a2l3h" path="res://assets/actors/obito/run_0.png" id="13_wsvwi"]
+[ext_resource type="Texture2D" uid="uid://c1u7ay8ermu88" path="res://assets/actors/obito/run_1.png" id="14_deh2n"]
+[ext_resource type="Texture2D" uid="uid://h20sdyjp2bpq" path="res://assets/actors/obito/idle_5.png" id="14_lipx0"]
+[ext_resource type="Texture2D" uid="uid://loy1552h2nxi" path="res://assets/actors/obito/run_2.png" id="15_b0jaw"]
+[ext_resource type="Texture2D" uid="uid://db4bv05qe7nqn" path="res://assets/actors/obito/run_3.png" id="16_h5jak"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="17_vf4oj"]
+[ext_resource type="Texture2D" uid="uid://cy43h4ei43i02" path="res://assets/actors/obito/run_4.png" id="19_iqxs8"]
+[ext_resource type="Texture2D" uid="uid://ce6xu8gsa5d6b" path="res://assets/actors/obito/run_5.png" id="20_vm00u"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_1xe5l"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_4psn7"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -35,6 +43,9 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("5_iqxs8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_4bxgf")
 }],
 "loop": 0,
 "name": &"attack",
@@ -49,6 +60,15 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("8_xwwc8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_cuvn8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ih00x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_li8ph")
 }],
 "loop": 0,
 "name": &"dead",
@@ -66,6 +86,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("12_4psn7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_il7tl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_lipx0")
 }],
 "loop": 1,
 "name": &"idle",
@@ -83,6 +109,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("16_h5jak")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_iqxs8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_vm00u")
 }],
 "loop": 1,
 "name": &"run",
@@ -92,7 +124,7 @@ animations = [{
 [resource]
 script = ExtResource("17_vf4oj")
 key = &"obito"
-frames = SubResource("SpriteFrames_1xe5l")
+frames = SubResource("SpriteFrames_4psn7")
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

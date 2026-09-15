@@ -6,7 +6,9 @@
 script = ExtResource("1_3st0r")
 id = &"uchiha_clan"
 name_key = "bond.uchiha_clan"
+match_mode = 0
 member_ids = Array[StringName]([&"madara", &"obito", &"itachi", &"sasuke", &"shisui"])
+match_element = 5
 tier_counts = Array[int]([5])
 tier_power = Array[float]([0.56])
 tier_function_keys = Array[StringName]([&""])
@@ -28,3 +30,4 @@ member_functions = {
 &"damage_bonus": 0.4
 }
 }
+member_skill_patches = {}

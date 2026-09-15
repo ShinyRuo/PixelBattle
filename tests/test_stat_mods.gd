@@ -70,6 +70,24 @@ func test_all_stats_moves_all_three_at_once() -> void:
 	assert_almost_eq(buffed.intellect, bare.intellect + 5.0, 0.0001, "智力 +5")
 
 
+func test_all_stats_bonus_scales_his_own_stats_but_not_the_points() -> void:
+	# 羁绊的「提升 20% 的全属性」。放大的是角色自己的三围（含等级成长），
+	# 装备给的点数排在后面加 —— 放大点数的话装备越多这一句越强。
+	var unit := _someone()
+	unit.level = 10
+	var bare := unit.stats(_cfg)
+	var scaled := unit.stats(_cfg, {PBStatRules.ALL_STATS_BONUS: 0.2})
+	assert_almost_eq(scaled.strength, bare.strength * 1.2, 0.0001, "力量 ×1.2")
+	assert_almost_eq(scaled.agility, bare.agility * 1.2, 0.0001, "敏捷 ×1.2")
+	assert_almost_eq(scaled.intellect, bare.intellect * 1.2, 0.0001, "智力 ×1.2")
+	assert_gt(scaled.hp, bare.hp, "血跟着三围派生")
+	assert_gt(scaled.atk, bare.atk, "攻击力跟着主属性派生")
+	var both := unit.stats(
+		_cfg, {PBStatRules.ALL_STATS_BONUS: 0.2, PBStatRules.ALL_STATS: 30.0}
+	)
+	assert_almost_eq(both.strength, bare.strength * 1.2 + 30.0, 0.0001, "点数不跟着放大")
+
+
 func test_the_flat_words_land_on_the_derived_stats() -> void:
 	var unit := _someone()
 	var bare := unit.stats(_cfg)

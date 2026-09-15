@@ -10,6 +10,7 @@ id = &"killer_bee"
 name_key = "char.killer_bee"
 icon_key = "killer_bee"
 actor_key = &"bee"
+shot_key = &""
 element = 2
 def_element = 4
 primary = 1
@@ -27,12 +28,21 @@ attack_speed_base = 0.6666666666666666
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
+def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 attack_range = 125.0
+attack_shape = 0
+ultimate_element_override = -1
+skill_ids = Array[StringName]([])
 passives = {
 &"crit_chance": 0.2,
+&"crit_damage": -0.5,
 &"low_hp": 0.75
 }
+on_hit_buffs = Array[ExtResource("1_3bwf6")]([])
 low_hp_buffs = Array[ExtResource("1_3bwf6")]([ExtResource("2_b554b")])
+lethal_buffs = Array[ExtResource("1_3bwf6")]([])
+struck_buffs = Array[ExtResource("1_3bwf6")]([])
+attack_buffs = Array[ExtResource("1_3bwf6")]([])

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://cdkr3ok8rssr0"]
+
+[ext_resource type="Texture2D" uid="uid://bj3usd32xjs6q" path="res://assets/actors/sasuke/attack_0.png" id="1_e41il"]
+[ext_resource type="Texture2D" uid="uid://rshrbsl3y6bg" path="res://assets/actors/sasuke/attack_1.png" id="2_psa6y"]
+[ext_resource type="Texture2D" uid="uid://dd83dve5ny3n6" path="res://assets/actors/sasuke/attack_2.png" id="3_x8x3g"]
+[ext_resource type="Texture2D" uid="uid://dxe22e7aufrqr" path="res://assets/actors/sasuke/attack_3.png" id="4_3beye"]
+[ext_resource type="Texture2D" uid="uid://bcdqnj7u1jg4u" path="res://assets/actors/sasuke/attack_4.png" id="5_18tle"]
+[ext_resource type="Texture2D" uid="uid://dtotohpafpv8q" path="res://assets/actors/sasuke/dead_0.png" id="6_iormw"]
+[ext_resource type="Texture2D" uid="uid://coiui067qnn36" path="res://assets/actors/sasuke/attack_5.png" id="6_ow01u"]
+[ext_resource type="Texture2D" uid="uid://b4bme2ekedeom" path="res://assets/actors/sasuke/dead_1.png" id="7_ow01u"]
+[ext_resource type="Texture2D" uid="uid://darkxr80ssig0" path="res://assets/actors/sasuke/dead_2.png" id="8_4cb7s"]
+[ext_resource type="Texture2D" uid="uid://d2kpym3wbt1s6" path="res://assets/actors/sasuke/idle_0.png" id="9_1okeb"]
+[ext_resource type="Texture2D" uid="uid://bvojqr5xv2rwi" path="res://assets/actors/sasuke/dead_3.png" id="10_1okeb"]
+[ext_resource type="Texture2D" uid="uid://ssp3e3r2p4cn" path="res://assets/actors/sasuke/idle_1.png" id="10_rm6ir"]
+[ext_resource type="Texture2D" uid="uid://du6w1icmt40m7" path="res://assets/actors/sasuke/idle_2.png" id="11_cgv8b"]
+[ext_resource type="Texture2D" uid="uid://cxoirfl4auti6" path="res://assets/actors/sasuke/dead_4.png" id="11_rm6ir"]
+[ext_resource type="Texture2D" uid="uid://bqhcjypwpmvk4" path="res://assets/actors/sasuke/dead_5.png" id="12_cgv8b"]
+[ext_resource type="Texture2D" uid="uid://b35ixminxb2ev" path="res://assets/actors/sasuke/idle_3.png" id="12_l7yb0"]
+[ext_resource type="Texture2D" uid="uid://bap8j8uys2ptl" path="res://assets/actors/sasuke/idle_4.png" id="13_x8x3g"]
+[ext_resource type="Texture2D" uid="uid://bn42hsnewqk41" path="res://assets/actors/sasuke/run_0.png" id="13_xdfm0"]
+[ext_resource type="Texture2D" uid="uid://b0uc8eb2g78cs" path="res://assets/actors/sasuke/run_1.png" id="14_1ykme"]
+[ext_resource type="Texture2D" uid="uid://bxul80wxxsm5h" path="res://assets/actors/sasuke/idle_5.png" id="14_3beye"]
+[ext_resource type="Texture2D" uid="uid://drrfecmqsegmi" path="res://assets/actors/sasuke/run_2.png" id="15_y5y3m"]
+[ext_resource type="Texture2D" uid="uid://ctiq4onua0rvm" path="res://assets/actors/sasuke/run_3.png" id="16_rpg1g"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="17_kpkc7"]
+[ext_resource type="Texture2D" uid="uid://c13qu8kx7hx4p" path="res://assets/actors/sasuke/run_4.png" id="19_18tle"]
+[ext_resource type="Texture2D" uid="uid://dwfvrixt1tdg" path="res://assets/actors/sasuke/run_5.png" id="20_iormw"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_l7yb0"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_e41il")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_psa6y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_x8x3g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_3beye")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_18tle")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ow01u")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_iormw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_ow01u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_4cb7s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_1okeb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_rm6ir")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_cgv8b")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_1okeb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_rm6ir")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_cgv8b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_l7yb0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_x8x3g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_3beye")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_xdfm0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_1ykme")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_y5y3m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_rpg1g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_18tle")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_iormw")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("17_kpkc7")
+key = &"sasuke"
+frames = SubResource("SpriteFrames_l7yb0")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

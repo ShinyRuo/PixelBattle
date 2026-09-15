@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bpalxol21hgmc"]
+
+[ext_resource type="Texture2D" uid="uid://do6ov8u172r81" path="res://assets/actors/tendo/attack_0.png" id="1_v47br"]
+[ext_resource type="Texture2D" uid="uid://ck8j6rlwe76p2" path="res://assets/actors/tendo/attack_1.png" id="2_an0ho"]
+[ext_resource type="Texture2D" uid="uid://cdusplc7cnj2g" path="res://assets/actors/tendo/attack_2.png" id="3_jw2vx"]
+[ext_resource type="Texture2D" uid="uid://6le5pmxox5yv" path="res://assets/actors/tendo/attack_3.png" id="4_7f1gs"]
+[ext_resource type="Texture2D" uid="uid://b5v0yrn823tip" path="res://assets/actors/tendo/attack_4.png" id="5_l76vm"]
+[ext_resource type="Texture2D" uid="uid://bombsj6bir2yi" path="res://assets/actors/tendo/attack_5.png" id="6_j6o2f"]
+[ext_resource type="Texture2D" uid="uid://dp0xi47bg5ocv" path="res://assets/actors/tendo/dead_0.png" id="7_f1d72"]
+[ext_resource type="Texture2D" uid="uid://f4safubx8ky4" path="res://assets/actors/tendo/dead_1.png" id="8_scm4p"]
+[ext_resource type="Texture2D" uid="uid://b60tat3jhjxqe" path="res://assets/actors/tendo/dead_2.png" id="9_nyta3"]
+[ext_resource type="Texture2D" uid="uid://lmeoceomvrt1" path="res://assets/actors/tendo/dead_3.png" id="10_bh0ns"]
+[ext_resource type="Texture2D" uid="uid://xqjqyidjkgsf" path="res://assets/actors/tendo/dead_4.png" id="11_ougdu"]
+[ext_resource type="Texture2D" uid="uid://bemvsa3jttuag" path="res://assets/actors/tendo/dead_5.png" id="12_krawj"]
+[ext_resource type="Texture2D" uid="uid://bwuovtwo7cae0" path="res://assets/actors/tendo/idle_0.png" id="13_oagr0"]
+[ext_resource type="Texture2D" uid="uid://m6uq8p4egur2" path="res://assets/actors/tendo/idle_1.png" id="14_rec1f"]
+[ext_resource type="Texture2D" uid="uid://doqpfves781yc" path="res://assets/actors/tendo/idle_2.png" id="15_1fhrn"]
+[ext_resource type="Texture2D" uid="uid://c6s8g23y4h8ti" path="res://assets/actors/tendo/idle_3.png" id="16_k50sq"]
+[ext_resource type="Texture2D" uid="uid://b41822qd1xjg6" path="res://assets/actors/tendo/idle_4.png" id="17_mr8rr"]
+[ext_resource type="Texture2D" uid="uid://bjb8wjjs2aegf" path="res://assets/actors/tendo/idle_5.png" id="18_o87we"]
+[ext_resource type="Texture2D" uid="uid://df8cgtr8f0pv5" path="res://assets/actors/tendo/run_0.png" id="19_vfvfl"]
+[ext_resource type="Texture2D" uid="uid://biyttf2w2h4iq" path="res://assets/actors/tendo/run_1.png" id="20_5ebg1"]
+[ext_resource type="Texture2D" uid="uid://bkd6yiloctbj0" path="res://assets/actors/tendo/run_2.png" id="21_e8t8q"]
+[ext_resource type="Texture2D" uid="uid://c5mtu2xdkayvk" path="res://assets/actors/tendo/run_3.png" id="22_4uwxt"]
+[ext_resource type="Texture2D" uid="uid://ipbmumyj5krr" path="res://assets/actors/tendo/run_4.png" id="23_43r8m"]
+[ext_resource type="Texture2D" uid="uid://c33jxvbi7mbok" path="res://assets/actors/tendo/run_5.png" id="24_5trly"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_oruax"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_xeck8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_v47br")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_an0ho")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_jw2vx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_7f1gs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_l76vm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_j6o2f")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_f1d72")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_scm4p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_nyta3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_bh0ns")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ougdu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_krawj")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_oagr0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_rec1f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_1fhrn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_k50sq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_mr8rr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_o87we")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_vfvfl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_5ebg1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_e8t8q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_4uwxt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_43r8m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_5trly")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_oruax")
+key = &"tendo"
+frames = SubResource("SpriteFrames_xeck8")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_82yjp"]
 [ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_fqn32"]
+[ext_resource type="Resource" path="res://data/buffs/onoki_weight.tres" id="2_v1yjh"]
 
 [resource]
 script = ExtResource("1_fqn32")
@@ -9,6 +10,7 @@ id = &"onoki"
 name_key = "char.onoki"
 icon_key = "onoki"
 actor_key = &"onoki"
+shot_key = &"rockball"
 element = 3
 def_element = 3
 primary = 2
@@ -26,8 +28,17 @@ attack_speed_base = 0.6666666666666666
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
+def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 1
 reach = 2
 attack_range = 600.0
+attack_shape = 0
+ultimate_element_override = -1
 skill_ids = Array[StringName]([&"dust_release"])
+passives = {}
+on_hit_buffs = Array[ExtResource("1_82yjp")]([])
+low_hp_buffs = Array[ExtResource("1_82yjp")]([])
+lethal_buffs = Array[ExtResource("1_82yjp")]([])
+struck_buffs = Array[ExtResource("1_82yjp")]([])
+attack_buffs = Array[ExtResource("1_82yjp")]([ExtResource("2_v1yjh")])

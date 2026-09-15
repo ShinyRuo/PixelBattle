@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://cx8vx5dtbxq2v"]
+
+[ext_resource type="Texture2D" uid="uid://ddk3b73qosln2" path="res://assets/actors/enemy_wind_boss/attack_0.png" id="1_o0e6c"]
+[ext_resource type="Texture2D" uid="uid://dhb8mj58l76qp" path="res://assets/actors/enemy_wind_boss/attack_1.png" id="2_ttjt1"]
+[ext_resource type="Texture2D" uid="uid://cx0dsyy8aq4i2" path="res://assets/actors/enemy_wind_boss/attack_2.png" id="3_e0my6"]
+[ext_resource type="Texture2D" uid="uid://b36xh7t1m86m6" path="res://assets/actors/enemy_wind_boss/attack_3.png" id="4_q5shg"]
+[ext_resource type="Texture2D" uid="uid://6vqunjyvsfas" path="res://assets/actors/enemy_wind_boss/attack_4.png" id="5_16qgt"]
+[ext_resource type="Texture2D" uid="uid://baukcv87cucip" path="res://assets/actors/enemy_wind_boss/attack_5.png" id="6_r83lf"]
+[ext_resource type="Texture2D" uid="uid://db22yi0af7aap" path="res://assets/actors/enemy_wind_boss/dead_0.png" id="7_a3m6g"]
+[ext_resource type="Texture2D" uid="uid://dxu1vty6aujp8" path="res://assets/actors/enemy_wind_boss/dead_1.png" id="8_enc1t"]
+[ext_resource type="Texture2D" uid="uid://5r33yw5boucp" path="res://assets/actors/enemy_wind_boss/dead_2.png" id="9_2nscg"]
+[ext_resource type="Texture2D" uid="uid://c5b177sdeqiif" path="res://assets/actors/enemy_wind_boss/dead_3.png" id="10_eycqw"]
+[ext_resource type="Texture2D" uid="uid://bqnrsjhxvkqh0" path="res://assets/actors/enemy_wind_boss/dead_4.png" id="11_u32nh"]
+[ext_resource type="Texture2D" uid="uid://br66m3yr5mow2" path="res://assets/actors/enemy_wind_boss/dead_5.png" id="12_mvcw3"]
+[ext_resource type="Texture2D" uid="uid://1dm6gm5q7hyn" path="res://assets/actors/enemy_wind_boss/idle_0.png" id="13_kevmf"]
+[ext_resource type="Texture2D" uid="uid://bodvqwelcivlc" path="res://assets/actors/enemy_wind_boss/idle_1.png" id="14_t8v4o"]
+[ext_resource type="Texture2D" uid="uid://duvacackrwuod" path="res://assets/actors/enemy_wind_boss/idle_2.png" id="15_lysni"]
+[ext_resource type="Texture2D" uid="uid://d0aayr832jm7b" path="res://assets/actors/enemy_wind_boss/idle_3.png" id="16_h4i47"]
+[ext_resource type="Texture2D" uid="uid://x6fkss7ysm10" path="res://assets/actors/enemy_wind_boss/idle_4.png" id="17_5hksd"]
+[ext_resource type="Texture2D" uid="uid://8kmn1hi8ueop" path="res://assets/actors/enemy_wind_boss/idle_5.png" id="18_u87of"]
+[ext_resource type="Texture2D" uid="uid://c6jnbwy5rls28" path="res://assets/actors/enemy_wind_boss/run_0.png" id="19_57ogb"]
+[ext_resource type="Texture2D" uid="uid://cv5sl51ovblq1" path="res://assets/actors/enemy_wind_boss/run_1.png" id="20_p5tjl"]
+[ext_resource type="Texture2D" uid="uid://davkirddlr700" path="res://assets/actors/enemy_wind_boss/run_2.png" id="21_tuqyx"]
+[ext_resource type="Texture2D" uid="uid://ul82pku1oyju" path="res://assets/actors/enemy_wind_boss/run_3.png" id="22_38spy"]
+[ext_resource type="Texture2D" uid="uid://b63wm6h6dpptr" path="res://assets/actors/enemy_wind_boss/run_4.png" id="23_fji1b"]
+[ext_resource type="Texture2D" uid="uid://daw7qsi8cxw7g" path="res://assets/actors/enemy_wind_boss/run_5.png" id="24_wyeou"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_pjiiy"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_u8if8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_o0e6c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_ttjt1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_e0my6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_q5shg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_16qgt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_r83lf")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_a3m6g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_enc1t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_2nscg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_eycqw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_u32nh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_mvcw3")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_kevmf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_t8v4o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_lysni")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_h4i47")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_5hksd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_u87of")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_57ogb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_p5tjl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_tuqyx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_38spy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_fji1b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_wyeou")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_pjiiy")
+key = &"enemy_wind_boss"
+frames = SubResource("SpriteFrames_u8if8")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

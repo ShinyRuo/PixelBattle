@@ -4,16 +4,29 @@
 [ext_resource type="Texture2D" uid="uid://btudl0qjlmadv" path="res://assets/actors/chojuro/attack_1.png" id="2_vcdq4"]
 [ext_resource type="Texture2D" uid="uid://d4nfs5b6axgeh" path="res://assets/actors/chojuro/attack_2.png" id="3_si4xg"]
 [ext_resource type="Texture2D" uid="uid://boxqafbhc78gw" path="res://assets/actors/chojuro/attack_3.png" id="4_fsl6a"]
+[ext_resource type="Texture2D" uid="uid://bm3mmt2tbs2jj" path="res://assets/actors/chojuro/attack_4.png" id="5_380c0"]
 [ext_resource type="Texture2D" uid="uid://hkqa8b0fucic" path="res://assets/actors/chojuro/dead_0.png" id="5_phn3t"]
+[ext_resource type="Texture2D" uid="uid://cv5446ybdabep" path="res://assets/actors/chojuro/attack_5.png" id="6_6ng08"]
 [ext_resource type="Texture2D" uid="uid://dy2vs8kfwfpi6" path="res://assets/actors/chojuro/idle_0.png" id="6_gool4"]
 [ext_resource type="Texture2D" uid="uid://cydeht1hem4ex" path="res://assets/actors/chojuro/idle_1.png" id="7_dhct2"]
+[ext_resource type="Texture2D" uid="uid://d4nenerkltnw4" path="res://assets/actors/chojuro/dead_1.png" id="8_a3hqv"]
+[ext_resource type="Texture2D" uid="uid://dy561edvcl64a" path="res://assets/actors/chojuro/idle_2.png" id="8_phn3t"]
 [ext_resource type="Texture2D" uid="uid://bl2ssu88n5xri" path="res://assets/actors/chojuro/run_0.png" id="8_tk1tm"]
 [ext_resource type="Texture2D" uid="uid://cyx118k7dm2n7" path="res://assets/actors/chojuro/run_1.png" id="9_380c0"]
+[ext_resource type="Texture2D" uid="uid://dtuvn1yvjvl4h" path="res://assets/actors/chojuro/dead_2.png" id="9_gocf2"]
+[ext_resource type="Texture2D" uid="uid://ht81a2ux8k0w" path="res://assets/actors/chojuro/idle_3.png" id="9_gool4"]
 [ext_resource type="Texture2D" uid="uid://be2v6pjffcos2" path="res://assets/actors/chojuro/run_2.png" id="10_6ng08"]
+[ext_resource type="Texture2D" uid="uid://u58b8teflw32" path="res://assets/actors/chojuro/idle_4.png" id="10_dhct2"]
+[ext_resource type="Texture2D" uid="uid://bjro7e22cihqu" path="res://assets/actors/chojuro/dead_3.png" id="10_iqm7q"]
+[ext_resource type="Texture2D" uid="uid://ba3r2wq4jy2ux" path="res://assets/actors/chojuro/dead_4.png" id="11_ci0qr"]
 [ext_resource type="Texture2D" uid="uid://cnr8lgbar01iy" path="res://assets/actors/chojuro/run_3.png" id="11_dxjxd"]
+[ext_resource type="Texture2D" uid="uid://cvjsvp4u578ng" path="res://assets/actors/chojuro/idle_5.png" id="11_tk1tm"]
 [ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="12_gqvum"]
+[ext_resource type="Texture2D" uid="uid://oqj3ocqdhebm" path="res://assets/actors/chojuro/dead_5.png" id="12_qmu7h"]
+[ext_resource type="Texture2D" uid="uid://n6b1clovck18" path="res://assets/actors/chojuro/run_4.png" id="16_dhct2"]
+[ext_resource type="Texture2D" uid="uid://d308i7op3wpnx" path="res://assets/actors/chojuro/run_5.png" id="17_tk1tm"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_b8nuw"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_a3hqv"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -27,6 +40,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("4_fsl6a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_380c0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_6ng08")
 }],
 "loop": 0,
 "name": &"attack",
@@ -35,6 +54,21 @@ animations = [{
 "frames": [{
 "duration": 1.0,
 "texture": ExtResource("5_phn3t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_a3hqv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_gocf2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_iqm7q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ci0qr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_qmu7h")
 }],
 "loop": 0,
 "name": &"dead",
@@ -46,6 +80,18 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("7_dhct2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_phn3t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_gool4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_dhct2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_tk1tm")
 }],
 "loop": 1,
 "name": &"idle",
@@ -63,6 +109,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("11_dxjxd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_dhct2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_tk1tm")
 }],
 "loop": 1,
 "name": &"run",
@@ -72,7 +124,7 @@ animations = [{
 [resource]
 script = ExtResource("12_gqvum")
 key = &"chojuro"
-frames = SubResource("SpriteFrames_b8nuw")
+frames = SubResource("SpriteFrames_a3hqv")
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

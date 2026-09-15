@@ -5,17 +5,25 @@
 [ext_resource type="Texture2D" uid="uid://cd3ielvsrg378" path="res://assets/actors/sakura/attack_2.png" id="3_deejm"]
 [ext_resource type="Texture2D" uid="uid://8d6iqbyjttok" path="res://assets/actors/sakura/attack_3.png" id="4_ec2qa"]
 [ext_resource type="Texture2D" uid="uid://cc0gsywmmwvqj" path="res://assets/actors/sakura/attack_4.png" id="5_a84ch"]
+[ext_resource type="Texture2D" uid="uid://badcqyav88djb" path="res://assets/actors/sakura/attack_5.png" id="6_fax2o"]
 [ext_resource type="Texture2D" uid="uid://bqcaxjhafc7ib" path="res://assets/actors/sakura/dead_0.png" id="6_rgfpp"]
 [ext_resource type="Texture2D" uid="uid://bukk6h3vnai51" path="res://assets/actors/sakura/dead_1.png" id="7_fax2o"]
 [ext_resource type="Texture2D" uid="uid://dmg3kj4au4gr8" path="res://assets/actors/sakura/dead_2.png" id="8_8yag1"]
 [ext_resource type="Texture2D" uid="uid://dgkgw5vgourow" path="res://assets/actors/sakura/idle_0.png" id="9_egrpm"]
+[ext_resource type="Texture2D" uid="uid://baiuf1l0nvc0f" path="res://assets/actors/sakura/dead_3.png" id="10_egrpm"]
 [ext_resource type="Texture2D" uid="uid://ibxeg7tn2tkj" path="res://assets/actors/sakura/idle_1.png" id="10_wkrkr"]
 [ext_resource type="Texture2D" uid="uid://dn5m4n43bn8yl" path="res://assets/actors/sakura/idle_2.png" id="11_uvd45"]
+[ext_resource type="Texture2D" uid="uid://de8vuxe0eljkf" path="res://assets/actors/sakura/dead_4.png" id="11_wkrkr"]
 [ext_resource type="Texture2D" uid="uid://dt63aqbpc6prq" path="res://assets/actors/sakura/idle_3.png" id="12_j5oil"]
+[ext_resource type="Texture2D" uid="uid://bdas7n6mswt0b" path="res://assets/actors/sakura/dead_5.png" id="12_uvd45"]
+[ext_resource type="Texture2D" uid="uid://dj6tx0xgmcb5j" path="res://assets/actors/sakura/idle_4.png" id="13_deejm"]
 [ext_resource type="Texture2D" uid="uid://c553wdsgw428i" path="res://assets/actors/sakura/run_0.png" id="13_m42pk"]
 [ext_resource type="Texture2D" uid="uid://sjfofsnpibtm" path="res://assets/actors/sakura/run_1.png" id="14_5eec8"]
+[ext_resource type="Texture2D" uid="uid://cev1otcip2huu" path="res://assets/actors/sakura/idle_5.png" id="14_ec2qa"]
 [ext_resource type="Texture2D" uid="uid://lkchqylqan0j" path="res://assets/actors/sakura/run_2.png" id="15_a8auc"]
 [ext_resource type="Texture2D" uid="uid://bqsmw7s73g2r1" path="res://assets/actors/sakura/run_3.png" id="16_ffivw"]
+[ext_resource type="Texture2D" uid="uid://beqoro16re5wb" path="res://assets/actors/sakura/run_4.png" id="19_a84ch"]
+[ext_resource type="Texture2D" uid="uid://ddael8o4wc02b" path="res://assets/actors/sakura/run_5.png" id="20_rgfpp"]
 
 [resource]
 animations = [{
@@ -34,6 +42,9 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("5_a84ch")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_fax2o")
 }],
 "loop": 0,
 "name": &"attack",
@@ -48,6 +59,15 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("8_8yag1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_egrpm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_wkrkr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_uvd45")
 }],
 "loop": 0,
 "name": &"dead",
@@ -65,6 +85,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("12_j5oil")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_deejm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_ec2qa")
 }],
 "loop": 1,
 "name": &"idle",
@@ -82,6 +108,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("16_ffivw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_a84ch")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_rgfpp")
 }],
 "loop": 1,
 "name": &"run",

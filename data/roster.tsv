@@ -62,6 +62,8 @@
 # 可以写好几个 `on_low_hp=`）。一波一次，只写一半生成器报错。
 # **受致命伤那一下挡住**写 `on_lethal=<效果键>`：那一下不死、血停在 1，再挂上效果。一波一次。
 # **受击触发**写 `on_struck=<效果键>;struck_cd=<秒>`：增益挂自己、减益挂打他的敌人；不写冷却 = 每下都触发，999 = 一波一次。
+#   加 `struck_ranged=1` 只认远程攻击，加 `struck_leap=1` 触发时跳到打他的敌人身前。
+# **每下普攻都挂**写 `on_attack=<效果键>`（不骑暴击；`on_hit=<效果键>` 才只在暴击那一下挂）。
 #
 # **「X% 几率打出更多伤害」就写成暴击**（`crit_chance` + `crit_damage`），
 # 不另开一个概率键 —— 另开的话屏幕上会有两套各自掷骰的暴击，
@@ -99,61 +101,61 @@
 
 #角色键	显示名	稀有度	攻击距离	攻击属性	护甲属性	主属性	力量	敏捷	智力	力量成长	敏捷成长	智力成长	攻击间隔	形象键	被动	普攻子弹	射程
 
-haku	白	R	远程	水	风	敏捷	20	30	13	20.0	29.5	13.0	1.5	-	-	-	600
+haku	白	R	远程	水	风	敏捷	20	30	13	20.0	29.5	13.0	1.5	-	-	qianben	600
 zabuza	桃地再不斩	R	近战	水	水	敏捷	25	30	13	25.5	30.0	13.0	1.5	-	-	-	125
-sakura	春野樱	R	远程	物理	物理	智力	18	13	29	18.0	13.0	29.0	1.5	-	-	-	600
-rin_nohara	野原琳	R	远程	物理	物理	智力	23	19	29	22.0	19.0	29.0	1.5	rin	-	-	600
-tenten	天天	R	远程	物理	风	敏捷	20	26	14	19.5	27.0	14.0	1.5	-	-	-	525
+sakura	春野樱	R	远程	物理	物理	智力	18	13	29	18.0	13.0	29.0	1.5	-	-	kunai	600
+rin_nohara	野原琳	R	远程	物理	物理	智力	23	19	29	22.0	19.0	29.0	1.5	rin	-	kunai	600
+tenten	天天	R	远程	物理	风	敏捷	20	26	14	19.5	27.0	14.0	1.5	-	-	shoulijian	525
 rock_lee	李洛克	R	近战	物理	物理	敏捷	25	30	14	25.5	30.0	14.0	1.5	lee	-	-	125
 choji	秋道丁次	R	近战	火	火	力量	31	20	14	30.0	20.0	14.0	1.5	-	-	-	125
-ino	山中井野	R	远程	雷	雷	敏捷	24	31	15	24.0	31.0	15.0	1.5	-	-	-	600
-shikamaru	奈良鹿丸	R	远程	土	土	智力	23	22	31	23.0	22.0	31.0	1.5	-	-	-	600
-karin	香燐	R	远程	火	火	敏捷	20	29	15	19.5	30.0	15.0	1.5	-	-	-	600
+ino	山中井野	R	远程	雷	雷	敏捷	24	31	15	24.0	31.0	15.0	1.5	-	-	kunai	600
+shikamaru	奈良鹿丸	R	远程	土	土	智力	23	22	31	23.0	22.0	31.0	1.5	-	-	shadowpiece	600
+karin	香燐	R	远程	火	火	敏捷	20	29	15	19.5	30.0	15.0	1.5	-	-	chakela_chain_red	600
 kiba	犬冢牙	R	近战	土	土	敏捷	24	31	14	24.0	31.0	14.0	1.5	-	-	-	125
-chiyo	千代婆婆	R	远程	物理	物理	智力	18	22	25	17.0	21.0	24.0	1.5	-	-	-	600
+chiyo	千代婆婆	R	远程	物理	物理	智力	18	22	25	17.0	21.0	24.0	1.5	-	-	dingzhi	600
 
-sasuke	宇智波佐助	SR	近战	雷	雷	敏捷	24	33	17	24.0	33.0	17.0	1.5	-	crit_chance=0.20;crit_damage=0.50	-	125
+sasuke	宇智波佐助	SR	近战	雷	雷	敏捷	24	33	17	24.0	33.0	17.0	1.5	-	crit_chance=0.20	-	125
 naruto	漩涡鸣人	SR	近战	风	风	力量	34	23	18	34.0	23.0	18.0	1.5	-	-	-	125
 kakashi	旗木卡卡西	SR	近战	雷	土	敏捷	25	31	16	25.0	31.0	16.0	1.5	-	-	-	125
 might_guy	迈特凯	SR	近战	物理	物理	力量	34	25	16	34.0	25.0	10.0	1.5	guy	-	-	125
 kimimaro	君麻吕	SR	近战	物理	物理	力量	32	23	18	32.5	23.0	18.0	1.5	-	low_hp=0.75;on_low_hp=kimimaro_curse	-	125
-orochimaru	大蛇丸	SR	远程	风	风	智力	23	20	32	23.0	20.0	31.0	1.5	-	-	-	600
-hinata	日向雏田	SR	远程	雷	雷	敏捷	22	32	15	22.0	32.0	15.0	1.5	-	-	-	600
-kushina	漩涡玖辛奈	SR	远程	水	水	智力	23	15	30	23.0	15.0	30.0	1.5	-	-	-	600
+orochimaru	大蛇丸	SR	远程	风	风	智力	23	20	32	23.0	20.0	31.0	1.5	-	-	snake	600
+hinata	日向雏田	SR	远程	雷	雷	敏捷	22	32	15	22.0	32.0	15.0	1.5	-	splash=0.5;splash_radius=150	-	600
+kushina	漩涡玖辛奈	SR	远程	水	水	智力	23	15	30	23.0	15.0	30.0	1.5	-	-	chakela_chain_red	600
 tobirama	千手扉间	SR	近战	水	水	敏捷	26	30	18	26.0	30.0	18.0	1.5	-	-	-	125
-hiruzen	猿飞日斩	SR	远程	土	火	智力	21	15	32	21.5	15.0	32.5	1.5	-	-	-	600
+hiruzen	猿飞日斩	SR	远程	土	火	智力	21	15	32	21.5	15.0	32.5	1.5	-	-	shoulijian	600
 tsunade	纲手	SR	近战	水	火	力量	31	25	14	31.5	24.0	14.0	1.5	-	low_hp=0.25;on_low_hp=tsunade_byakugou;on_low_hp=tsunade_guard	-	125
-jiraiya	自来也	SR	近战	火	土	力量	35	20	14	34.5	20.0	14.0	1.5	-	-	-	125
+jiraiya	自来也	SR	近战	火	土	力量	35	20	14	34.5	20.0	14.0	1.5	-	defence=20;melee_reflect=0.20;melee_taken=-0.15	-	125
 kisame	干柿鬼鲛	SR	近战	水	水	力量	30	22	13	30.0	22.0	13.0	1.5	-	crit_chance=0.20	-	125
-konan	小南	SR	远程	水	土	敏捷	21	33	12	21.0	33.0	12.0	1.5	-	-	-	800
-sasori	蝎	SR	远程	风	风	敏捷	22	30	15	22.0	32.0	15.0	1.5	-	-	-	600
-deidara	迪达拉	SR	远程	土	土	智力	22	15	33	21.0	15.0	33.0	1.5	-	splash=0.5;splash_radius=275	-	600
+konan	小南	SR	远程	水	土	敏捷	21	33	12	21.0	33.0	12.0	1.5	-	pierce=500	shoulijian_zhi	800
+sasori	蝎	SR	远程	风	风	敏捷	22	30	15	22.0	32.0	15.0	1.5	-	on_attack=sasori_venom	dingzhi	600
+deidara	迪达拉	SR	远程	土	土	智力	22	15	33	21.0	15.0	33.0	1.5	-	splash=0.5;splash_radius=275	gezi	600
 hidan	飞段	SR	近战	物理	物理	力量	34	18	12	34.0	18.0	12.0	1.5	-	splash=0.35;splash_radius=250;reflect=0.25;on_lethal=hidan_undying	-	245
 kakuzu	角都	SR	近战	雷	雷	力量	32	21	12	32.5	20.0	12.0	1.5	-	-	-	125
-gaara	我爱罗	SR	远程	风	风	智力	20	20	31	20.0	20.0	31.0	1.5	-	on_struck=gaara_sand_guard;struck_cd=999	-	600
-temari	手鞠	SR	远程	风	风	敏捷	21	32	15	21.0	32.0	15.0	1.5	-	crit_chance=0.25	-	600
+gaara	我爱罗	SR	远程	风	风	智力	20	20	31	20.0	20.0	31.0	1.5	-	on_struck=gaara_sand_guard;struck_cd=999	sandball	600
+temari	手鞠	SR	远程	风	风	敏捷	21	32	15	21.0	32.0	15.0	1.5	-	crit_chance=0.25	windknife	600
 neji_hyuga	日向宁次	SR	近战	水	土	敏捷	26	33	16	26.0	33.0	16.0	1.5	neji	crit_chance=0.18;bite_current=0.16	-	125
 asuma	猿飞阿斯玛	SR	近战	风	火	敏捷	28	31	14	27.5	30.0	14.0	1.5	-	-	-	125
-mei	照美冥	SR	远程	水	水	敏捷	23	32	15	23.0	32.0	15.0	1.5	-	on_struck=mei_charm	-	600
-onoki	大野木	SR	远程	土	土	智力	22	18	34	22.0	18.0	34.0	1.5	-	-	-	600
-zetsu	黑绝	SR	远程	土	土	敏捷	22	33	17	21.0	34.0	17.0	1.45	-	on_struck=zetsu_ephemera;struck_cd=13	-	600
+mei	照美冥	SR	远程	水	水	敏捷	23	32	15	23.0	32.0	15.0	1.5	-	on_struck=mei_charm	waterarrow	600
+onoki	大野木	SR	远程	土	土	智力	22	18	34	22.0	18.0	34.0	1.5	-	on_attack=onoki_weight	rockball	600
+zetsu	黑绝	SR	远程	土	土	敏捷	22	33	17	21.0	34.0	17.0	1.45	-	on_struck=zetsu_ephemera;struck_cd=13	qianben	600
 chojuro	长十郎	SR	近战	水	水	敏捷	24	30	15	24.0	30.0	15.0	1.5	-	crit_chance=0.15;bite_lost=0.15	-	125
 jugo	重吾	SR	近战	物理	仙	力量	30	20	15	30.0	20.0	15.0	1.5	-	-	-	125
-suigetsu	鬼灯水月	SR	近战	水	水	敏捷	25	32	15	25.0	32.0	15.0	1.5	-	-	-	125
-killer_bee	奇拉比	SR	近战	雷	水	敏捷	27	33	15	27.0	33.0	15.0	1.5	bee	crit_chance=0.20;low_hp=0.75;on_low_hp=bee_cloak	-	125
-kurenai	夕日红	SR	远程	火	火	智力	23	19	33	22.5	19.0	33.0	1.5	-	-	-	600
-danzo	志村团藏	SR	远程	火	风	敏捷	21	31	18	21.0	31.0	18.0	1.5	-	on_lethal=danzo_izanagi;on_lethal=danzo_blur	-	600
-kankuro	勘九郎	SR	远程	雷	土	敏捷	22	30	15	22.0	30.0	15.0	1.5	-	-	-	600
-kurotsuchi	黑土	SR	远程	水	土	敏捷	22	33	15	22.0	33.0	15.0	1.5	-	-	-	600
-shino	油女志乃	SR	远程	土	土	智力	21	15	32	21.5	15.0	32.5	1.5	-	-	-	600
+suigetsu	鬼灯水月	SR	近战	水	水	敏捷	25	32	15	25.0	32.0	15.0	1.5	-	thunder_taken=2.0;fire_taken=-0.6;water_taken=-0.6;earth_taken=-0.6;wind_taken=-0.6;physical_taken=-0.6	-	125
+killer_bee	奇拉比	SR	近战	雷	水	敏捷	27	33	15	27.0	33.0	15.0	1.5	bee	crit_chance=0.20;crit_damage=-0.5;low_hp=0.75;on_low_hp=bee_cloak	-	125
+kurenai	夕日红	SR	远程	火	火	智力	23	19	33	22.5	19.0	33.0	1.5	-	-	floweball	600
+danzo	志村团藏	SR	远程	火	风	敏捷	21	31	18	21.0	31.0	18.0	1.5	-	on_lethal=danzo_izanagi;on_lethal=danzo_blur	windball	600
+kankuro	勘九郎	SR	远程	雷	土	敏捷	22	30	15	22.0	30.0	15.0	1.5	-	-	qianben	600
+kurotsuchi	黑土	SR	远程	水	土	敏捷	22	33	15	22.0	33.0	15.0	1.5	-	attack_speed=0.30;move_speed_bonus=0.15	rockarrow	600
+shino	油女志乃	SR	远程	土	土	智力	21	15	32	21.5	15.0	32.5	1.5	-	damage_bonus=0.26	bugsball	600
 
-itachi	宇智波鼬	SSR	远程	火	火	智力	22	18	37	22.5	18.0	37.0	1.5	-	-	-	600
+itachi	宇智波鼬	SSR	远程	火	火	智力	22	18	37	22.5	18.0	37.0	1.5	-	attack_ninjutsu=1;ninjutsu_crit_chance=0.15	-	600
 obito	宇智波带土	SSR	近战	火	火	敏捷	26	37	18	26.5	37.0	18.0	1.45	-	crit_chance=0.15;on_hit=obito_warp;on_struck=obito_kamui;struck_cd=5	-	125
-madara	宇智波斑	SSR	近战	火	火	力量	36	23	14	35.0	23.0	14.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.40;reflect=0.30	-	125
-hashirama	千手柱间	SSR	近战	土	水	力量	38	18	18	38.0	18.0	18.0	1.5	-	-	-	125
-tendo	天道佩恩	SSR	近战	仙	物理	敏捷	27	34	15	26.5	34.5	15.0	1.5	-	crit_chance=0.15;crit_damage=0.50;dodge=0.22	-	125
+madara	宇智波斑	SSR	近战	火	火	力量	36	23	14	35.0	23.0	14.0	1.5	-	crit_chance=0.15;dodge=0.40;reflect=0.30	-	125
+hashirama	千手柱间	SSR	近战	土	水	力量	38	18	18	38.0	18.0	18.0	1.5	-	regen_max=0.02	-	125
+tendo	天道佩恩	SSR	近战	仙	物理	敏捷	27	34	15	26.5	34.5	15.0	1.5	-	crit_chance=0.15;dodge=0.22	-	125
 kabuto	仙人兜	SSR	远程	仙	物理	智力	22	18	36	22.5	18.0	36.0	1.5	-	-	-	600
-minato	波风水门	SSR	近战	水	风	敏捷	27	35	17	26.0	35.0	17.0	1.45	-	-	-	125
-naruto_sage	仙人鸣人	SSR	近战	风	风	敏捷	27	36	17	28.0	35.5	16.0	1.45	-	-	-	125
-raikage	艾（雷影）	SSR	近战	雷	雷	力量	38	23	15	38.0	23.0	15.0	1.5	-	-	-	125
+minato	波风水门	SSR	近战	水	风	敏捷	27	35	17	26.0	35.0	17.0	1.45	-	crit_chance=0.17;crit_damage=1.0;attack_speed=0.75;move_speed_bonus=0.75	-	125
+naruto_sage	仙人鸣人	SSR	近战	风	风	敏捷	27	36	17	28.0	35.5	16.0	1.45	-	dodge=0.20;dodge_counter=0.35	-	125
+raikage	艾（雷影）	SSR	近战	雷	雷	力量	38	23	15	38.0	23.0	15.0	1.5	-	wind_taken=-0.55;on_struck=raikage_blade;on_struck=raikage_blade_guard;struck_cd=10;struck_ranged=1;struck_leap=1	-	125
 shisui	宇智波止水	SSR	近战	火	火	敏捷	26	37	15	25.5	37.0	15.0	1.5	-	-	-	125

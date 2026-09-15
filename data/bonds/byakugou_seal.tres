@@ -6,7 +6,9 @@
 script = ExtResource("1_cb327")
 id = &"byakugou_seal"
 name_key = "bond.byakugou_seal"
+match_mode = 0
 member_ids = Array[StringName]([&"tsunade", &"sakura"])
+match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
@@ -19,3 +21,4 @@ member_functions = {
 &"heal_power": 0.5
 }
 }
+member_skill_patches = {}

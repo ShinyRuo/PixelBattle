@@ -1,37 +1,51 @@
 [gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://d1gryf26o1wh1"]
 
-[ext_resource type="Texture2D" uid="uid://ks52ydygcxss" path="res://assets/actors/tsunade/attack_0.png" id="1_ai8t5"]
-[ext_resource type="Texture2D" uid="uid://cdjfw76bss4xw" path="res://assets/actors/tsunade/attack_1.png" id="2_xugve"]
-[ext_resource type="Texture2D" uid="uid://c666l3k25bb0u" path="res://assets/actors/tsunade/attack_2.png" id="3_p0ygl"]
-[ext_resource type="Texture2D" uid="uid://bx7o7mg67rl3q" path="res://assets/actors/tsunade/attack_3.png" id="4_tyytk"]
-[ext_resource type="Texture2D" uid="uid://gr36teiift6g" path="res://assets/actors/tsunade/dead_0.png" id="5_n67lp"]
-[ext_resource type="Texture2D" uid="uid://dqiimiyjyjhmw" path="res://assets/actors/tsunade/dead_1.png" id="6_u8q3i"]
-[ext_resource type="Texture2D" uid="uid://bt2fnpa3jophw" path="res://assets/actors/tsunade/dead_2.png" id="7_lpm5h"]
-[ext_resource type="Texture2D" uid="uid://enbn7r7ba6fu" path="res://assets/actors/tsunade/dead_3.png" id="8_ymfxf"]
-[ext_resource type="Texture2D" uid="uid://cxtjglgo3lj6" path="res://assets/actors/tsunade/dead_4.png" id="9_f1jdd"]
-[ext_resource type="Texture2D" uid="uid://wi2tpyg5lx03" path="res://assets/actors/tsunade/idle_0.png" id="10_lru3b"]
-[ext_resource type="Texture2D" uid="uid://doj4h3hgcje0o" path="res://assets/actors/tsunade/idle_1.png" id="11_hbh53"]
-[ext_resource type="Texture2D" uid="uid://c0qhrv0qs2ndk" path="res://assets/actors/tsunade/idle_2.png" id="12_tto4x"]
-[ext_resource type="Texture2D" uid="uid://c2knxahv5wpwt" path="res://assets/actors/tsunade/run_0.png" id="13_qctk7"]
-[ext_resource type="Texture2D" uid="uid://dlpa0yy7chqu7" path="res://assets/actors/tsunade/run_1.png" id="14_muk4h"]
-[ext_resource type="Texture2D" uid="uid://cfpyweakcl5gq" path="res://assets/actors/tsunade/run_2.png" id="15_h0fjo"]
-[ext_resource type="Texture2D" uid="uid://iik34v7vhgt2" path="res://assets/actors/tsunade/run_3.png" id="16_vui5i"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="17_tnec7"]
+[ext_resource type="Texture2D" uid="uid://ks52ydygcxss" path="res://assets/actors/tsunade/attack_0.png" id="1_2w5hg"]
+[ext_resource type="Texture2D" uid="uid://cdjfw76bss4xw" path="res://assets/actors/tsunade/attack_1.png" id="2_ai8t5"]
+[ext_resource type="Texture2D" uid="uid://c666l3k25bb0u" path="res://assets/actors/tsunade/attack_2.png" id="3_xugve"]
+[ext_resource type="Texture2D" uid="uid://bx7o7mg67rl3q" path="res://assets/actors/tsunade/attack_3.png" id="4_p0ygl"]
+[ext_resource type="Texture2D" uid="uid://gr36teiift6g" path="res://assets/actors/tsunade/dead_0.png" id="5_tyytk"]
+[ext_resource type="Texture2D" uid="uid://o2w853mqqyse" path="res://assets/actors/tsunade/attack_4.png" id="5_u8q3i"]
+[ext_resource type="Texture2D" uid="uid://bpqhccb4d12fl" path="res://assets/actors/tsunade/attack_5.png" id="6_lpm5h"]
+[ext_resource type="Texture2D" uid="uid://dqiimiyjyjhmw" path="res://assets/actors/tsunade/dead_1.png" id="6_n67lp"]
+[ext_resource type="Texture2D" uid="uid://bt2fnpa3jophw" path="res://assets/actors/tsunade/dead_2.png" id="7_u8q3i"]
+[ext_resource type="Texture2D" uid="uid://wi2tpyg5lx03" path="res://assets/actors/tsunade/idle_0.png" id="8_lpm5h"]
+[ext_resource type="Texture2D" uid="uid://doj4h3hgcje0o" path="res://assets/actors/tsunade/idle_1.png" id="9_ymfxf"]
+[ext_resource type="Texture2D" uid="uid://c0qhrv0qs2ndk" path="res://assets/actors/tsunade/idle_2.png" id="10_f1jdd"]
+[ext_resource type="Texture2D" uid="uid://qhobn6uo6u0h" path="res://assets/actors/tsunade/dead_3.png" id="10_lru3b"]
+[ext_resource type="Texture2D" uid="uid://d0qikkm47ilan" path="res://assets/actors/tsunade/dead_4.png" id="11_hbh53"]
+[ext_resource type="Texture2D" uid="uid://b4puudlann2tl" path="res://assets/actors/tsunade/idle_3.png" id="11_lru3b"]
+[ext_resource type="Texture2D" uid="uid://c2knxahv5wpwt" path="res://assets/actors/tsunade/run_0.png" id="12_hbh53"]
+[ext_resource type="Texture2D" uid="uid://c8rplplrd327j" path="res://assets/actors/tsunade/dead_5.png" id="12_tto4x"]
+[ext_resource type="Texture2D" uid="uid://dkvjprfus7dmw" path="res://assets/actors/tsunade/idle_4.png" id="12_xugve"]
+[ext_resource type="Texture2D" uid="uid://bphw0plpr4w4e" path="res://assets/actors/tsunade/idle_5.png" id="13_p0ygl"]
+[ext_resource type="Texture2D" uid="uid://dlpa0yy7chqu7" path="res://assets/actors/tsunade/run_1.png" id="13_tto4x"]
+[ext_resource type="Texture2D" uid="uid://cfpyweakcl5gq" path="res://assets/actors/tsunade/run_2.png" id="14_qctk7"]
+[ext_resource type="Texture2D" uid="uid://iik34v7vhgt2" path="res://assets/actors/tsunade/run_3.png" id="15_muk4h"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="16_h0fjo"]
+[ext_resource type="Texture2D" uid="uid://bo4jdp0fgxncj" path="res://assets/actors/tsunade/run_4.png" id="18_tyytk"]
+[ext_resource type="Texture2D" uid="uid://dd2wu4qvk2oji" path="res://assets/actors/tsunade/run_5.png" id="19_n67lp"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_vrlmw"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_qctk7"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_ai8t5")
+"texture": ExtResource("1_2w5hg")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_xugve")
+"texture": ExtResource("2_ai8t5")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3_p0ygl")
+"texture": ExtResource("3_xugve")
 }, {
 "duration": 1.0,
-"texture": ExtResource("4_tyytk")
+"texture": ExtResource("4_p0ygl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_u8q3i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_lpm5h")
 }],
 "loop": 0,
 "name": &"attack",
@@ -39,25 +53,14 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_n67lp")
+"texture": ExtResource("5_tyytk")
 }, {
 "duration": 1.0,
-"texture": ExtResource("6_u8q3i")
+"texture": ExtResource("6_n67lp")
 }, {
 "duration": 1.0,
-"texture": ExtResource("7_lpm5h")
+"texture": ExtResource("7_u8q3i")
 }, {
-"duration": 1.0,
-"texture": ExtResource("8_ymfxf")
-}, {
-"duration": 1.0,
-"texture": ExtResource("9_f1jdd")
-}],
-"loop": 0,
-"name": &"dead",
-"speed": 4.0
-}, {
-"frames": [{
 "duration": 1.0,
 "texture": ExtResource("10_lru3b")
 }, {
@@ -67,22 +70,51 @@ animations = [{
 "duration": 1.0,
 "texture": ExtResource("12_tto4x")
 }],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_lpm5h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ymfxf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_f1jdd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_lru3b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_xugve")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_p0ygl")
+}],
 "loop": 1,
 "name": &"idle",
 "speed": 4.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("13_qctk7")
+"texture": ExtResource("12_hbh53")
 }, {
 "duration": 1.0,
-"texture": ExtResource("14_muk4h")
+"texture": ExtResource("13_tto4x")
 }, {
 "duration": 1.0,
-"texture": ExtResource("15_h0fjo")
+"texture": ExtResource("14_qctk7")
 }, {
 "duration": 1.0,
-"texture": ExtResource("16_vui5i")
+"texture": ExtResource("15_muk4h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_tyytk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_n67lp")
 }],
 "loop": 1,
 "name": &"run",
@@ -90,9 +122,9 @@ animations = [{
 }]
 
 [resource]
-script = ExtResource("17_tnec7")
+script = ExtResource("16_h0fjo")
 key = &"tsunade"
-frames = SubResource("SpriteFrames_vrlmw")
+frames = SubResource("SpriteFrames_qctk7")
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://c28wedcm4nhn"]
+
+[ext_resource type="Texture2D" uid="uid://b1uupmbts7c1i" path="res://assets/actors/temari/attack_0.png" id="1_06sto"]
+[ext_resource type="Texture2D" uid="uid://cosgnphsi241g" path="res://assets/actors/temari/attack_1.png" id="2_t151t"]
+[ext_resource type="Texture2D" uid="uid://c5861y1gjd242" path="res://assets/actors/temari/attack_2.png" id="3_7xqam"]
+[ext_resource type="Texture2D" uid="uid://p21dnyy3wjmb" path="res://assets/actors/temari/attack_3.png" id="4_dkb1m"]
+[ext_resource type="Texture2D" uid="uid://cntgt2k5jlklj" path="res://assets/actors/temari/attack_4.png" id="5_hmmy8"]
+[ext_resource type="Texture2D" uid="uid://c3j578khtkb26" path="res://assets/actors/temari/dead_0.png" id="5_uen3y"]
+[ext_resource type="Texture2D" uid="uid://06re8qmjm4no" path="res://assets/actors/temari/dead_1.png" id="6_idcbk"]
+[ext_resource type="Texture2D" uid="uid://dvvpyvl1u23kk" path="res://assets/actors/temari/attack_5.png" id="6_ra60m"]
+[ext_resource type="Texture2D" uid="uid://bxne5gkqtyo8i" path="res://assets/actors/temari/dead_2.png" id="7_hmmy8"]
+[ext_resource type="Texture2D" uid="uid://ctumcmkqkb83r" path="res://assets/actors/temari/idle_0.png" id="8_ra60m"]
+[ext_resource type="Texture2D" uid="uid://crnysolmqyi6u" path="res://assets/actors/temari/idle_1.png" id="9_lq136"]
+[ext_resource type="Texture2D" uid="uid://l24m5k5xqrl2" path="res://assets/actors/temari/idle_2.png" id="10_0ai1g"]
+[ext_resource type="Texture2D" uid="uid://bhpyexuhrhu6w" path="res://assets/actors/temari/dead_3.png" id="10_l1u8o"]
+[ext_resource type="Texture2D" uid="uid://bvqfmylamu84f" path="res://assets/actors/temari/dead_4.png" id="11_3hh2d"]
+[ext_resource type="Texture2D" uid="uid://nnc3umunw4ox" path="res://assets/actors/temari/idle_3.png" id="11_l1u8o"]
+[ext_resource type="Texture2D" uid="uid://b4ubsff8gjlr8" path="res://assets/actors/temari/run_0.png" id="12_3hh2d"]
+[ext_resource type="Texture2D" uid="uid://806uwviq1pv4" path="res://assets/actors/temari/idle_4.png" id="12_7xqam"]
+[ext_resource type="Texture2D" uid="uid://d0orsc5c7nrl0" path="res://assets/actors/temari/dead_5.png" id="12_txv3s"]
+[ext_resource type="Texture2D" uid="uid://dorqn6lp1cy1p" path="res://assets/actors/temari/idle_5.png" id="13_dkb1m"]
+[ext_resource type="Texture2D" uid="uid://cca1eysy53ke1" path="res://assets/actors/temari/run_1.png" id="13_txv3s"]
+[ext_resource type="Texture2D" uid="uid://do5qmyie0075u" path="res://assets/actors/temari/run_2.png" id="14_t3a2l"]
+[ext_resource type="Texture2D" uid="uid://c8x0b5e8f2evu" path="res://assets/actors/temari/run_3.png" id="15_g8brj"]
+[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="16_qs813"]
+[ext_resource type="Texture2D" uid="uid://dufdy6exgtgbu" path="res://assets/actors/temari/run_4.png" id="18_uen3y"]
+[ext_resource type="Texture2D" uid="uid://csgfxg73l3qa3" path="res://assets/actors/temari/run_5.png" id="19_idcbk"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_t3a2l"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_06sto")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_t151t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_7xqam")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_dkb1m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_hmmy8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ra60m")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_uen3y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_idcbk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_hmmy8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_l1u8o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_3hh2d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_txv3s")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_ra60m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_lq136")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_0ai1g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_l1u8o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_7xqam")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_dkb1m")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("12_3hh2d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_txv3s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_t3a2l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_g8brj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_uen3y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_idcbk")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("16_qs813")
+key = &"temari"
+frames = SubResource("SpriteFrames_t3a2l")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

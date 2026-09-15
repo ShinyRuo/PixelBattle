@@ -252,7 +252,7 @@ func test_a_ground_skill_hangs_on_hit_on_everyone_it_caught() -> void:
 	]))
 	cast.cast(Vector2(0.5, 0.0), 0)
 
-	PBSkillRules.land(cast, enemies, 0, _cfg, 1)
+	PBSkillRules.land(cast, enemies, 0, _cfg, 1, null, cast.skill.damage)
 	assert_eq(enemy.buffs.count(1), 1, "圈中的敌人该被挂上")
 	assert_almost_eq(enemy.buffs.amount(PBBuffRules.ENEMY_SPEED_SCALE, 1), 0.5, 1e-9, "减速生效")
 
@@ -268,7 +268,7 @@ func test_on_hit_never_lands_on_an_enemy_the_blast_already_killed() -> void:
 	]))
 	cast.cast(Vector2(0.5, 0.0), 0)
 
-	assert_eq(PBSkillRules.land(cast, enemies, 0, _cfg, 1), 1, "这一发该打死它")
+	assert_eq(PBSkillRules.land(cast, enemies, 0, _cfg, 1, null, cast.skill.damage), 1, "这一发该打死它")
 	assert_eq(enemy.buffs.count(1), 0, "死人身上不该挂着东西")
 
 
@@ -283,7 +283,9 @@ func test_an_instant_harm_in_on_hit_can_kill_and_is_counted() -> void:
 	var cast := PBSkillCast.new(_ground_skill(10.0, [bolt]))
 	cast.cast(Vector2(0.5, 0.0), 0)
 
-	assert_eq(PBSkillRules.land(cast, enemies, 0, _cfg, 1), 1, "瞬间伤害补刀也算一个击杀")
+	assert_eq(
+		PBSkillRules.land(cast, enemies, 0, _cfg, 1, null, cast.skill.damage), 1, "瞬间伤害补刀也算一个击杀"
+	)
 	assert_false(enemy.alive, "而且它真的死了")
 
 

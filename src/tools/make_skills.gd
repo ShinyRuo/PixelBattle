@@ -68,6 +68,9 @@ const ELEMENTS := {
 	"仙": PBElement.Type.SAGE,
 }
 
+## `kind=` 认得的写法（[PBDamageKind]）。不写就是忍术。
+const DAMAGE_KINDS := {"体术": PBDamageKind.Type.PHYSICAL, "忍术": PBDamageKind.Type.NINJUTSU}
+
 ## `额外` 那一列认得的键。**改这里要连着表头的注释一起改。**
 const EXTRA_KEYS: Array[String] = [
 	"on_hit",
@@ -85,6 +88,7 @@ const EXTRA_KEYS: Array[String] = [
 	"summon_hp",
 	"summon_secs",
 	"summon_lifesteal",
+	"kind",
 ]
 
 var _buffs: Dictionary = {}
@@ -302,6 +306,10 @@ func _apply_extra(skill: PBSkill, text: String) -> String:
 				skill.summon_lifesteal = float(value)
 			"carry":
 				skill.carry_over_ticks = _ticks(float(value))
+			"kind":
+				if not DAMAGE_KINDS.has(value):
+					return "伤害类型只认 体术 / 忍术：%s" % value
+				skill.kind = DAMAGE_KINDS[value]
 	return ""
 
 

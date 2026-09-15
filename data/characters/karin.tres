@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="PBCharacter" format=3 uid="uid://buq78rorsn6wa"]
+[gd_resource type="Resource" script_class="PBCharacter" format=3]
 
-[ext_resource type="Script" uid="uid://b2t0pcg1dtj2q" path="res://src/core/sim/buff.gd" id="1_8ff4i"]
-[ext_resource type="Script" uid="uid://ddd8oi1dk6gti" path="res://src/core/sim/character.gd" id="1_y4unu"]
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_8ff4i"]
+[ext_resource type="Script" path="res://src/core/sim/character.gd" id="1_y4unu"]
 
 [resource]
 script = ExtResource("1_y4unu")
@@ -9,6 +9,7 @@ id = &"karin"
 name_key = "char.karin"
 icon_key = "karin"
 actor_key = &"karin"
+shot_key = &"chakela_chain_red"
 element = 0
 def_element = 0
 primary = 1
@@ -26,7 +27,17 @@ attack_speed_base = 0.6666666666666666
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
+def_per_agility = 0.22
 attack_speed_per_agility = 0.009
+rarity = 0
 reach = 2
 attack_range = 600.0
+attack_shape = 0
+ultimate_element_override = -1
 skill_ids = Array[StringName]([&"kagura_eye"])
+passives = {}
+on_hit_buffs = Array[ExtResource("1_8ff4i")]([])
+low_hp_buffs = Array[ExtResource("1_8ff4i")]([])
+lethal_buffs = Array[ExtResource("1_8ff4i")]([])
+struck_buffs = Array[ExtResource("1_8ff4i")]([])
+attack_buffs = Array[ExtResource("1_8ff4i")]([])

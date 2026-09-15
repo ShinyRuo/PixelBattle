@@ -65,7 +65,7 @@
 
 # 键	显示名	满档	功能键	载体	成员
 haku_and_zabuza	随雪而逝	2			haku,zabuza
-immortal_pair	不死二人组	2	revive	hidan	kakuzu,hidan
+immortal_pair	不死二人组	2	revive	kakuzu	kakuzu,hidan	hidan:undying_end_heal=0.2
 akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu		deidara:clay_spider:power_scale=1.35
 kai_squad	凯班	4	gather	rock_lee	might_guy,rock_lee,tenten,neji_hyuga
 hyuga_pair	日向兄妹	2			neji_hyuga,hinata	neji_hyuga:crit_chance=0.09;hinata:crit_chance=0.15,bite_current=0.12
@@ -82,7 +82,7 @@ divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo	tendo:lifesteal=0.12
 masterminds	幕后黑手	5	crit_chance	madara	madara,obito,kabuto,tendo,zetsu
 team_seven	第七班	4	pull	kakashi	naruto,sasuke,sakura,kakashi
 ino_shika_cho	第十班	4	root	shikamaru	shikamaru,choji,ino,asuma	choji:hp_bonus=0.50	ino:mind_transfer:targets_add=1;choji:human_bullet:radius_scale=1.5
-sannin	木叶三忍	3	gold_floor	tsunade	jiraiya,orochimaru,tsunade
+sannin	木叶三忍	3	gold_floor	tsunade	jiraiya,orochimaru,tsunade	jiraiya:all_stats_bonus=0.20;orochimaru:all_stats_bonus=0.20;tsunade:all_stats_bonus=0.20
 taka	鹰小队	4			sasuke,suigetsu,jugo,karin	sasuke:defence=15,damage_bonus=0.20;jugo:defence=15
 puppet_masters	傀儡匠心	2			chiyo,kankuro		kankuro:puppet_crow:summon_add=1;chiyo:reincarnation:targets_add=1
 leaf_and_root	叶与根	2			hiruzen,danzo		hiruzen:fire_dragon:power_scale=1.4;danzo:root_burial:slow_set=0,slow_secs_set=2
@@ -99,7 +99,8 @@ child_of_prophecy	预言之子	2			naruto,jiraiya	naruto:dodge=0.20
 three_of_them	三人的羁绊	3			obito,kakashi,rin_nohara		rin_nohara:inspire:targets_add=4
 team_eight	第八班·集合	4			kurenai,hinata,shino,kiba		kurenai:haze_illusion:targets_add=3;shino:vampire_bugs:summon_add=5,summon_secs_scale=1.5
 uchiha_clan	宇智波一族	5			madara,obito,itachi,sasuke,shisui	madara:damage_bonus=0.40;obito:damage_bonus=0.40;itachi:damage_bonus=0.40;sasuke:damage_bonus=0.40;shisui:damage_bonus=0.40	
-destined_couple	终成眷属	2			naruto_sage,hinata		hinata:palm_rotation:radius_scale=2
-art_duo	艺术二人组	2			sasori,deidara		deidara:clay_self_destruct:on_death=1
+destined_couple	终成眷属	2			naruto_sage,hinata	naruto_sage:all_stats_bonus=0.12	hinata:palm_rotation:radius_scale=2
+art_duo	艺术二人组	2			sasori,deidara	sasori:armor_pen=0.6	deidara:clay_self_destruct:on_death=1
 peace_wish	和平的期望	2			tendo,naruto_sage	naruto_sage:dodge_heal=0.35	tendo:samsara_rebirth:on_death=1
 byakugou_seal	百豪之印	2			tsunade,sakura	tsunade:heal_power=0.5;sakura:heal_power=0.5
+joint_training	共同修行	2			naruto,killer_bee	naruto:struck_summon=0.15,struck_cd=3;killer_bee:open_low_hp=1,damage_bonus=0.2
