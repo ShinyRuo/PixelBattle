@@ -271,13 +271,10 @@ static func buff_words(mods: Dictionary) -> PackedStringArray:
 	return out
 
 
-## 羁绊满档给什么，一条一行：战力加成、功能（谁带）、每个成员自己的那一份、技能补丁。
+## 羁绊满档给什么，一条一行：功能（谁带）、每个成员自己的那一份、技能补丁。
 static func bond_effects(bond: PBBond, cfg: PBSimConfig) -> PackedStringArray:
 	var full: int = bond.full_tier_count()
 	var out := PackedStringArray()
-	var power: float = bond.bonus_at(full)
-	if power > 0.0:
-		out.append("战力 +%.0f%%" % (power * 100.0))
 	var function: StringName = bond.function_at(full)
 	if function != &"":
 		var carrier := _name_of(bond.function_carrier_at(full), cfg)

@@ -3,87 +3,31 @@
 # 字段（Tab 分隔）：羁绊键	显示名	满档人数	功能键	载体	成员（逗号分隔）	成员效果	技能补丁	开场BUFF
 # 开场BUFF：成员id:buff键,buff键;成员id:buff键。先生成技能/BUFF，再生成羁绊资源。
 #
-# ## 成员效果那一列（M12-d1）
-#
-# `角色id:键=量,键=量;角色id:键=量`，空 = 没有。词汇表见 `PBPassiveRules`，
-# 不认识的键生成器直接报错退出。
-#
-# **这才是原版的形状。** 解包文档 §6 开头那句：「每组羁绊给每个成员各发一份
-# 属于他自己的效果」—— 45 组里只有 3 组是人人同一句。而我们此前是
-# 「一组一个载体拿一份」，表达不了〔军师夫妇〕那种「手鞠改她的气流乱舞、
-# 鹿丸改他的影子模仿术」。
-#
-# **M3-f 那条「一组羁绊只出一个载体」没被推翻**：它针对的是「给每人发同一份
-# 倍率」，而给每人发一个**不同的机制**是相反的事。倍率型仍然不许人手一份，
-# 所以 `功能键` 那一列（聚拢 / 定身 / 减速力场）照旧一组一个载体。
-#
-# **触发型那四个（重生 / 溅射 / 打高血量多打一笔 / 命中后提暴击）不用写在这一列**：
-# 生成器会把 `功能键` 那一列翻译过来，量取 `CARRIER_AMOUNTS`，一个数没动。
-#
-# 数据来源是 `Docs/忍法战场_忍者&羁绊完整数值文档.MD` 第 7 节的 B01~B23，
-# 组成成员一律照抄。**加成数值不是原版的** —— 文档第 10 节自己声明
-# 「无任何自定义编造数值」，原版的羁绊效果只有文字描述。
-#
-# ## 加成 = 0.14 ×（满档人数 − 1）
-#
-# 这条式子是**从既有的两组反推出来的**，不是新拍的：M6-j 定下「每组只有一档」
-# 之后，猪鹿蝶（3 人）是 0.28、凯班（4 人）是 0.42。所以这次重铺**那两组的
-# 数字一个不动**，新加的 18 组落在同一条线上。
-#
-# ## 功能键现在 12 组有
-#
-# M3-f 的规矩：**一组羁绊只出一个载体**，而且**兜底档一个都不给**。
-# 那 5 组（第七班 / 凯班 / 猪鹿蝶 / 砂忍三巨头 / 木叶三忍）的键和载体
-# 原样保留 —— 它们是 §09 技能阶梯验收的量具，换掉等于把验收删了。
-#
-# M10-c 接上暴击之后又多了 3 组：兄弟的爱恨 / 幕后黑手给全队暴击率，
-# 晓组织全员给全队暴击伤害。**这三个是光环不是大招**
-# （[enum PBBondFunctionRules.Landing] 的 TEAM 档），所以前两组
-# 共用 `crit_chance` 是可以的 —— 光环加法叠加，而一个大招只有一份。
-#
-# M10-d 又接上 4 组**触发型**：绝牛雷犁热刀（命中后提暴击）、
-# 神赐予的伤痛（普攻带溅射）、日向兄妹（打高血量敌人多打一笔）、
-# 不死二人组（阵亡重生一次）。这四个是 `Landing.CARRIER` ——
-# **只发给载体本人**，所以「一组羁绊只出一个载体」比大招那一档贴得更紧。
-#
-# ## 剩下 11 组做不了，而原因不在这张表
-#
-# 它们的机制是「强化某个角色的某个技能」（豪火球附带天照、月读控两个目标、
-# 水阵壁延长、傀儡继承装备……），而 49 个角色里配了技能的是 2 个。
-# **卡的不是缺一个键，是被强化的对象根本不存在** —— 前置是角色技能表。
-# 幕后黑手那半句「暴击时召唤白绝」另算：召唤物是玩家定的单独一步。
-#
-# 另有两组要**主动不给**：木叶十二小强和咒印众的前半句都是「全队属性提升」，
-# 那和上面那条 `tier_power` 是同一个杠杆，再给一遍就是把
-# §09「不能只是更大的百分比」写反。
-#
-# ## ⚠ 木叶十二小强的满档是 10 不是 12
-#
-# 羁绊只算**在场**的人（`PBRunState.bonded_units` → `field_units`），
-# 而在场上限是 `PBSimConfig.deploy_slots_max` = 10。照文档写 12 的话
-# 这一组**结构上永远凑不齐**，而它不报错 —— 羁绊表装得进来、界面照样列它。
-# 原版能要 12 是因为待命台也算，而待命台 M3.5-i 已经删了（玩家复核过不恢复）。
-
+# 原版唯一依据：`Docs/原版数据_忍法战场v1.5.80.md` §6。
+# 每个成员获得其原版指定效果；不可用人数推导统一输出倍率，也不可用无来源的
+# 聚拢、定身、减速、金币保底或全队暴击替代尚未实现的专属机制。
+# 成员效果格式为 `角色id:键=量,键=量;角色id:键=量`；未实现的条目留空。
+# 角色/技能缺失及逐成员适配待办见 `Docs/进度_技能与羁绊.md`。
 # 键	显示名	满档	功能键	载体	成员
 haku_and_zabuza	随雪而逝	2			haku,zabuza
 immortal_pair	不死二人组	2	revive	kakuzu	kakuzu,hidan	hidan:undying_end_heal=0.2
 akatsuki_four	晓之四象	4			itachi,deidara,konan,zetsu		deidara:clay_spider:power_scale=1.35
-kai_squad	凯班	4	gather	rock_lee	might_guy,rock_lee,tenten,neji_hyuga		might_guy:leaf_gale:target_effect_area=1
+kai_squad	凯班	4			might_guy,rock_lee,tenten,neji_hyuga		might_guy:leaf_gale:target_effect_area=1
 hyuga_pair	日向兄妹	2			neji_hyuga,hinata	neji_hyuga:crit_chance=0.09;hinata:crit_chance=0.15,bite_current=0.12
-sand_siblings	砂忍三巨头	3	slow_field	gaara	gaara,temari,kankuro	gaara:struck_aura=400,struck_boost=0.5
+sand_siblings	砂忍三巨头	3			gaara,temari,kankuro	gaara:struck_aura=400,struck_boost=0.5
 earth_curse	地之咒印	2			kimimaro,orochimaru		kimimaro:bracken_dance:on_death=1
 my_cage	吾之牢笼	2			kimimaro,jugo	kimimaro:low_hp=0.90,drain_cut=1	jugo:piston_fist:power_scale=1.5,hits_add=3,hit_interval_seconds=0.25,hit_step_set=0.15
 five_kage	五影齐聚	5			tsunade,gaara,mei,raikage,onoki	gaara:all_stats_total_bonus=0.2;raikage:struck_strength_bonus=0.2,struck_dodge=0.5	onoki:dust_release:rebate_delay_seconds=0.08,rebate_mana_scale=0.5,rebate_cooldown_seconds=1.5;mei:boil_acid:variant_enable=1;gaara:sand_burial:variant_enable=1;tsunade:monstrous_strength:on_attack_chance=0.2
-lightning_blades	绝牛雷犁热刀	2	crit_on_hit	raikage	raikage,killer_bee	killer_bee:crit_damage=0.75
+lightning_blades	绝牛雷犁热刀	2			raikage,killer_bee	killer_bee:crit_damage=0.75
 hokage_line	历代火影	5			hashirama,tobirama,hiruzen,minato,tsunade			hashirama:hokage_line_guard;tobirama:hokage_line_guard;hiruzen:hokage_line_guard;minato:hokage_line_guard;tsunade:hokage_line_guard
 senju_brothers	千手兄弟	2			hashirama,tobirama		hashirama:deep_forest:followup_enable=1;tobirama:water_wall:followup_enable=1,self_duration_scale=1.5
-brothers_bond	兄弟的爱恨	2	crit_chance	itachi	itachi,sasuke	itachi:defence=15
+brothers_bond	兄弟的爱恨	2			itachi,sasuke	itachi:defence=15
 vermilion_pair	朱雀与南斗	2			itachi,kisame	kisame:all_stats_per_level=6,ranged_range=500	itachi:tsukuyomi:targets_add=1,extra_target_radius_set=0.3;kisame:shark_cut:variant_enable=1
-divine_wound	神赐予的伤痛	2	splash	konan	konan,tendo	tendo:lifesteal=0.12
-masterminds	幕后黑手	5	crit_chance	madara	madara,obito,kabuto,tendo,zetsu		kabuto:white_rage:echo_delay_seconds=3,echo_radius_scale=2
-team_seven	第七班	4	pull	kakashi	naruto,sasuke,sakura,kakashi
-ino_shika_cho	第十班	4	root	shikamaru	shikamaru,choji,ino,asuma	choji:hp_bonus=0.50	ino:mind_transfer:targets_add=1,extra_target_radius_set=0.35,extra_control_scale_set=2;choji:human_bullet:radius_scale=1.5
-sannin	木叶三忍	3	gold_floor	tsunade	jiraiya,orochimaru,tsunade	jiraiya:all_stats_bonus=0.20;orochimaru:all_stats_bonus=0.20;tsunade:all_stats_bonus=0.20
+divine_wound	神赐予的伤痛	2			konan,tendo	tendo:lifesteal=0.12
+masterminds	幕后黑手	5			madara,obito,kabuto,tendo,zetsu		kabuto:white_rage:echo_delay_seconds=3,echo_radius_scale=2
+team_seven	第七班	4			naruto,sasuke,sakura,kakashi
+ino_shika_cho	第十班	4			shikamaru,choji,ino,asuma	choji:hp_bonus=0.50	ino:mind_transfer:targets_add=1,extra_target_radius_set=0.35,extra_control_scale_set=2;choji:human_bullet:radius_scale=1.5
+sannin	木叶三忍	3			jiraiya,orochimaru,tsunade	jiraiya:all_stats_bonus=0.20;orochimaru:all_stats_bonus=0.20;tsunade:all_stats_bonus=0.20
 taka	鹰小队	4			sasuke,suigetsu,jugo,karin	sasuke:defence=15,damage_bonus=0.20;jugo:defence=15
 puppet_masters	傀儡匠心	2			chiyo,kankuro		kankuro:puppet_crow:summon_add=1;chiyo:reincarnation:targets_add=1,extra_target_radius_set=0.5
 inner_love	内心的爱	2			chiyo,sasori	sasori:stack_harm_bonus=0.5,stack_defence=-2	chiyo:reincarnation:transfer_scale=1.5

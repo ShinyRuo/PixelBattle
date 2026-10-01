@@ -1,11 +1,9 @@
 class_name PBBattleView
 extends Node2D
 ## 战斗画面：把 `src/core/` 的模拟接上渲染。
-##
 ## **定帧：数物理帧，不累加 delta**（铁律 2）。`_physics_process` 固定 60Hz，每 3 个物理帧推进一个 tick，
 ## 倍速只改每帧推几个 tick —— 全整数。累加 delta 或改 `Engine.time_scale` 会让 tick 序列慢慢错开，
 ## 存档回滚与每日种子全都失效。
-##
 ## **这一层只读 sim，改的只有玩家的指令**：状态只走 [PBRunSim] 的原语（批量模拟走的同一条路）；
 ## 例外是点名（[method PBBattleSim.name_target]）和手动放技能（[PBSkillBar]），各自只有一个入口。
 
@@ -104,6 +102,7 @@ var _hitstop_frames: int = 0
 @onready var _fx: PBSkillFxPool = $SkillFx
 @onready var _aim: PBAimLines = $Aim
 @onready var _lane: ColorRect = $Lane
+@onready var _map: PBMapBackground = $Map
 @onready var _limit: ColorRect = $Limit
 @onready var _info: Label = $HUD/Info
 @onready var _preview: Label = $HUD/Preview
@@ -134,6 +133,7 @@ func _ready() -> void:
 	_frames_per_tick = maxi(Engine.physics_ticks_per_second / _cfg.tick_rate, 1)
 
 	PBLayout.apply_to(_lane, _limit, _info, _preview, _field(), _cfg.deploy_limit_x)
+	_map.advance()
 
 	_rng = PBRngStreams.new(_resolve_seed())
 	_state = PBRunSim.new_state(_cfg)
@@ -160,7 +160,6 @@ func _ready() -> void:
 	_parts.tip_requested.connect(_tip.show_card)
 	_parts.scrolled.connect(_refresh_panels)
 	_gear.tip_requested.connect(_tip.show_card)
-	# 羁绊那几行、buff 格、技能格都只有悬停（玩家定的：不点开）。
 	_unit_info.hint_requested.connect(_tip.show_hint)
 	_unit_info.hint_closed.connect(_tip.hide_card)
 	_command.hint_requested.connect(_tip.show_hint)
@@ -719,6 +718,7 @@ func _restart() -> void:
 	_state = PBRunSim.new_state(_cfg)
 	_strategy = PBStratBalanced.new()
 	_rng = PBRngStreams.new(_resolve_seed())
+	_map.advance()
 	_enter_prepare()
 
 

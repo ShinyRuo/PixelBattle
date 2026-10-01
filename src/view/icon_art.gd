@@ -1,7 +1,6 @@
 class_name PBIconArt
 extends RefCounted
-## 左侧那两个形象的图（大本营、尾兽），全部**代码画的像素图**（同 [PBWhiteModel]：让链路今天就是通的，
-## 接真素材那天只换这个文件）。
+## 左侧形象：基地使用五代火影石像与火影大楼图，尾兽仍由代码画像素图。
 ##
 ## **画在小画布上再整数倍放大**（[constant SCALE]）：非整数比拉过的像素栅格宽窄不一。
 ## **一次建好之后只查表**：每张图几百次 `set_pixel`，面板每次点击都会重画。
@@ -52,9 +51,9 @@ const EMPTY := Color(0.34, 0.37, 0.45, 1.0)
 static var _cache: Dictionary = {}
 
 
-## 大本营。
+## 大本营透明图；动态旗帜与飞鸟由 [PBBaseMotion] 叠加。
 static func base() -> Texture2D:
-	return _cached("base", func() -> Image: return _draw_base())
+	return preload("res://assets/base/hokage_hall_5_heads.png")
 
 
 ## 第 [param tails] 尾那只。**0 表示还没选**，画的是一个带问号的剪影。
@@ -81,29 +80,6 @@ static func _cached(key: String, make: Callable) -> Texture2D:
 		)
 		_cache[key] = ImageTexture.create_from_image(image)
 	return _cache[key]
-
-
-## 一座城：两侧塔楼 + 主楼 + 城门 + 旗。
-##
-## **城门是最要紧的一笔**：没有它这张图只是一堆方块，
-## 有了门玩家立刻读出「这是敌人要进来的地方」，而那正是它在玩法里的身份。
-static func _draw_base(px: int = BASE_PX) -> Image:
-	var image := _blank(px)
-	_rect(image, 2, 26, 28, 4, STONE_DARK)  # 台基
-	for x: int in [3, 23]:  # 两座塔楼
-		_rect(image, x, 12, 6, 14, STONE)
-		_rect(image, x, 10, 2, 2, STONE)
-		_rect(image, x + 4, 10, 2, 2, STONE)
-		_rect(image, x + 2, 15, 2, 3, GATE)  # 箭窗
-	_rect(image, 9, 16, 14, 10, STONE)  # 主楼
-	for x: int in [9, 14, 19]:  # 城垛
-		_rect(image, x, 14, 3, 2, STONE)
-	_rect(image, 13, 20, 6, 6, GATE)  # 城门
-	_rect(image, 14, 19, 4, 1, GATE)
-	_rect(image, 15, 4, 2, 10, STONE_DARK)  # 旗杆
-	for row: int in 4:  # 三角旗
-		_rect(image, 17, 5 + row, 6 - row, 1, PBSkin.TITLE)
-	return image
 
 
 ## 一只尾兽：一团身子 + 两只耳朵 + 一排尾巴。

@@ -99,32 +99,11 @@ func test_every_bond_is_all_or_nothing() -> void:
 	for bond: PBBond in _cfg.bonds.all():
 		assert_eq(bond.tier_counts.size(), 1, "%s 该只有一档 —— 不凑齐就是不生效" % bond.id)
 		assert_eq(bond.tier_power.size(), 1, "%s 的加成表要和档位表等长" % bond.id)
-		assert_gt(bond.tier_power[0], 0.0, "%s 凑齐了却一分钱都不给" % bond.id)
+		assert_eq(bond.tier_power[0], 0.0, "%s 不得额外给原版没有的统一输出加成" % bond.id)
 
 
-func test_the_reachable_ceiling_stays_in_a_sane_band() -> void:
-	# **配平护栏。** 旧替身曲线最多给 1.72×（每人 6%、封顶 12 人）。
-	# 真羁绊表把它换掉之后，上限往上走是**预期内的**（那正是要给玩家的
-	# 乘法级杠杆），但不能走到让 GROWTH 1.10 的锚点、装备 300 的定价、
-	# 经济位曲线一起失效 —— 那三样是 M-1 和 M1 两轮扫描的产出。
-	#
-	# ## 量的必须是「够得着的」上限
-	#
-	# 把 11 组的满档加成直接相加会得到 2.50，但那需要同时凑齐 16 个命名成员
-	# **加**每系 4 人 = 24 人在场，而在场上限是 出战 10 + 待命 6 = 16。
-	# **那个数根本够不着**，拿它当护栏量的是个不存在的局面。
-	#
-	# ## 够得着的上限由**在场席位**卡着，不是由羁绊组数卡着
-	#
-	# M10-b 之前是「五组命名羁绊的成员合起来正好 16 人」——那个 16 是
-	# 「出战 10 + 待命 6」，而待命台 M3.5-i 就删了，这句话早就不成立了，
-	# 只是当时的 5 组恰好凑出 16 张卡，断言一直绿着。
-	#
-	# 现在 23 组的成员合起来 40 多人，而**在场只有 10 个位置** ——
-	# 所以护栏要量的是「10 个位置最多能同时激活几组」。下面这一队是
-	# 手挑的一个高重叠局面（咒印那三组两两共享成员，鹰小队再蹭一个），
-	# 7 个人吃到 5 组。**手挑不是取巧**：真正的最优要在 49 选 10 里搜，
-	# 而护栏要的是一个够得着、可复现、看得懂的下界。
+func test_real_bonds_never_add_a_generic_team_multiplier() -> void:
+	# 原版 §6 按成员发效果，没有「凑齐后全队战力 +n%」。
 	var state := PBRunSim.new_state(_cfg)
 	state.tech_pop = _cfg.tech_pop_max
 	var squad: Array[StringName] = _squad()
@@ -134,11 +113,7 @@ func test_the_reachable_ceiling_stays_in_a_sane_band() -> void:
 		state.add_unit(PBUnit.new(character))
 	assert_lte(squad.size(), _cfg.deploy_slots_max, "这一队得真的站得下")
 
-	var best: float = state.bond_mult(_cfg)
-	assert_gt(best, 1.0, "这一队该激活好几组羁绊，一组都没激活说明夹具挑错了人")
-	var old_ceiling: float = 1.0 + _cfg.bond_power_per_unit * float(_cfg.bond_unit_cap)
-	assert_gt(best, old_ceiling, "凑满五组还不如旧替身曲线的话，羁绊就白做了")
-	assert_lt(best, old_ceiling * 2.0, "够得着的上限 %.2f× 相对旧的 %.2f× 涨得太狠" % [best, old_ceiling])
+	assert_eq(state.bond_mult(_cfg), 1.0, "凑齐多组真羁绊也不得获得原版没有的通用倍率")
 
 
 func test_the_gacha_valuation_stays_in_the_same_currency_as_the_real_bonds() -> void:

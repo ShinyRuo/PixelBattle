@@ -21,11 +21,6 @@ const COL_MEMBER_FX: int = 6
 const COL_PATCHES: int = 7
 const COL_BUFFS: int = 8
 
-## 满档加成 = 本值 ×（满档人数 − 1）。斜率从既有数据反推（3 人 0.28、4 人 0.42），
-## 拍一个新斜率的话此前所有扫描结论都要重扫。
-const POWER_PER_MEMBER: float = 0.14
-
-
 func _init() -> void:
 	var rows := _read_table()
 	if rows.is_empty():
@@ -83,7 +78,8 @@ func _write_one(row: PackedStringArray) -> String:
 	bond.match_mode = PBBond.Match.MEMBERS
 	bond.member_ids = members
 	bond.tier_counts = [full] as Array[int]
-	bond.tier_power = [POWER_PER_MEMBER * float(full - 1)] as Array[float]
+	# 原版 §6 没有按羁绊人数统一增加输出；此档只用于激活成员专属效果。
+	bond.tier_power = [0.0] as Array[float]
 	bond.tier_function_keys = [StringName(row[COL_FUNCTION])] as Array[StringName]
 	bond.tier_function_carriers = [StringName(row[COL_CARRIER])] as Array[StringName]
 	if row[COL_CARRIER] != "" and not members.has(StringName(row[COL_CARRIER])):

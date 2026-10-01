@@ -92,6 +92,8 @@ func test_a_bond_card_lists_what_the_full_tier_gives() -> void:
 	assert_not_null(with_function, "前提：有羁绊带功能")
 	var text := "\n".join(PBEffectWords.bond_effects(with_function, root._cfg))
 	var full: int = with_function.full_tier_count()
+	assert_false(text.contains("出战输出"), "原版羁绊没有统一输出加成：%s" % text)
+	assert_false(text.contains("战力"), "原版羁绊没有统一战力加成：%s" % text)
 	var function := PBLocale.of_bond_function(with_function.function_at(full))
 	assert_true(text.contains(function), "要写功能名：%s" % text)
 	var body: String = root._unit_info._bond_body(with_function)

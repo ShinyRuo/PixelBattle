@@ -203,10 +203,8 @@ func _bond_text(state: PBRunState, cfg: PBSimConfig, need: int) -> String:
 	var before: int = state.dispatched
 	state.dispatched = 0
 	var kept := PBBondRules.active_tiers(state.bonded_units(cfg), cfg.bonds)
-	var kept_mult: float = state.bond_mult(cfg)
 	state.dispatched = need
 	var sent := PBBondRules.active_tiers(state.bonded_units(cfg), cfg.bonds)
-	var sent_mult: float = state.bond_mult(cfg)
 	state.dispatched = before
 
 	var broken := PackedStringArray()
@@ -222,10 +220,7 @@ func _bond_text(state: PBRunState, cfg: PBSimConfig, need: int) -> String:
 
 	var base: float = PBValuation.mean_dps(state, cfg)
 	var loss: float = PBValuation.dispatch_loss(state, cfg, base, need)
-	return (
-		"派了：%s　（羁绊 ×%.2f → ×%.2f）　战力 −%.1f%%"
-		% [String("、").join(broken), kept_mult, sent_mult, loss * 100.0]
-	)
+	return "派了：%s　战力 −%.1f%%" % [String("、").join(broken), loss * 100.0]
 
 
 ## 两个分支各剩多少战力。**两个数都是解析式的队伍 DPS，不跑战斗模拟**。

@@ -8,9 +8,9 @@ id = &"sand_siblings"
 name_key = "bond.sand_siblings"
 member_ids = Array[StringName]([&"gaara", &"temari", &"kankuro"])
 tier_counts = Array[int]([3])
-tier_power = Array[float]([0.28])
-tier_function_keys = Array[StringName]([&"slow_field"])
-tier_function_carriers = Array[StringName]([&"gaara"])
+tier_power = Array[float]([0.0])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
 member_functions = {
 &"gaara": {
 &"struck_aura": 400.0,

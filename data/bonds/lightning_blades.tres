@@ -8,14 +8,11 @@ id = &"lightning_blades"
 name_key = "bond.lightning_blades"
 member_ids = Array[StringName]([&"raikage", &"killer_bee"])
 tier_counts = Array[int]([2])
-tier_power = Array[float]([0.14])
-tier_function_keys = Array[StringName]([&"crit_on_hit"])
-tier_function_carriers = Array[StringName]([&"raikage"])
+tier_power = Array[float]([0.0])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
 member_functions = {
 &"killer_bee": {
 &"crit_damage": 0.75
-},
-&"raikage": {
-&"crit_on_hit": 0.25
 }
 }

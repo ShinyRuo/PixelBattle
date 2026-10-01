@@ -8,9 +8,9 @@ id = &"ino_shika_cho"
 name_key = "bond.ino_shika_cho"
 member_ids = Array[StringName]([&"shikamaru", &"choji", &"ino", &"asuma"])
 tier_counts = Array[int]([4])
-tier_power = Array[float]([0.42000000000000004])
-tier_function_keys = Array[StringName]([&"root"])
-tier_function_carriers = Array[StringName]([&"shikamaru"])
+tier_power = Array[float]([0.0])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
 member_functions = {
 &"choji": {
 &"hp_bonus": 0.5

@@ -177,9 +177,8 @@ func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: b
 	var lines := PackedStringArray()
 	lines.append(
 		(
-			"羁绊 ×%.2f　在场 %d　B:%s"
+			"羁绊　在场 %d　B:%s"
 			% [
-				1.0 + PBBondRules.power_bonus(units, cfg.bonds),
 				units.size(),
 				"羁绊" if bond_aware else "战力"
 			]
@@ -379,10 +378,7 @@ func _bond_head(bond: PBBond) -> String:
 	var active: int = PBBondRules.active_count(bond, _state.bonded_units(_cfg, true))
 	var need: int = bond.full_tier_count()
 	if active >= need:
-		return (
-			"%s　%d/%d 已生效 +%.0f%%"
-			% [PBLocale.of_bond(bond), active, need, bond.bonus_at(active) * 100.0]
-		)
+		return "%s　%d/%d · 成员已集齐" % [PBLocale.of_bond(bond), active, need]
 	return "%s　%d/%d　还差 %d 人" % [PBLocale.of_bond(bond), active, need, need - active]
 
 

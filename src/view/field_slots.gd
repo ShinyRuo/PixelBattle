@@ -56,6 +56,8 @@ func _ready() -> void:
 	_bar_fill = _add_bar(PBSkin.GOOD)
 	_base = _add_icon(BASE_RECT, PBIconArt.base_size(), PBSelection.Kind.BASE, BAR_HEIGHT + 2.0)
 	_base.texture = PBIconArt.base()
+	_base.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_base.add_child(PBBaseMotion.new())
 	_base_label = _add_label(BASE_RECT)
 
 
@@ -119,6 +121,7 @@ func _show_mark(on: TextureRect) -> void:
 func _add_icon(rect: Rect2, side: float, kind: PBSelection.Kind, drop: float = 0.0) -> TextureRect:
 	var icon := TextureRect.new()
 	icon.size = Vector2(side, side)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.position = Vector2(rect.position.x + (rect.size.x - side) * 0.5, rect.position.y + drop)
 	icon.mouse_filter = Control.MOUSE_FILTER_STOP
 	icon.gui_input.connect(
