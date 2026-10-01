@@ -34,10 +34,9 @@ static func reload() -> void:
 ## 忘了填那一格的表现该是「按文件名也查得到」，不是这份素材静默失踪。
 static func load_from(dir_path: String) -> Dictionary:
 	var out: Dictionary = {}
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		return out
-	var names := dir.get_files()
 	names.sort()
 	for file_name: String in names:
 		if not file_name.ends_with(".tres"):

@@ -10,6 +10,7 @@
 
 [resource]
 script = ExtResource("7_o0o17")
+foot_ring = true
 blend_style = 1
 back_frames = Array[Texture2D]([ExtResource("1_caloi"), ExtResource("2_4bukq"), ExtResource("3_kwlk5"), ExtResource("4_y50ow"), ExtResource("5_8bfcc"), ExtResource("6_qv5ef")])
 fps = 6.0

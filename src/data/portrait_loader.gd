@@ -39,10 +39,9 @@ static func reload() -> void:
 ## 所以文件名就是键，和 `data/characters/*.tres` 里的 `icon_key` 对上。
 static func load_from(dir_path: String) -> Dictionary:
 	var out: Dictionary = {}
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		return out
-	var names := dir.get_files()
 	names.sort()
 	for file_name: String in names:
 		# **导入过的贴图在磁盘上是 `.png`，但目录里也躺着 `.png.import`。**

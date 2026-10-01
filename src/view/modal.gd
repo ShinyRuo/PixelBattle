@@ -68,7 +68,7 @@ func _ready() -> void:
 		var shut := Button.new()
 		shut.position = _rect.position + Vector2(_rect.size.x - 56.0, 1.0)
 		shut.size = Vector2(50.0, 13.0)
-		shut.text = "关闭 Esc"
+		shut.text = "关闭" if OS.has_feature("web") or OS.has_feature("mobile") else "关闭 Esc"
 		shut.focus_mode = Control.FOCUS_NONE
 		PBSkin.style_button(shut, PBSkin.Tone.QUIET)
 		shut.pressed.connect(close)

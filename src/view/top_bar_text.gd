@@ -11,6 +11,8 @@ const KEYS_BATTLE := "空格暂停　1/2/3 倍速　R 重开　Esc 菜单　A �
 ## 准备阶段能按什么。**和上面那行不是同一批** —— 拖放只在准备阶段有意义，
 ## 而倍速只在打起来之后有意义。列一份大而全的话，两个阶段各有一半是死的。
 const KEYS_PREPARE := "点选/拖动摆位　拖进任务栏派任务　回车开打　Esc 菜单"
+const TOUCH_BATTLE := "触摸选目标　右上操作：暂停/倍速/重开　返回/菜单"
+const TOUCH_PREPARE := "触摸选卡/拖动摆位　点开打　右上操作可翻仓库"
 
 
 ## 第一行：这一波是什么、家底多少、打到哪儿了。
@@ -60,6 +62,8 @@ static func preview(
 	var keys: String = KEYS_BATTLE % ("开" if auto_play else "关")
 	if preparing and not auto_play:
 		keys = KEYS_PREPARE
+	if OS.has_feature("web") or OS.has_feature("mobile"):
+		keys = TOUCH_PREPARE if preparing and not auto_play else TOUCH_BATTLE
 	# **分母也要问那个数组**：分子算出来、分母写死的话，轮转长度一变就显示「克制覆盖 6/5」。
 	return (
 		"下一波：%s %s　　克制覆盖 %d/%d（%s）　　%s"

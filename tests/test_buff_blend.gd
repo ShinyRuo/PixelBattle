@@ -64,6 +64,35 @@ func test_same_resource_mode_edit_and_cast_preview_move_between_channels() -> vo
 	assert_true(glow._normal._drawings.is_empty())
 
 
+func test_foot_rings_stack_upward_across_blend_channels_without_moving_body_glow() -> void:
+	var glow := PBBuffGlow.new()
+	add_child_autofree(glow)
+	var ring := PBBuffSkin.new()
+	ring.foot_ring = true
+	var alpha_ring := PBBuffSkin.new()
+	alpha_ring.foot_ring = true
+	alpha_ring.blend_style = PBBuffSkin.BlendStyle.ALPHA
+	var body := PBBuffSkin.new()
+	glow._set_drawings([
+		{"skin": ring, "frame": 0},
+		{"skin": body, "frame": 0},
+		{"skin": alpha_ring, "frame": 0},
+		{"skin": ring, "frame": 0},
+	])
+	assert_eq(glow._drawings[0].stack_offset_y, 0.0)
+	assert_false(glow._drawings[1].has("stack_offset_y"))
+	assert_eq(glow._drawings[2].stack_offset_y, -PBBuffGlow.FOOT_RING_STEP)
+	assert_eq(glow._drawings[3].stack_offset_y, -2.0 * PBBuffGlow.FOOT_RING_STEP)
+	assert_eq(glow._normal._drawings[0].stack_offset_y, -PBBuffGlow.FOOT_RING_STEP)
+	glow._set_drawings([{"skin": alpha_ring, "frame": 0}])
+	assert_eq(glow._drawings[0].stack_offset_y, 0.0)
+
+
+func test_saved_aura_art_is_marked_as_foot_ring() -> void:
+	var skin := load("res://data/buff_art/bond_team_seven_aura.tres") as PBBuffSkin
+	assert_true(skin.foot_ring)
+
+
 func test_editor_reload_preserves_blend_across_buff_switch_and_cut() -> void:
 	var page := PBBuffArtPage.new()
 	add_child_autofree(page)

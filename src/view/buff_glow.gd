@@ -3,6 +3,7 @@ class_name PBBuffGlow
 extends Node2D
 ## 一名单位固定前后两节点，取消与到期每帧按真实状态收回；同名多来源只画一次。
 
+const FOOT_RING_STEP := 36.0
 static var _library: Dictionary = {}
 static var _instant_library: Dictionary = {}
 var front: bool = false
@@ -113,13 +114,20 @@ func _drawing(skin: PBBuffSkin, ticks: int, rate: int) -> Dictionary:
 
 func _set_drawings(next: Array[Dictionary]) -> void:
 	visible = not next.is_empty()
-	_drawings = next
+	_drawings = []
 	var normal: Array[Dictionary] = []
 	var additive: Array[Dictionary] = []
+	var foot_ring_index := 0
 	for item: Dictionary in next:
-		if item.skin.blend_style == PBBuffSkin.BlendStyle.ALPHA:
-			normal.append(item)
+		var placed := item.duplicate()
+		var skin: PBBuffSkin = placed.skin
+		if skin.foot_ring:
+			placed["stack_offset_y"] = -FOOT_RING_STEP * foot_ring_index
+			foot_ring_index += 1
+		_drawings.append(placed)
+		if skin.blend_style == PBBuffSkin.BlendStyle.ALPHA:
+			normal.append(placed)
 		else:
-			additive.append(item)
+			additive.append(placed)
 	_normal.sync_drawings(normal, front)
 	_additive.sync_drawings(additive, front)

@@ -34,12 +34,10 @@ static func install(cfg: PBSimConfig) -> PBSimConfig:
 ## 从指定目录装一张表。目录读不到或有坏数据时会报错并跳过那一份。
 static func load_from(dir_path: String) -> PBBeastTable:
 	var table_out := PBBeastTable.new()
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		push_error("尾兽目录打不开：%s" % dir_path)
 		return table_out
-
-	var names := dir.get_files()
 	names.sort()
 	for file_name: String in names:
 		if not file_name.ends_with(".tres"):

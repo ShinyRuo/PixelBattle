@@ -38,12 +38,10 @@ static func install(cfg: PBSimConfig) -> PBSimConfig:
 ## 从指定目录装一张表。目录读不到或有坏数据时会报错并跳过那一份。
 static func load_from(dir_path: String) -> PBEquipTable:
 	var items: Array[PBEquipItem] = []
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		push_error("装备目录打不开：%s" % dir_path)
 		return PBEquipTable.of([], items)
-
-	var names := dir.get_files()
 	# 排序纯粹是为了让报错与调试输出稳定。合成与分配都按加成排，与文件顺序无关。
 	names.sort()
 	var seen: Dictionary = {}

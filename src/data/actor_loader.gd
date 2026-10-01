@@ -59,10 +59,9 @@ static func reload() -> void:
 ## 忘了填那一格的表现该是「按文件名也能查到」，不是这份素材静默失踪。
 static func load_from(dir_path: String) -> Dictionary:
 	var out: Dictionary = {}
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		return out
-	var names := dir.get_files()
 	names.sort()
 	# **攻击段一律补到 6 帧**（见 [method PBActorSkin.hold_last_to]）：「第 4 帧出手」只有在每段帧数相同时
 	# 才是同一句话。载入时补，不必重导盘上的素材。

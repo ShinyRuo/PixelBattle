@@ -59,6 +59,7 @@ jobs:
           mkdir -p build/web
           "$HOME/.local/bin/godot-4.7.2" --headless --path . --editor --import --quiet
           "$HOME/.local/bin/godot-4.7.2" --headless --path . --export-release Web build/web/index.html --quiet
+          python3 scripts/patch_web_shell.py build/web/index.html
           test -s build/web/index.html
           test -s build/web/index.pck
           test -s build/web/index.wasm

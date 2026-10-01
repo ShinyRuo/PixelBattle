@@ -98,6 +98,8 @@ const HINT_H: float = 13.0
 const HINT_BUDGET: int = 22
 const FONT_SIZE: int = 8
 
+var _help_mode: bool = false
+
 var _slots: Array[Button] = []
 
 ## 每一格现在代表哪个指令。空表示这一格没用上。
@@ -290,7 +292,11 @@ func _fill_battle(selection: PBSelection) -> void:
 	_title.text = "战斗中"
 	var unit: PBUnit = selection.unit_of(_state)
 	if unit == null:
-		_hint.text = "点战场上的忍者选中他。空格暂停时照样点得到。"
+		_hint.text = (
+			"点战场上的忍者选中他。右上操作可暂停。"
+			if OS.has_feature("web") or OS.has_feature("mobile")
+			else "点战场上的忍者选中他。空格暂停时照样点得到。"
+		)
 		return
 	_title.text = "忍者　%s" % PBLocale.of_character(unit.character)
 	var picking: bool = _aim == PBFieldPicker.Aim.TARGET
@@ -339,9 +345,9 @@ func _bind_skill(slot: int, index: int) -> void:
 ## 提示行那一句。[constant HINT_BUDGET] 是 22 个汉字，每一句都写在预算里。
 func _battle_hint(picking: bool, casting: bool) -> String:
 	if casting:
-		return "点战场上的目标放技能。右键取消。"
+		return "点战场上的目标放技能。操作可取消。" if OS.has_feature("web") else "点战场上的目标放技能。右键取消。"
 	if picking:
-		return "点一个敌人改打他。右键取消。"
+		return "点一个敌人改打他。操作可取消。" if OS.has_feature("web") else "点一个敌人改打他。右键取消。"
 	# 「已下令」排在点名前面：那是他刚做的那一下，而点名可能是十秒前的事。
 	if _queued >= 0:
 		return "已下令，取消暂停就放。再按一次收回。"
@@ -369,7 +375,7 @@ func _fill_base(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> void:
 	var reroll: int = PBEconomyRules.quest_reroll_cost(plan.wave.index, cfg)
 	_bind(slot, CMD_REROLL_QUEST, "重抽任务\n%d" % reroll, reroll <= state.gold)
 	slot += 1
-	_bind(slot, CMD_START, "开打\n回车", true, PBSkin.Tone.PRIMARY)
+	_bind(slot, CMD_START, "开打" if OS.has_feature("web") else "开打\n回车", true, PBSkin.Tone.PRIMARY)
 
 
 ## 从第 0 格起摆一串购买项，返回下一个空格。
@@ -501,6 +507,9 @@ func _make_slot(index: int, at: Vector2) -> Button:
 
 
 func _on_slot_pressed(index: int) -> void:
+	if _help_mode:
+		_on_slot_hovered(index)
+		return
 	var id: StringName = _bound[index]
 	# 准备阶段的技能格只看不按。按钮本来就是灰的，这一道是防有人把它点亮了之后发出一条施放指令。
 	if not _battle_mode and SKILL_COMMANDS.has(id):
@@ -512,6 +521,10 @@ func _on_slot_pressed(index: int) -> void:
 		return
 	if id != &"":
 		command.emit(id)
+
+
+func set_help_mode(enabled: bool) -> void:
+	_help_mode = enabled
 
 
 ## 悬停时把长句写进提示条 —— **「买下去战力涨多少」在这里兑现**。

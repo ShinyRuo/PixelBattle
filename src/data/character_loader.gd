@@ -5,7 +5,7 @@ extends RefCounted
 ## 不在 `src/core/`：`ResourceLoader` 被纯度检查挡住。core 只认表的类型，批量模拟喂合成表、测试现造、
 ## 真游戏喂 `.tres`，共用同一套规则。报错只能在这一层做（只有这里手上有文件路径）。
 ##
-## **排序是确定性**：[method DirAccess.get_files] 的顺序跨平台不保证一致，而抽卡是
+## **排序是确定性**：[method ResourceLoader.list_directory] 的顺序跨平台不保证一致，而抽卡是
 ## 「掷稀有度 → 在该稀有度的角色里掷下标」—— 顺序一变，同一个种子在另一台机器上抽到别的角色。
 
 const DIR := "res://data/characters"
@@ -39,12 +39,10 @@ static func config() -> PBSimConfig:
 ## 从指定目录装一张表。目录读不到或有坏数据时会报错并跳过那一份。
 static func load_from(dir_path: String) -> PBCharacterTable:
 	var table_out := PBCharacterTable.new()
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		push_error("角色目录打不开：%s" % dir_path)
 		return table_out
-
-	var names := dir.get_files()
 	names.sort()  # 确定性，见类顶部说明
 	for file_name: String in names:
 		# 导入后引擎会在旁边生成 .import / .remap 之类的边车文件，只认 .tres。

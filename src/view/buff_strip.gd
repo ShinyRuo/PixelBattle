@@ -133,6 +133,10 @@ func _hover_at(local: Vector2) -> void:
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		_hover_at((event as InputEventMouseMotion).position)
+	elif event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+			_hover_at(click.position)
 
 
 func _notification(what: int) -> void:

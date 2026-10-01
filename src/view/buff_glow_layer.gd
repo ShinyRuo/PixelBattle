@@ -31,6 +31,7 @@ func _draw() -> void:
 		if not frames.is_empty():
 			var texture: Texture2D = frames[item.frame]
 			var at := skin.offset - skin.anchor * skin.pixel_scale
+			at.y += item.get("stack_offset_y", 0.0)
 			draw_texture_rect(
 				texture, Rect2(at, texture.get_size() * skin.pixel_scale), false, skin.tint
 			)

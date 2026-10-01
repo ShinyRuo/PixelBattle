@@ -117,6 +117,7 @@ func _ready() -> void:
 	# 挡住底下的东西不是它的职责。`PASS` 是「我自己要，但不拦别人」。
 	_body.mouse_filter = Control.MOUSE_FILTER_PASS
 	_body.meta_hover_started.connect(_on_meta_hover)
+	_body.meta_clicked.connect(_on_meta_hover)
 	_body.meta_hover_ended.connect(func(_meta: Variant) -> void: hint_closed.emit())
 	# 链接只是为了收悬停：**不画下划线、不接点击**（玩家定的）。
 	_body.meta_underlined = false

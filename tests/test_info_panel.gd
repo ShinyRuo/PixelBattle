@@ -106,13 +106,16 @@ func test_a_ninja_with_many_bonds_still_fits_and_no_name_is_split() -> void:
 	assert_lte(info._body.get_line_count(), 5, "排出来最多五行，多了会挤出框（%d 组羁绊）" % count)
 
 
-func test_bonds_on_the_card_are_hover_only() -> void:
-	# 玩家定的：羁绊名不要下划线、点不开，悬停才弹名单。
+func test_bonds_on_the_card_support_tap_without_underlining() -> void:
+	# 手机没有悬停；点按与桌面悬停读取同一份羁绊说明。
 	var root := _prepared()
 	var info := _with_a_squad(root, 4)
 	assert_false(info._body.meta_underlined, "不画下划线")
-	assert_false(info.has_signal("tip_requested"), "没有「点开」那条路")
-	assert_eq(info._body.meta_clicked.get_connections().size(), 0, "点击不接任何东西")
+	assert_eq(info._body.meta_clicked.get_connections().size(), 1)
+	var bond: PBBond = root._cfg.bonds.all()[0]
+	watch_signals(info)
+	info._body.meta_clicked.emit(PBUnitInfo.BOND_META + bond.id)
+	assert_signal_emitted(info, "hint_requested")
 
 
 func test_the_card_colours_members_by_where_they_are() -> void:

@@ -42,6 +42,7 @@ const PICK_RADIUS_PX: float = 12.0
 
 var _debug: PBDebugPanel
 var _debug_button: Button
+var _touch_controls: PBTouchControls
 
 var _cfg: PBSimConfig
 var _state: PBRunState
@@ -183,6 +184,7 @@ func _ready() -> void:
 	_fast_forward_to(start_wave)
 	_enter_prepare()
 	_build_debug()
+	_build_touch_controls()
 
 
 ## 玩家在准备阶段买了一笔。**钱走 [PBStrategy] 的原语，不由界面自己扣** ——
@@ -909,8 +911,14 @@ func _sync_deployed() -> void:
 
 
 func _sync_info() -> void:
+	if _touch_controls != null:
+		_touch_controls.refresh(
+			_paused, _speed, _phase == Phase.PREPARE and not _run_over, auto_play,
+			_picker.aim_mode != PBFieldPicker.Aim.OFF
+		)
 	if _run_over:
-		_info.text = "本局结束　卡在第 %d 波　按 R 重开" % _state.wave_index
+		var end_label := "点操作重开" if OS.has_feature("web") else "按 R 重开"
+		_info.text = "本局结束　卡在第 %d 波　%s" % [_state.wave_index, end_label]
 		return
 	# **准备阶段传 `null` 而不是一份空战报**：那一行该说「在等什么」，
 	# 而不是报一份 0 杀 0 漏的战果（§01 说准备阶段不限时）。见 [PBTopBarText]。
@@ -939,6 +947,31 @@ func _build_debug() -> void:
 	$HUD.add_child(_debug)
 	_debug_button.pressed.connect(_open_debug)
 	_debug.deploy_requested.connect(_debug_deploy)
+
+
+func _build_touch_controls() -> void:
+	if not OS.has_feature("web") and not OS.has_feature("mobile"):
+		return
+	_touch_controls = PBTouchControls.new()
+	_touch_controls.name = "TouchControls"
+	$HUD.add_child(_touch_controls)
+	_touch_controls.key_requested.connect(_on_touch_key)
+	_touch_controls.scroll_requested.connect(_on_touch_scroll)
+	_touch_controls.help_mode_changed.connect(_command.set_help_mode)
+
+
+func _on_touch_key(keycode: Key) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.pressed = true
+	_unhandled_input(event)
+
+
+func _on_touch_scroll(zone: StringName, direction: int) -> void:
+	if zone == &"roster":
+		_bay.scroll_rows(direction)
+	else:
+		_parts.scroll_rows(direction)
 
 
 func _open_debug() -> void:

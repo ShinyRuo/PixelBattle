@@ -14,6 +14,7 @@ enum BlendStyle { ADDITIVE, ALPHA }
 @export_range(0.01, 4.0) var pixel_scale: float = 0.333333
 @export var tint: Color = Color.WHITE
 @export var placeholder: bool = false
+@export var foot_ring: bool = false
 
 
 func problem() -> String:

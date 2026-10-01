@@ -138,11 +138,13 @@ func _on_scroll(event: InputEvent) -> void:
 	if not click.pressed:
 		return
 	if click.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		_row_offset += 1
+		scroll_rows(1)
 	elif click.button_index == MOUSE_BUTTON_WHEEL_UP:
-		_row_offset = maxi(_row_offset - 1, 0)
-	else:
-		return
+		scroll_rows(-1)
+
+
+func scroll_rows(direction: int) -> void:
+	_row_offset = maxi(_row_offset + direction, 0)
 	scrolled.emit()
 
 

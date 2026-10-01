@@ -28,11 +28,9 @@ static func install(cfg: PBSimConfig) -> PBSimConfig:
 ## 从指定目录装一张表。坏数据报错并跳过那一份 —— **不整表作废**，一份写坏的技能不该让别的也放不出来。
 static func load_from(dir_path: String) -> PBSkillTable:
 	var out := PBSkillTable.new()
-	var dir := DirAccess.open(dir_path)
-	if dir == null:
+	var names := ResourceLoader.list_directory(dir_path)
+	if names.is_empty():
 		return out
-
-	var names := dir.get_files()
 	names.sort()
 	for file_name: String in names:
 		if not file_name.ends_with(".tres"):
