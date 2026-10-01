@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_sand_siblings_aura/back_0.png" id="1_wsmx8"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_sand_siblings_aura/back_1.png" id="2_0glas"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_sand_siblings_aura/back_2.png" id="3_x48bq"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_sand_siblings_aura/back_3.png" id="4_a6u1s"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_sand_siblings_aura/back_4.png" id="5_gtpqr"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_sand_siblings_aura/back_5.png" id="6_v7jby"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_whlca"]
+
+[resource]
+script = ExtResource("7_whlca")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_wsmx8"), ExtResource("2_0glas"), ExtResource("3_x48bq"), ExtResource("4_a6u1s"), ExtResource("5_gtpqr"), ExtResource("6_v7jby")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.35)

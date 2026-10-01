@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bf1l4uxurxdtl"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://bk61541iik40e" path="res://assets/actors/choji/attack_0.png" id="1_ovaeb"]
-[ext_resource type="Texture2D" uid="uid://cic0v2p5rya1l" path="res://assets/actors/choji/attack_1.png" id="2_0vxgb"]
-[ext_resource type="Texture2D" uid="uid://bii71o07edflm" path="res://assets/actors/choji/attack_2.png" id="3_3cg11"]
-[ext_resource type="Texture2D" uid="uid://ufmqmpgoyws2" path="res://assets/actors/choji/attack_3.png" id="4_innjs"]
-[ext_resource type="Texture2D" uid="uid://37asqlb7y37p" path="res://assets/actors/choji/attack_4.png" id="5_6ghit"]
-[ext_resource type="Texture2D" uid="uid://bj31207h414h" path="res://assets/actors/choji/attack_5.png" id="6_sydei"]
-[ext_resource type="Texture2D" uid="uid://crmg2ot687sh5" path="res://assets/actors/choji/dead_0.png" id="7_wy372"]
-[ext_resource type="Texture2D" uid="uid://0sprypv0cafv" path="res://assets/actors/choji/dead_1.png" id="8_0u215"]
-[ext_resource type="Texture2D" uid="uid://d3f3ypvaa741q" path="res://assets/actors/choji/dead_2.png" id="9_e5hub"]
-[ext_resource type="Texture2D" uid="uid://cq7ak4pvxq8pc" path="res://assets/actors/choji/dead_3.png" id="10_cfri3"]
-[ext_resource type="Texture2D" uid="uid://cq86lraegsvuc" path="res://assets/actors/choji/dead_4.png" id="11_106cc"]
-[ext_resource type="Texture2D" uid="uid://t2x7ympji2wr" path="res://assets/actors/choji/dead_5.png" id="12_m0c1c"]
-[ext_resource type="Texture2D" uid="uid://dlrwcmic7cps5" path="res://assets/actors/choji/idle_0.png" id="13_bly7j"]
-[ext_resource type="Texture2D" uid="uid://cm3q044x5fn0v" path="res://assets/actors/choji/idle_1.png" id="14_bnkwp"]
-[ext_resource type="Texture2D" uid="uid://bgrvaxh7t0g7k" path="res://assets/actors/choji/idle_2.png" id="15_ed23h"]
-[ext_resource type="Texture2D" uid="uid://b5kvac0n6g1e3" path="res://assets/actors/choji/idle_3.png" id="16_xo4oi"]
-[ext_resource type="Texture2D" uid="uid://ddwl5v1o3wkvy" path="res://assets/actors/choji/idle_4.png" id="17_ew2br"]
-[ext_resource type="Texture2D" uid="uid://cc6xkkptojbq6" path="res://assets/actors/choji/idle_5.png" id="18_kkdab"]
-[ext_resource type="Texture2D" uid="uid://c5kni50xeybrp" path="res://assets/actors/choji/run_0.png" id="19_e5sxd"]
-[ext_resource type="Texture2D" uid="uid://d3qgpri20ui6l" path="res://assets/actors/choji/run_1.png" id="20_juein"]
-[ext_resource type="Texture2D" uid="uid://brov86uk4uxju" path="res://assets/actors/choji/run_2.png" id="21_v05jb"]
-[ext_resource type="Texture2D" uid="uid://cpj60dhis0mxr" path="res://assets/actors/choji/run_3.png" id="22_5kyca"]
-[ext_resource type="Texture2D" uid="uid://coohqod33gry8" path="res://assets/actors/choji/run_4.png" id="23_aaah4"]
-[ext_resource type="Texture2D" uid="uid://cib3f04e32ro6" path="res://assets/actors/choji/run_5.png" id="24_w86t5"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_2k288"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_0.png" id="1_ovaeb"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_1.png" id="2_0vxgb"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_2.png" id="3_3cg11"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_3.png" id="4_innjs"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_4.png" id="5_6ghit"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/attack_5.png" id="6_sydei"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/cast_human_bullet_00.png" id="7_0u215"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_0.png" id="7_wy372"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_1.png" id="8_0u215"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/cast_human_bullet_01.png" id="8_e5hub"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/cast_human_bullet_02.png" id="9_cfri3"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_2.png" id="9_e5hub"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/cast_human_bullet_03.png" id="10_106cc"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_3.png" id="10_cfri3"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_4.png" id="11_106cc"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/cast_human_bullet_04.png" id="11_m0c1c"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/cast_human_bullet_05.png" id="12_bly7j"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/dead_5.png" id="12_m0c1c"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_0.png" id="13_bly7j"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_1.png" id="14_bnkwp"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_2.png" id="15_ed23h"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_3.png" id="16_xo4oi"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_4.png" id="17_ew2br"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/idle_5.png" id="18_kkdab"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_0.png" id="19_e5sxd"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_1.png" id="20_juein"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_2.png" id="21_v05jb"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_3.png" id="22_5kyca"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_4.png" id="23_aaah4"]
+[ext_resource type="Texture2D" path="res://assets/actors/choji/run_5.png" id="24_w86t5"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_2k288"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_nu8he"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_bnkwp"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_0u215")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_e5hub")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_cfri3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_106cc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_m0c1c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_bly7j")
+}],
+"loop": 0,
+"name": &"cast_human_bullet",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_2k288")
 key = &"choji"
-frames = SubResource("SpriteFrames_nu8he")
+frames = SubResource("SpriteFrames_bnkwp")
+skill_anims = {
+&"human_bullet": &"cast_human_bullet"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

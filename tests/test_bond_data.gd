@@ -97,9 +97,7 @@ func test_every_bond_is_all_or_nothing() -> void:
 	# 留着旧断言的话它会一直绿着却什么都不测；删掉的话，
 	# 哪天有人往 `.tres` 里加回一档，界面上「凑齐才生效」那句话就成了谎话。
 	for bond: PBBond in _cfg.bonds.all():
-		assert_eq(
-			bond.tier_counts.size(), 1, "%s 该只有一档 —— 不凑齐就是不生效" % bond.id
-		)
+		assert_eq(bond.tier_counts.size(), 1, "%s 该只有一档 —— 不凑齐就是不生效" % bond.id)
 		assert_eq(bond.tier_power.size(), 1, "%s 的加成表要和档位表等长" % bond.id)
 		assert_gt(bond.tier_power[0], 0.0, "%s 凑齐了却一分钱都不给" % bond.id)
 

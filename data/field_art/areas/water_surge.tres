@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/water_surge/frame_0.png" id="1_x7ng8"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/water_surge/frame_1.png" id="2_0rkah"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/water_surge/frame_2.png" id="3_uotht"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/water_surge/frame_3.png" id="4_6d63r"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/water_surge/frame_4.png" id="5_rl0my"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/water_surge/frame_5.png" id="6_fq4et"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_k1228"]
+
+[resource]
+script = ExtResource("7_k1228")
+frames = Array[Texture2D]([ExtResource("1_x7ng8"), ExtResource("2_0rkah"), ExtResource("3_uotht"), ExtResource("4_6d63r"), ExtResource("5_rl0my"), ExtResource("6_fq4et")])
+fps = 12.0

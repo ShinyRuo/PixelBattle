@@ -244,9 +244,7 @@ func _nearest(c: Color, palette: Array[Color]) -> Color:
 	var best := palette[0]
 	var best_d := INF
 	for p: Color in palette:
-		var d := (
-			(p.r - c.r) * (p.r - c.r) + (p.g - c.g) * (p.g - c.g) + (p.b - c.b) * (p.b - c.b)
-		)
+		var d := (p.r - c.r) * (p.r - c.r) + (p.g - c.g) * (p.g - c.g) + (p.b - c.b) * (p.b - c.b)
 		if d < best_d:
 			best_d = d
 			best = p

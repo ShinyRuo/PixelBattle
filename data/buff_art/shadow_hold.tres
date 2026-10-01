@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shadow_hold/front_0.png" id="1_1ebrf"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shadow_hold/front_1.png" id="2_4w6gk"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shadow_hold/front_2.png" id="3_ssr4e"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shadow_hold/front_3.png" id="4_jogvu"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shadow_hold/front_4.png" id="5_onwm5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shadow_hold/front_5.png" id="6_rmth2"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_gpyhu"]
+
+[resource]
+script = ExtResource("7_gpyhu")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_1ebrf"), ExtResource("2_4w6gk"), ExtResource("3_ssr4e"), ExtResource("4_jogvu"), ExtResource("5_onwm5"), ExtResource("6_rmth2")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

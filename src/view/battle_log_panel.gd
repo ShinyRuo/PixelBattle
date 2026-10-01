@@ -34,8 +34,11 @@ func _ready() -> void:
 
 	PBSkin.panel(self, PANEL_RECT)
 	_title = PBSkin.label(
-		self, PANEL_RECT.position + Vector2(PAD, 1.0), PANEL_RECT.size.x - PAD * 2.0,
-		PBSkin.FONT_BODY, PBSkin.TITLE
+		self,
+		PANEL_RECT.position + Vector2(PAD, 1.0),
+		PANEL_RECT.size.x - PAD * 2.0,
+		PBSkin.FONT_BODY,
+		PBSkin.TITLE
 	)
 	_body = PBSkin.rich(
 		self,
@@ -65,7 +68,9 @@ func refresh(log: PBBattleLog, deployed: Array[PBUnit], wave: PBWave) -> void:
 	_title.text = "战斗日志"
 	var lines := PackedStringArray()
 	for entry: Dictionary in log.entries.slice(maxi(_drawn - TAIL, 0)):
-		lines.append(line_of(entry, deployed, wave))
+		var line := line_of(entry, deployed, wave)
+		if not line.is_empty():
+			lines.append(line)
 	_body.text = "\n".join(lines)
 
 
@@ -102,7 +107,10 @@ func line_of(entry: Dictionary, deployed: Array[PBUnit], wave: PBWave) -> String
 		PBBattleLog.Kind.NOTE:
 			out = PBSkin.tint(str(entry.get("text", "")), PBSkin.TITLE)
 		PBBattleLog.Kind.HIT_ENEMY:
-			out = "%s → %s %d" % [_ally(source, deployed), _enemy(target, wave), hurt]
+			var who: String = _ally(source, deployed)
+			if entry.has("owner"):
+				who = "%s·幻影" % _ally(int(entry["owner"]), deployed)
+			out = "%s → %s %d" % [who, _enemy(target, wave), hurt]
 		PBBattleLog.Kind.HIT_ALLY:
 			out = PBSkin.tint(
 				"%s → %s %d" % [_enemy(source, wave), _ally(target, deployed), hurt], PBSkin.WARN

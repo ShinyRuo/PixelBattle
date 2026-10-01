@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_hyuga_pair_aura/back_0.png" id="1_egnn4"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_hyuga_pair_aura/back_1.png" id="2_jdtvf"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_hyuga_pair_aura/back_2.png" id="3_g6462"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_hyuga_pair_aura/back_3.png" id="4_04oog"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_hyuga_pair_aura/back_4.png" id="5_h2u1j"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_hyuga_pair_aura/back_5.png" id="6_3l857"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_yqw8q"]
+
+[resource]
+script = ExtResource("7_yqw8q")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_egnn4"), ExtResource("2_jdtvf"), ExtResource("3_g6462"), ExtResource("4_04oog"), ExtResource("5_h2u1j"), ExtResource("6_3l857")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

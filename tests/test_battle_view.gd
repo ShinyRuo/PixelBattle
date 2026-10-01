@@ -61,8 +61,8 @@ func test_logic_advances_over_physics_frames() -> void:
 	var root := _spawn_battle()
 	await wait_physics_frames(30)
 	var enemies_seen: int = 0
-	for child: Node in root.get_node("Actors/Enemies").get_children():
-		if (child as AnimatedSprite2D).visible:
+	for child: AnimatedSprite2D in root._pool._nodes:
+		if child.visible:
 			enemies_seen += 1
 	assert_gt(enemies_seen, 0, "跑了 30 个物理帧之后场上应该有敌人出场了")
 
@@ -70,16 +70,15 @@ func test_logic_advances_over_physics_frames() -> void:
 func test_enemy_pool_is_preallocated_and_never_grows() -> void:
 	# §14 要求战斗中零新建节点。池子在 _ready 一次建满，之后只改 visible。
 	#
-	# 一个槽位一个节点。M6-b 之前是两层（本体 + 克制亮边那个大一圈的多边形），
-	# 现在亮边改成了脚下一圈地面白线，由池子自绘（[method PBEnemyPool._draw]），
-	# 不再占节点。**「永不增长」才是这条测试的真意** ——
-	# 战斗中冒出新节点就说明有人在热路径上 .new() 了。
+	# 每槽固定脚底锚点、本体和前后光效；战斗中不应新增任何节点。
 	var root := _spawn_battle()
 	var pool := root.get_node("Actors/Enemies")
 	var count_at_start: int = pool.get_child_count()
+	var descendants := pool.find_children("*", "", true, false).size()
 	assert_eq(count_at_start, PBSimConfig.new().count_cap, "池子应按 COUNT_CAP 建满")
 	await wait_physics_frames(60)
 	assert_eq(pool.get_child_count(), count_at_start, "战斗中不该新建任何敌人节点")
+	assert_eq(pool.find_children("*", "", true, false).size(), descendants)
 
 
 func test_deployed_slots_are_preallocated_too() -> void:
@@ -283,9 +282,7 @@ func test_the_shop_spends_through_the_shared_primitives() -> void:
 	assert_eq(PBEquipRules.part_total(root._state.equip_parts), 1, "买配件应真的进仓库")
 
 	root._on_command(&"tech_train_attack")
-	assert_eq(
-		root._state.training_level(PBTechRules.TRAIN_ATTACK), 1, "升训练科技应真的升级"
-	)
+	assert_eq(root._state.training_level(PBTechRules.TRAIN_ATTACK), 1, "升训练科技应真的升级")
 
 
 func test_the_shop_only_reacts_during_preparation() -> void:

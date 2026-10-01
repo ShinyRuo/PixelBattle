@@ -6,14 +6,11 @@
 script = ExtResource("1_l3b2q")
 id = &"akatsuki_four"
 name_key = "bond.akatsuki_four"
-match_mode = 0
 member_ids = Array[StringName]([&"itachi", &"deidara", &"konan", &"zetsu"])
-match_element = 5
 tier_counts = Array[int]([4])
 tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
 member_skill_patches = {
 &"deidara": {
 &"clay_spider": {

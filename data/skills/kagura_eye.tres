@@ -16,6 +16,7 @@ mods = {
 mods_growth = {
 &"damage_taken": 0.01
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_vmqws")
@@ -26,5 +27,8 @@ affects = 0
 on_self = Array[ExtResource("1_t2fgr")]([SubResource("Resource_o6no6")])
 element = 0
 radius = 0.32
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 400
 mp_cost = 8.0
+mp_cost_levels = PackedFloat32Array()

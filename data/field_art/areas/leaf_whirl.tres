@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/leaf_whirl/frame_0.png" id="1_ii871"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/leaf_whirl/frame_1.png" id="2_1q5j6"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/leaf_whirl/frame_2.png" id="3_xox5d"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/leaf_whirl/frame_3.png" id="4_wi0gm"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/leaf_whirl/frame_4.png" id="5_x5gui"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/leaf_whirl/frame_5.png" id="6_brnom"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_1xoi5"]
+
+[resource]
+script = ExtResource("7_1xoi5")
+frames = Array[Texture2D]([ExtResource("1_ii871"), ExtResource("2_1q5j6"), ExtResource("3_xox5d"), ExtResource("4_wi0gm"), ExtResource("5_x5gui"), ExtResource("6_brnom")])
+fps = 6.0

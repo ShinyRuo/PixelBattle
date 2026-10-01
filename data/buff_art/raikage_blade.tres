@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_blade/front_0.png" id="1_ir06y"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_blade/front_1.png" id="2_1gywt"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_blade/front_2.png" id="3_vgu4u"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_blade/front_3.png" id="4_usskn"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_blade/front_4.png" id="5_45ql5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_blade/front_5.png" id="6_dkfys"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_h6ud1"]
+
+[resource]
+script = ExtResource("7_h6ud1")
+front_frames = Array[Texture2D]([ExtResource("1_ir06y"), ExtResource("2_1gywt"), ExtResource("3_vgu4u"), ExtResource("4_usskn"), ExtResource("5_45ql5"), ExtResource("6_dkfys")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

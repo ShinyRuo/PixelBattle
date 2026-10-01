@@ -172,7 +172,9 @@ func test_card_identity_includes_the_variant() -> void:
 				)
 				assert_false(seen.has(unit.key()), "卡片身份键不应撞车")
 				seen[unit.key()] = true
-	var expected: int = PBUnit.Rarity.size() * PBElement.PICKABLE.size() * _cfg.characters_per_bucket
+	var expected: int = (
+		PBUnit.Rarity.size() * PBElement.PICKABLE.size() * _cfg.characters_per_bucket
+	)
 	assert_eq(seen.size(), expected, "卡池大小应为 稀有度 × 属性 × 每格角色数")
 	# **§09 那条「PC 首发 40+ 角色」量的是 `data/characters/`，不是这张合成表**
 	# （M10-a 砍成三档之后它只有 36 格）。合成表是一条替身曲线，它只需要

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_3nnp1"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_anbex"]
+
+[resource]
+script = ExtResource("2_anbex")
+target = 2
+id = &"flying_raijin_chain"
+name_key = "skill.flying_raijin_chain"
+attack_repeat_count = 2
+attack_trigger_chance = 0.17
+element = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

@@ -76,7 +76,9 @@ static func _cached(key: String, make: Callable) -> Texture2D:
 	if not _cache.has(key):
 		var image: Image = make.call()
 		_outline(image)
-		image.resize(image.get_width() * SCALE, image.get_height() * SCALE, Image.INTERPOLATE_NEAREST)
+		image.resize(
+			image.get_width() * SCALE, image.get_height() * SCALE, Image.INTERPOLATE_NEAREST
+		)
 		_cache[key] = ImageTexture.create_from_image(image)
 	return _cache[key]
 
@@ -136,8 +138,12 @@ static func _draw_beast(tails: int, px: int = BEAST_PX) -> Image:
 ## 空位那张图上的问号，**画在身子上**（形状先对上「这一格将来是尾兽」）。笔画 2 像素宽，1 像素在灰底上看不见。
 static func _question(image: Image) -> void:
 	for spot: Vector2i in [
-		Vector2i(11, 12), Vector2i(13, 12), Vector2i(15, 13),
-		Vector2i(15, 15), Vector2i(13, 16), Vector2i(13, 18),
+		Vector2i(11, 12),
+		Vector2i(13, 12),
+		Vector2i(15, 13),
+		Vector2i(15, 15),
+		Vector2i(13, 16),
+		Vector2i(13, 18),
 	]:
 		_rect(image, spot.x, spot.y, 2, 2, PBSkin.TITLE)
 

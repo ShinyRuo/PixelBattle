@@ -144,7 +144,7 @@ func test_both_sides_sort_by_the_same_ground_point() -> void:
 	var squad: Array[PBAttacker] = [attacker]
 	allies.sync_allies(squad, [] as Array[PBUnit], field, [] as Array[PBEnemy])
 	assert_eq(
-		(allies.get_child(0) as Node2D).position,
+		allies._anchors[0].position,
 		PBLayout.to_screen(attacker.pos, field),
 		"己方的锚必须正好在落脚点上"
 	)
@@ -157,12 +157,14 @@ func test_both_sides_sort_by_the_same_ground_point() -> void:
 	var mob: Array[PBEnemy] = [enemy]
 	enemies.sync_enemies(mob, 0, field)
 	var drawn: AnimatedSprite2D = null
-	for node: Node in enemies.get_children():
-		if (node as AnimatedSprite2D).visible:
-			drawn = node as AnimatedSprite2D
+	for node: AnimatedSprite2D in enemies._nodes:
+		if node.visible:
+			drawn = node
 			break
 	assert_not_null(drawn, "该画出这一个敌人")
-	assert_eq(drawn.position, PBLayout.to_screen(enemy.pos(), field), "敌人的节点也必须在落脚点上")
+	assert_eq(enemies._anchors[0].position, PBLayout.to_screen(enemy.pos(), field))
+	assert_eq(drawn.position, Vector2.ZERO, "本体相对脚底锚点无额外位移")
+	assert_eq(drawn.get_parent(), enemies._anchors[0])
 	assert_lt(drawn.offset.y, 0.0, "画布要靠 offset 往上抬，不能抬节点自己")
 	assert_false(drawn.centered, "居中的话原点就在画布中心，不是脚底")
 

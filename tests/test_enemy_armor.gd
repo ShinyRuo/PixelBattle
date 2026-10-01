@@ -4,7 +4,7 @@ extends GutTest
 ## 这里错了都不报错：护甲只写进了敌人却没人读；忍术和持续伤害也被护甲减了（原版法术无视护甲）；
 ## 降护甲降到负数反而放大伤害；护甲穿透在溅射那一路漏算。
 
-const PHYS := PBDamageKind.Type.PHYSICAL
+const PHYS := PBDamageKind.Type.TAIJUTSU
 
 var _cfg: PBSimConfig
 
@@ -64,7 +64,9 @@ func test_a_spawned_enemy_carries_the_armor_of_its_wave() -> void:
 func test_a_normal_attack_is_cut_by_the_armor_curve() -> void:
 	var enemy := _armoured_enemy(10.0)
 	var enemies: Array[PBEnemy] = [enemy]
-	PBStrikeRules.land(_hitter(), enemy, 100.0, false, enemies, _cfg, 0, null, PBCombatOutcome.new())
+	PBStrikeRules.land(
+		_hitter(), enemy, 100.0, false, enemies, _cfg, 0, null, PBCombatOutcome.new()
+	)
 	var kept: float = 1.0 - PBStatRules.damage_reduction(10.0, _cfg)
 	assert_lt(kept, 1.0, "前提：10 点护甲真的减伤")
 	assert_almost_eq(_lost(enemy), 100.0 * kept, 0.001, "和忍者挨打同一条曲线")

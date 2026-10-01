@@ -20,9 +20,9 @@ extends GutTest
 ## GROWTH 单调。它们会因为**调参**而红 —— 而调参正是眼下高频发生的事，
 ## 每次改 `PBSimConfig` 里一个数就等一分半钟没有道理。
 ##
-## **所以什么时候必须跑 `-Deep`**：改了 [PBSimConfig] 的任何数值、
-## 改了 [PBValuation] 的估值口径、动了角色表的属性/稀有度分布、里程碑验收。
-## 日常改代码不用。
+## **深度配平按需授权**：只有用户明确要求或已授权专项深度验证时运行 `-Deep`。
+## 日常修改、提交、数值或估值改动、角色表变动、里程碑验收都不自动触发。
+## 优先默认功能档与针对性验证；未跑的配平项如实记录。详见 CLAUDE.md。
 ##
 ## ## 跳过是显式的，不是静默的
 ##
@@ -198,10 +198,7 @@ func test_the_economy_slot_is_not_a_trap() -> void:
 	assert_gte(
 		float(with_slot),
 		float(without) * SLOT_TOLERANCE,
-		(
-			"上经济位不该让会算账的玩家变差 —— 那就是把它做成了陷阱（有 %d 波 / 无 %d 波）"
-			% [with_slot, without]
-		)
+		"上经济位不该让会算账的玩家变差 —— 那就是把它做成了陷阱（有 %d 波 / 无 %d 波）" % [with_slot, without]
 	)
 
 

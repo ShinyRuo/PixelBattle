@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/ino_seize/front_0.png" id="1_n688k"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/ino_seize/front_1.png" id="2_8jl4l"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/ino_seize/front_2.png" id="3_te31u"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/ino_seize/front_3.png" id="4_1idjj"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/ino_seize/front_4.png" id="5_jov2k"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/ino_seize/front_5.png" id="6_br0kh"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_gh182"]
+
+[resource]
+script = ExtResource("7_gh182")
+front_frames = Array[Texture2D]([ExtResource("1_n688k"), ExtResource("2_8jl4l"), ExtResource("3_te31u"), ExtResource("4_1idjj"), ExtResource("5_jov2k"), ExtResource("6_br0kh")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

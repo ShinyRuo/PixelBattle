@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_gwjr7"]
+
+[resource]
+script = ExtResource("1_gwjr7")
+id = &"kurotsuchi_stun"
+name_key = "buff.kurotsuchi_stun"
+icon_key = "buff.kurotsuchi_stun"
+kind = 1
+friendly = false
+duration_seconds = 0.5
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array(0.5, 0.5, 1, 1, 1, 1.5, 1.5, 1.5, 1.5, 2)

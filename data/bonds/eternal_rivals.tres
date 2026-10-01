@@ -6,14 +6,11 @@
 script = ExtResource("1_7s38i")
 id = &"eternal_rivals"
 name_key = "bond.eternal_rivals"
-match_mode = 0
 member_ids = Array[StringName]([&"might_guy", &"kakashi"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
 member_skill_patches = {
 &"kakashi": {
 &"pursuing_fangs": {

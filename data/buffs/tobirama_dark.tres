@@ -9,7 +9,10 @@ name_key = "buff.tobirama_dark"
 icon_key = "buff.tobirama_dark"
 kind = 1
 friendly = false
-duration_seconds = 3.0
+duration_seconds = 2.0
 mods = {
-&"enemy_hit_scale": 0.5
+&"enemy_attack_speed_scale": 0.5,
+&"enemy_hit_scale": 0.5,
+&"enemy_speed_scale": 0.5
 }
+duration_levels = PackedFloat32Array(2, 2, 3, 3, 3, 4, 4, 5, 5, 6)

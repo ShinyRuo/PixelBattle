@@ -168,9 +168,7 @@ static func _split_widest(
 	var order: Array[int] = []
 	for i: int in cells.size():
 		order.append(i)
-	order.sort_custom(
-		func(a: int, b: int) -> bool: return cells[a].size.x > cells[b].size.x
-	)
+	order.sort_custom(func(a: int, b: int) -> bool: return cells[a].size.x > cells[b].size.x)
 	for i: int in order:
 		var cell: Rect2i = cells[i]
 		if cell.size.x < min_cell * 2:

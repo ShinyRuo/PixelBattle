@@ -18,11 +18,7 @@ const KEYS_PREPARE := "点选/拖动摆位　拖进任务栏派任务　回车�
 ## [param outcome] 给 `null` 表示还在准备阶段 —— **不是「战果全是 0」**：
 ## §01 说准备阶段不限时，所以那一行该说「在等什么」，而不是报一份空战报。
 static func status(
-	state: PBRunState,
-	plan: PBWavePlan,
-	outcome: PBCombatOutcome,
-	paused: bool,
-	speed: int
+	state: PBRunState, plan: PBWavePlan, outcome: PBCombatOutcome, paused: bool, speed: int
 ) -> String:
 	var wave: PBWave = plan.wave
 	var head := (
@@ -56,11 +52,7 @@ static func status(
 ## 第二行：下一波是什么、你的克制覆盖、现在能按哪些键。
 ## [param preparing] 为真且 [param auto_play] 为假时列准备阶段那批键。
 static func preview(
-	state: PBRunState,
-	cfg: PBSimConfig,
-	rng: PBRngStreams,
-	preparing: bool,
-	auto_play: bool
+	state: PBRunState, cfg: PBSimConfig, rng: PBRngStreams, preparing: bool, auto_play: bool
 ) -> String:
 	var next := PBRunSim.preview_wave(state.wave_index + 1, cfg, rng)
 	var missing := state.missing_counters()

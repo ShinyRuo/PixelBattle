@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_vf8x6"]
+
+[resource]
+script = ExtResource("1_vf8x6")
+id = &"reincarnation_gift"
+name_key = "buff.reincarnation_gift"
+icon_key = "buff.reincarnation_gift"
+kind = 1
+until_wave_end = true
+per_source = true
+mods = {
+&"agility": 0.0,
+&"intellect": 0.0,
+&"strength": 0.0
+}
+duration_levels = PackedFloat32Array()

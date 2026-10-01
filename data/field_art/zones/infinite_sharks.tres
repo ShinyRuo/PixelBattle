@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://cmypnk8lm30wg"]
+
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://ddwvelvg4qqjn" path="res://assets/fx/fields/zones/infinite_sharks/frame_0.png" id="1_jl7vq"]
+[ext_resource type="Texture2D" uid="uid://cwsxwg712b05t" path="res://assets/fx/fields/zones/infinite_sharks/frame_1.png" id="2_hrib4"]
+[ext_resource type="Texture2D" uid="uid://o5ae1wswip65" path="res://assets/fx/fields/zones/infinite_sharks/frame_2.png" id="3_hnyx8"]
+[ext_resource type="Texture2D" uid="uid://dukpnbonw2q8y" path="res://assets/fx/fields/zones/infinite_sharks/frame_3.png" id="4_yri4s"]
+[ext_resource type="Texture2D" uid="uid://dinggqqis0sy4" path="res://assets/fx/fields/zones/infinite_sharks/frame_4.png" id="5_6fhdc"]
+[ext_resource type="Texture2D" uid="uid://btelgmwcfj762" path="res://assets/fx/fields/zones/infinite_sharks/frame_5.png" id="6_jo288"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_jl7vq"), ExtResource("2_hrib4"), ExtResource("3_hnyx8"), ExtResource("4_yri4s"), ExtResource("5_6fhdc"), ExtResource("6_jo288")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_infinite_sharks_zone_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

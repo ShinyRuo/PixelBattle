@@ -13,6 +13,7 @@ duration_seconds = 5.0
 mods = {
 &"damage_scale": 1.35
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_akq57")
@@ -22,5 +23,8 @@ name_key = "skill.hidden_mist"
 affects = 0
 on_self = Array[ExtResource("1_tmwtj")]([SubResource("Resource_nsu4i")])
 element = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 600
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 11, 12, 13, 14, 15, 16, 17, 18, 19)

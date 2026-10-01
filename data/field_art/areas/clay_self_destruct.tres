@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/clay_self_destruct/frame_0.png" id="1_e4mgu"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/clay_self_destruct/frame_1.png" id="2_igw17"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/clay_self_destruct/frame_2.png" id="3_r5hf2"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/clay_self_destruct/frame_3.png" id="4_hhp5t"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/clay_self_destruct/frame_4.png" id="5_3jdp4"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/clay_self_destruct/frame_5.png" id="6_qcn6k"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_0af8w"]
+
+[resource]
+script = ExtResource("7_0af8w")
+frames = Array[Texture2D]([ExtResource("1_e4mgu"), ExtResource("2_igw17"), ExtResource("3_r5hf2"), ExtResource("4_hhp5t"), ExtResource("5_3jdp4"), ExtResource("6_qcn6k")])
+fps = 6.0

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_earth_curse_aura/back_0.png" id="1_caloi"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_earth_curse_aura/back_1.png" id="2_4bukq"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_earth_curse_aura/back_2.png" id="3_kwlk5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_earth_curse_aura/back_3.png" id="4_y50ow"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_earth_curse_aura/back_4.png" id="5_8bfcc"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_earth_curse_aura/back_5.png" id="6_qv5ef"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_o0o17"]
+
+[resource]
+script = ExtResource("7_o0o17")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_caloi"), ExtResource("2_4bukq"), ExtResource("3_kwlk5"), ExtResource("4_y50ow"), ExtResource("5_8bfcc"), ExtResource("6_qv5ef")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

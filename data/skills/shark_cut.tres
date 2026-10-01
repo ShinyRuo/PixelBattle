@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_8mcul"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_0ah4i"]
+
+[resource]
+script = ExtResource("2_0ah4i")
+target = 2
+id = &"shark_cut"
+name_key = "skill.shark_cut"
+attack_trigger_chance = 0.2
+variant_id = &"shark_form"
+element = 4
+damage_base = 50.0
+damage_growth = 50.0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

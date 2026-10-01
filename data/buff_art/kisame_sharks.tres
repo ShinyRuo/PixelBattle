@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kisame_sharks/front_0.png" id="1_wwwfl"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kisame_sharks/front_1.png" id="2_c8m8m"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kisame_sharks/front_2.png" id="3_83w8u"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kisame_sharks/front_3.png" id="4_lqv8x"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kisame_sharks/front_4.png" id="5_kb1hy"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kisame_sharks/front_5.png" id="6_e0j7d"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_1mvg6"]
+
+[resource]
+script = ExtResource("7_1mvg6")
+front_frames = Array[Texture2D]([ExtResource("1_wwwfl"), ExtResource("2_c8m8m"), ExtResource("3_83w8u"), ExtResource("4_lqv8x"), ExtResource("5_kb1hy"), ExtResource("6_e0j7d")])
+fps = 8.0
+anchor = Vector2(128, 224)
+offset = Vector2(0, -44)
+pixel_scale = 0.1

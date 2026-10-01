@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://cwu4is7bm1qwc"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://bw6ev0mdgp5mh" path="res://assets/actors/tenten/attack_0.png" id="1_rvjtq"]
-[ext_resource type="Texture2D" uid="uid://dkje77oixwcuc" path="res://assets/actors/tenten/attack_1.png" id="2_swmf1"]
-[ext_resource type="Texture2D" uid="uid://bw8uci4323o7j" path="res://assets/actors/tenten/attack_2.png" id="3_mgp3w"]
-[ext_resource type="Texture2D" uid="uid://cqg2xhhchmeqw" path="res://assets/actors/tenten/attack_3.png" id="4_fantn"]
-[ext_resource type="Texture2D" uid="uid://dqg7lufm3gmid" path="res://assets/actors/tenten/attack_4.png" id="5_a6gl4"]
-[ext_resource type="Texture2D" uid="uid://12luj2t4bvhp" path="res://assets/actors/tenten/dead_0.png" id="5_seqmt"]
-[ext_resource type="Texture2D" uid="uid://cjfvvq10gl4n4" path="res://assets/actors/tenten/dead_1.png" id="6_5a3vu"]
-[ext_resource type="Texture2D" uid="uid://cc6rojt051dka" path="res://assets/actors/tenten/attack_5.png" id="6_05xfo"]
-[ext_resource type="Texture2D" uid="uid://b14mthjmqelx6" path="res://assets/actors/tenten/dead_2.png" id="7_vhbtj"]
-[ext_resource type="Texture2D" uid="uid://bf8b75bsc3087" path="res://assets/actors/tenten/idle_0.png" id="8_a6gl4"]
-[ext_resource type="Texture2D" uid="uid://drdvd8pqgrgai" path="res://assets/actors/tenten/idle_1.png" id="9_05xfo"]
-[ext_resource type="Texture2D" uid="uid://bg02bpemfy05v" path="res://assets/actors/tenten/dead_3.png" id="10_0mic3"]
-[ext_resource type="Texture2D" uid="uid://dx0umteuo1rf0" path="res://assets/actors/tenten/idle_2.png" id="10_abjeq"]
-[ext_resource type="Texture2D" uid="uid://x7brw53gp0op" path="res://assets/actors/tenten/run_0.png" id="11_0mic3"]
-[ext_resource type="Texture2D" uid="uid://fvx4yegishy5" path="res://assets/actors/tenten/idle_3.png" id="11_fantn"]
-[ext_resource type="Texture2D" uid="uid://uk0ixcqcwdj6" path="res://assets/actors/tenten/dead_4.png" id="11_s3ata"]
-[ext_resource type="Texture2D" uid="uid://dy01r0td1eosx" path="res://assets/actors/tenten/dead_5.png" id="12_dlmqm"]
-[ext_resource type="Texture2D" uid="uid://ckmejvlu252tb" path="res://assets/actors/tenten/run_1.png" id="12_s3ata"]
-[ext_resource type="Texture2D" uid="uid://csi44m0f6ahw5" path="res://assets/actors/tenten/idle_4.png" id="12_seqmt"]
-[ext_resource type="Texture2D" uid="uid://hf1vhp0wljlb" path="res://assets/actors/tenten/idle_5.png" id="13_5a3vu"]
-[ext_resource type="Texture2D" uid="uid://cmjht58mvvvn6" path="res://assets/actors/tenten/run_2.png" id="13_dlmqm"]
-[ext_resource type="Texture2D" uid="uid://ct8vhtmd3y6gl" path="res://assets/actors/tenten/run_3.png" id="14_cx2aq"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="15_wjvex"]
-[ext_resource type="Texture2D" uid="uid://ckc10ngxi4xur" path="res://assets/actors/tenten/run_4.png" id="18_5a3vu"]
-[ext_resource type="Texture2D" uid="uid://dvjteer8ldj23" path="res://assets/actors/tenten/run_5.png" id="19_vhbtj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/attack_0.png" id="1_rvjtq"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/attack_1.png" id="2_swmf1"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/attack_2.png" id="3_mgp3w"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/attack_3.png" id="4_fantn"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/attack_4.png" id="5_a6gl4"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/dead_0.png" id="5_seqmt"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/dead_1.png" id="6_5a3vu"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/attack_5.png" id="6_05xfo"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/cast_tool_control_00.png" id="7_hji7o"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/dead_2.png" id="7_vhbtj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/idle_0.png" id="8_a6gl4"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/cast_tool_control_01.png" id="8_cjbh8"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/idle_1.png" id="9_05xfo"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/cast_tool_control_02.png" id="9_88o5x"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/dead_3.png" id="10_0mic3"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/idle_2.png" id="10_abjeq"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/cast_tool_control_03.png" id="10_m7d28"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/run_0.png" id="11_0mic3"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/cast_tool_control_04.png" id="11_c3cw8"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/idle_3.png" id="11_fantn"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/dead_4.png" id="11_s3ata"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/cast_tool_control_05.png" id="12_2mnle"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/dead_5.png" id="12_dlmqm"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/run_1.png" id="12_s3ata"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/idle_4.png" id="12_seqmt"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/idle_5.png" id="13_5a3vu"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/run_2.png" id="13_dlmqm"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/run_3.png" id="14_cx2aq"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="15_wjvex"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/run_4.png" id="18_5a3vu"]
+[ext_resource type="Texture2D" path="res://assets/actors/tenten/run_5.png" id="19_vhbtj"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_cx2aq"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_bvwge"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_hji7o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_cjbh8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_88o5x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_m7d28")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_c3cw8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_2mnle")
+}],
+"loop": 0,
+"name": &"cast_tool_control",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("15_wjvex")
 key = &"tenten"
-frames = SubResource("SpriteFrames_cx2aq")
+frames = SubResource("SpriteFrames_bvwge")
+skill_anims = {
+&"tool_control": &"cast_tool_control"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

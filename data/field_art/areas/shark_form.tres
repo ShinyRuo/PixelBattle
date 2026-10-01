@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/shark_form/frame_0.png" id="1_fba08"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/shark_form/frame_1.png" id="2_vvulc"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/shark_form/frame_2.png" id="3_qfxhd"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/shark_form/frame_3.png" id="4_bjsvn"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/shark_form/frame_4.png" id="5_fwoow"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/shark_form/frame_5.png" id="6_ek83h"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_7pcfu"]
+
+[resource]
+script = ExtResource("7_7pcfu")
+frames = Array[Texture2D]([ExtResource("1_fba08"), ExtResource("2_vvulc"), ExtResource("3_qfxhd"), ExtResource("4_bjsvn"), ExtResource("5_fwoow"), ExtResource("6_ek83h")])
+fps = 8.0
+tint = Color(1, 1, 1, 0.65)

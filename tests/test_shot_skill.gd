@@ -130,7 +130,7 @@ func test_the_damage_waits_for_the_bullet_to_arrive() -> void:
 	var full: float = mark.hp
 
 	assert_true(sim.cast_skill_at(squad[0], mark, 1), "点了敌人就该下得了令")
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 	assert_almost_eq(mark.hp, full, 1e-9, "出膛那一刻一点血都不掉")
 	assert_gt(_flying(sim), 0, "而是有一发真的在飞")
 
@@ -150,18 +150,14 @@ func test_the_buff_waits_for_the_bullet_too() -> void:
 	var mark := _mark(sim)
 
 	sim.cast_skill_at(squad[0], mark, 1)
-	sim.step()
-	assert_almost_eq(
-		mark.buffs.amount(PBBuffRules.HARM, sim.current_tick()), 0.0, 1e-9, "还在飞，没上身"
-	)
+	PBCastTestClock.release(sim, squad[0])
+	assert_almost_eq(mark.buffs.amount(PBBuffRules.HARM, sim.current_tick()), 0.0, 1e-9, "还在飞，没上身")
 
 	for _i: int in 40:
 		sim.step()
 		if mark.buffs.amount(PBBuffRules.HARM, sim.current_tick()) > 0.0:
 			break
-	assert_gt(
-		mark.buffs.amount(PBBuffRules.HARM, sim.current_tick()), 0.0, "飞到了才上 buff"
-	)
+	assert_gt(mark.buffs.amount(PBBuffRules.HARM, sim.current_tick()), 0.0, "飞到了才上 buff")
 
 
 func test_an_instant_locked_skill_still_lands_the_moment_it_goes_off() -> void:
@@ -174,7 +170,7 @@ func test_an_instant_locked_skill_still_lands_the_moment_it_goes_off() -> void:
 	var full: float = mark.hp
 
 	sim.cast_skill_at(squad[0], mark, 1)
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 	assert_lt(mark.hp, full, "瞬发的当场就结算，不发子弹")
 	assert_eq(_flying(sim), 0, "屏幕上也不该有东西在飞")
 
@@ -188,7 +184,7 @@ func test_the_cooldown_starts_when_the_bullet_leaves() -> void:
 	sim.step()
 	var cast := PBSkillRules.cast_at(squad[0], 1)
 	sim.cast_skill_at(squad[0], _mark(sim), 1)
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 
 	assert_false(cast.is_pending(), "手上没有待落地的东西了 —— 它已经飞出去了")
 	assert_gt(cast.ready_at, 0, "冷却从出膛算起")
@@ -203,7 +199,7 @@ func test_a_bullet_whose_target_dies_mid_flight_just_vanishes() -> void:
 	sim.step()
 	var mark := _mark(sim)
 	sim.cast_skill_at(squad[0], mark, 1)
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 	assert_gt(_flying(sim), 0, "前提：有一发在飞")
 
 	mark.alive = false
@@ -247,9 +243,7 @@ func test_the_table_has_a_real_bullet_skill() -> void:
 	assert_false(bullets.is_empty(), "表里该有点敌人的子弹技能")
 	for skill: PBSkill in bullets:
 		assert_eq(PBSkillRules.validate(skill), "", "%s 该合法" % skill.id)
-		assert_false(
-			skill.on_hit.is_empty(), "%s 飞到了得干点什么 —— 子弹档的伤害或效果都挂在命中上" % skill.id
-		)
+		assert_false(skill.on_hit.is_empty(), "%s 飞到了得干点什么 —— 子弹档的伤害或效果都挂在命中上" % skill.id)
 
 
 func test_the_medic_stays_instant() -> void:

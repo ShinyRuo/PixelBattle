@@ -16,6 +16,7 @@ mods = {
 mods_growth = {
 &"damage_scale": 0.04
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_n1f2x")
@@ -24,5 +25,9 @@ id = &"tool_control"
 name_key = "skill.tool_control"
 affects = 0
 on_self = Array[ExtResource("1_04v6d")]([SubResource("Resource_r4775")])
+kind = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 400
 mp_cost = 8.0
+mp_cost_levels = PackedFloat32Array()

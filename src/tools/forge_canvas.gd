@@ -169,9 +169,7 @@ func _rule_line(y: float, text: String, color: Color) -> void:
 	var font := get_theme_default_font()
 	if font == null:
 		return
-	draw_string(
-		font, Vector2(4.0, y - 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, color
-	)
+	draw_string(font, Vector2(4.0, y - 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, color)
 
 
 ## 两个十字：量出来的（黄）和调整之后的（青）。见类顶那段。

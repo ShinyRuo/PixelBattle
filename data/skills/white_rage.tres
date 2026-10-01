@@ -3,13 +3,33 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_f8rpp"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_yo3ej"]
 
+[sub_resource type="Resource" id="Resource_4r6yv"]
+script = ExtResource("1_f8rpp")
+id = &"kabuto_silence"
+name_key = "buff.kabuto_silence"
+icon_key = "buff.kabuto_silence"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"silence": 1.0
+}
+duration_levels = PackedFloat32Array(1, 1, 2, 2, 2, 3, 3, 3, 3, 4)
+
 [resource]
 script = ExtResource("2_yo3ej")
 id = &"white_rage"
 name_key = "skill.white_rage"
+on_hit = Array[ExtResource("1_f8rpp")]([SubResource("Resource_4r6yv")])
 element = 6
-power_mult = 2.6
-radius = 0.18
+power_mult = 1.0
+damage_base = 130.0
+damage_growth = 130.0
+damage_stat = &"intellect"
+radius = 0.175
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 400
 delay_ticks = 10
 mp_cost = 15.0
+mp_cost_levels = PackedFloat32Array(15, 26, 37, 48, 59, 70, 81, 92, 103, 114)

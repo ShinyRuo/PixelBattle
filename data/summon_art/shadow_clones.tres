@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PBSummonArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/summon_art.gd" id="1_00fh8"]
+
+[resource]
+script = ExtResource("1_00fh8")
+actor_key = &"summon_shadow_clones"
+spawn_fx_key = &"summon_shadow_clones_spawn"

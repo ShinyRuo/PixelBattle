@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://bnafejx5dvkvf"]
+
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://dwjomysbx65xa" path="res://assets/fx/fields/pulses/boil_acid/frame_0.png" id="1_e1ct8"]
+[ext_resource type="Texture2D" uid="uid://bh0jneatxlmkx" path="res://assets/fx/fields/pulses/boil_acid/frame_1.png" id="2_i6q0u"]
+[ext_resource type="Texture2D" uid="uid://d33koeqqfb0ir" path="res://assets/fx/fields/pulses/boil_acid/frame_2.png" id="3_kksd2"]
+[ext_resource type="Texture2D" uid="uid://c6caq6vju8kol" path="res://assets/fx/fields/pulses/boil_acid/frame_3.png" id="4_pa77i"]
+[ext_resource type="Texture2D" uid="uid://268338cmd2vp" path="res://assets/fx/fields/pulses/boil_acid/frame_4.png" id="5_b4ty2"]
+[ext_resource type="Texture2D" uid="uid://dypv10i8wwo0e" path="res://assets/fx/fields/pulses/boil_acid/frame_5.png" id="6_gppic"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_e1ct8"), ExtResource("2_i6q0u"), ExtResource("3_kksd2"), ExtResource("4_pa77i"), ExtResource("5_b4ty2"), ExtResource("6_gppic")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_boil_acid_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://5cp3e6rumpp3"]
+
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://m77cmrla7gbf" path="res://assets/fx/fields/pulses/sand_waterfall/frame_0.png" id="1_cwguf"]
+[ext_resource type="Texture2D" uid="uid://cwoaqaadqxgo" path="res://assets/fx/fields/pulses/sand_waterfall/frame_1.png" id="2_tnl6n"]
+[ext_resource type="Texture2D" uid="uid://cpq7344qdnko1" path="res://assets/fx/fields/pulses/sand_waterfall/frame_2.png" id="3_ypspu"]
+[ext_resource type="Texture2D" uid="uid://dnhkve4pqpg7s" path="res://assets/fx/fields/pulses/sand_waterfall/frame_3.png" id="4_sgaor"]
+[ext_resource type="Texture2D" uid="uid://cb2gankxem4j4" path="res://assets/fx/fields/pulses/sand_waterfall/frame_4.png" id="5_wikvi"]
+[ext_resource type="Texture2D" uid="uid://jh3xit26u5u6" path="res://assets/fx/fields/pulses/sand_waterfall/frame_5.png" id="6_aymjp"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_cwguf"), ExtResource("2_tnl6n"), ExtResource("3_ypspu"), ExtResource("4_sgaor"), ExtResource("5_wikvi"), ExtResource("6_aymjp")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_sand_waterfall_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

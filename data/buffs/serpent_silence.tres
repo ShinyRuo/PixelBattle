@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_w481e"]
+
+[resource]
+script = ExtResource("1_w481e")
+id = &"serpent_silence"
+name_key = "buff.serpent_silence"
+icon_key = "buff.serpent_silence"
+kind = 1
+friendly = false
+duration_seconds = 0.8
+mods = {
+&"silence": 1.0
+}
+duration_levels = PackedFloat32Array(0.8, 1.1, 1.4, 1.7, 2, 2.3, 2.6, 2.9, 3.2, 3.5)

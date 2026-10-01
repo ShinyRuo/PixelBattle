@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_lhvwi"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_kf0y4"]
+
+[sub_resource type="Resource" id="Resource_cmlkg"]
+script = ExtResource("1_lhvwi")
+id = &"gate_stun"
+name_key = "buff.gate_stun"
+icon_key = "buff.gate_stun"
+kind = 1
+friendly = false
+duration_seconds = 0.5
+mods = {
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
+[resource]
+script = ExtResource("2_kf0y4")
+id = &"deity_gates"
+name_key = "skill.deity_gates"
+on_hit = Array[ExtResource("1_lhvwi")]([SubResource("Resource_cmlkg")])
+element = 6
+power_mult = 1.0
+damage_stat = &"strength"
+radius = 0.1325
+hit_count = 3
+hit_interval_ticks = 20
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+radius_growth = 0.0625
+delay_ticks = 4
+mp_cost_levels = PackedFloat32Array()

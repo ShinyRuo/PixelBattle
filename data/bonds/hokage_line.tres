@@ -1,33 +1,22 @@
 [gd_resource type="Resource" script_class="PBBond" format=3]
 
-[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_dju1v"]
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_oa47y"]
+[ext_resource type="Resource" path="res://data/buffs/hokage_line_guard.tres" id="2_wt4pb"]
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="3_gu00c"]
 
 [resource]
-script = ExtResource("1_dju1v")
+script = ExtResource("3_gu00c")
 id = &"hokage_line"
 name_key = "bond.hokage_line"
-match_mode = 0
 member_ids = Array[StringName]([&"hashirama", &"tobirama", &"hiruzen", &"minato", &"tsunade"])
-match_element = 5
 tier_counts = Array[int]([5])
 tier_power = Array[float]([0.56])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {
-&"hashirama": {
-&"defence": 30.0
-},
-&"hiruzen": {
-&"defence": 30.0
-},
-&"minato": {
-&"defence": 30.0
-},
-&"tobirama": {
-&"defence": 30.0
-},
-&"tsunade": {
-&"defence": 30.0
+member_buffs = {
+&"hashirama": Array[ExtResource("1_oa47y")]([ExtResource("2_wt4pb")]),
+&"hiruzen": Array[ExtResource("1_oa47y")]([ExtResource("2_wt4pb")]),
+&"minato": Array[ExtResource("1_oa47y")]([ExtResource("2_wt4pb")]),
+&"tobirama": Array[ExtResource("1_oa47y")]([ExtResource("2_wt4pb")]),
+&"tsunade": Array[ExtResource("1_oa47y")]([ExtResource("2_wt4pb")])
 }
-}
-member_skill_patches = {}

@@ -6,9 +6,7 @@
 script = ExtResource("1_p3yi2")
 id = &"joint_training"
 name_key = "bond.joint_training"
-match_mode = 0
 member_ids = Array[StringName]([&"naruto", &"killer_bee"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
@@ -23,4 +21,3 @@ member_functions = {
 &"struck_summon": 0.15
 }
 }
-member_skill_patches = {}

@@ -9,8 +9,11 @@ name_key = "buff.kurenai_haze"
 icon_key = "buff.kurenai_haze"
 kind = 1
 friendly = false
-duration_seconds = 2.0
+duration_seconds = 1.0
 mods = {
+&"disarm": 1.0,
 &"enemy_speed_scale": 0.25,
-&"hurt": 2.0
+&"hurt": 2.0,
+&"sage_hurt_scale": 1.25
 }
+duration_levels = PackedFloat32Array(1, 1, 2, 2, 2, 3, 3, 3, 3, 4)

@@ -1,32 +1,44 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://8mic5klfejak"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://bspxlb41yofyj" path="res://assets/actors/naruto/attack_0.png" id="1_6pu17"]
-[ext_resource type="Texture2D" uid="uid://bk08dtg32dihi" path="res://assets/actors/naruto/attack_1.png" id="2_q6itt"]
-[ext_resource type="Texture2D" uid="uid://qvqugcxhnjov" path="res://assets/actors/naruto/attack_2.png" id="3_d453o"]
-[ext_resource type="Texture2D" uid="uid://4qb2aigviteh" path="res://assets/actors/naruto/attack_3.png" id="4_cr8fg"]
-[ext_resource type="Texture2D" uid="uid://bkl1j2413o11p" path="res://assets/actors/naruto/attack_4.png" id="5_7asmc"]
-[ext_resource type="Texture2D" uid="uid://xowontceeekq" path="res://assets/actors/naruto/attack_5.png" id="6_feq3y"]
-[ext_resource type="Texture2D" uid="uid://c3f6qfk54ei2f" path="res://assets/actors/naruto/dead_0.png" id="7_pu7mt"]
-[ext_resource type="Texture2D" uid="uid://dg6d47lr7cf4w" path="res://assets/actors/naruto/dead_1.png" id="8_rxa5b"]
-[ext_resource type="Texture2D" uid="uid://b2sk3x3bcyt5j" path="res://assets/actors/naruto/dead_2.png" id="9_pwgxn"]
-[ext_resource type="Texture2D" uid="uid://db1w0xlimyeh5" path="res://assets/actors/naruto/dead_3.png" id="10_fppqj"]
-[ext_resource type="Texture2D" uid="uid://d1ugjbvrjpvrg" path="res://assets/actors/naruto/dead_4.png" id="11_ra8ut"]
-[ext_resource type="Texture2D" uid="uid://db7q5g4wyj4uc" path="res://assets/actors/naruto/dead_5.png" id="12_h1gvc"]
-[ext_resource type="Texture2D" uid="uid://b1sk1cy6wg18k" path="res://assets/actors/naruto/idle_0.png" id="13_25xed"]
-[ext_resource type="Texture2D" uid="uid://bmdvcuvrgers6" path="res://assets/actors/naruto/idle_1.png" id="14_xo72a"]
-[ext_resource type="Texture2D" uid="uid://cnw88d5n4ydfc" path="res://assets/actors/naruto/idle_2.png" id="15_tp1v0"]
-[ext_resource type="Texture2D" uid="uid://cvto2fcxwu2dx" path="res://assets/actors/naruto/idle_3.png" id="16_af412"]
-[ext_resource type="Texture2D" uid="uid://cb0ry8kwvpxh6" path="res://assets/actors/naruto/idle_4.png" id="17_k4nll"]
-[ext_resource type="Texture2D" uid="uid://cyphr6hh0smts" path="res://assets/actors/naruto/idle_5.png" id="18_4mtg7"]
-[ext_resource type="Texture2D" uid="uid://d0dbtxdgjdfao" path="res://assets/actors/naruto/run_0.png" id="19_va7b1"]
-[ext_resource type="Texture2D" uid="uid://d0c271mqjuiv4" path="res://assets/actors/naruto/run_1.png" id="20_nasgm"]
-[ext_resource type="Texture2D" uid="uid://1k2i577wciu6" path="res://assets/actors/naruto/run_2.png" id="21_5rxfa"]
-[ext_resource type="Texture2D" uid="uid://omdbnvcdoqiq" path="res://assets/actors/naruto/run_3.png" id="22_a6v2p"]
-[ext_resource type="Texture2D" uid="uid://8hsyrywd8vj1" path="res://assets/actors/naruto/run_4.png" id="23_5u8yl"]
-[ext_resource type="Texture2D" uid="uid://bxxced1kl3bl0" path="res://assets/actors/naruto/run_5.png" id="24_a33b1"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_0gd48"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/attack_0.png" id="1_6pu17"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/attack_1.png" id="2_q6itt"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/attack_2.png" id="3_d453o"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/attack_3.png" id="4_cr8fg"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/attack_4.png" id="5_7asmc"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/attack_5.png" id="6_feq3y"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/dead_0.png" id="7_pu7mt"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_kurama_cloak_00.png" id="7_rxa5b"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_kurama_cloak_01.png" id="8_pwgxn"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/dead_1.png" id="8_rxa5b"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_kurama_cloak_02.png" id="9_fppqj"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/dead_2.png" id="9_pwgxn"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/dead_3.png" id="10_fppqj"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_kurama_cloak_03.png" id="10_ra8ut"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_kurama_cloak_04.png" id="11_h1gvc"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/dead_4.png" id="11_ra8ut"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_kurama_cloak_05.png" id="12_25xed"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/dead_5.png" id="12_h1gvc"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/idle_0.png" id="13_25xed"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_shadow_clones_00.png" id="13_xo72a"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_shadow_clones_01.png" id="14_tp1v0"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/idle_1.png" id="14_xo72a"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_shadow_clones_02.png" id="15_af412"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/idle_2.png" id="15_tp1v0"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/idle_3.png" id="16_af412"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_shadow_clones_03.png" id="16_k4nll"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_shadow_clones_04.png" id="17_4mtg7"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/idle_4.png" id="17_k4nll"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/idle_5.png" id="18_4mtg7"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/cast_shadow_clones_05.png" id="18_va7b1"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/run_0.png" id="19_va7b1"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/run_1.png" id="20_nasgm"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/run_2.png" id="21_5rxfa"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/run_3.png" id="22_a6v2p"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/run_4.png" id="23_5u8yl"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto/run_5.png" id="24_a33b1"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_0gd48"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_6pu17"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_nasgm"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +62,52 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_rxa5b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_pwgxn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_fppqj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_ra8ut")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_h1gvc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_25xed")
+}],
+"loop": 0,
+"name": &"cast_kurama_cloak",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_xo72a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_tp1v0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_af412")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_k4nll")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_4mtg7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_va7b1")
+}],
+"loop": 0,
+"name": &"cast_shadow_clones",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +182,11 @@ animations = [{
 [resource]
 script = ExtResource("25_0gd48")
 key = &"naruto"
-frames = SubResource("SpriteFrames_6pu17")
+frames = SubResource("SpriteFrames_nasgm")
+skill_anims = {
+&"kurama_cloak": &"cast_kurama_cloak",
+&"shadow_clones": &"cast_shadow_clones"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

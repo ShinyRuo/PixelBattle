@@ -3,31 +3,21 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_88sdc"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_dwwbq"]
 
-[sub_resource type="Resource" id="Resource_brtil"]
-script = ExtResource("1_88sdc")
-id = &"sasori_iron"
-name_key = "buff.sasori_iron"
-icon_key = "buff.sasori_iron"
-kind = 2
-friendly = false
-duration_seconds = 4.0
-period_seconds = 0.5
-mods = {
-&"harm": 20.0
-}
-mods_growth = {
-&"harm": 20.0
-}
-
 [resource]
 script = ExtResource("2_dwwbq")
 id = &"iron_sand"
 name_key = "skill.iron_sand"
-on_hit = Array[ExtResource("1_88sdc")]([SubResource("Resource_brtil")])
 element = 1
-kind = 0
-power_mult = 1.6
+power_mult = 0.2
+damage_base = 20.0
+damage_growth = 20.0
+damage_stat = &"agility"
 radius = 0.2
+hit_count = 30
+hit_interval_ticks = 2
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 460
 delay_ticks = 10
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 14, 18, 22, 26, 30, 34, 38, 42, 46)

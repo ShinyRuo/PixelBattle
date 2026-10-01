@@ -48,15 +48,45 @@ static func load_from(dir_path: String) -> PBSkillTable:
 			continue
 		if not out.add(skill):
 			push_error("这份技能数据被拒收（id 空或重复）：%s" % path)
+	return _check_links(out)
+
+
+static func _check_links(table: PBSkillTable) -> PBSkillTable:
+	var out := PBSkillTable.new()
+	for id: StringName in table.ids():
+		var skill := table.by_id(id)
+		var why := PBSkillFollowupRules.check_link(skill, table)
+		if why.is_empty():
+			why = PBSkillVariantRules.check_link(skill, table)
+		if why.is_empty():
+			out.add(skill)
+		else:
+			push_error("技能 %s：%s" % [id, why])
 	return out
 
 
 ## 放出去屏幕上真的什么都不会发生吗。伤害、效果、**召唤**都算「有事发生」——
 ## 这条守的是「放出去要有事发生」，不是「必须有伤害」。
 static func _does_nothing(skill: PBSkill) -> bool:
-	if skill.power_mult > 0.0 or skill.summon_count > 0:
+	if (
+		skill.power_mult > 0.0
+		or skill.damage_base > 0.0
+		or skill.damage_growth > 0.0
+		or skill.damage_hp > 0.0
+		or skill.summon_count > 0
+		or skill.attack_repeat_count > 0
+		or skill.ranged_attack_aura > 0.0
+		or PBMotionAuraRules.enabled(skill)
+		or PBHealingAuraRules.enabled(skill)
+		or skill.sacrifice_transfer
+	):
 		return false
-	return skill.on_hit.is_empty() and skill.on_self.is_empty()
+	return (
+		skill.on_hit.is_empty()
+		and skill.on_self.is_empty()
+		and skill.on_target.is_empty()
+		and skill.on_start_target.is_empty()
+	)
 
 
 ## 这份技能连同它挂的每一份 buff 合不合法。空串 = 没问题。
@@ -66,6 +96,46 @@ static func _does_nothing(skill: PBSkill) -> bool:
 ## （大招是代码现造的，必须直接写 `damage`）。
 static func check(skill: PBSkill) -> String:
 	var why: String = PBSkillRules.validate(skill)
+	if why == "":
+		why = PBRescueRules.validate(skill)
+	if why == "":
+		why = PBHealingAuraRules.validate(skill)
+	if why == "":
+		why = PBSkillCostRules.validate(skill)
+	if why == "":
+		why = PBHazardZone.validate_zone(skill)
+	if why == "":
+		why = PBSkillRebateRules.validate(skill)
+	if why == "":
+		why = PBSkillDamage.validate(skill)
+	if why == "":
+		why = PBSkillAfterHit.validate(skill)
+	if why == "":
+		why = PBSummonRules.validate(skill)
+	if why == "":
+		why = PBSkillArea.validate(skill)
+	if why == "":
+		why = PBSkillTargets.validate(skill)
+	if why == "":
+		why = PBAllyAuraRules.validate(skill)
+	if why == "":
+		why = PBMotionAuraRules.validate(skill)
+	if why == "":
+		why = PBOnAttackRules.validate(skill)
+	if why == "":
+		why = PBEnemyAuraRules.validate(skill)
+	if why == "":
+		why = PBSkillFollowupRules.validate(skill)
+	if why == "":
+		why = PBSacrificeRules.validate(skill)
+	if why == "":
+		why = PBMindRules.validate(skill)
+	if why == "":
+		why = PBExpandingStrike.validate_pulse(skill)
+	if why == "":
+		why = PBPhantomRules.validate(skill)
+	if why == "":
+		why = PBTravelWave.validate_wave(skill)
 	if why != "":
 		return why
 	if skill.id == &"":
@@ -78,7 +148,18 @@ static func check(skill: PBSkill) -> String:
 	if _does_nothing(skill):
 		# 既不打伤害、也不挂效果、还不召人的技能，放出去屏幕上什么都不会发生。
 		return "这个技能既没有 power_mult、也没有效果、还不召人 —— 放出去什么都不会发生"
-	for buff: PBBuff in skill.on_hit + skill.on_self:
+	for buff: PBBuff in (
+		skill.on_hit
+		+ skill.on_primary
+		+ skill.enemy_aura_effects
+		+ skill.on_rescue
+		+ skill.on_self
+		+ skill.on_target
+		+ skill.on_start_target
+		+ skill.on_start_area
+		+ skill.zone_effects
+		+ skill.zone_ring_effects
+	):
 		var bad: String = PBBuffRules.validate(buff)
 		if bad != "":
 			return "它挂的效果 %s 不合法 —— %s" % [buff.id if buff != null else &"?", bad]

@@ -33,8 +33,7 @@ func test_every_tres_in_the_folder_is_actually_an_actor_skin() -> void:
 			continue
 		var res: Resource = load("%s/%s" % [DIR, file_name])
 		assert_true(
-			res is PBActorSkin,
-			"%s 不是一张 PBActorSkin —— 伴生资源请放 data/actors/frames/" % file_name
+			res is PBActorSkin, "%s 不是一张 PBActorSkin —— 伴生资源请放 data/actors/frames/" % file_name
 		)
 
 
@@ -115,8 +114,7 @@ func test_every_actor_key_on_a_character_can_actually_be_found() -> void:
 		if character.actor_key == &"":
 			continue
 		assert_true(
-			skins.has(character.actor_key),
-			"%s 指着一张不存在的形象：%s" % [character.id, character.actor_key]
+			skins.has(character.actor_key), "%s 指着一张不存在的形象：%s" % [character.id, character.actor_key]
 		)
 
 
@@ -125,8 +123,7 @@ func test_every_skin_file_is_named_after_its_key() -> void:
 	# 文件名和键对不上的那一份，按键永远找不到 —— 表现是「接了素材还是白模」。
 	for key: StringName in _skins():
 		assert_true(
-			ResourceLoader.exists("%s/%s.tres" % [DIR, key]),
-			"形象 %s 的文件名得是 %s.tres" % [key, key]
+			ResourceLoader.exists("%s/%s.tres" % [DIR, key]), "形象 %s 的文件名得是 %s.tres" % [key, key]
 		)
 
 

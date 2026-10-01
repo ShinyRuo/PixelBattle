@@ -13,6 +13,7 @@ duration_seconds = 1.5
 mods = {
 &"damage_taken": 0.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_hrxjg")
@@ -20,9 +21,15 @@ id = &"fang_pass"
 name_key = "skill.fang_pass"
 on_self = Array[ExtResource("1_gn0jd")]([SubResource("Resource_n73w3")])
 element = 3
-power_mult = 2.2
+power_mult = 2.0
+damage_base = 200.0
+damage_growth = 200.0
+damage_stat = &"agility"
 radius = 0.1
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
 delay_ticks = 6
 knockback = 0.04
 mp_cost = 15.0
+mp_cost_levels = PackedFloat32Array(15, 20, 25, 30, 35, 40, 45, 50, 55, 60)

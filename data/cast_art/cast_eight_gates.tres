@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_eight_gates/back/frame_0.png" id="1_d0npp"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_eight_gates/back/frame_1.png" id="2_kkc7k"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_eight_gates/back/frame_2.png" id="3_5nc2b"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_eight_gates/back/frame_3.png" id="4_l3wug"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_eight_gates/back/frame_4.png" id="5_ej3dx"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_eight_gates/back/frame_5.png" id="6_r7b6s"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_x30f0"]
+
+[resource]
+script = ExtResource("7_x30f0")
+back_frames = Array[Texture2D]([ExtResource("1_d0npp"), ExtResource("2_kkc7k"), ExtResource("3_5nc2b"), ExtResource("4_l3wug"), ExtResource("5_ej3dx"), ExtResource("6_r7b6s")])
+fps = 20.0
+anchor = Vector2(128, 128)
+offset = Vector2(0, -32)
+pixel_scale = 0.38
+metadata/sheet_back = {
+"background": 0,
+"center": true,
+"columns": 3,
+"count": 6,
+"layout": 0,
+"path": "res://aires/skills/skill_eight_gates_cast_v1.png",
+"rows": 2,
+"size": 256
+}

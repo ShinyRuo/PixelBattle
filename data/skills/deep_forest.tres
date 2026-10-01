@@ -10,11 +10,12 @@ name_key = "buff.hashirama_bind"
 icon_key = "buff.hashirama_bind"
 kind = 1
 friendly = false
-duration_seconds = 2.5
+duration_seconds = 1.0
 mods = {
-&"enemy_speed_scale": 0.0,
-&"stun": 1.0
+&"disarm": 1.0,
+&"enemy_speed_scale": 0.0
 }
+duration_levels = PackedFloat32Array(1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5)
 
 [resource]
 script = ExtResource("2_11ikk")
@@ -22,8 +23,10 @@ target = 2
 id = &"deep_forest"
 name_key = "skill.deep_forest"
 on_hit = Array[ExtResource("1_xe174")]([SubResource("Resource_fy5ii")])
+followup_id = &"deity_gates"
 element = 6
-power_mult = 1.4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
-shot_cross_seconds = 0.3
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 13, 17, 20, 24, 27, 31, 34, 38, 41)

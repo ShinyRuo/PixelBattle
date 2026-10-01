@@ -6,17 +6,15 @@
 script = ExtResource("1_e8wxb")
 id = &"puppet_masters"
 name_key = "bond.puppet_masters"
-match_mode = 0
 member_ids = Array[StringName]([&"chiyo", &"kankuro"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
 member_skill_patches = {
 &"chiyo": {
 &"reincarnation": {
+&"extra_target_radius_set": 0.5,
 &"targets_add": 1.0
 }
 },

@@ -91,9 +91,7 @@ func test_a_pin_wins_over_the_greedy_order() -> void:
 	var team := _team()
 	var parts := _parts(1)
 	var pinned: Dictionary = {}
-	assert_true(
-		PBEquipRules.pin(pinned, team[2].key(), &"thunder_fang", _cfg), "水系应该挂得上法术装"
-	)
+	assert_true(PBEquipRules.pin(pinned, team[2].key(), &"thunder_fang", _cfg), "水系应该挂得上法术装")
 	var held := PBEquipRules.assign(team, parts, _cfg, pinned)
 	assert_true(held[2].has("thunder_fang"), "点名给谁就该发给谁")
 	assert_false(held[1].has("thunder_fang"), "只有一件，不该同时出现在两个人身上")
@@ -124,9 +122,7 @@ func test_a_pin_that_does_not_fit_is_ignored_but_kept() -> void:
 	assert_true(PBEquipRules.pin(pinned, team[0].key(), &"thunder_fang", _cfg), "记账不判分类")
 	var held := PBEquipRules.assign(team, _parts(1), _cfg, pinned)
 	assert_false(held[0].has("thunder_fang"), "物理角色吃不下法术装（§10）")
-	assert_eq(
-		PBEquipRules.pinned_of(pinned, team[0].key()).size(), 1, "挂不上不等于该把这条记录抹掉"
-	)
+	assert_eq(PBEquipRules.pinned_of(pinned, team[0].key()).size(), 1, "挂不上不等于该把这条记录抹掉")
 
 
 func test_a_pin_for_an_item_you_cannot_craft_just_does_nothing() -> void:

@@ -63,8 +63,8 @@ extends RefCounted
 ##
 ## - **己方的忍术抗性**：伤害已经分类型（[PBDamageKind]），但敌人今天只会普攻（体术），
 ##   没有一下忍术伤害会打到忍者身上 —— 加了也配了不生效。等敌人会放忍术再加。
-## - **「X% 几率打出更多伤害」不另开键**：那就是暴击（前两个键写得出来）。
-##   另开一个概率键等于同一次出手掷两遍骰，破了 [PBCritRules] 那条「一个掷点」。
+## - 普攻暴击仍只有一个掷点。原版独立的攻击起手技能由 [PBOnAttackRules] 处理，
+##   不伪装成暴击，也不从命中路径递归触发。
 
 ## 暴击率（常驻那一份）。
 const CRIT_CHANCE: StringName = &"crit_chance"
@@ -100,10 +100,18 @@ const BITE_LOST: StringName = &"bite_lost"
 const REFLECT: StringName = &"reflect"
 
 ## 常驻增伤：普攻多打几成。
+const ALL_DAMAGE_BONUS: StringName = &"all_damage_bonus"
+
+const TAIJUTSU_BONUS: StringName = &"taijutsu_bonus"
+
+const NINJUTSU_RESIST: StringName = &"ninjutsu_resist"
+
 const DAMAGE_BONUS: StringName = &"damage_bonus"
 
 ## 移动速度多几成。中性 0.0，折算在 [method equip] 末尾。
 const MOVE_SPEED_BONUS: StringName = &"move_speed_bonus"
+## 开战形态将普攻改为远程，射程按原版码数；0 不覆盖，多个来源取最大。
+const RANGED_RANGE: StringName = &"ranged_range"
 
 ## 生命掉到最大生命的几成以下时，挂上他自带的那几份效果（[member PBAttacker.low_hp_buffs]）。
 ## 效果本身写在名册同一列的 `on_low_hp=<效果键>`，这个键只管阈值。
@@ -129,6 +137,8 @@ const STRUCK_AURA: StringName = &"struck_aura"
 
 ## 受击效果里的量型数值多几成（防御、回血……，率型不乘）。
 const STRUCK_BOOST: StringName = &"struck_boost"
+const STRUCK_STRENGTH_BONUS: StringName = &"struck_strength_bonus"
+const STRUCK_DODGE: StringName = &"struck_dodge"
 
 ## 挨敌人一下时有几成几率从他自己的召唤技能里召出**一个**（〔共同修行〕「受攻击时 15% 几率出一个影分身」）。
 ## 冷却复用 [constant STRUCK_CD]。
@@ -202,7 +212,12 @@ const TAKEN_ELEMENTS: Dictionary = {
 }
 
 ## 认得的全部键。见本类顶上「词汇表里的键 = 已经接上读点的键」。
+const STACK_HARM_BONUS: StringName = &"stack_harm_bonus"
+const STACK_DEFENCE: StringName = &"stack_defence"
+
 const ALL: Array[StringName] = [
+	STACK_HARM_BONUS,
+	STACK_DEFENCE,
 	CRIT_CHANCE,
 	CRIT_DAMAGE,
 	CRIT_ON_HIT,
@@ -214,8 +229,12 @@ const ALL: Array[StringName] = [
 	BITE_CURRENT,
 	BITE_LOST,
 	REFLECT,
+	ALL_DAMAGE_BONUS,
+	TAIJUTSU_BONUS,
+	NINJUTSU_RESIST,
 	DAMAGE_BONUS,
 	MOVE_SPEED_BONUS,
+	RANGED_RANGE,
 	LOW_HP,
 	DRAIN_CUT,
 	LIFESTEAL,
@@ -224,6 +243,8 @@ const ALL: Array[StringName] = [
 	HEAL_POWER,
 	STRUCK_AURA,
 	STRUCK_BOOST,
+	STRUCK_STRENGTH_BONUS,
+	STRUCK_DODGE,
 	STRUCK_SUMMON,
 	OPEN_LOW_HP,
 	UNDYING_END_HEAL,
@@ -298,6 +319,10 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 		)
 		return true
 	match key:
+		STACK_HARM_BONUS:
+			attacker.stack_harm_bonus += amount
+		STACK_DEFENCE:
+			attacker.stack_defence += amount
 		CRIT_CHANCE:
 			attacker.crit_chance += amount
 		CRIT_DAMAGE:
@@ -320,10 +345,18 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.bite_lost += amount
 		REFLECT:
 			attacker.reflect += amount
+		ALL_DAMAGE_BONUS:
+			attacker.all_damage_bonus += amount
+		TAIJUTSU_BONUS:
+			attacker.taijutsu_bonus += amount
+		NINJUTSU_RESIST:
+			attacker.ninjutsu_resist += amount
 		DAMAGE_BONUS:
 			attacker.damage_bonus += amount
 		MOVE_SPEED_BONUS:
 			attacker.move_speed_bonus += amount
+		RANGED_RANGE:
+			attacker.ranged_range = maxf(attacker.ranged_range, amount)
 		LOW_HP:
 			attacker.low_hp_at = maxf(attacker.low_hp_at, amount)
 		DRAIN_CUT:
@@ -340,6 +373,10 @@ static func grant(attacker: PBAttacker, key: StringName, amount: float) -> bool:
 			attacker.struck_aura = maxf(attacker.struck_aura, amount)
 		STRUCK_BOOST:
 			attacker.struck_boost += amount
+		STRUCK_STRENGTH_BONUS:
+			attacker.struck_strength_bonus += amount
+		STRUCK_DODGE:
+			attacker.struck_dodge += amount
 		STRUCK_SUMMON:
 			attacker.struck_summon += amount
 		OPEN_LOW_HP:

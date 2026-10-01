@@ -36,6 +36,9 @@ const ATTACK_SPEED_CAP: float = 3.0
 ## 满血的话等于多一条命；太低会在同一 tick 被下一发打死，玩家看不见发生过什么。
 const REVIVE_FRACTION: float = 0.4
 
+var attribute_profile: PBAttributeProfile = null
+var sacrifice_at: int = -1
+
 ## **一发普攻打多少**。属性克制、羁绊、尾兽光环、装备与训练的词条全部已经算进来了，战斗层只认这个数。
 ##
 ## 玩家定的口径：**每次攻击实时结算**，一发就是他的攻击力，出手多快由 [member attack_speed] 单独决定，
@@ -81,6 +84,8 @@ var defence: float = 0.0
 ## 和 [member dps] 里已经乘死的那个「攻元素克制」是**两个方向**：
 ## 那一份是「我打得动谁」，这一份是「我扛得住谁」。
 ## 拆开之后一张卡在两条线上指向不同的波次，攻防两轴才不会同进同退。
+var attack_element: PBElement.Type = PBElement.Type.PHYSICAL
+
 var def_element: PBElement.Type = PBElement.Type.PHYSICAL
 
 ## 还活着。死了就不再输出、也不再被选为目标；**每波开波满血复活**
@@ -184,13 +189,20 @@ var reflect: float = 0.0
 ## **降级**：只作用在普攻上，原版写的是「所有伤害」—— 技能伤害在建人那一刻就算死了，
 ## 而这一份是建人之后才装上去的（羁绊要先知道谁在场）。
 var damage_bonus: float = 0.0
-
+## 两类伤害通用，以及只作用体术的加成。damage_bonus 保留为普攻专用。
+var all_damage_bonus: float = 0.0
+var taijutsu_bonus: float = 0.0
+## 智力 × 普攻系数（当前 1），已含本次攻击属性克制和队伍倍率。
+var ninjutsu_attack: float = 0.0
+## 本波合并装备与羁绊后的属性，用于效果公式；开波后只读。
+var damage_attributes: Dictionary = {}
+## 忍术抗性独立于护甲与七种防御属性。
+var ninjutsu_resist: float = 0.0
 
 ## 常驻加速：移动速度多几成。中性 0.0。
 ## 移速不是角色属性（全队一个数，由 [member PBSimConfig.unit_move_seconds] 派生），所以留在行为层、
 ## 折算在 [method PBPassiveRules.equip] 末尾。
 var move_speed_bonus: float = 0.0
-
 
 ## 打出要害那一下顺带挂在目标身上的效果。读点在 [method PBStrikeRules.land]。
 ## 被动那条通道带得了一份效果靠它（名册 `on_hit=<效果键>`）。**骑在暴击那个掷点上。**
@@ -205,6 +217,7 @@ var low_hp_buffs: Array[PBBuff] = []
 ## 这一波触发过没有。**一波一次**（玩家定的），开波清（[method revive]）。
 ## 不做「回到阈值以上就重新待命」：百豪之术被奶回来再掉下去就能反复刷。
 var low_hp_fired: bool = false
+var rescue_used: bool = false
 
 ## 自身掉血（[constant PBBuffRules.DRAIN_MAX]）抵掉几成。1.0 = 一点不掉。中性 0.0。
 var drain_cut: float = 0.0
@@ -233,6 +246,8 @@ var struck_aura: float = 0.0
 
 ## 受击效果里量型数值多几成（[constant PBPassiveRules.STRUCK_BOOST]）。中性 0.0。
 var struck_boost: float = 0.0
+var struck_strength_bonus: float = 0.0
+var struck_dodge: float = 0.0
 
 ## 光环那一路的冷却：`{队友槽位: 下一次最早的 tick}`。**按队友各算各的**（沙之守护每人一波一次）。开波清空。
 var aura_ready_at: Dictionary = {}
@@ -254,6 +269,10 @@ var taken_by_element: Dictionary = {}
 
 ## 每一下普攻打中都挂在目标身上的效果（名册 `on_attack=<效果键>`）。**不骑暴击**，读点在 [method PBStrikeRules.land]。
 var attack_buffs: Array[PBBuff] = []
+var stack_harm_bonus: float = 0.0
+var stack_defence: float = 0.0
+var phantom: bool = false
+var appearance_slot: int = -1
 
 ## 闪避成功时反打那个敌人一下，量是自己一发普攻的几成（[constant PBPassiveRules.DODGE_COUNTER]）。
 var dodge_counter: float = 0.0
@@ -309,13 +328,24 @@ var lethal_pending: bool = false
 
 ## 他倒下那一刻要放的技能（羁绊补丁 `on_death`，[member PBSkill.fires_on_death]）。不进指令卡。
 var death_casts: Array[PBSkillCast] = []
+## 羁绊授予的攻击起手技能，不占手动指令槽，也不继承给召唤物。
+var attack_casts: Array[PBSkillCast] = []
 
-## 刚倒下、阵亡技能还没放。[method PBStrikeRules.wound_ally] 记，[PBBattleSim] 同一 tick 放掉。
+## 刚倒下、阵亡技能尚未排期。wound_ally 记，模拟按技能窗口立即施放或延迟移动。
 var death_pending: bool = false
+
+## 致命命中的来源位置快照。阵亡移动不复活、不索敌、不追踪移动中的来源。
+var death_target: Vector2 = Vector2.INF
+var death_tick: int = -1
+var death_move_until: int = -1
 
 ## 这个位子是给召唤物留的，不是一张卡。**一辈子不会变**，跑动中只在「空着」和「站着人」之间切。
 ## 为什么预留而不是跑动中往数组里塞人，见 [PBSummonRules] 顶部。
 var summoned: bool = false
+
+## 出生技能身份，供表现层绑定独立资源；不参与伤害。
+var summon_skill_id: StringName = &""
+var summon_serial: int = 0
 
 ## 召唤物散场的 tick。**负数 = 这个位子现在空着**（或者他不是召唤物）。
 var expires_at: int = -1
@@ -343,6 +373,8 @@ var next_shot_at: int = 0
 ## 敌人一踏进射程当 tick 就开火，第 1 发根本没有起手。所以「冷却转好 + 射程内有人 → 抬手，
 ## [member windup_ticks] 之后才结算」。渲染层读它决定攻击段什么时候起跑。
 var swinging: bool = false
+## 已起手的普攻完成收招前不主动追赶；独立于开波错峰冷却。
+var attack_ends_at: int = -1
 
 ## 起手要几 tick —— 从抬手到伤害落地。[method prime] 按
 ## [method PBSimConfig.windup_ticks] 填。
@@ -358,6 +390,9 @@ var windup_ticks: int = 0
 ## **也不会自动清掉**（「目标死了就清」会把隔着射程点名的目标在他走进来之前就清掉），
 ## 每波开波由 [method revive] 重置。
 var forced_target: int = -1
+
+## 追击召唤物不为身边其他敌人停下攻击；原目标失效后恢复普通索敌。
+var focus_named_target: bool = false
 
 ## 渲染层用来认人的槽位号，等于它在出战席里的下标。
 var slot: int = 0
@@ -381,10 +416,26 @@ var ultimate: PBSkillCast = null
 ## 而且 [member PBSkill.carry_over_ticks] 只对大招成立。统一的下标访问走 [method PBSkillRules.cast_at]
 ## （0 = 大招，1.. = 这里）—— 两个字段，一把尺子。
 var skills: Array[PBSkillCast] = []
+## 建队时收集的开场状态定义；只在开波恢复，不在被取消后自动补回。
+var opening_buffs: Array[PBBuff] = []
 
 ## 他身上现在挂着的效果。**永远不为 null**：空 bag 的合计值是精确的中性值，调用方不必判空。
 ## **[method revive] 会清空它**：效果是波内作用域的，不跨波、不进存档。
 var buffs: PBBuffBag = PBBuffBag.new()
+## 最近一次瞬时效果的表现事件。瞬时档不进 [member buffs]，所以单独保留“发生过什么、何时发生”；
+## 表现层只读这三个字段，过了六帧自行收起。serial 让同一 tick 连续触发同一个效果也能被识别。
+var instant_fx_id: StringName = &""
+var instant_fx_tick: int = -1
+var instant_fx_serial: int = 0
+var channel: PBSkillChannel = null
+var casting: PBCastTimeline = PBCastTimeline.new()
+var base_attack: float = 0.0
+var ranged_attack: bool = false
+var ranged_range: float = 0.0
+## BUFF 射程增量，取消后立即撤销；不切换远程训练或创建子弹。
+var temporary_reach_bonus: float = 0.0
+var aura_sources: Array[WeakRef] = []
+var motion_sources: Array[WeakRef] = []
 
 ## 一发打多少、隔几 tick 一发。由 [method prime] 从 [member dps] 与
 ## [member attack_speed] 换算，不要手写。
@@ -393,6 +444,7 @@ var buffs: PBBuffBag = PBBuffBag.new()
 ## 而它们的输入在一波之内都不变。
 var _damage_per_shot: float = 0.0
 var _interval_ticks: int = 1
+var _motion_tick_rate: int = 20
 
 
 ## 造一个覆盖整个战场的单体攻击者 —— **整队标量 DPS 的等价物**。
@@ -415,8 +467,12 @@ func clone() -> PBAttacker:
 	var out := PBAttacker.new()
 	out.dps = dps
 	out.attack = attack
+	out.base_attack = base_attack
+	out.attribute_profile = null if attribute_profile == null else attribute_profile.clone()
+	out.ranged_attack = ranged_attack
+	out.ranged_range = ranged_range
 	out.pos = pos
-	out.reach = reach
+	out.reach = reach - temporary_reach_bonus
 	out.shape = shape
 	out.max_targets = max_targets
 	# 暴击也要跟过来，否则悬崖二分探的是一支不会暴击的队伍，探出来的悬崖系统性偏保守。
@@ -434,6 +490,11 @@ func clone() -> PBAttacker:
 	out.bite_lost = bite_lost
 	out.reflect = reflect
 	out.damage_bonus = damage_bonus
+	out.all_damage_bonus = all_damage_bonus
+	out.taijutsu_bonus = taijutsu_bonus
+	out.ninjutsu_attack = ninjutsu_attack
+	out.damage_attributes = damage_attributes.duplicate()
+	out.ninjutsu_resist = ninjutsu_resist
 	# 累加器也拷贝：已经折进 `move_speed` 了，拷贝只是让复制品在字段上逐个相同；
 	# 折算只发生在 [method PBPassiveRules.equip]，复制品不走建人那条路。
 	out.move_speed_bonus = move_speed_bonus
@@ -449,6 +510,8 @@ func clone() -> PBAttacker:
 	out.heal_power = heal_power
 	out.struck_aura = struck_aura
 	out.struck_boost = struck_boost
+	out.struck_strength_bonus = struck_strength_bonus
+	out.struck_dodge = struck_dodge
 	out.struck_summon = struck_summon
 	out.open_low_hp = open_low_hp
 	out.undying_end_heal = undying_end_heal
@@ -456,6 +519,10 @@ func clone() -> PBAttacker:
 	# 字典要复制：共享的话复制品上再 `grant` 一次会改到本体。
 	out.taken_by_element = taken_by_element.duplicate()
 	out.attack_buffs = attack_buffs
+	out.stack_harm_bonus = stack_harm_bonus
+	out.stack_defence = stack_defence
+	out.phantom = phantom
+	out.appearance_slot = appearance_slot
 	out.dodge_counter = dodge_counter
 	out.melee_taken = melee_taken
 	out.melee_reflect = melee_reflect
@@ -470,6 +537,7 @@ func clone() -> PBAttacker:
 	out.attack_ninjutsu = attack_ninjutsu
 	out.lethal_buffs = lethal_buffs
 	out.summoned = summoned
+	out.focus_named_target = focus_named_target
 	out.expires_at = expires_at
 	out.attack_speed = attack_speed
 	out.shot_speed = shot_speed
@@ -478,6 +546,7 @@ func clone() -> PBAttacker:
 	out.hp = max_hp
 	out.defence = defence
 	out.def_element = def_element
+	out.attack_element = attack_element
 	out.home = home
 	out.move_speed = move_speed
 	out.leash = leash
@@ -489,15 +558,18 @@ func clone() -> PBAttacker:
 		# （见 [method PBValuation._leaks_at]），共享的话那一下改动会
 		# 污染真正在战斗的那一份，而它不报错。冷却/落点状态不带 ——
 		# 复制品对应「这一波都还没放过的它」。见 [method PBSkill.clone]。
-		out.ultimate = PBSkillCast.new(ultimate.skill.clone(), ultimate.caster_level)
+		out.ultimate = ultimate.fresh()
 	# 角色自己那几个技能同理。**等级要跟过来**：效果数值按它现算，漏掉的话复制品的治疗量恒等于 1 级。
 	for cast: PBSkillCast in skills:
-		out.skills.append(PBSkillCast.new(cast.skill.clone(), cast.caster_level))
+		out.skills.append(cast.fresh())
 	for cast: PBSkillCast in death_casts:
-		out.death_casts.append(PBSkillCast.new(cast.skill.clone(), cast.caster_level))
+		out.death_casts.append(cast.fresh())
+	for cast: PBSkillCast in attack_casts:
+		out.attack_casts.append(cast.fresh())
 	# **不复制身上挂着的效果**，给一个空的 —— 和 `hp` 取 `max_hp` 同一条：
 	# 复制品是「一个刚站起来的他」，不是「他现在这个样子」。
 	out.buffs = PBBuffBag.new()
+	out.opening_buffs = opening_buffs.duplicate()
 	return out
 
 
@@ -508,15 +580,27 @@ func clone() -> PBAttacker:
 ## 悬崖二分那类探测会 [method clone] 出几十份反复跑，
 ## 不重置的话上一场剩下的残血会漏进下一场，表现为「同一支队伍越探越弱」。
 func revive() -> void:
+	casting.reset()
 	alive = true
 	hp = max_hp
 	mp = max_mp
 	# 重生次数一波一份，不重填的话上一波用掉的那一次会漏进这一波。
 	revives = revives_max
 	low_hp_fired = false
+	rescue_used = false
 	lethal_ready = not lethal_buffs.is_empty()
 	lethal_pending = false
 	death_pending = false
+	death_target = Vector2.INF
+	death_tick = -1
+	death_move_until = -1
+	for cast: PBSkillCast in death_casts:
+		cast.reset()
+	for cast: PBSkillCast in attack_casts:
+		cast.reset()
+	for cast: PBSkillCast in skills:
+		if cast.skill.attack_trigger_chance > 0.0:
+			cast.reset()
 	struck_ready_at = 0
 	aura_ready_at.clear()
 	dodge_count = 0
@@ -525,6 +609,7 @@ func revive() -> void:
 	next_shot_at = posmod(slot, _interval_ticks)
 	# 起手是一个状态，开波要清 —— 上一波抬到一半的手不该带进这一波。
 	swinging = false
+	attack_ends_at = -1
 	# 点名是一波一份（见 [member forced_target]）。
 	forced_target = -1
 	aim_at = -1
@@ -532,6 +617,14 @@ func revive() -> void:
 	# 攻击者对象会跨波、跨探测复用，不清的话上一场剩下的增伤会漏进这一场，
 	# 而那和这个函数顶上说的残血漏进下一场是同一个形状。
 	buffs.clear()
+	instant_fx_id = &""
+	instant_fx_tick = -1
+	instant_fx_serial = 0
+	for buff: PBBuff in opening_buffs:
+		buffs.add(buff, PBBuffRules.resolve(buff, 1), 0, 0, 0, slot)
+	if channel != null:
+		channel.active = false
+	channel = null
 
 
 ## 回一 tick 的蓝。上限封顶。
@@ -558,7 +651,7 @@ func pay(cost: float) -> void:
 
 ## 敌人挑不挑得中它。见 [member max_hp] —— 没血的东西是个标量，不是单位。
 func is_targetable() -> bool:
-	return alive and max_hp > 0.0
+	return alive and max_hp > 0.0 and not phantom
 
 
 ## 挨一下打。返回这次是否把它**真的**打死了 —— 还有重生次数时返回 false。
@@ -569,7 +662,10 @@ func is_targetable() -> bool:
 ## **顺序：先减伤，再护盾，最后扣血** —— 护盾吃的是减完之后那个数。
 ## [param at_tick] **没有默认值**：同 [method PBEnemy.take_damage]。
 func take_damage(
-	amount: float, at_tick: int, rng: RandomNumberGenerator = null
+	amount: float,
+	at_tick: int,
+	rng: RandomNumberGenerator = null,
+	kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU
 ) -> bool:
 	if not is_targetable():
 		return false
@@ -579,7 +675,7 @@ func take_damage(
 		dodge_count += 1
 		return false
 	var hurt: float = amount * buffs.amount(PBBuffRules.DAMAGE_TAKEN, at_tick)
-	hurt = buffs.absorb(hurt, at_tick)
+	hurt = buffs.absorb(hurt, at_tick, kind)
 	hp -= hurt
 	if hp > 0.0:
 		return false
@@ -589,6 +685,9 @@ func take_damage(
 		lethal_ready = false
 		hp = minf(1.0, max_hp)
 		return false
+	if channel != null:
+		channel.active = false
+	casting.cancel(self)
 	if revives > 0:
 		revives -= 1
 		hp = max_hp * REVIVE_FRACTION
@@ -613,7 +712,9 @@ func ultimate_damage() -> float:
 ## [param cfg] 只用来问起手几 tick（[method PBSimConfig.windup_ticks]）—— 那个数依赖这里算出的间隔，
 ## 所以必须在这里问。给 null 就是不起手。
 func prime(tick_rate: int, cfg: PBSimConfig = null) -> void:
+	PBTemporaryAttributeRules.bind_to(self, cfg)
 	var rate: int = maxi(tick_rate, 1)
+	_motion_tick_rate = rate
 	if attack_speed <= 0.0:
 		# **连续输出那条退化路径**：每 tick 打 `dps / tick_rate`，溢出无损转移。
 		# [method whole_field] 造的就是它，而它要与解析式排队模型逐位相同。
@@ -641,7 +742,10 @@ func damage_per_shot() -> float:
 ## 读点在这里而不是出手的三个调用处：漏乘一处就是「某一种攻击方式吃不到增伤」。
 func strike_for(at_tick: int) -> float:
 	var lasting: float = 1.0 + maxf(damage_bonus, -1.0)
-	return _damage_per_shot * lasting * buffs.amount(PBBuffRules.DAMAGE_SCALE, at_tick)
+	var raw: float = ninjutsu_attack if attack_ninjutsu > 0.0 else _damage_per_shot
+	if attack_ninjutsu <= 0.0:
+		raw += PBAllyAuraRules.normal_bonus(self, at_tick)
+	return raw * lasting * buffs.amount(PBBuffRules.DAMAGE_SCALE, at_tick)
 
 
 ## 回血，上限封顶。**死人回不了** —— 复活是另一件事（[method revive]），
@@ -662,19 +766,30 @@ func restore_mana(amount: float) -> void:
 
 ## 隔几 tick 出一手。1 = 每 tick（连续输出那条退化路径）。
 func attack_interval() -> int:
-	return _interval_ticks
+	if motion_sources.is_empty() or attack_speed <= 0.0:
+		return _interval_ticks
+	return maxi(
+		roundi(float(_motion_tick_rate) / (attack_speed * PBMotionAuraRules.attack_scale(self))),
+		fastest_ticks(_motion_tick_rate)
+	)
 
 
 ## 这一 tick 出不出得了手。
 func ready_to_fire(tick: int) -> bool:
-	return alive and tick >= next_shot_at
+	return (
+		alive
+		and tick >= next_shot_at
+		and not casting.active(tick)
+		and not PBSkillChannel.blocked(self, tick)
+	)
 
 
 ## 出了一手，转入下一次的间隔。
 ## **下一次抬手排在 `interval - windup` 之后**：抬手之后还要等 [member windup_ticks] 才落地，两段正好一个间隔。
 func on_fired(tick: int) -> void:
 	swinging = false
-	next_shot_at = tick + maxi(_interval_ticks - windup_ticks, 1)
+	next_shot_at = tick + maxi(attack_interval() - _current_windup(), 1)
+	attack_ends_at = next_shot_at
 
 
 ## 抬手。返回 true = **这一 tick 只是抬手，别结算**。
@@ -682,11 +797,17 @@ func on_fired(tick: int) -> void:
 ## 调用方必须先确认射程内真有人（见 [member swinging]）——
 ## 对着空气抬手的话，抬完那一刻敌人正好走进来，伤害就会在没有起手的情况下落地。
 func begin_swing(tick: int) -> bool:
-	if windup_ticks <= 0 or swinging:
+	var current: int = _current_windup()
+	if current <= 0 or swinging:
 		return false
 	swinging = true
-	next_shot_at = tick + windup_ticks
+	attack_ends_at = tick + attack_interval()
+	next_shot_at = tick + current
 	return true
+
+
+func _current_windup() -> int:
+	return PBMotionAuraRules.windup_ticks(self)
 
 
 ## 这个点上的敌人打不打得到（欧氏距离）。[param at] 走 [method PBEnemy.pos]。

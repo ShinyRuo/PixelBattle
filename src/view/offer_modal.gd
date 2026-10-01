@@ -71,23 +71,30 @@ func _card_text(unit: PBUnit, state: PBRunState, cfg: PBSimConfig, wave: PBWave)
 	var stats := unit.stats(cfg)
 	var lines := PackedStringArray()
 	lines.append(
-		"[b]%s[/b]　%s"
-		% [
-			PBLocale.of_character(unit.character),
-			PBSkin.tint(
-				PBUnitTile.RARITY_NAMES[int(unit.rarity)],
-				PBUnitTile.RARITY_COLORS[int(unit.rarity)]
-			)
-		]
+		(
+			"[b]%s[/b]　%s"
+			% [
+				PBLocale.of_character(unit.character),
+				PBSkin.tint(
+					PBUnitTile.RARITY_NAMES[int(unit.rarity)],
+					PBUnitTile.RARITY_COLORS[int(unit.rarity)]
+				)
+			]
+		)
 	)
-	lines.append(
-		"攻 %s系 ×%.2f　防 %s系 ×%.2f"
-		% [
-			PBUnitTile.ELEMENT_NAMES.get(unit.element, "?"),
-			cfg.damage_multiplier(PBElement.relation(unit.element, wave.element)),
-			PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?"),
-			cfg.damage_multiplier(PBElement.relation(wave.element, unit.def_element)),
-		]
+	(
+		lines
+		. append(
+			(
+				"攻 %s系 ×%.2f　防 %s系 ×%.2f"
+				% [
+					PBUnitTile.ELEMENT_NAMES.get(unit.element, "?"),
+					cfg.damage_multiplier(PBElement.relation(unit.element, wave.element)),
+					PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?"),
+					cfg.damage_multiplier(PBElement.relation(wave.element, unit.def_element)),
+				]
+			)
+		)
 	)
 	lines.append("战力 %.0f　血 %.0f　%s" % [stats.dps(), stats.hp, _reach_name(unit)])
 	lines.append(_bond_text(unit, cfg))

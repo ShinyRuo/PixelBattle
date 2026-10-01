@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://dct2chd3kt03s"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://dndutfompba7p" path="res://assets/actors/kimimaro/attack_0.png" id="1_1jnrh"]
-[ext_resource type="Texture2D" uid="uid://c2qqgwq1wdcm" path="res://assets/actors/kimimaro/attack_1.png" id="2_uxuns"]
-[ext_resource type="Texture2D" uid="uid://dl2txu06jx6o" path="res://assets/actors/kimimaro/attack_2.png" id="3_7d0r5"]
-[ext_resource type="Texture2D" uid="uid://dfaro1ayjxb27" path="res://assets/actors/kimimaro/attack_3.png" id="4_c5tyl"]
-[ext_resource type="Texture2D" uid="uid://bpt2gftq8k0uw" path="res://assets/actors/kimimaro/attack_4.png" id="5_mrili"]
-[ext_resource type="Texture2D" uid="uid://dh5ds8egb5g64" path="res://assets/actors/kimimaro/attack_5.png" id="6_ivsdr"]
-[ext_resource type="Texture2D" uid="uid://87wxcjv4imgl" path="res://assets/actors/kimimaro/dead_0.png" id="7_jm08q"]
-[ext_resource type="Texture2D" uid="uid://f5gqtdrg83bl" path="res://assets/actors/kimimaro/dead_1.png" id="8_mftli"]
-[ext_resource type="Texture2D" uid="uid://f3chnajp7kpr" path="res://assets/actors/kimimaro/dead_2.png" id="9_mseaa"]
-[ext_resource type="Texture2D" uid="uid://c52se3udsq2th" path="res://assets/actors/kimimaro/dead_3.png" id="10_w785u"]
-[ext_resource type="Texture2D" uid="uid://cqht7txs6wl3j" path="res://assets/actors/kimimaro/dead_4.png" id="11_8wgcr"]
-[ext_resource type="Texture2D" uid="uid://bted6kutn1r8e" path="res://assets/actors/kimimaro/dead_5.png" id="12_n8yt4"]
-[ext_resource type="Texture2D" uid="uid://ilthmmamxdo1" path="res://assets/actors/kimimaro/idle_0.png" id="13_77bl3"]
-[ext_resource type="Texture2D" uid="uid://4658uc8rmn85" path="res://assets/actors/kimimaro/idle_1.png" id="14_dyksc"]
-[ext_resource type="Texture2D" uid="uid://c3c6oj2okrndf" path="res://assets/actors/kimimaro/idle_2.png" id="15_or8rk"]
-[ext_resource type="Texture2D" uid="uid://epf71n01i7wm" path="res://assets/actors/kimimaro/idle_3.png" id="16_0m0lp"]
-[ext_resource type="Texture2D" uid="uid://c7vxafkbpnqtr" path="res://assets/actors/kimimaro/idle_4.png" id="17_s6o2d"]
-[ext_resource type="Texture2D" uid="uid://b2yrcc3el31dg" path="res://assets/actors/kimimaro/idle_5.png" id="18_mkw3o"]
-[ext_resource type="Texture2D" uid="uid://c7nr2fsd8wd10" path="res://assets/actors/kimimaro/run_0.png" id="19_7pvxk"]
-[ext_resource type="Texture2D" uid="uid://qy42lu0t10tv" path="res://assets/actors/kimimaro/run_1.png" id="20_vjgkg"]
-[ext_resource type="Texture2D" uid="uid://c0rnf56qe5k5f" path="res://assets/actors/kimimaro/run_2.png" id="21_vtv2d"]
-[ext_resource type="Texture2D" uid="uid://77kqcgn3phbp" path="res://assets/actors/kimimaro/run_3.png" id="22_kguhp"]
-[ext_resource type="Texture2D" uid="uid://bj0nfa26a7uws" path="res://assets/actors/kimimaro/run_4.png" id="23_smbmv"]
-[ext_resource type="Texture2D" uid="uid://cr33la4hra1m3" path="res://assets/actors/kimimaro/run_5.png" id="24_pma0x"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_vwxxe"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/attack_0.png" id="1_1jnrh"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/attack_1.png" id="2_uxuns"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/attack_2.png" id="3_7d0r5"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/attack_3.png" id="4_c5tyl"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/attack_4.png" id="5_mrili"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/attack_5.png" id="6_ivsdr"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/dead_0.png" id="7_jm08q"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/cast_dance_of_pines_00.png" id="7_mftli"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/dead_1.png" id="8_mftli"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/cast_dance_of_pines_01.png" id="8_mseaa"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/dead_2.png" id="9_mseaa"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/cast_dance_of_pines_02.png" id="9_w785u"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/cast_dance_of_pines_03.png" id="10_8wgcr"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/dead_3.png" id="10_w785u"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/dead_4.png" id="11_8wgcr"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/cast_dance_of_pines_04.png" id="11_n8yt4"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/cast_dance_of_pines_05.png" id="12_77bl3"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/dead_5.png" id="12_n8yt4"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/idle_0.png" id="13_77bl3"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/idle_1.png" id="14_dyksc"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/idle_2.png" id="15_or8rk"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/idle_3.png" id="16_0m0lp"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/idle_4.png" id="17_s6o2d"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/idle_5.png" id="18_mkw3o"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/run_0.png" id="19_7pvxk"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/run_1.png" id="20_vjgkg"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/run_2.png" id="21_vtv2d"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/run_3.png" id="22_kguhp"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/run_4.png" id="23_smbmv"]
+[ext_resource type="Texture2D" path="res://assets/actors/kimimaro/run_5.png" id="24_pma0x"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_vwxxe"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_sei2u"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_dyksc"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_mftli")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_mseaa")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_w785u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_8wgcr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_n8yt4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_77bl3")
+}],
+"loop": 0,
+"name": &"cast_dance_of_pines",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_vwxxe")
 key = &"kimimaro"
-frames = SubResource("SpriteFrames_sei2u")
+frames = SubResource("SpriteFrames_dyksc")
+skill_anims = {
+&"dance_of_pines": &"cast_dance_of_pines"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

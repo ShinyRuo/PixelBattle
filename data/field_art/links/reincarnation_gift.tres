@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/reincarnation_gift/frame_0.png" id="1_s2xrb"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/reincarnation_gift/frame_1.png" id="2_ce1a0"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/reincarnation_gift/frame_2.png" id="3_il4oe"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/reincarnation_gift/frame_3.png" id="4_hia07"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/reincarnation_gift/frame_4.png" id="5_ghebp"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/reincarnation_gift/frame_5.png" id="6_3j147"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_l02l6"]
+
+[resource]
+script = ExtResource("7_l02l6")
+frames = Array[Texture2D]([ExtResource("1_s2xrb"), ExtResource("2_ce1a0"), ExtResource("3_il4oe"), ExtResource("4_hia07"), ExtResource("5_ghebp"), ExtResource("6_3j147")])
+fps = 8.0
+link_width = 56.0

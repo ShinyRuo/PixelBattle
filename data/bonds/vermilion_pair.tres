@@ -6,12 +6,27 @@
 script = ExtResource("1_0oqf5")
 id = &"vermilion_pair"
 name_key = "bond.vermilion_pair"
-match_mode = 0
 member_ids = Array[StringName]([&"itachi", &"kisame"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
-member_skill_patches = {}
+member_functions = {
+&"kisame": {
+&"all_stats_per_level": 6.0,
+&"ranged_range": 500.0
+}
+}
+member_skill_patches = {
+&"itachi": {
+&"tsukuyomi": {
+&"extra_target_radius_set": 0.3,
+&"targets_add": 1.0
+}
+},
+&"kisame": {
+&"shark_cut": {
+&"variant_enable": 1.0
+}
+}
+}

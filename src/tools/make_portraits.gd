@@ -48,10 +48,7 @@ func _init() -> void:
 	print("切好 %d 张，写在 %s，成品 %s" % [keys.size(), out, PBPortraitForge.texture_size()])
 	# **没铺满的要报出来**，理由见 [member PBPortraitForge.short]。
 	if not forge.short.is_empty():
-		printerr(
-			"这几张的格子不够高，底下留了空：%s —— 重出这张表时把那一行画高一点。"
-			% ", ".join(forge.short)
-		)
+		printerr("这几张的格子不够高，底下留了空：%s —— 重出这张表时把那一行画高一点。" % ", ".join(forge.short))
 	print("下一步：跑一次 --import，让引擎把这些 PNG 导进来。")
 	quit()
 

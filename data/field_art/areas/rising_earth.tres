@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/rising_earth/frame_0.png" id="1_84yv4"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/rising_earth/frame_1.png" id="2_6hum8"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/rising_earth/frame_2.png" id="3_j58w4"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/rising_earth/frame_3.png" id="4_gt3di"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/rising_earth/frame_4.png" id="5_iajlv"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/rising_earth/frame_5.png" id="6_wkqtm"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_q44n3"]
+
+[resource]
+script = ExtResource("7_q44n3")
+frames = Array[Texture2D]([ExtResource("1_84yv4"), ExtResource("2_6hum8"), ExtResource("3_j58w4"), ExtResource("4_gt3di"), ExtResource("5_iajlv"), ExtResource("6_wkqtm")])
+fps = 6.0

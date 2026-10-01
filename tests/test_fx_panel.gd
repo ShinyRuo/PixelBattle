@@ -46,7 +46,13 @@ func test_the_plugin_points_at_a_panel_that_exists() -> void:
 func test_the_panel_builds_with_a_shot_page() -> void:
 	var panel := PBFxForgePanel.new()
 	add_child_autofree(panel)
-	assert_eq(panel._tabs.get_tab_count(), 1, "现在只有一页")
+	var binding_page: PBArtBindingPage = null
+	for child: Node in panel._tabs.get_children():
+		if child is PBArtBindingPage:
+			binding_page = child
+	assert_not_null(binding_page, "技能素材绑定入口存在")
+	if binding_page != null:
+		assert_gt(binding_page._skills.item_count, 0, "技能下拉框读当前技能表")
 	assert_eq(panel._tabs.get_tab_title(0), "子弹", "页名就是「子弹」")
 	var page := panel._shot_page
 	assert_eq(page._fly.anim, PBShotForge.FLY, "上面那段是飞行段")

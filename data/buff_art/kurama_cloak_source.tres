@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurama_cloak_source/back_0.png" id="1_8aiur"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurama_cloak_source/back_1.png" id="2_wlagf"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurama_cloak_source/back_2.png" id="3_7xqno"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurama_cloak_source/back_3.png" id="4_wx2qi"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurama_cloak_source/back_4.png" id="5_wjwqj"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurama_cloak_source/back_5.png" id="6_8ohsh"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_pof6j"]
+
+[resource]
+script = ExtResource("7_pof6j")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_8aiur"), ExtResource("2_wlagf"), ExtResource("3_7xqno"), ExtResource("4_wx2qi"), ExtResource("5_wjwqj"), ExtResource("6_8ohsh")])
+fps = 8.0
+anchor = Vector2(128, 245)

@@ -14,3 +14,4 @@ mods = {
 &"defence": 80.0,
 &"drain_max": 0.02
 }
+duration_levels = PackedFloat32Array()

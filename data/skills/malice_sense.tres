@@ -13,6 +13,7 @@ duration_seconds = 25.0
 mods = {
 &"damage_taken": 0.88
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_tkb5q")
@@ -22,5 +23,8 @@ name_key = "skill.malice_sense"
 affects = 0
 on_self = Array[ExtResource("1_tc44o")]([SubResource("Resource_57brq")])
 element = 1
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 500
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array()

@@ -13,6 +13,7 @@ duration_seconds = 2.0
 mods = {
 &"damage_taken": 0.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_e6bh5")
@@ -23,5 +24,8 @@ affects = 0
 on_hit = Array[ExtResource("1_w6ift")]([SubResource("Resource_0pjl4")])
 element = 2
 radius = 0.11
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array()

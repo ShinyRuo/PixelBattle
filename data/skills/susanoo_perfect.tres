@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_3haau"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_i0jrm"]
+
+[sub_resource type="Resource" id="Resource_b8f7d"]
+script = ExtResource("1_3haau")
+id = &"madara_shock"
+name_key = "buff.madara_shock"
+icon_key = "buff.madara_shock"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array(1, 1, 1.5, 1.5, 1.5, 2, 2, 2, 2, 2.5)
+
+[sub_resource type="Resource" id="Resource_ta12g"]
+script = ExtResource("1_3haau")
+id = &"madara_perfect"
+name_key = "buff.madara_perfect"
+icon_key = "buff.madara_perfect"
+kind = 1
+duration_seconds = 2.0
+mods = {
+&"all_stats_bonus": 0.2,
+&"defence": 10.0,
+&"ninjutsu_resist": 0.4,
+&"reach_bonus": 275.0
+}
+mods_growth = {
+&"defence": 10.0
+}
+duration_levels = PackedFloat32Array(2, 2, 3, 3, 3, 4, 4, 5, 5, 6)
+
+[resource]
+script = ExtResource("2_i0jrm")
+target = 0
+id = &"susanoo_perfect"
+name_key = "skill.susanoo_perfect"
+on_hit = Array[ExtResource("1_3haau")]([SubResource("Resource_b8f7d")])
+on_self = Array[ExtResource("1_3haau")]([SubResource("Resource_ta12g")])
+element = 0
+radius = 0.15
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

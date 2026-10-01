@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shark_pressure/front_0.png" id="1_0thro"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shark_pressure/front_1.png" id="2_qgtf4"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shark_pressure/front_2.png" id="3_6uuoo"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shark_pressure/front_3.png" id="4_ge6w7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shark_pressure/front_4.png" id="5_hcybu"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shark_pressure/front_5.png" id="6_r6rgm"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_xvqln"]
+
+[resource]
+script = ExtResource("7_xvqln")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_0thro"), ExtResource("2_qgtf4"), ExtResource("3_6uuoo"), ExtResource("4_ge6w7"), ExtResource("5_hcybu"), ExtResource("6_r6rgm")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

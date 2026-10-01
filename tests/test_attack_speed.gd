@@ -52,20 +52,14 @@ func test_the_damage_per_swing_does_not_depend_on_the_attack_speed() -> void:
 	# **这一条是反推被拿掉的那个位置。** 反推还在的话，
 	# 攻速翻倍会让每一发减半 —— 于是「配了不生效」。
 	assert_almost_eq(
-		_striker(2.0).damage_per_shot(),
-		_striker(1.0).damage_per_shot(),
-		0.0001,
-		"每一发只跟攻击力有关"
+		_striker(2.0).damage_per_shot(), _striker(1.0).damage_per_shot(), 0.0001, "每一发只跟攻击力有关"
 	)
 
 
 func test_doubling_the_attack_speed_really_doubles_the_output() -> void:
 	var ticks: int = RATE * 20
 	assert_almost_eq(
-		_output_over(_striker(2.0), ticks),
-		_output_over(_striker(1.0), ticks) * 2.0,
-		0.001,
-		"产出该翻倍"
+		_output_over(_striker(2.0), ticks), _output_over(_striker(1.0), ticks) * 2.0, 0.001, "产出该翻倍"
 	)
 
 
@@ -73,9 +67,7 @@ func test_the_interval_is_just_the_attack_speed_turned_upside_down() -> void:
 	# 加成搬去属性层之后，这一句就是全部的规则了 ——
 	# 而它必须和上限那道墙一起成立。
 	for speed: float in [0.5, 0.847, 1.0, 2.5]:
-		var expected: int = maxi(
-			int(round(float(RATE) / speed)), PBAttacker.fastest_ticks(RATE)
-		)
+		var expected: int = maxi(int(round(float(RATE) / speed)), PBAttacker.fastest_ticks(RATE))
 		assert_eq(_striker(speed).attack_interval(), expected, "间隔就是攻速的倒数")
 
 
@@ -117,9 +109,7 @@ func test_nobody_can_swing_faster_than_the_cap() -> void:
 		var one := _striker(speed)
 		assert_eq(one.attack_interval(), floor_ticks, "再怎么堆也不许破上限")
 		assert_lte(
-			float(RATE) / float(one.attack_interval()),
-			PBAttacker.ATTACK_SPEED_CAP,
-			"实际每秒出手数不许超过上限"
+			float(RATE) / float(one.attack_interval()), PBAttacker.ATTACK_SPEED_CAP, "实际每秒出手数不许超过上限"
 		)
 
 
@@ -130,6 +120,4 @@ func test_the_cap_does_not_bind_anyone_in_the_real_roster() -> void:
 	var cfg := PBGameData.config()
 	for character: PBCharacter in cfg.characters.all():
 		var stats := PBUnit.new(character).stats(cfg)
-		assert_lt(
-			stats.attack_speed, PBAttacker.ATTACK_SPEED_CAP, "%s 的裸攻速破了上限" % character.id
-		)
+		assert_lt(stats.attack_speed, PBAttacker.ATTACK_SPEED_CAP, "%s 的裸攻速破了上限" % character.id)

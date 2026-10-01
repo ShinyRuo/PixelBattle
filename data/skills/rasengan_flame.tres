@@ -3,16 +3,33 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_ea4u8"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_vhul3"]
 
+[sub_resource type="Resource" id="Resource_1o4kc"]
+script = ExtResource("1_ea4u8")
+id = &"jiraiya_stun"
+name_key = "buff.jiraiya_stun"
+icon_key = "buff.jiraiya_stun"
+kind = 1
+friendly = false
+duration_seconds = 3.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
 [resource]
 script = ExtResource("2_vhul3")
+target = 2
 id = &"rasengan_flame"
 name_key = "skill.rasengan_flame"
+on_hit = Array[ExtResource("1_ea4u8")]([SubResource("Resource_1o4kc")])
 element = 0
-power_mult = 2.6
-radius = 0.05
+power_mult = 2.0
+damage_stat = &"strength"
+damage_hp = 0.1
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
-delay_ticks = 6
 knockback = 0.04
-slow_scale = 0.0
-slow_ticks = 60
 mp_cost = 5.0
+mp_cost_levels = PackedFloat32Array()

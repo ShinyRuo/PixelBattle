@@ -120,7 +120,6 @@ const MAX_SKILLS: int = 2
 ## 枚举借用 [enum PBAttacker.Shape]：调用点都在战斗层，数据层再定义一个同义枚举只会多一处要同步。
 @export var attack_shape: PBAttacker.Shape = PBAttacker.Shape.SINGLE
 
-
 ## 大招的伤害属性，**-1 表示与 [member element] 相同**（铁律 4：本体土属性、大招火系这种角色靠它）。
 ## 用 -1 当哨兵而不是给 [enum PBElement.Type] 加 `AUTO`：那个枚举是克制环本身，塞一个不参与克制的值
 ## 会让每一处遍历都多记一条例外。
@@ -132,7 +131,6 @@ const MAX_SKILLS: int = 2
 ## **填上了也不改变任何自动跑出来的数字**：技能只有玩家手动放得出（自动档只挑地面落点），
 ## 批量扫描、悬崖二分、配平回归都碰不到它。
 @export var skill_ids: Array[StringName] = []
-
 
 ## 他自带的常驻被动：键 → 量。词汇表与落点见 [PBPassiveRules]。
 ##

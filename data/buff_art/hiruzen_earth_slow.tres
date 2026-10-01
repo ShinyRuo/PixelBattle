@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hiruzen_earth_slow/front_0.png" id="1_xo7xv"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hiruzen_earth_slow/front_1.png" id="2_w4fn7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hiruzen_earth_slow/front_2.png" id="3_s2s4c"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hiruzen_earth_slow/front_3.png" id="4_ximq8"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hiruzen_earth_slow/front_4.png" id="5_ne7da"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hiruzen_earth_slow/front_5.png" id="6_1nr62"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_gomsy"]
+
+[resource]
+script = ExtResource("7_gomsy")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_xo7xv"), ExtResource("2_w4fn7"), ExtResource("3_s2s4c"), ExtResource("4_ximq8"), ExtResource("5_ne7da"), ExtResource("6_1nr62")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

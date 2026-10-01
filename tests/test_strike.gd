@@ -54,9 +54,7 @@ func test_the_carrier_gets_back_up_once_and_only_once() -> void:
 	attacker.revive()
 	assert_false(attacker.take_damage(999.0, 0), "第一次打死该被重生接住")
 	assert_true(attacker.alive, "他还站着")
-	assert_almost_eq(
-		attacker.hp, attacker.max_hp * PBAttacker.REVIVE_FRACTION, 0.001, "带着部分血回来"
-	)
+	assert_almost_eq(attacker.hp, attacker.max_hp * PBAttacker.REVIVE_FRACTION, 0.001, "带着部分血回来")
 	assert_true(attacker.take_damage(999.0, 0), "第二次就真死了")
 	assert_false(attacker.alive, "这次躺下了")
 

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://cn4fokyh35cwt"]
+
+[ext_resource type="Texture2D" uid="uid://by5xld8vfgtiq" path="res://assets/fx/fields/areas/dark_walk/frame_0.png" id="1_y7bcp"]
+[ext_resource type="Texture2D" uid="uid://ddtc055ytb66f" path="res://assets/fx/fields/areas/dark_walk/frame_1.png" id="2_lk01k"]
+[ext_resource type="Texture2D" uid="uid://ca32er0qhmjh7" path="res://assets/fx/fields/areas/dark_walk/frame_2.png" id="3_8pbc5"]
+[ext_resource type="Texture2D" uid="uid://c7qmn7s7vf5wx" path="res://assets/fx/fields/areas/dark_walk/frame_3.png" id="4_nqqqf"]
+[ext_resource type="Texture2D" uid="uid://dxjbeggpo1nm8" path="res://assets/fx/fields/areas/dark_walk/frame_4.png" id="5_7ee75"]
+[ext_resource type="Texture2D" uid="uid://c6qo42b2urny7" path="res://assets/fx/fields/areas/dark_walk/frame_5.png" id="6_dxb4f"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_luxuu"]
+
+[resource]
+script = ExtResource("7_luxuu")
+frames = Array[Texture2D]([ExtResource("1_y7bcp"), ExtResource("2_lk01k"), ExtResource("3_8pbc5"), ExtResource("4_nqqqf"), ExtResource("5_7ee75"), ExtResource("6_dxb4f")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_dark_walk_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

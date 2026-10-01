@@ -3,15 +3,40 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_0otck"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ohxut"]
 
+[sub_resource type="Resource" id="Resource_ejru0"]
+script = ExtResource("1_0otck")
+id = &"kisame_sharks"
+name_key = "buff.kisame_sharks"
+icon_key = "buff.kisame_sharks"
+kind = 1
+friendly = false
+duration_seconds = 1.01
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
 [resource]
 script = ExtResource("2_ohxut")
 id = &"infinite_sharks"
+shot_key = &"skill_infinite_sharks"
 name_key = "skill.infinite_sharks"
 element = 4
-power_mult = 2.8
-radius = 0.18
+power_mult = 0.25
+damage_base = 24.0
+damage_growth = 24.0
+damage_stat = &"agility"
+damage_stat_floor = true
+radius = 0.19
+hit_count = 10
+hit_interval_ticks = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 400
 delay_ticks = 10
-slow_scale = 0.0
-slow_ticks = 30
 mp_cost = 10.0
+zone_seconds = 2.0
+zone_radius = 0.175
+zone_effects = Array[ExtResource("1_0otck")]([SubResource("Resource_ejru0")])
+mp_cost_levels = PackedFloat32Array(10, 14, 18, 22, 26, 30, 34, 38, 42, 46)

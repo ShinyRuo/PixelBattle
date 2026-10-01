@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/danzo_izanagi/front_0.png" id="1_vwvxu"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/danzo_izanagi/front_1.png" id="2_yon7e"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/danzo_izanagi/front_2.png" id="3_vx4p6"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/danzo_izanagi/front_3.png" id="4_kwt6d"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/danzo_izanagi/front_4.png" id="5_m6vvc"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/danzo_izanagi/front_5.png" id="6_v3478"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_d56yp"]
+
+[resource]
+script = ExtResource("7_d56yp")
+front_frames = Array[Texture2D]([ExtResource("1_vwvxu"), ExtResource("2_yon7e"), ExtResource("3_vx4p6"), ExtResource("4_kwt6d"), ExtResource("5_m6vvc"), ExtResource("6_v3478")])
+fps = 8.0
+anchor = Vector2(128, 220)
+pixel_scale = 0.3333333333333333

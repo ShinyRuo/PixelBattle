@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/pein_rebirth/front_0.png" id="1_jb3lx"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/pein_rebirth/front_1.png" id="2_dy88e"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/pein_rebirth/front_2.png" id="3_u48ej"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/pein_rebirth/front_3.png" id="4_2stft"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/pein_rebirth/front_4.png" id="5_hngxo"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/pein_rebirth/front_5.png" id="6_edofm"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_4y610"]
+
+[resource]
+script = ExtResource("7_4y610")
+front_frames = Array[Texture2D]([ExtResource("1_jb3lx"), ExtResource("2_dy88e"), ExtResource("3_u48ej"), ExtResource("4_2stft"), ExtResource("5_hngxo"), ExtResource("6_edofm")])
+fps = 8.0
+anchor = Vector2(128, 220)
+pixel_scale = 0.3333333333333333

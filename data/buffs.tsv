@@ -1,7 +1,13 @@
 # 效果表 —— `src/tools/make_skills.gd` 的输入，一行一份 buff。
 #
-# 字段（Tab 分隔，共 7 列）：
-#   buff键  显示名  档  善恶  持续秒  周期秒  效果
+# 字段（Tab 分隔，7 列必填，第 8 列可选）：
+#   buff键  显示名  档  善恶  持续秒  周期秒  效果  额外
+# 额外：harm_stat=strength/agility/intellect/attack/max_hp;harm_mult=系数
+#       durations=1级秒数,2级秒数,...（非线性时长表，超出表长取末级）
+#       stacks=1（敌方周期伤害 / 减甲独立叠层，不刷新旧层）
+#       wave=1（整波有效，持续秒填 0）；source=1（同名效果按来源独立保存）
+#       levels_效果键=逐级值（首项等于基数；不与该键线性成长混用）
+# 每跳伤害 = 按等级计算的 harm + 施加时的指定属性 × harm_mult；不会另加一段首次伤害。
 #
 # ## 档
 #
@@ -53,12 +59,14 @@
 
 # ── M7/M8 就有、现在仍有人引用的那一份 ──────────────────────────
 heal_burst	治疗	瞬间	增益	0	0	heal=180+180
+hokage_line_guard	历代火影·护体	持续	增益	0	0	defence=30	wave=1
+reincarnation_gift	己生转生·三围赠予	持续	增益	0	0	strength=0;agility=0;intellect=0	wave=1;source=1
 
 # ── M12-c1：R 档角色技能要用的 ────────────────────────────────
 haku_chill	水翔·迟滞	持续	减益	5	0	enemy_speed_scale=0.7
-rin_cheer	鼓舞	持续	增益	20	0	damage_scale=1.1+0.03
+rin_cheer	鼓舞	持续	增益	15	0	base_attack_bonus=0.13+0.03;defence=3+3
 karin_ward	神乐心眼	持续	增益	4	0	damage_taken=0.9+0.01
-lee_whirl	木叶旋风·免疫	持续	增益	3.5	0	damage_taken=0.35
+lee_whirl	木叶旋风·旋转	持续	增益	3.5	0	ninjutsu_immune=1;channel=1
 kiba_spin	通牙·无敌	持续	增益	1.5	0	damage_taken=0
 zabuza_mist	雾隐	持续	增益	5	0	damage_scale=1.35
 shikamaru_focus	天才军师	周期	增益	6	1	mana=1+1
@@ -73,8 +81,8 @@ tenten_tools	忍具操纵	持续	增益	20	0	damage_scale=1.1+0.04
 # `PBEnemy.ready_to_fire` 里面）。在那之前这六份禁锢都只停得住脚，
 # 敌人站在原地照样放箭。**晕眩期间冷却不推进** —— 推进的话，
 # 一段禁锢结束那一瞬敌人会把攒下的几下一起打出来。
-ino_seize	心转·束缚	持续	减益	2	0	enemy_speed_scale=0;stun=1
-shadow_hold	影子禁锢	持续	减益	4	0	enemy_speed_scale=0;stun=1
+ino_seize	心转·束缚	持续	减益	1	0	enemy_speed_scale=0;stun=1	durations=1,1,2,2,2,3,3,4,4,5
+shadow_hold	影子禁锢	持续	减益	2.5	0	enemy_speed_scale=0;stun=1	durations=2.5,2.5,4,4,4,5.5,5.5,6,6,7.5
 
 # ── M12-c1：SR 档角色技能要用的 ────────────────────────────────
 #
@@ -86,24 +94,25 @@ chojuro_release	鲆鲽解放	持续	增益	5	0	damage_scale=1.5+0.15
 konan_wings	纸天使之术	持续	增益	20	0	damage_scale=1.1+0.02
 guy_gate	八门遁甲·生门	持续	增益	12	0	damage_scale=1.5
 kimimaro_bone	唐松之舞·骨甲	持续	增益	3	0	damage_taken=0.5
-tobirama_wall	水遁·水阵壁	持续	增益	3	0	damage_taken=0.4
+tobirama_wall	水遁·水阵壁	持续	增益	3	0	defence=500
 neji_kaiten	回天·无敌	持续	增益	1	0	damage_taken=0
 hyuga_guard	回天·守护	持续	增益	2	0	damage_taken=0
-naruto_kurama	九尾查克拉	周期	增益	12	1	heal=20+20
 
 # 落在友军身上的
-kurenai_shield	幻术·镜守	持续	增益	9	0	shield=800+800
-kushina_chakra	尾兽查克拉·历战	周期	增益	8	1	heal=35+35
-temari_gale	气流乱舞	持续	增益	20	0	damage_scale=1.13+0.13
+kurenai_shield	幻术·镜守	持续	增益	9	0	ninjutsu_shield=800+800
 
 # 落在敌人身上的
 burn	灼烧	周期	减益	7	1	harm=60+60
-sand_coffin	砂缚柩·磨蚀	周期	减益	2	0.5	harm=50+50
-mei_acid	溶解爆酸	周期	减益	4	1	harm=30+30;enemy_defence=-3+-3
-sasori_iron	沙铁界法·磨蚀	周期	减益	4	0.5	harm=20+20
-kakashi_bind	追牙·束缚	持续	减益	5	0	enemy_speed_scale=0;stun=1
+sand_coffin	砂缚柩·缠绕	持续	减益	1.5	0	enemy_speed_scale=0;disarm=1	durations=1.5,1.5,2,2,2,2.5,2.5,3,3,3.5
+# 原版减速载体存在 4 秒；离圈残留暂沿用地面光环 4 秒适配，未完成原生引擎核验。
+sand_waterfall_slow	砂瀑大葬·流砂	持续	减益	4	0	enemy_speed_scale=0
+mei_acid	溶解爆酸	持续	减益	4	0	enemy_defence=-3+-3
+# 五影光环第三级 -12 为缺省值适配，满级 -40.5 取原 w3a；降攻速残留暂按 4 秒。
+mei_acid_kage	溶解爆酸·五影降甲	持续	减益	4	0	enemy_defence=-4	levels_enemy_defence=-4,-8,-12,-16,-20,-24,-28,-32,-36,-40.5
+mei_acid_pace	溶解爆酸·迟缓	持续	减益	4	0	enemy_attack_speed_scale=0.3
+kakashi_bind	追牙·束缚	持续	减益	5	0	enemy_speed_scale=0
 suigetsu_bind	水龙·禁锢	持续	减益	2	0	enemy_speed_scale=0;stun=1
-kurenai_haze	幻术·霞	持续	减益	2	0	hurt=2.0;enemy_speed_scale=0.25
+kurenai_haze	幻术·霞	持续	减益	1	0	hurt=2.0;sage_hurt_scale=1.25;enemy_speed_scale=0.25;disarm=1	durations=1,1,2,2,2,3,3,3,3,4
 
 # ── M12-c1：SSR 档角色技能要用的 ───────────────────────────────
 #
@@ -112,7 +121,8 @@ kurenai_haze	幻术·霞	持续	减益	2	0	hurt=2.0;enemy_speed_scale=0.25
 # 的多个键，所以挂两份是它本来就支持的形状，不需要给 buff 加第二个档。
 
 # 自增益
-madara_susanoo	须佐能乎	持续	增益	3	0	damage_taken=0.5
+madara_susanoo	须佐能乎	持续	增益	2	0	defence=10+10;ninjutsu_resist=0.4	durations=2,2,3,3,3,4,4,5,5,6
+madara_shock	须佐能乎·震慑	持续	减益	1	0	stun=1;enemy_speed_scale=0	durations=1,1,1.5,1.5,1.5,2,2,2,2,2.5
 raikage_armor	雷遁护甲	持续	增益	20	0	damage_scale=1.5
 sage_sense	恶意感知	持续	增益	25	0	damage_taken=0.88
 shisui_kotoama	别天神·光芒	持续	增益	30	0	crit_chance=0.10
@@ -121,8 +131,9 @@ shisui_kotoama	别天神·光芒	持续	增益	30	0	crit_chance=0.10
 kabuto_mend	强力再生术	周期	增益	12	1	heal=125+125
 
 # 落在敌人身上的
-hashirama_bind	森罗万象·缠绕	持续	减益	2.5	0	enemy_speed_scale=0;stun=1
-hashirama_forest	树界降临·侵蚀	周期	减益	6	1	harm=35+35
+hashirama_bind	森罗万象·缠绕	持续	减益	1	0	enemy_speed_scale=0;disarm=1	durations=1,1.5,2,2.5,3,3.5,4,4.5,5,5.5
+gate_stun	明神门·镇压	持续	减益	0.5	0	stun=1
+hashirama_forest	树界降临·减速	持续	减益	0.05	0	enemy_speed_scale=0.7;enemy_attack_speed_scale=0.7
 itachi_moon_hold	月读·囚	持续	减益	2	0	enemy_speed_scale=0;stun=1
 itachi_moon_grind	月读·磨蚀	周期	减益	2	0.5	harm=100+100
 obito_embers	火焰阵·余烬	周期	减益	6	1	harm=60+60
@@ -134,7 +145,7 @@ obito_embers	火焰阵·余烬	周期	减益	6	1	harm=60+60
 # 带不了一份效果。所以这一版降级成一个主动技能 ——
 # 降的是「自己会发生」，不是效果本身。
 obito_warp	扭曲·钉住	持续	减益	1.5	0	enemy_speed_scale=0;stun=1
-tobirama_dark	黑暗行之术	持续	减益	3	0	enemy_hit_scale=0.5
+tobirama_dark	黑暗行之术	持续	减益	2	0	enemy_hit_scale=0.5;enemy_attack_speed_scale=0.5;enemy_speed_scale=0.5	durations=2,2,3,3,3,4,4,5,5,6
 
 # ── M12-c4：分诊过期的那批 ────────────────────────────
 #
@@ -190,11 +201,12 @@ mei_charm	妩媚	持续	减益	3	0	enemy_attack_speed_scale=0.35
 #
 # 加重岩之术「攻击时降低敌人 50% 的攻速和移速，持续 2 秒」。
 onoki_weight	加重岩之术	持续	减益	2	0	enemy_attack_speed_scale=0.5;enemy_speed_scale=0.5
-# 傀儡之体「普攻附加毒素……并降低其 30% 的攻击速度，持续 5 秒」。毒伤那一半要叠层，还没有。
+# 傀儡之体：攻速 -30% 刷新 5 秒；每次命中的毒伤独立跳五次，不挤占普通槽。
 sasori_venom	傀儡之体·毒	持续	减益	5	0	enemy_attack_speed_scale=0.7
+sasori_poison	傀儡之体·毒伤	周期	减益	5	1	harm=14+4	stacks=1
 # 雷梨热刀「受远程攻击时突袭跳跃到目标身前，提升 30% 的总力量持续 5 秒，跳跃后无敌 1 秒，CD 10 秒」。
-# 名册里配 `struck_ranged=1;struck_leap=1`。总力量 +30% 降级成伤害 ×1.3（他的攻击力几乎全由力量来），血上限那一半没有。
-raikage_blade	雷梨热刀	持续	增益	5	0	damage_scale=1.3
+# 名册里配 `struck_ranged=1;struck_leap=1`。当前力量 +30% 折为五秒点数快照，真实影响生命与力量派生。
+raikage_blade	雷梨热刀	持续	增益	5	0	strength_bonus=0.3
 raikage_blade_guard	雷梨热刀·无敌	持续	增益	1	0	damage_taken=0
 
 # ── M12-c4 批十四：敌人护甲 ────────────────────────────────
@@ -203,3 +215,37 @@ raikage_blade_guard	雷梨热刀·无敌	持续	增益	1	0	damage_taken=0
 #
 # 木叶刚力旋风「降低目标 8-80 点防御，持续 10 秒」。
 guy_break	木叶刚力旋风·破甲	持续	减益	10	0	enemy_defence=-8+-8
+guy_stun	木叶刚力旋风·眩晕	持续	减益	1	0	stun=1;enemy_speed_scale=0
+
+# 神罗天征：无直接伤害，反弹 10+3×等级%，分级时长来自原版说明。
+tendo_repulse	神罗天征·反弹	持续	增益	2	0	reflect=0.13+0.03	durations=2,2,3,3,3,4,4,4,4,5
+kushina_chains	金刚封锁·沉默	持续	减益	1	0	enemy_speed_scale=0.5;silence=1	durations=1,1,2,2,2,3,3,3,3,4
+
+# 原版范围控制：无限鲛 A03P、白激 A07H、超大玉 A086。
+# 原载体 A03S 未升技能等级，一级控制 1.01 秒。弹幕命中节奏暂以 2 秒连续区域刷新适配。
+kisame_sharks	无限鲛·眩晕	持续	减益	1.01	0	stun=1;enemy_speed_scale=0
+# 鲛人 A03T 双减速 -25%；原生离圈残留未核验，沿用本项目光环 4 秒残留适配。
+shark_pressure	鲛人·水域压制	持续	减益	4	0	enemy_attack_speed_scale=0.75;enemy_speed_scale=0.75
+kabuto_silence	白激·沉默	持续	减益	1	0	silence=1	durations=1,1,2,2,2,3,3,3,3,4
+sage_rasengan_stun	超大玉·眩晕	持续	减益	2	0	stun=1;enemy_speed_scale=0
+
+# 单体螺旋丸控制：豪炎 A02J；瞬身 A020 在 PVE 不击退。
+jiraiya_stun	豪炎·眩晕	持续	减益	3	0	stun=1;enemy_speed_scale=0
+minato_stun	瞬身·眩晕	持续	减益	2	0	stun=1;enemy_speed_scale=0
+
+# 击飞时地面位置不动；开土 A0AD 在落地时才结算范围伤害。
+enemy_lift	击飞	持续	减益	1	0	airborne=1;stun=1;enemy_speed_scale=0
+jugo_slow	活塞拳·迟缓	持续	减益	3	0	enemy_speed_scale=0.5;enemy_attack_speed_scale=0.5
+kurotsuchi_stun	开土升掘·眩晕	持续	减益	0.5	0	stun=1;enemy_speed_scale=0	durations=0.5,0.5,1,1,1,1.5,1.5,1.5,1.5,2
+
+danzo_root_hold	树根束缚	持续	减益	1	0	stun=1;enemy_speed_scale=0	durations=1,1,2,2,2,3,3,3,3,4
+
+# 土龙弹正文只给减速幅度；3 秒时长沿用既有实现，待源脚本考据。
+hiruzen_earth_slow	土龙弹·减速	持续	减益	3	0	enemy_speed_scale=0.7
+
+madara_perfect	完全体须佐能乎	持续	增益	2	0	defence=10+10;ninjutsu_resist=0.4;all_stats_bonus=0.2;reach_bonus=275	durations=2,2,3,3,3,4,4,5,5,6
+true_hands_stun	真数千手·震慑	持续	减益	1	0	stun=1;enemy_speed_scale=0
+
+serpent_regen	蛇之意志·再生	周期	增益	12	1	heal=54.16666666666667+54.16666666666667
+serpent_slow	万蛇罗之阵·减速	持续	减益	3	0	enemy_speed_scale=0.5
+serpent_silence	万蛇罗之阵·沉默	持续	减益	0.8	0	silence=1	durations=0.8,1.1,1.4,1.7,2,2.3,2.6,2.9,3.2,3.5

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://brbdwr75o7o4x"]
+
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://ddn7odnctmg27" path="res://assets/fx/fields/pulses/sand_burial/frame_0.png" id="1_5y4c7"]
+[ext_resource type="Texture2D" uid="uid://bjmgbksbhwdl5" path="res://assets/fx/fields/pulses/sand_burial/frame_1.png" id="2_7uxx5"]
+[ext_resource type="Texture2D" uid="uid://b4sllwhx5ef54" path="res://assets/fx/fields/pulses/sand_burial/frame_2.png" id="3_5rmas"]
+[ext_resource type="Texture2D" uid="uid://bkn7eva18g73b" path="res://assets/fx/fields/pulses/sand_burial/frame_3.png" id="4_u043w"]
+[ext_resource type="Texture2D" uid="uid://cd6hgxqyj5kh3" path="res://assets/fx/fields/pulses/sand_burial/frame_4.png" id="5_da7ix"]
+[ext_resource type="Texture2D" uid="uid://dgmmfocd3uju4" path="res://assets/fx/fields/pulses/sand_burial/frame_5.png" id="6_1hp4a"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_5y4c7"), ExtResource("2_7uxx5"), ExtResource("3_5rmas"), ExtResource("4_u043w"), ExtResource("5_da7ix"), ExtResource("6_1hp4a")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_sand_burial_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

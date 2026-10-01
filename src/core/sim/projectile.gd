@@ -28,6 +28,10 @@ var target: int = -1
 ## 这一发是敌人射向己方的。false = 己方射向敌人。
 ## **一个开关而不是两个池子**：飞行、命中判定、目标死了就消失，三条规则两个方向逐字相同。
 var at_ally: bool = false
+var primary_target: bool = true
+var enemy_duel: bool = false
+var duel_context: PBHarmContext = null
+var duel_source_friendly: bool = false
 
 ## 命中时打多少。
 ##
@@ -58,9 +62,15 @@ var level: int = 1
 ## 存在这里：落地那一刻「谁离得最近」和「谁打的」可以是两个人。
 var source: int = -1
 
+## 发射者的召唤技能快照，不随召唤槽位复用而改变。
+var summon_skill_id: StringName = &""
+
 ## 这一发是不是暴击，只喂 [PBBattleLog]。
 ## **掷骰发生在出膛那一刻**：命中时施法者可能已经死了，而掷点必须只有一个（[PBCritRules]）。
 var crit: bool = false
+## 敌人出手时的类型与穿透快照，飞行中改变来源不会改变已经射出的攻击。
+var enemy_hit: PBEnemyHitContext = null
+var channel: PBSkillChannel = null
 
 ## 打中第一个目标之后还能往前穿多远（战场坐标）。0 = 打中就回池。
 ## 出膛时由射手的 [member PBAttacker.pierce] 定下（同 [member crit]：飞到时射手可能已经死了）。
@@ -97,11 +107,18 @@ func launch(
 	damage = hit_for
 	speed = per_tick
 	at_ally = toward_ally
+	primary_target = true
+	enemy_duel = false
+	duel_context = null
+	duel_source_friendly = false
 	element = of_element
 	source = from_slot
 	skill = of_skill
 	level = caster_level
 	crit = was_crit
+	enemy_hit = null
+	channel = null
+	summon_skill_id = &""
 	_end_pierce()
 
 
@@ -140,6 +157,10 @@ func fly(goal: Vector2) -> bool:
 ## 打完了 / 目标没了。回到池子里等下一次 [method launch]。
 func retire() -> void:
 	alive = false
+	primary_target = true
+	enemy_duel = false
+	duel_context = null
+	duel_source_friendly = false
 	target = -1
 	# 回池的子弹不该再攥着一份技能引用。[method launch] 每次都会重设它，
 	# 所以这一行是第二道保险 —— 而「背着上一发火球的效果飞出去」
@@ -147,6 +168,9 @@ func retire() -> void:
 	skill = null
 	level = 1
 	crit = false
+	enemy_hit = null
+	channel = null
+	summon_skill_id = &""
 	_end_pierce()
 
 

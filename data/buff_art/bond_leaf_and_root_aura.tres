@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_leaf_and_root_aura/back_0.png" id="1_222y1"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_leaf_and_root_aura/back_1.png" id="2_vwcdg"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_leaf_and_root_aura/back_2.png" id="3_2njrd"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_leaf_and_root_aura/back_3.png" id="4_0c0qt"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_leaf_and_root_aura/back_4.png" id="5_hr3dx"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_leaf_and_root_aura/back_5.png" id="6_gt0e5"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_hjqq1"]
+
+[resource]
+script = ExtResource("7_hjqq1")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_222y1"), ExtResource("2_vwcdg"), ExtResource("3_2njrd"), ExtResource("4_0c0qt"), ExtResource("5_hr3dx"), ExtResource("6_gt0e5")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

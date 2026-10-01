@@ -212,7 +212,7 @@ func test_a_ground_skill_in_flight_is_drawn_as_a_bullet() -> void:
 	squad[0].skills[0].reset()
 	sim.step()
 	assert_true(sim.cast_skill(squad[0], Vector2(0.7, 0.0), 1), "前提：这一发放得出去")
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 
 	pool.sync_shots(sim, [], null, _field())
 	assert_eq(pool.shown(), 1, "在飞的那一发技能要画出来")
@@ -243,7 +243,7 @@ func test_a_skill_without_a_cast_delay_never_draws_a_bullet() -> void:
 	squad[0].skills[0].reset()
 	sim.step()
 	sim.cast_skill_on(squad[0], squad[0], 1)
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 
 	pool.sync_shots(sim, [], null, _field())
 	assert_eq(pool.shown(), 0, "瞬发的那一档不画子弹")

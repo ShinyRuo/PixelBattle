@@ -6,17 +6,21 @@
 script = ExtResource("1_kcun3")
 id = &"tsuchikage_guard"
 name_key = "bond.tsuchikage_guard"
-match_mode = 0
 member_ids = Array[StringName]([&"onoki", &"kurotsuchi"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
 member_skill_patches = {
+&"kurotsuchi": {
+&"light_rock": {
+&"radius_set": 0.3
+}
+},
 &"onoki": {
 &"dust_release": {
+&"full_damage_radius_set": 0.17,
+&"outer_damage_scale_set": 0.6,
 &"radius_scale": 1.5
 }
 }

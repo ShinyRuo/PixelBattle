@@ -116,14 +116,10 @@ func _show_mark(on: TextureRect) -> void:
 
 ## 一张可点的图，**没有边框和按钮样式**（玩家定的）。收点击靠 `mouse_filter = STOP` + `gui_input`，
 ## 反馈是选中底（[member _mark]）。
-func _add_icon(
-	rect: Rect2, side: float, kind: PBSelection.Kind, drop: float = 0.0
-) -> TextureRect:
+func _add_icon(rect: Rect2, side: float, kind: PBSelection.Kind, drop: float = 0.0) -> TextureRect:
 	var icon := TextureRect.new()
 	icon.size = Vector2(side, side)
-	icon.position = Vector2(
-		rect.position.x + (rect.size.x - side) * 0.5, rect.position.y + drop
-	)
+	icon.position = Vector2(rect.position.x + (rect.size.x - side) * 0.5, rect.position.y + drop)
 	icon.mouse_filter = Control.MOUSE_FILTER_STOP
 	icon.gui_input.connect(
 		func(event: InputEvent) -> void:

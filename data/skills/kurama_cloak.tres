@@ -3,28 +3,15 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_j2tnh"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_qc3bu"]
 
-[sub_resource type="Resource" id="Resource_ark73"]
-script = ExtResource("1_j2tnh")
-id = &"naruto_kurama"
-name_key = "buff.naruto_kurama"
-icon_key = "buff.naruto_kurama"
-kind = 2
-duration_seconds = 12.0
-period_seconds = 1.0
-mods = {
-&"heal": 20.0
-}
-mods_growth = {
-&"heal": 20.0
-}
-
 [resource]
 script = ExtResource("2_qc3bu")
 target = 0
 id = &"kurama_cloak"
 name_key = "skill.kurama_cloak"
 affects = 0
-on_self = Array[ExtResource("1_j2tnh")]([SubResource("Resource_ark73")])
+heal_aura_max = 0.01
+heal_aura_period_ticks = 10
 element = 1
-cooldown_ticks = 400
-mp_cost = 10.0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

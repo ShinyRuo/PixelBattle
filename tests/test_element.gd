@@ -92,9 +92,7 @@ func test_same_element_is_punished_not_merely_unhelpful() -> void:
 	var cfg := PBSimConfig.new()
 	for element: int in ELEMENTS:
 		assert_eq(
-			PBElement.relation(element, element),
-			PBElement.Relation.WEAK,
-			"同属性对撞在原版是 0.50，不是无加成"
+			PBElement.relation(element, element), PBElement.Relation.WEAK, "同属性对撞在原版是 0.50，不是无加成"
 		)
 	assert_eq(cfg.damage_multiplier(PBElement.Relation.WEAK), 0.50, "同系与被克共用 0.50")
 
@@ -240,9 +238,7 @@ func test_rarity_ladder_stays_flatter_than_the_counter_bonus() -> void:
 	# 初版阶梯是 ×1.84（对克制的 ×2.0），M-1 实测换人只值 1.25 倍战力。
 	# 压到 ×1.30 后升到 1.39 倍。1.45 以上是完全没用的平台，所以卡在 1.45。
 	var cfg := PBSimConfig.new()
-	assert_eq(
-		cfg.rarity_power.size(), PBUnit.Rarity.size(), "战力阶梯要和稀有度档数一样长"
-	)
+	assert_eq(cfg.rarity_power.size(), PBUnit.Rarity.size(), "战力阶梯要和稀有度档数一样长")
 	for i: int in range(1, cfg.rarity_power.size()):
 		var step: float = cfg.rarity_power[i] / cfg.rarity_power[i - 1]
 		assert_gt(step, 1.0, "高稀有度不该比低稀有度弱")

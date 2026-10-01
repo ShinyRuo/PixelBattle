@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shisui_kotoama/front_0.png" id="1_yhaj7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shisui_kotoama/front_1.png" id="2_n8bbl"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shisui_kotoama/front_2.png" id="3_syoa8"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shisui_kotoama/front_3.png" id="4_b3eiy"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shisui_kotoama/front_4.png" id="5_70rol"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shisui_kotoama/front_5.png" id="6_f3bxj"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_qag37"]
+
+[resource]
+script = ExtResource("7_qag37")
+front_frames = Array[Texture2D]([ExtResource("1_yhaj7"), ExtResource("2_n8bbl"), ExtResource("3_syoa8"), ExtResource("4_b3eiy"), ExtResource("5_70rol"), ExtResource("6_f3bxj")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

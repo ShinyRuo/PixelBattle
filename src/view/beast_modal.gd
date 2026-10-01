@@ -92,11 +92,7 @@ func refresh(state: PBRunState, cfg: PBSimConfig) -> void:
 	set_hint("点一只看它干什么，再按「确定带它」。[b]定了就整局不能换。[/b]")
 	if _focus < 0:
 		_detail.text = PBSkin.tint(
-			(
-				"九只里有两只一点伤害都不打（聚拢、重置全体大招 CD）——"
-				+ "§11 明写这种「机制型」不能被数值型挤掉，实测里重置 CD 那只排第一。"
-			),
-			PBSkin.DIM
+			"九只里有两只一点伤害都不打（聚拢、重置全体大招 CD）——" + "§11 明写这种「机制型」不能被数值型挤掉，实测里重置 CD 那只排第一。", PBSkin.DIM
 		)
 
 
@@ -179,8 +175,7 @@ func _ultimate_text(beast: PBBeast) -> String:
 		)
 	if beast.ultimate_team_damage_scale > 1.0:
 		parts.append(
-			"全队增伤 ×%.2f 持续 %.0f 秒"
-			% [beast.ultimate_team_damage_scale, beast.ultimate_buff_seconds]
+			"全队增伤 ×%.2f 持续 %.0f 秒" % [beast.ultimate_team_damage_scale, beast.ultimate_buff_seconds]
 		)
 	if beast.ultimate_reset_cooldowns:
 		parts.append(PBSkin.tint("重置全体角色大招 CD", PBSkin.ACCENT))

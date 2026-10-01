@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://dq38et800kllm"]
+
+[ext_resource type="Texture2D" uid="uid://by8tri7nsfsq3" path="res://assets/fx/fields/areas/thousand_needles/frame_0.png" id="1_nupuf"]
+[ext_resource type="Texture2D" uid="uid://dp2mym5truq5y" path="res://assets/fx/fields/areas/thousand_needles/frame_1.png" id="2_rbsfq"]
+[ext_resource type="Texture2D" uid="uid://bwgm0pjfcmt6p" path="res://assets/fx/fields/areas/thousand_needles/frame_2.png" id="3_o56w5"]
+[ext_resource type="Texture2D" uid="uid://cvakin1jkh6j6" path="res://assets/fx/fields/areas/thousand_needles/frame_3.png" id="4_2o5y3"]
+[ext_resource type="Texture2D" uid="uid://dxqryr18fc0s" path="res://assets/fx/fields/areas/thousand_needles/frame_4.png" id="5_iadqe"]
+[ext_resource type="Texture2D" uid="uid://bdowqkaj6wocd" path="res://assets/fx/fields/areas/thousand_needles/frame_5.png" id="6_nbqjt"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_ttwkv"]
+
+[resource]
+script = ExtResource("7_ttwkv")
+frames = Array[Texture2D]([ExtResource("1_nupuf"), ExtResource("2_rbsfq"), ExtResource("3_o56w5"), ExtResource("4_2o5y3"), ExtResource("5_iadqe"), ExtResource("6_nbqjt")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_thousand_needles_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

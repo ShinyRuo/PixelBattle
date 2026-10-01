@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_flgp5"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ja0uc"]
+
+[sub_resource type="Resource" id="Resource_dkar0"]
+script = ExtResource("1_flgp5")
+id = &"shark_pressure"
+name_key = "buff.shark_pressure"
+icon_key = "buff.shark_pressure"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_attack_speed_scale": 0.75,
+&"enemy_speed_scale": 0.75
+}
+duration_levels = PackedFloat32Array()
+
+[resource]
+script = ExtResource("2_ja0uc")
+target = 2
+id = &"shark_form"
+name_key = "skill.shark_form"
+attack_trigger_chance = 0.2
+enemy_aura_radius = 0.3
+enemy_aura_effects = Array[ExtResource("1_flgp5")]([SubResource("Resource_dkar0")])
+element = 4
+damage_base = 50.0
+damage_growth = 50.0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

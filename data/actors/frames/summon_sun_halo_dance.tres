@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_0.png" id="1_o0o8e"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_1.png" id="2_qxvda"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_2.png" id="3_b5we4"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_3.png" id="4_pijj3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_4.png" id="5_a3tmb"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_5.png" id="6_tq0no"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_0.png" id="7_ex3ll"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_1.png" id="8_12mv7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_2.png" id="9_tr1bd"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_3.png" id="10_dpv46"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_4.png" id="11_0gvn3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_5.png" id="12_037va"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_0.png" id="13_1rrax"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_1.png" id="14_bdeaq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_2.png" id="15_fk0ja"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_3.png" id="16_qi0ju"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_4.png" id="17_ih6an"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_5.png" id="18_6ova2"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_0.png" id="19_urewj"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_1.png" id="20_doo0a"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_2.png" id="21_au8ni"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_3.png" id="22_laxdr"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_4.png" id="23_id7cu"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_5.png" id="24_qpqdq"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_o0o8e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_qxvda")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_b5we4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_pijj3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_a3tmb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_tq0no")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_ex3ll")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_12mv7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_tr1bd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_dpv46")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_0gvn3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_037va")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_1rrax")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_bdeaq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_fk0ja")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_qi0ju")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_ih6an")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_6ova2")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_urewj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_doo0a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_au8ni")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_laxdr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_id7cu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_qpqdq")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

@@ -50,9 +50,7 @@ func test_the_form_names_line_up_with_the_skin_key_halves() -> void:
 	# 两排东西是同一件事的两种写法（一排进皮键、一排给人看），
 	# 而下标是 [method PBEnemyPool.form_of] 给的。长度对不上就是错位，
 	# 表现是「精英近战那一格写着 BOSS」——所有键都还是对的。
-	assert_eq(
-		PBActorLab.FOE_FORMS.size(), PBEnemyPool.FORM_NAMES.size(), "形态名两排得一样长"
-	)
+	assert_eq(PBActorLab.FOE_FORMS.size(), PBEnemyPool.FORM_NAMES.size(), "形态名两排得一样长")
 
 
 func test_a_monster_is_dressed_exactly_like_it_is_on_the_battlefield() -> void:
@@ -112,10 +110,7 @@ func test_every_state_plays_something_that_exists() -> void:
 	var sprite: AnimatedSprite2D = lab.get_node("Anchor").get_child(0)
 	for row: Array in PBActorLab.STATES:
 		lab._play(row[1] as int)
-		assert_true(
-			sprite.sprite_frames.has_animation(sprite.animation),
-			"「%s」播的那一段得真的存在" % row[0]
-		)
+		assert_true(sprite.sprite_frames.has_animation(sprite.animation), "「%s」播的那一段得真的存在" % row[0])
 
 
 func test_stepping_a_frame_pauses_first() -> void:

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_sense/front_0.png" id="1_vb6i5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_sense/front_1.png" id="2_jedjb"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_sense/front_2.png" id="3_j8tu6"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_sense/front_3.png" id="4_4ilyt"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_sense/front_4.png" id="5_680my"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_sense/front_5.png" id="6_mo8xs"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_3hxyr"]
+
+[resource]
+script = ExtResource("7_3hxyr")
+front_frames = Array[Texture2D]([ExtResource("1_vb6i5"), ExtResource("2_jedjb"), ExtResource("3_j8tu6"), ExtResource("4_4ilyt"), ExtResource("5_680my"), ExtResource("6_mo8xs")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

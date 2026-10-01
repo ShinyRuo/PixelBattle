@@ -64,8 +64,7 @@ func test_the_share_really_reaches_the_attacker() -> void:
 	var deployed := _units([&"a", &"b"])
 	var passives := {&"a": {PBPassiveRules.CRIT_CHANCE: 0.25}}
 	var built := PBCombatRules.build_attackers(
-		deployed, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg, null, 1, 0, {},
-		passives
+		deployed, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg, null, 1, 0, {}, passives
 	)
 	assert_almost_eq(built[0].crit_chance, 0.25, 0.0001, "他那一份该到他身上")
 	assert_almost_eq(built[1].crit_chance, 0.0, 0.0001, "别人不该沾上")

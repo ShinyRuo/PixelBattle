@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PBSummonArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/summon_art.gd" id="1_p8m5w"]
+
+[resource]
+script = ExtResource("1_p8m5w")
+actor_key = &"summon_pursuing_fangs"
+spawn_fx_key = &"summon_pursuing_fangs_spawn"

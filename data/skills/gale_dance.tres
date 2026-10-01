@@ -3,28 +3,15 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_jwb77"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_ymfnd"]
 
-[sub_resource type="Resource" id="Resource_82ekp"]
-script = ExtResource("1_jwb77")
-id = &"temari_gale"
-name_key = "buff.temari_gale"
-icon_key = "buff.temari_gale"
-kind = 1
-duration_seconds = 20.0
-mods = {
-&"damage_scale": 1.13
-}
-mods_growth = {
-&"damage_scale": 0.13
-}
-
 [resource]
 script = ExtResource("2_ymfnd")
 target = 0
 id = &"gale_dance"
 name_key = "skill.gale_dance"
 affects = 0
-on_hit = Array[ExtResource("1_jwb77")]([SubResource("Resource_82ekp")])
+ranged_attack_aura = 0.13
 element = 1
 radius = 0.3
-cooldown_ticks = 400
-mp_cost = 10.0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

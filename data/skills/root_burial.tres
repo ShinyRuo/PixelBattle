@@ -3,13 +3,35 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_i1x2d"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_e15ar"]
 
+[sub_resource type="Resource" id="Resource_por7y"]
+script = ExtResource("1_i1x2d")
+id = &"danzo_root_hold"
+name_key = "buff.danzo_root_hold"
+icon_key = "buff.danzo_root_hold"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array(1, 1, 2, 2, 2, 3, 3, 3, 3, 4)
+
 [resource]
 script = ExtResource("2_e15ar")
+target = 2
 id = &"root_burial"
 name_key = "skill.root_burial"
+on_start_target = Array[ExtResource("1_i1x2d")]([SubResource("Resource_por7y")])
 element = 0
-power_mult = 2.7
+power_mult = 2.5
+damage_base = 250.0
+damage_growth = 250.0
+damage_stat = &"agility"
 radius = 0.15
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 340
 delay_ticks = 40
-mp_cost = 18.0
+mp_cost = 5.0
+mp_cost_levels = PackedFloat32Array(5, 18, 23, 28, 33, 38, 43, 48, 53, 58)

@@ -7,9 +7,15 @@
 script = ExtResource("2_t44e0")
 id = &"great_breakthrough"
 name_key = "skill.great_breakthrough"
+followup_id = &"serpent_array"
 element = 1
-power_mult = 2.6
+power_mult = 2.5
+damage_base = 200.0
+damage_growth = 200.0
+damage_stat = &"intellect"
 radius = 0.1
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
-delay_ticks = 8
 mp_cost = 15.0
+mp_cost_levels = PackedFloat32Array(15, 25, 35, 45, 55, 65, 75, 85, 95, 105)

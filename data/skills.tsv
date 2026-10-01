@@ -2,14 +2,34 @@
 #
 # 字段（Tab 分隔，共 11 列）：
 #   技能键  角色键  显示名  属性  点什么  落在谁  倍率  范围  冷却  耗蓝  额外
+# 额外 shot=资源键：绑定 data/shots 中的飞行/命中素材；须有 fly 弹道或地面 delay 载体。
+# 只改表现，不改变速度、目标、范围和命中时刻；编辑器「战场特效 → 技能表现」可写入。
 #
 # ## 数据来源
 #
 # 全部来自 `Docs/原版数据_忍法战场v1.5.80.md` §5，那份文档是从原版 `.w3x`
 # 地图文件里直接解包出来的。冷却、耗蓝、范围、施法距离照抄物编；
-# **倍率是我们的**（原版的伤害是 `250-2500+敏捷x2` 这种「按等级插值 + 属性系数」
-# 的式子，而本项目的技能伤害走 `PBCombatRules.skill_damage`，
-# 口径是「打施法者战力的几倍」——两套换算不到一起，只能按强弱档位定）。
+# 伤害 = base + growth × (等级 - 1) + 指定属性 × 倍率 + 最大生命 × hp。
+# 默认体术取总攻击力、忍术取智力；stat 可按原版显式指定特殊属性。攻速不参与单次技能伤害。
+# 已转录单次命中公式，并逐批修正持续、召唤和无伤害控制技能。
+# 基础技能的暂定属性系数已全部替换；机制缺项与实现取值见 Docs/伤害计算规则.md。
+# target_hp=目标最大生命比例;center_scale=圆心倍率（向边缘线性降至1）;damage_cap=原始公式上限
+# death_move=阵亡后朝致命来源位置移动的秒数（按自身移速，无来源则原地等待）
+# cost_levels=逐级耗蓝，逗号分隔；首项必须等于耗蓝列，未配置沿用固定耗蓝。
+# zone_seconds=固定区域光环时长；zone_radius=每个光环半径；zone_effects=持续效果键。
+# zone_ring_count/zone_ring_radius=中心以外的环形光环个数/分布半径；伤害仍用范围列。
+# zone_outer_count/zone_outer_radius=第二层外环；zone_ring_effects=仅环形载体提供的效果。
+# variant=羁绊启用的机制变体技能键；变体无独立耗蓝 / 冷却，保留原技能按钮。
+# pulse_delay=地面连击首段等待秒数；hit_levels=逐级段数；on_start_area=起手圈内持续控制。
+# variant_first=1 仅首次用变体；target_current_hp=主伤害后剩余生命附伤，target_nonhero_only=1 排除英雄。
+# on_target=主目标效果（仅非弹道锁定敌人范围技能）；on_hit 仍表示全部命中目标的效果。
+# on_start_target=延迟锁定技能起手的主目标状态；blink=1 在命中有效目标前闪到其后侧。
+# line_length=直线长度（地面敌方单段技能），此时范围列为半宽，方向从施法点指向落点。
+# 召唤攻击继承：summon_power + summon_growth × (等级 - 1)；summon_focus=1 优先追击施法目标。
+# 地面多段：hits=总段数;interval=段间秒数;hit_radius=每段半径（0 为固定原范围，非零在范围内分散落点）。
+# 逐段扩圈：pulse_radius_step=每段增加半径;pulse_damage_step=每段增加伤害倍率；范围列为末段半径。
+# phantom_count=每次远程命中生成数;phantom_element=幻影攻击属性；继承比例 / 寿命用 summon_power / summon_secs。
+# 沙铁多段的 0.1 秒间隔暂定；伪暗按原脚本每 0.2 秒三雷、20 轮，七档随机半径。
 #
 # ## 角色键
 #
@@ -47,26 +67,29 @@
 #   slow_secs=<秒>           上面那个持续多久
 #   carry=<秒>               跨波保留的冷却
 #   summon_lifesteal=<成>    召唤物的普攻吸血
-#   kind=体术                伤害类型。不写是忍术；原版写明「物理伤害」的写体术（吃护甲、体术暴击，见 PBDamageKind）
+#   base=<数值> / growth=<每级增加>  固定伤害部分
+#   stat=attack/intellect/agility/strength/max_hp  显式属性公式例外
+#   hp=<比例>                附加自身最大生命比例
+# 伤害类型按施法者攻击属性生成：物理属性是体术，其余六种是忍术。技能自身属性仍独立算克制。
 #
 # 角色键写 `-` = 不进任何人的指令卡（阵亡时放的那几个，由羁绊补丁 `on_death=1` 发给成员）。
 
 #技能键	角色键	显示名	属性	点什么	落在谁	倍率	范围	冷却	耗蓝	额外
 
 # ── R 档 12 人 / 13 个技能 ──────────────────────────────────────
-palm_healing	sakura	掌仙术	物理	点队友	我方	0	0	1	3	on_hit=heal_burst
-reincarnation	chiyo	己生转生	物理	点队友	我方	0	0	60	10	on_hit=rin_cheer
-human_bullet	choji	肉弹战车	火	点地面	敌方	2.2	0.10	17	15	knockback=0.06;delay=0.4
-thousand_needles	haku	千杀水翔	水	点地面	敌方	2.4	0.14	15	10	delay=0.5;on_hit=haku_chill
-mind_transfer	ino	心转分身之术	雷	点敌人	敌方	0	0	24	10	fly=0.35;on_hit=ino_seize
+palm_healing	sakura	掌仙术	物理	点队友	我方	0	0	1	3	on_hit=heal_burst;cost_levels=3,6,9,12,15,18,21,25,29,32
+reincarnation	chiyo	己生转生	物理	点队友	我方	0	0	60	10	sacrifice_transfer=1;transfer_buff=reincarnation_gift;extra_from_caster=1;cost_levels=10,12,15,19,24,30,37,45,54,64
+human_bullet	choji	肉弹战车	火	点地面	敌方	2	0.10	17	15	knockback=0.06;delay=0.4;base=200;growth=200;stat=strength;cost_levels=15,20,25,30,35,40,45,50,55,60
+thousand_needles	haku	千杀水翔	水	点地面	敌方	2	0.14	15	10	delay=0.5;on_hit=haku_chill;base=250;growth=250;stat=agility;cost_levels=10,14,18,22,26,30,34,38,42,46
+mind_transfer	ino	心转分身之术	雷	点敌人	敌方	0	0	24	10	fly=0.35;on_hit=ino_seize;mind_control=1;cost_levels=10,18,26,34,42,50,58,66,74,82;shot=skill_mind_transfer
 kagura_eye	karin	神乐心眼	火	不用点	我方	0	0.32	20	8	on_self=karin_ward
-fang_pass	kiba	通牙	土	点地面	敌方	2.2	0.10	14	15	knockback=0.04;delay=0.3;on_self=kiba_spin
-inspire	rin_nohara	鼓舞	物理	点队友	我方	0	0	5	10	on_hit=rin_cheer
-leaf_whirl	rock_lee	木叶旋风	物理	不用点	敌方	1.8	0.10	17	10	on_self=lee_whirl
+fang_pass	kiba	通牙	土	点地面	敌方	2	0.10	14	15	knockback=0.04;delay=0.3;on_self=kiba_spin;base=200;growth=200;stat=agility;cost_levels=15,20,25,30,35,40,45,50,55,60
+inspire	rin_nohara	鼓舞	物理	点队友	我方	0	0	5	10	on_hit=rin_cheer;extra_from_caster=1;cost_levels=10,13,16,19,22,25,28,31,34,37
+leaf_whirl	rock_lee	木叶旋风	物理	不用点	敌方	0	0.125	17	10	on_self=lee_whirl;base=50;growth=50;hits=7;interval=0.5;delay=0.5;cost_levels=10,14,18,22,26,30,34,38,42,46
 strategist	shikamaru	天才军师	土	不用点	我方	0	0.30	18	6	on_self=shikamaru_focus
-shadow_bind	shikamaru	影子模仿术	土	点敌人	敌方	0	0	14	12	fly=0.3;on_hit=shadow_hold
+shadow_bind	shikamaru	影子模仿术	土	点敌人	敌方	0	0	14	12	fly=0.3;on_hit=shadow_hold;channel_control=1;cost_levels=12,24,36,48,60,72,84,96,108,120;shot=skill_shadow_bind
 tool_control	tenten	忍具操纵	物理	不用点	我方	0	0	20	8	on_self=tenten_tools
-hidden_mist	zabuza	雾隐之术	水	不用点	我方	0	0	30	10	on_self=zabuza_mist
+hidden_mist	zabuza	雾隐之术	水	不用点	我方	0	0	30	10	on_self=zabuza_mist;cost_levels=10,11,12,13,14,15,16,17,18,19
 
 # ── SR 档：现有词汇表做得出的 31 个 ─────────────────────────────
 #
@@ -83,47 +106,55 @@ hidden_mist	zabuza	雾隐之术	水	不用点	我方	0	0	30	10	on_self=zabuza_mi
 # c2 把它改回被动了 —— 那一版是降级，不是设计。
 
 # 自增益
-release_blades	chojuro	鲆鲽·解放	水	不用点	我方	0	0	18	11	on_self=chojuro_release
+release_blades	chojuro	鲆鲽·解放	水	不用点	我方	0	0	18	11	on_self=chojuro_release;cost_levels=11,19,27,35,43,51,59,67,75,83
 paper_wings	konan	纸天使之术	水	不用点	我方	0	0	22	9	on_self=konan_wings
 eight_gates	might_guy	八门遁甲	物理	不用点	我方	0	0	18	12	on_self=guy_gate
-water_wall	tobirama	水遁·水阵壁	水	不用点	我方	0	0	17	10	on_self=tobirama_wall
-kurama_cloak	naruto	九尾人柱力	风	不用点	我方	0	0	20	10	on_self=naruto_kurama
+water_wall	tobirama	水遁·水阵壁	水	不用点	我方	0	0	17	10	on_self=tobirama_wall;followup=water_surge
+water_surge	-	水冲波	水	点地面	敌方	0	0.056	0	0	base=140;growth=140;hits=14;interval=0.1;delay=0.1;radius_growth=0.006;travel_step=0.01775;waves=5;wave_interval=0.1;fan_spread=70;fan_steps=5
+# heal_aura_*：常驻回复（按秒写量），period 为结算周期秒数；半径 0 只作用自身。
+kurama_cloak	naruto	九尾人柱力	风	不用点	我方	0	0	0	0	heal_aura_max=0.01;heal_aura_period=0.5
 
 # 光环：落在周围友军身上
-battle_chakra	kushina	尾兽查克拉·历战	水	不用点	我方	0	0.22	20	12	on_hit=kushina_chakra
-gale_dance	temari	气流乱舞	风	不用点	我方	0	0.30	20	10	on_hit=temari_gale
-mirror_ward	kurenai	幻术·镜守	火	点队友	我方	0	0	15	12	on_hit=kurenai_shield
+battle_chakra	kushina	尾兽查克拉·历战	水	不用点	我方	0	0.225	0	0	heal_aura_flat=35;heal_aura_growth=35
+gale_dance	temari	气流乱舞	风	不用点	我方	0	0.30	0	0	ranged_attack_aura=0.13
+mirror_ward	kurenai	幻术·镜守	火	点队友	我方	0	0	15	12	on_hit=kurenai_shield;extra_from_caster=1;cost_levels=12,20,28,36,44,52,60,68,76,84
 
 # 范围伤害（点地面）
-fire_dragon	hiruzen	火遁·火龙炎弹	火	点地面	敌方	2.6	0.19	15	16	delay=0.5;on_hit=burn
-earth_dragon	hiruzen	土遁·土龙弹	土	点地面	敌方	2.4	0.10	16	15	delay=0.4;slow=0.7;slow_secs=3
-false_darkness	kakuzu	雷遁·伪暗	雷	点地面	敌方	2.5	0.16	20	10	delay=0.5
-dust_release	onoki	尘遁·原界剥离之术	土	点地面	敌方	3.0	0.17	17	10	delay=0.6
-great_breakthrough	orochimaru	风遁·大突破	风	点地面	敌方	2.6	0.10	14	15	delay=0.4
-chidori	sasuke	千鸟	雷	点地面	敌方	2.8	0.15	12	15	delay=0.3
-dark_walk	tobirama	幻术·黑暗行之术	水	点地面	敌方	2.7	0.15	18	10	delay=0.5;slow=0.5;slow_secs=3;on_hit=tobirama_dark
-iron_sand	sasori	沙铁界法	风	点地面	敌方	1.6	0.20	23	10	delay=0.5;on_hit=sasori_iron;kind=体术
-boil_acid	mei	沸遁·溶解爆酸	水	点地面	敌方	1.4	0.17	20	10	delay=0.5;on_hit=mei_acid
+fire_dragon	hiruzen	火遁·火龙炎弹	火	点地面	敌方	0	0.19	15	16	delay=0.5;on_hit=burn;base=200;growth=200;stat=intellect;cost_levels=16,21,27,32,38,43,49,54,60,65;shot=skill_fire_dragon
+earth_dragon	hiruzen	土遁·土龙弹	土	点地面	敌方	2.5	0.05	16	15	delay=0.4;line_length=0.5;on_hit=hiruzen_earth_slow;base=220;growth=220;stat=intellect;cost_levels=15,20,25,30,35,40,45,50,55,60;shot=skill_earth_dragon
+false_darkness	kakuzu	雷遁·伪暗	雷	不用点	敌方	0.1	0.2625	20	10	base=30;growth=30;stat=strength;hits=60;interval=0.2;hit_radius=0.0775;scatter_steps=7;volley_size=3;stat_floor=1;cost_levels=10,12,14,16,19,22,25,28,33,38
+dust_release	onoki	尘遁·原界剥离之术	土	点地面	敌方	2.5	0.17	17	10	delay=0.6;base=300;growth=300;stat=intellect;cost_levels=10,18,26,34,42,50,58,66,74,82
+great_breakthrough	orochimaru	风遁·大突破	风	点地面	敌方	2.5	0.10	14	15	base=200;growth=200;stat=intellect;followup=serpent_array;cost_levels=15,25,35,45,55,65,75,85,95,105
+chidori	sasuke	千鸟	雷	点地面	敌方	2.5	0.15	12	15	delay=0.3;base=230;growth=230;stat=agility;cost_levels=15,19,23,27,31,36,41,47,53,59
+dark_walk	tobirama	幻术·黑暗行之术	水	点地面	敌方	2.5	0.15	18	10	delay=0.5;on_hit=tobirama_dark;base=300;growth=300;stat=agility;cost_levels=10,16,23,31,40,50,61,73,86,100
+iron_sand	sasori	沙铁界法	风	点地面	敌方	0.2	0.20	23	10	delay=0.5;base=20;growth=20;stat=agility;hits=30;interval=0.1;cost_levels=10,14,18,22,26,30,34,38,42,46
+boil_acid	mei	沸遁·溶解爆酸	水	点地面	敌方	0.25	0.17	20	10	base=15;growth=15;stat=agility;hits=8;interval=0.5;zone_seconds=3;zone_radius=0.128;zone_ring_radius=0.128;zone_ring_count=5;zone_effects=mei_acid;cost_levels=10,14,18,22,26,30,34,38,42,46;variant=boil_acid_kage
+boil_acid_kage	-	沸遁·溶解爆酸·五影	水	点地面	敌方	0.25	0.34	0	0	base=15;growth=15;stat=agility;hits=16;interval=0.5;zone_seconds=7;zone_radius=0.128;zone_ring_radius=0.128;zone_ring_count=5;zone_outer_radius=0.256;zone_outer_count=8;zone_effects=mei_acid_kage;zone_ring_effects=mei_acid_pace
 
 # 范围伤害 + 控制
-sand_burial	gaara	砂缚柩	风	点地面	敌方	1.2	0.14	18	10	delay=0.4;slow=0;slow_secs=2;on_hit=sand_coffin
-infinite_sharks	kisame	水遁·无限鲛	水	点地面	敌方	2.8	0.18	20	10	delay=0.5;slow=0;slow_secs=1.5
-root_burial	danzo	木遁·树根爆葬	火	点地面	敌方	2.7	0.15	17	18	delay=2
-adamantine_chains	kushina	封印术·金刚封锁	水	点地面	敌方	1.0	0.18	20	15	delay=0.5;slow=0.5;slow_secs=3
-rasengan_flame	jiraiya	豪炎螺旋丸	火	点地面	敌方	2.6	0.05	14	5	delay=0.3;slow=0;slow_secs=3;knockback=0.04
-piston_fist	jugo	活塞拳·零式	物理	点地面	敌方	2.4	0.15	16	10	delay=0.4;knockback=0.05;slow=0.5;slow_secs=3
-rising_earth	kurotsuchi	土遁·开土升掘	水	点地面	敌方	2.5	0.11	15	12	delay=0.4;knockback=0.05;slow=0;slow_secs=1.5
-leaf_gale	might_guy	木叶刚力旋风	物理	点地面	敌方	2.7	0.13	15	10	delay=0.4;knockback=0.06;slow=0;slow_secs=1;on_hit=guy_break;kind=体术
+sand_burial	gaara	砂缚柩	风	点地面	敌方	0	0.144	18	10	base=50;growth=50;hits=3;hit_levels=3,3,4,4,4,5,5,6,6,7;interval=0.5;pulse_delay=0.5;on_start_area=sand_coffin;cost_levels=10,14,18,22,26,30,34,38,42,46;variant=sand_waterfall;variant_first=1
+sand_waterfall	-	砂瀑大葬	风	点地面	敌方	0	0.2775	0	0	base=100;growth=100;hits=10;interval=0.5;zone_seconds=4;zone_radius=0.275;zone_effects=sand_waterfall_slow;target_current_hp=0.012;target_nonhero_only=1
+infinite_sharks	kisame	水遁·无限鲛	水	点地面	敌方	0.25	0.19	20	10	delay=0.5;base=24;growth=24;stat=agility;stat_floor=1;hits=10;interval=0.2;zone_seconds=2;zone_radius=0.175;zone_effects=kisame_sharks;cost_levels=10,14,18,22,26,30,34,38,42,46;shot=skill_infinite_sharks
+# 攻击起手被动，不占蓝量 / 冷却；专用大刀·鲛肌装备联动尚未接入。
+shark_cut	kisame	鲛肌·削灭斩	水	点敌人	敌方	0	0	0	0	base=50;growth=50;attack_chance=0.2;variant=shark_form
+shark_form	-	鲛人形态	水	点敌人	敌方	0	0	0	0	base=50;growth=50;attack_chance=0.2;enemy_aura_radius=0.3;enemy_aura_effects=shark_pressure
+root_burial	danzo	木遁·树根爆葬	火	点敌人	敌方	2.5	0.15	17	5	delay=2;on_start_target=danzo_root_hold;base=250;growth=250;stat=agility;cost_levels=5,18,23,28,33,38,43,48,53,58
+adamantine_chains	kushina	封印术·金刚封锁	水	点地面	敌方	0	0.175	20	15	delay=0;on_hit=kushina_chains;cost_levels=15,19,23,27,31,35,39,43,47,51
+rasengan_flame	jiraiya	豪炎螺旋丸	火	点敌人	敌方	2	0	14	5	on_hit=jiraiya_stun;knockback=0.04;base=0;growth=0;stat=strength;hp=0.1
+piston_fist	jugo	活塞拳·零式	物理	不用点	敌方	2	0.15	16	10	on_hit=enemy_lift,jugo_slow;base=150;growth=150;stat=strength;cost_levels=10,16,22,28,34,40,46,52,58,64
+rising_earth	kurotsuchi	土遁·开土升掘	土	点敌人	敌方	2.5	0.11	15	12	delay=1;on_start_target=enemy_lift;on_target=kurotsuchi_stun;base=200;growth=200;stat=agility;cost_levels=12,16,21,25,30,34,39,43,48,52
+light_rock	kurotsuchi	土遁·轻重岩之术	土	不用点	我方	0	0	0	0	attack_speed_aura=0.14;attack_speed_aura_growth=0.04;move_speed_aura=0.15
+leaf_gale	might_guy	木叶刚力旋风	物理	点敌人	敌方	2.5	0.13	15	10	knockback=0.06;on_hit=guy_stun;on_target=guy_break;base=150;growth=150;stat=strength;cost_levels=10,13,16,19,22,25,28,31,34,37
 
 # 自身周围
-dance_of_pines	kimimaro	唐松之舞	物理	不用点	敌方	1.8	0.17	18	15	on_self=kimimaro_bone
-kaiten	neji_hyuga	八卦掌·回天	水	不用点	敌方	2.6	0.12	16	10	on_self=neji_kaiten
+dance_of_pines	kimimaro	唐松之舞	物理	不用点	敌方	0	0.17	18	15	on_self=kimimaro_bone;base=50;growth=50;stat=attack;cost_levels=15,20,25,30,35,40,45,50,55,60
+kaiten	neji_hyuga	八卦掌·回天	水	不用点	敌方	2.5	0.12	16	10	on_self=neji_kaiten;base=240;growth=240;stat=agility;cost_levels=10,14,18,22,26,30,34,38,42,46
 palm_rotation	hinata	八卦掌·回天	雷	不用点	我方	0	0.11	18	10	on_hit=hyuga_guard
 
 # 点敌人（子弹档）
-pursuing_fangs	kakashi	追牙之术	雷	点敌人	敌方	1.2	0	27	10	fly=0.35;on_hit=kakashi_bind;summon=5;summon_power=0.45;summon_hp=0.30;summon_secs=5
-water_dragon	suigetsu	水遁·水龙弹术	水	点敌人	敌方	2.5	0	16	11	fly=0.3;on_hit=suigetsu_bind
-haze_illusion	kurenai	幻术·霞	火	点敌人	敌方	0	0	18	10	fly=0.3;on_hit=kurenai_haze
+pursuing_fangs	kakashi	追牙之术	雷	点敌人	敌方	0	0	27	10	on_hit=kakashi_bind;summon=5;summon_power=0.33;summon_growth=0.03;summon_focus=1;summon_hp=0.30;summon_secs=5
+water_dragon	suigetsu	水遁·水龙弹术	水	点敌人	敌方	2.5	0	16	11	fly=0.3;on_hit=suigetsu_bind;base=200;growth=200;stat=agility;cost_levels=11,17,23,29,35,41,47,53,59,65;shot=skill_water_dragon
+haze_illusion	kurenai	幻术·霞	火	点敌人	敌方	0	0	18	10	fly=0.3;on_hit=kurenai_haze;extra_from_caster=1;cost_levels=10,17,24,31,38,45,52,59,66,73;shot=skill_haze_illusion
 
 # ── SSR 档：现有词汇表做得出的 16 个 ────────────────────────────
 #
@@ -138,29 +169,32 @@ haze_illusion	kurenai	幻术·霞	火	点敌人	敌方	0	0	18	10	fly=0.3;on_hit=
 # 是干什么的按钮。
 
 # 自增益
-susanoo	madara	须佐能乎	火	不用点	敌方	2.2	0.15	18	13	slow=0;slow_secs=1.5;on_self=madara_susanoo
+susanoo	madara	须佐能乎	火	不用点	敌方	0	0.15	18	13	on_hit=madara_shock;on_self=madara_susanoo;variant=susanoo_perfect;cost_levels=13,16,19,22,27,32,37,42,47,52
 lightning_armor	raikage	雷遁护甲	雷	不用点	我方	0	0	20	10	on_self=raikage_armor
 malice_sense	naruto_sage	恶意感知	风	不用点	我方	0	0	25	10	on_self=sage_sense
 kotoamatsukami	shisui	别天神·光芒	火	不用点	我方	0	0	30	12	on_self=shisui_kotoama
 
 # 落在友军身上的
-mending_jutsu	kabuto	强力再生术	仙	点队友	我方	0	0	28	8	on_hit=kabuto_mend
+mending_jutsu	kabuto	强力再生术	仙	点队友	我方	0	0	28	8	on_hit=kabuto_mend;on_rescue=serpent_regen;cost_levels=8,16,24,32,40,48,56,64,72,80
 
 # 范围伤害（点地面）
-great_fireball	itachi	大豪火球	火	点地面	敌方	3.0	0.11	14	13	delay=0.4
-white_rage	kabuto	仙法·白激之术	仙	点地面	敌方	2.6	0.18	20	15	delay=0.5
-flame_formation	obito	宇智波·火焰阵	火	点地面	敌方	2.8	0.18	17	15	delay=0.5;on_hit=obito_embers
-wood_descent	hashirama	树界降临	仙	点地面	敌方	1.2	0.18	20	10	delay=0.5;slow=0.7;slow_secs=6;on_hit=hashirama_forest
-sun_halo_dance	shisui	宇智波流·日晕舞	火	不用点	敌方	2.4	0.35	15	12	targets=9;kind=体术
+great_fireball	itachi	大豪火球	火	点地面	敌方	3	0.11	14	13	delay=0.4;base=250;growth=250;stat=intellect;cost_levels=13,23,33,43,53,63,73,83,93,103;shot=skill_great_fireball
+white_rage	kabuto	仙法·白激之术	仙	点地面	敌方	1	0.175	20	15	delay=0.5;on_hit=kabuto_silence;base=130;growth=130;stat=intellect;cost_levels=15,26,37,48,59,70,81,92,103,114
+flame_formation	obito	宇智波·火焰阵	火	点地面	敌方	0	0.18	17	15	delay=0.5;on_hit=obito_embers;base=350;growth=350;stat=intellect;cost_levels=15,22,29,36,43,50,57,64,71,78
+wood_descent	hashirama	树界降临	仙	点地面	敌方	0.2	0.175	20	10	base=17.5;growth=17.5;stat=strength;stat_floor=1;hits=12;interval=0.5;zone_seconds=6;zone_radius=0.175;zone_effects=hashirama_forest;variant=true_hands;variant_first=1;cost_levels=10,15,21,26,32,37,43,48,54,59
+sun_halo_dance	shisui	宇智波流·日晕舞	物理	不用点	敌方	2	0.7485	15	12	targets=9;base=200;growth=200;stat=agility;hits=9;interval=0.1;pulse_radius_step=0.0665;pulse_damage_step=0.11;phantom_count=1;phantom_element=雷;summon_power=0.35;summon_secs=3;cost_levels=12,16,20,24,28,32,36,40,44,48
 
 # 范围伤害 + 控制
-flying_raijin_ball	minato	瞬身螺旋丸	水	点地面	敌方	3.0	0.06	14	13	delay=0.3;slow=0;slow_secs=2;knockback=0.05
-giant_rasengan	naruto_sage	仙法·超大玉螺旋丸	风	点地面	敌方	2.8	0.19	18	14	delay=0.4;slow=0;slow_secs=2
-almighty_push	tendo	神罗天征	仙	不用点	敌方	2.0	0.18	17	10	knockback=0.10
+flying_raijin_ball	minato	瞬身螺旋丸	水	点敌人	敌方	2.5	0	14	13	on_hit=minato_stun;blink=1;base=300;growth=300;stat=agility;cost_levels=13,18,23,28,33,38,43,48,53,58
+# attack_repeat_count：攻击起手额外普攻次数，仍走普攻两轴 / 命中效果，不走技能伤害公式。
+flying_raijin_chain	minato	飞雷神之术	水	点敌人	敌方	0	0	0	0	attack_chance=0.17;attack_repeat_count=2
+giant_rasengan	naruto_sage	仙法·超大玉螺旋丸	仙	点敌人	敌方	2	0.1875	18	14	on_target=sage_rasengan_stun;base=150;growth=150;stat=agility;cost_levels=14,20,26,32,38,44,50,56,62,68
+almighty_push	tendo	神罗天征	仙	不用点	敌方	0	0.175	17	10	knockback=0.10;on_self=tendo_repulse;cost_levels=10,14,18,22,26,30,34,38,42,46
 
 # 点敌人（子弹档）
-deep_forest	hashirama	森罗万象	仙	点敌人	敌方	1.4	0	14	10	fly=0.3;on_hit=hashirama_bind
-tsukuyomi	itachi	月读	火	点敌人	敌方	0	0	15	10	fly=0.3;on_hit=itachi_moon_hold,itachi_moon_grind
+deep_forest	hashirama	森罗万象	仙	点敌人	敌方	0	0	14	10	on_hit=hashirama_bind;followup=deity_gates;cost_levels=10,13,17,20,24,27,31,34,38,41
+deity_gates	-	明神门	仙	点地面	敌方	1	0.1325	0	0	stat=strength;hits=3;interval=1;delay=0.2;radius_growth=0.0625;on_hit=gate_stun
+tsukuyomi	itachi	月读	火	点敌人	敌方	0	0	15	10	fly=0.3;on_hit=itachi_moon_hold,itachi_moon_grind;cost_levels=10,14,18,22,26,30,34,38,42,46;shot=skill_tsukuyomi
 
 # ── M12-c3：召唤物 ───────────────────────────────
 #
@@ -170,10 +204,10 @@ tsukuyomi	itachi	月读	火	点敌人	敌方	0	0	15	10	fly=0.3;on_hit=itachi_moo
 #
 # 降级记一笔：影分身原版持续 6~15 秒、吸血虫 5+等级×1.5 秒，
 # 而我们今天只写得下一个定数（技能表没有「随等级变」这一档）。
-shadow_clones	naruto	多重影分身之术	风	不用点	我方	0	0	22	10	summon=3;summon_power=0.40;summon_hp=0.18;summon_secs=10
-white_copy	zetsu	白绝复制体	土	不用点	我方	0	0	20	10	summon=1;summon_power=0.50;summon_hp=0.29;summon_secs=6
-puppet_crow	kankuro	傀儡术·乌鸦	土	不用点	我方	0	0	25	10	summon=1;summon_power=0.50;summon_hp=0.50;summon_secs=12
-vampire_bugs	shino	通灵术·吸血虫	土	不用点	我方	0	0	25	14	summon=10;summon_power=0.12;summon_hp=0.08;summon_secs=12;summon_lifesteal=0.2
+shadow_clones	naruto	多重影分身之术	风	不用点	我方	0	0	22	10	summon=3;summon_power=0.40;summon_hp=0.18;summon_secs=10;cost_levels=10,14,18,22,26,31,37,42,48,53
+white_copy	zetsu	白绝复制体	土	不用点	我方	0	0	20	10	summon=1;summon_power=0.50;summon_hp=0.29;summon_secs=6;cost_levels=10,14,18,22,26,30,34,38,42,46
+puppet_crow	kankuro	傀儡术·乌鸦	土	不用点	我方	0	0	25	10	summon=1;summon_power=0.50;summon_hp=0.50;summon_secs=12;cost_levels=10,14,18,22,26,31,37,42,48,53
+vampire_bugs	shino	通灵术·吸血虫	土	不用点	我方	0	0	25	10	summon=10;summon_power=0.12;summon_hp=0.08;summon_secs=12;summon_lifesteal=0.2;cost_levels=10,14,20,28,38,50,64,80,98,118
 
 # ── M12-c4：分诊过期的那批 ───────────────────────────────
 #
@@ -183,8 +217,8 @@ vampire_bugs	shino	通灵术·吸血虫	土	不用点	我方	0	0	25	14	summon=10
 #
 # 灰积烧原版是「前方扇形」，我们没有扇形，**落成点地面的圆**（玩家定的），
 # 半径取原版扇宽 300 码 = 0.15。致盲在 `data/buffs.tsv` 的 `asuma_ash`。
-clay_spider	deidara	黏土蜘蛛	土	点地面	敌方	2.4	0.10	10	15	delay=0.5
-ash_burn	asuma	火遁·灰积烧	火	点地面	敌方	2.4	0.15	16	10	delay=0.4;on_hit=asuma_ash
+clay_spider	deidara	黏土蜘蛛	土	点地面	敌方	0	0.10	10	15	delay=0.5;base=300;growth=300;stat=intellect;cost_levels=15,20,25,30,35,40,45,50,55,60
+ash_burn	asuma	火遁·灰积烧	火	点地面	敌方	3	0.15	16	10	delay=0.4;on_hit=asuma_ash;base=0;growth=0;stat=agility
 
 # ── M12-c4 批三：阵亡时放 ───────────────────────────────
 #
@@ -194,7 +228,15 @@ ash_burn	asuma	火遁·灰积烧	火	点地面	敌方	2.4	0.15	16	10	delay=0.4;o
 #
 # 早蕨之舞「对周围 600 范围造成力量x6+(7+等级)% 目标当前生命值的伤害，越中心越高」：
 # 百分比那一笔和中心加成不做，倍率按强档给。
-bracken_dance	-	早蕨之舞	物理	点地面	敌方	3.0	0.30	0	0	delay=0
+bracken_dance	-	早蕨之舞	物理	点地面	敌方	6	0.30	0	0	delay=0;base=0;growth=0;stat=strength
+# 五影授予：普攻起手 20% 触发七个相交圆；主目标击飞独立，自身基础攻击按等级加成。
+# attack_chain_count / attack_chain_step：圈数 / 沿攻击方向每圈距离；self_attack_bonus(_growth)：自身基础攻击率。
+monstrous_strength	-	怪力爆发	物理	点地面	敌方	1.5	0.10	0	0	delay=0;base=0;growth=0;stat=strength;stat_floor=1;attack_chain_count=7;attack_chain_step=0.04;self_attack_bonus=0.1;self_attack_bonus_growth=0.04;on_primary=enemy_lift
 # 〔艺术二人组〕迪达拉「阵亡时向击杀者方向移动 1 秒进行自爆，对周围 800 范围造成伤害」：原地自爆。
-clay_self_destruct	-	起爆黏土·自爆	物理	点地面	敌方	3.0	0.40	0	0	delay=0
+clay_self_destruct	-	起爆黏土·自爆	物理	点地面	敌方	0	0.40	0	0	delay=0;base=250;growth=250;target_hp=0.08;center_scale=2;damage_cap=13000;death_move=1
 samsara_rebirth	-	轮回天生之术	仙	点地面	我方	0	0.60	0	0	on_hit=pein_rebirth
+
+susanoo_perfect	-	完全体须佐能乎	火	不用点	敌方	0	0.15	0	0	on_hit=madara_shock;on_self=madara_perfect
+true_hands	-	真数千手	仙	点地面	敌方	0.1666666666666667	0.195	0	0	base=13.33333333333333;growth=13.33333333333333;stat=strength;stat_floor=1;hits=15;interval=0.2;pulse_delay=1.2;on_start_area=true_hands_stun;area_refresh=0,1,2,3
+
+serpent_array	-	万蛇罗之阵	风	点地面	敌方	0	0.2025	0	0	base=180;growth=180;pulse_delay=3;control_radius=0.2;on_start_area=serpent_slow;on_hit=serpent_silence;target_current_hp=0.08;target_nonhero_only=1

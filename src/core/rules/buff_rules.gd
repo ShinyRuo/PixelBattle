@@ -24,6 +24,13 @@ extends RefCounted
 ## 出手伤害倍率。读点在 [method PBAttacker.strike_for]。
 ## 「全队短时增伤」就是给每个人各挂一份这个键。
 const DAMAGE_SCALE: StringName = &"damage_scale"
+const BASE_ATTACK_BONUS: StringName = &"base_attack_bonus"
+const STRENGTH: StringName = &"strength"
+const AGILITY: StringName = &"agility"
+const INTELLECT: StringName = &"intellect"
+const STRENGTH_BONUS: StringName = &"strength_bonus"
+const ALL_STATS_BONUS: StringName = &"all_stats_bonus"
+const REACH_BONUS: StringName = &"reach_bonus"
 
 ## 立刻回血。读点在 [method PBAttacker.heal]。
 const HEAL: StringName = &"heal"
@@ -52,6 +59,7 @@ const ENEMY_SPEED_SCALE: StringName = &"enemy_speed_scale"
 ## **读点在 [method PBEnemy.ready_to_fire] 里面**：近战与远程在那一句之后才分岔，
 ## 各判一次的表现是「定住了还会放箭」。
 const STUN: StringName = &"stun"
+const DOMINATED: StringName = &"dominated"
 
 ## 致盲：这个敌人出手打得中的概率。0.5 = 一半打空。
 ##
@@ -90,8 +98,8 @@ const DEFENCE: StringName = &"defence"
 ## 读点在 [method PBAttacker.take_damage] **里面**，排在重生之前 —— 同闪避、同减伤，调用方不判。
 const UNDYING: StringName = &"undying"
 
-## 己方**临时**闪避率加多少（蜉蝣「受攻击时提升 100% 的普攻闪避率，持续 2 秒」）。量型。
-## 和常驻那一份（[member PBAttacker.dodge]）在 [method PBPassiveRules.dodges] 里相加。
+## 敌我**临时**普攻闪避率加多少。量型，与各自的基础闪避相加。
+## 己方在 [method PBPassiveRules.dodges] 判，敌方在 [method PBEnemy.take_damage] 判。
 const DODGE: StringName = &"dodge"
 
 ## 敌人的攻速倍率（妩媚「降低其 65% 的攻击速度」= 0.35）。率型，读点在 [method PBEnemy.on_fired]：
@@ -106,7 +114,28 @@ const ENEMY_DEFENCE: StringName = &"enemy_defence"
 ## 本身那一份在 [member PBEnemy.ninjutsu_resist]。
 const ENEMY_RESIST: StringName = &"enemy_resist"
 
-## 暴击率**临时**加多少。读点在 [method PBCritRules.chance_of]。
+## 忍者临时忍术抗性，按成数相加。
+const NINJUTSU_RESIST: StringName = &"ninjutsu_resist"
+
+## 临时反弹比例，与常驻反弹相加；读点在 hurt_ally，按命中时的窗口取值。
+const REFLECT: StringName = &"reflect"
+
+## 忍术免疫独立于抗性，不能被忍术穿透抵消。读点在 hurt_ally。
+const NINJUTSU_IMMUNE: StringName = &"ninjutsu_immune"
+
+## 原地持续施放期间禁止移动、普攻与新技能；不代表免疫敌方控制。
+const CHANNEL: StringName = &"channel"
+
+## 沉默仅拦敌方主动施法；普通攻击不按伤害类型判沉默。
+const SILENCE: StringName = &"silence"
+## 只禁止普通攻击，主动施法由 silence / stun 独立控制。
+const DISARM: StringName = &"disarm"
+## 仙属性伤害在通用易伤之外再乘的倍率；伤害类型不参与此判定。
+const SAGE_HURT_SCALE: StringName = &"sage_hurt_scale"
+## 击飞阶段的视觉标记；合法配置必须同时含眩晕与定身，地面位置不变。
+const AIRBORNE: StringName = &"airborne"
+
+## 暴击率**临时**加多少。己方读点在 [method PBCritRules.chance_of]，敌方在 enemy_strike。
 ##
 ## **量型不是率型**：概率是加法量，+15% 和 +10% 摞起来是 +25%；
 ## 塞进率型的话两份 +15% 会算成 +32%，而它不报错。
@@ -119,34 +148,45 @@ const CRIT_CHANCE: StringName = &"crit_chance"
 ## **存「额外」不存「倍数」**，中性值 0.0，和量型规矩天然对得上。
 const CRIT_DAMAGE: StringName = &"crit_damage"
 
-## 护盾：还能替他挡下多少伤害。读点在 [method PBAttacker.take_damage]。
+## 护盾：还能替他挡下多少伤害。敌我均在自己的 take_damage 中、倍率折算后扣盾。
 ##
 ## 它是**会被消耗**的那一份，走 [method PBBuffBag.absorb]：账记在挂着的那一份上
 ## （[member PBBuffState.mods]），扣减只有一个入口，否则同一发伤害会被两处各扣一次。
 ## **量型**，而且有时限 —— 「一段时间内吸收 N 点」正好是一份 buff 的形状。
 const SHIELD: StringName = &"shield"
+const NINJUTSU_SHIELD: StringName = &"ninjutsu_shield"
+const NINJUTSU_SHIELD_MAX: StringName = &"ninjutsu_shield_max"
 
 ## 挨打的倍率：这个人受到的每一下乘多少。**0 = 无敌。**
 ##
-## 读点在 [method PBAttacker.take_damage] **里面** —— 己方挨打有两条路，
-## 漏乘一处的表现是「被子弹打就吃不到减伤」。
+## 敌我均在自己的 take_damage **里面**乘，先于护盾；敌人的 damage_to_kill 同步折算。
 ##
-## 和敌方的 [constant HURT] 方向相反，**故意是两个键**：两件事的合理取值范围完全不同。
+## 敌人身上与易伤 [constant HURT] 相乘；两个键保留各自身份，净倍率为 0 时无敌。
 const DAMAGE_TAKEN: StringName = &"damage_taken"
 
 ## 全部**已经接上读点**的键。见本类顶部。
 const ALL: Array[StringName] = [
 	DAMAGE_SCALE,
+	BASE_ATTACK_BONUS,
+	STRENGTH,
+	AGILITY,
+	INTELLECT,
+	STRENGTH_BONUS,
+	ALL_STATS_BONUS,
+	REACH_BONUS,
 	HEAL,
 	MANA,
 	HURT,
 	ENEMY_SPEED_SCALE,
 	STUN,
+	DOMINATED,
 	ENEMY_HIT_SCALE,
 	HARM,
 	CRIT_CHANCE,
 	CRIT_DAMAGE,
 	SHIELD,
+	NINJUTSU_SHIELD,
+	NINJUTSU_SHIELD_MAX,
 	DAMAGE_TAKEN,
 	HEAL_MAX,
 	DRAIN_MAX,
@@ -156,11 +196,25 @@ const ALL: Array[StringName] = [
 	ENEMY_ATTACK_SPEED_SCALE,
 	ENEMY_DEFENCE,
 	ENEMY_RESIST,
+	NINJUTSU_RESIST,
+	REFLECT,
+	NINJUTSU_IMMUNE,
+	CHANNEL,
+	SILENCE,
+	DISARM,
+	SAGE_HURT_SCALE,
+	AIRBORNE,
 ]
 
 ## 多份**连乘**的那几个（率型）。其余一律**累加**（量型）。
 const SCALES: Array[StringName] = [
-	DAMAGE_SCALE, HURT, ENEMY_SPEED_SCALE, ENEMY_HIT_SCALE, DAMAGE_TAKEN, ENEMY_ATTACK_SPEED_SCALE
+	DAMAGE_SCALE,
+	HURT,
+	ENEMY_SPEED_SCALE,
+	ENEMY_HIT_SCALE,
+	DAMAGE_TAKEN,
+	ENEMY_ATTACK_SPEED_SCALE,
+	SAGE_HURT_SCALE
 ]
 
 ## 「全队短时增伤」那一份的定义。见 [method team_damage]。
@@ -259,7 +313,7 @@ static func fold(key: StringName, into: float, add: float) -> float:
 ##
 ## ## 为什么按等级而不是按战力
 ##
-## **它对的是另一条曲线。** 技能的直接伤害走 `power_mult × 战力`，因为它要和
+## **固定载荷按等级成长。** 技能与效果可另配属性项，伤害要和
 ## 敌人血量可比；而治疗要和**己方**血量可比，
 ## 而己方血量 `hp_base + strength × hp_per_strength` 本来就是按等级线性长的
 ## （[method PBStatRules.of]）。按战力缩放的治疗会跟着稀有度、星级、装备一起飘 ——
@@ -279,6 +333,9 @@ static func resolve(buff: PBBuff, level: int) -> Dictionary:
 	for key: StringName in buff.mods:
 		var grow: float = float(buff.mods_growth.get(key, 0.0))
 		out[key] = float(buff.mods[key]) + grow * steps
+		if buff.mods_levels.has(key):
+			var values: PackedFloat32Array = buff.mods_levels[key]
+			out[key] = values[clampi(level - 1, 0, values.size() - 1)]
 	return out
 
 
@@ -305,11 +362,15 @@ static func validate(buff: PBBuff) -> String:
 			return "不认识的效果键：%s" % key
 		if not buff.mods.has(key):
 			return "%s 只写了成长没写基数 —— 那会静默变成「1 级时是 0」" % key
-	if buff.kind != PBBuff.Kind.INSTANT and buff.duration_seconds <= 0.0:
+	if (
+		buff.kind != PBBuff.Kind.INSTANT
+		and buff.duration_seconds <= 0.0
+		and not buff.until_wave_end
+	):
 		return "持续型 buff 没有时长"
 	if buff.kind == PBBuff.Kind.PERIODIC and buff.period_seconds <= 0.0:
 		return "周期型 buff 没有周期"
-	return ""
+	return PBBuffFormula.validate(buff)
 
 
 ## 秒换成 tick。**至少 1** —— 0 tick 的窗口等于没有这个 buff，
@@ -361,12 +422,21 @@ static func advance_ally(unit: PBAttacker, at_tick: int, tick_rate: int) -> floa
 ##
 ## 易伤（[constant HURT]）**不在这里乘**：它的读点是
 ## [method PBEnemy.take_damage]，调用方一律不乘（见 [constant HURT]）。
-static func advance_enemy(enemy: PBEnemy, at_tick: int) -> float:
+static func advance_enemy(enemy: PBEnemy, at_tick: int, cfg: PBSimConfig = null) -> float:
 	var harm: float = 0.0
 	for state: PBBuffState in enemy.buffs.states():
 		if not state.is_due(at_tick):
 			continue
 		state.on_fired(at_tick)
-		harm += float(state.mods.get(HARM, 0.0))
+		var raw: float = float(state.mods.get(HARM, 0.0))
+		if cfg == null and state.harm_context != null and state.harm_context.has_element:
+			raw *= enemy.element_hurt_scale(state.harm_context.element, at_tick)
+		harm += (
+			raw
+			if cfg == null
+			else PBHarmContext.damage(raw, state.harm_context, enemy, cfg, at_tick)
+		)
+		if state.buff.independent_stacks and state.next_tick_at > state.until_tick:
+			state.until_tick = at_tick - 1
 	enemy.buffs.sweep(at_tick)
 	return harm

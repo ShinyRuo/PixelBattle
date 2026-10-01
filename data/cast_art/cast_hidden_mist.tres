@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_hidden_mist/back/frame_0.png" id="1_7xryf"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_hidden_mist/back/frame_1.png" id="2_ne80w"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_hidden_mist/back/frame_2.png" id="3_1imh6"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_hidden_mist/back/frame_3.png" id="4_m1uss"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_hidden_mist/back/frame_4.png" id="5_6gfny"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_hidden_mist/back/frame_5.png" id="6_mncs4"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_o1dcp"]
+
+[resource]
+script = ExtResource("7_o1dcp")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_7xryf"), ExtResource("2_ne80w"), ExtResource("3_1imh6"), ExtResource("4_m1uss"), ExtResource("5_6gfny"), ExtResource("6_mncs4")])
+fps = 20.0
+anchor = Vector2(128, 128)
+offset = Vector2(0, -35)
+pixel_scale = 0.4
+metadata/sheet_back = {
+"background": 0,
+"center": true,
+"columns": 3,
+"count": 6,
+"layout": 0,
+"path": "res://aires/skills/skill_hidden_mist_cast_v1.png",
+"rows": 2,
+"size": 256
+}

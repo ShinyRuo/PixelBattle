@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/root_burial/frame_0.png" id="1_3mj73"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/root_burial/frame_1.png" id="2_lii1k"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/root_burial/frame_2.png" id="3_hj1kk"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/root_burial/frame_3.png" id="4_1f1jr"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/root_burial/frame_4.png" id="5_d4s5e"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/root_burial/frame_5.png" id="6_mdxc5"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_omfs4"]
+
+[resource]
+script = ExtResource("7_omfs4")
+frames = Array[Texture2D]([ExtResource("1_3mj73"), ExtResource("2_lii1k"), ExtResource("3_hj1kk"), ExtResource("4_1f1jr"), ExtResource("5_d4s5e"), ExtResource("6_mdxc5")])
+fps = 6.0

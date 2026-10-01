@@ -182,9 +182,7 @@ func dispatch_available(state: PBRunState, cfg: PBSimConfig) -> int:
 ## [param wave_element] 传负数表示「按裸战力排」（对照组）。**必须看本波属性**：
 ## 在场就是出战席，这一步不看属性的话「每波换上克制系」就没有发生的余地，
 ## 属性系统在扫描里一分钱都不值，而它不报错。
-func bring_to_field(
-	state: PBRunState, cfg: PBSimConfig, wave_element: int = -1
-) -> Array[PBUnit]:
+func bring_to_field(state: PBRunState, cfg: PBSimConfig, wave_element: int = -1) -> Array[PBUnit]:
 	# 同 [method lineup_units]：出任务的那几个不占人口。
 	var capacity: int = state.field_slots(cfg)
 	var chosen: Array[PBUnit] = lineup_units(state, cfg)
@@ -290,7 +288,10 @@ func spend_on_power(
 		var branch := _cheapest_training(state, cfg, training_target)
 		var tech_first: bool = (
 			branch != &""
-			and PBEconomyRules.tech_cost(branch, state.training_level(branch), cfg) <= cfg.gacha_cost
+			and (
+				PBEconomyRules.tech_cost(branch, state.training_level(branch), cfg)
+				<= cfg.gacha_cost
+			)
 		)
 		if tech_first:
 			if not buy_tech(state, branch, cfg):

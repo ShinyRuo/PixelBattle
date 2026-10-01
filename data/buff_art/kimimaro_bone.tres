@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kimimaro_bone/front_0.png" id="1_j4ixr"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kimimaro_bone/front_1.png" id="2_7v4tv"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kimimaro_bone/front_2.png" id="3_lrqal"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kimimaro_bone/front_3.png" id="4_uvupg"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kimimaro_bone/front_4.png" id="5_fi4y7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kimimaro_bone/front_5.png" id="6_khpec"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_lxxha"]
+
+[resource]
+script = ExtResource("7_lxxha")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_j4ixr"), ExtResource("2_7v4tv"), ExtResource("3_lrqal"), ExtResource("4_uvupg"), ExtResource("5_fi4y7"), ExtResource("6_khpec")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

@@ -322,6 +322,11 @@ var enemy_resist_per_wave: float = 0.005
 ## 忍术抗性封顶。**必须小于 1**：到 1 忍术一点伤害都没有，而那是随波次自己长出来的，没人会去配它。
 var enemy_resist_cap: float = 0.60
 
+## 敌人普攻闪避、体术暴击率及额外暴伤。未分配怪物特性前保持中性，允许专项配置验证。
+var enemy_dodge: float = 0.0
+var enemy_crit_chance: float = 0.0
+var enemy_crit_bonus: float = 0.0
+
 # ── 跑动与防挤（§02 / §03A）─────────────────────────────────────
 
 ## 己方单位走完全场要几秒。比敌人（[member march_seconds] 12 秒）快一倍：

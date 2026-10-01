@@ -92,11 +92,7 @@ func test_an_icon_key_can_be_used_as_a_file_name() -> void:
 			continue
 		var character := load("%s/%s" % [CHARACTERS, file_name]) as PBCharacter
 		assert_false(character.icon_key.contains("."), "icon_key 里不能有点：%s" % character.icon_key)
-		assert_eq(
-			character.icon_key.get_basename(),
-			character.icon_key,
-			"icon_key 当文件名用，截出来必须是它自己"
-		)
+		assert_eq(character.icon_key.get_basename(), character.icon_key, "icon_key 当文件名用，截出来必须是它自己")
 
 
 func _tile() -> PBUnitTile:
@@ -147,11 +143,7 @@ func test_a_countered_card_dims_the_portrait_too() -> void:
 	var beats := PBElement.counter_of(card.element)
 	var tile := _tile()
 	tile.set_unit(card, beats)
-	assert_eq(
-		PBElement.relation(card.element, beats),
-		PBElement.Relation.WEAK,
-		"前提：拿一个克制得了他的波次属性"
-	)
+	assert_eq(PBElement.relation(card.element, beats), PBElement.Relation.WEAK, "前提：拿一个克制得了他的波次属性")
 	var faces: Array[TextureRect] = []
 	for child: Node in tile.get_children():
 		if child is TextureRect:

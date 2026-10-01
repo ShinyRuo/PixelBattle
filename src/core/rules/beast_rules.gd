@@ -59,6 +59,8 @@ static func aura_passives(beast: PBBeast, level: int, cfg: PBSimConfig) -> Dicti
 	for key: StringName in beast.aura_passives:
 		out[key] = float(beast.aura_passives[key]) * scale
 	return out
+
+
 ## 光环给每个上场单位的伤害倍率，与 [param deployed] 同序。
 ##
 ## 形状刻意和 [method PBEquipRules.unit_multipliers] 一模一样 ——
@@ -144,8 +146,8 @@ static func build_ultimate_attacker(
 
 	var skill := PBSkill.new()
 	skill.element = _ultimate_element(beast)
-	skill.damage = team_dps * beast.ultimate_damage_seconds * scale * _element_mult(
-		beast, wave_element, cfg
+	skill.damage = (
+		team_dps * beast.ultimate_damage_seconds * scale * _element_mult(beast, wave_element, cfg)
 	)
 	# 半径为 0 = 「打全场」，所以要的是**对角**而不是长度 ——
 	# 二维之后用长度的话罩不到角落（见 [method PBSimConfig.field_diagonal]）。
@@ -195,9 +197,7 @@ static func _ultimate_element(beast: PBBeast) -> PBElement.Type:
 
 ## 大招吃到的属性倍率。不限属性的恒为 1.0（**中性，不是物理的 1.05**）——
 ## 尾兽不在 §03 的克制环里，给它 1.05 等于让它凭空强 5%。
-static func _element_mult(
-	beast: PBBeast, wave_element: PBElement.Type, cfg: PBSimConfig
-) -> float:
+static func _element_mult(beast: PBBeast, wave_element: PBElement.Type, cfg: PBSimConfig) -> float:
 	if beast.ultimate_element == PBBeast.ANY_ELEMENT:
 		return 1.0
 	var rel := PBElement.relation(beast.ultimate_element as PBElement.Type, wave_element)

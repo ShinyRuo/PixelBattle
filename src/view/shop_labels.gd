@@ -117,10 +117,7 @@ static func detail_of(kind: StringName, state: PBRunState, cfg: PBSimConfig) -> 
 			# 照着写成「+100%」会让开局这一屏看起来像坏了 —— 直接说人话。
 			if state.roster.is_empty():
 				return "抽卡 %d　先抽第一张（三选一）" % cost
-			return (
-				"抽卡 %d　摆三张挑一张　期望战力 %s"
-				% [cost, _percent(PBValuation.gacha_gain(state, cfg))]
-			)
+			return "抽卡 %d　摆三张挑一张　期望战力 %s" % [cost, _percent(PBValuation.gacha_gain(state, cfg))]
 		&"equip":
 			return _detail_equip(state, cfg, base, cost)
 		&"economy_slot":

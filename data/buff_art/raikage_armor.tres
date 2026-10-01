@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_armor/front_0.png" id="1_flour"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_armor/front_1.png" id="2_7267d"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_armor/front_2.png" id="3_xbccr"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_armor/front_3.png" id="4_tfce5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_armor/front_4.png" id="5_p6uwl"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/raikage_armor/front_5.png" id="6_djvbj"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_qxm25"]
+
+[resource]
+script = ExtResource("7_qxm25")
+front_frames = Array[Texture2D]([ExtResource("1_flour"), ExtResource("2_7267d"), ExtResource("3_xbccr"), ExtResource("4_tfce5"), ExtResource("5_p6uwl"), ExtResource("6_djvbj")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

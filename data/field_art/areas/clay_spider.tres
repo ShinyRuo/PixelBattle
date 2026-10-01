@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://cfa5wd8j7alj4"]
+
+[ext_resource type="Texture2D" uid="uid://c20lokk45jm2x" path="res://assets/fx/fields/areas/clay_spider/frame_0.png" id="1_2yh8k"]
+[ext_resource type="Texture2D" uid="uid://djsjrbt4jbk6u" path="res://assets/fx/fields/areas/clay_spider/frame_1.png" id="2_fegel"]
+[ext_resource type="Texture2D" uid="uid://ffmcoo0hciwp" path="res://assets/fx/fields/areas/clay_spider/frame_2.png" id="3_gjm8j"]
+[ext_resource type="Texture2D" uid="uid://clew87s8xoawu" path="res://assets/fx/fields/areas/clay_spider/frame_3.png" id="4_vjf61"]
+[ext_resource type="Texture2D" uid="uid://dfbcj8scon2kl" path="res://assets/fx/fields/areas/clay_spider/frame_4.png" id="5_taj6g"]
+[ext_resource type="Texture2D" uid="uid://cm03t64huoqca" path="res://assets/fx/fields/areas/clay_spider/frame_5.png" id="6_aucy4"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_kbwwd"]
+
+[resource]
+script = ExtResource("7_kbwwd")
+frames = Array[Texture2D]([ExtResource("1_2yh8k"), ExtResource("2_fegel"), ExtResource("3_gjm8j"), ExtResource("4_vjf61"), ExtResource("5_taj6g"), ExtResource("6_aucy4")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_clay_spider_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

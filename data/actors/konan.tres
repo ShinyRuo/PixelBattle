@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://c5ftkxc16qwc8"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://bckkst5dqad0u" path="res://assets/actors/konan/attack_0.png" id="1_yl2h6"]
-[ext_resource type="Texture2D" uid="uid://ckf774sxnfhe2" path="res://assets/actors/konan/attack_1.png" id="2_waenx"]
-[ext_resource type="Texture2D" uid="uid://0s1dsr2biyqp" path="res://assets/actors/konan/attack_2.png" id="3_4km7g"]
-[ext_resource type="Texture2D" uid="uid://bs16qrkhtaokf" path="res://assets/actors/konan/attack_3.png" id="4_y8ofp"]
-[ext_resource type="Texture2D" uid="uid://g1670y4st5vv" path="res://assets/actors/konan/attack_4.png" id="5_vl1ts"]
-[ext_resource type="Texture2D" uid="uid://beko8oqy0cnln" path="res://assets/actors/konan/attack_5.png" id="6_ad5sp"]
-[ext_resource type="Texture2D" uid="uid://cv5hkbsw5a0s3" path="res://assets/actors/konan/dead_0.png" id="7_gc6qk"]
-[ext_resource type="Texture2D" uid="uid://c6ksshi6gwfri" path="res://assets/actors/konan/dead_1.png" id="8_p84y1"]
-[ext_resource type="Texture2D" uid="uid://dbt26a4awkx3k" path="res://assets/actors/konan/dead_2.png" id="9_86va1"]
-[ext_resource type="Texture2D" uid="uid://bl0ymu34xaxuh" path="res://assets/actors/konan/dead_3.png" id="10_ydx1k"]
-[ext_resource type="Texture2D" uid="uid://dpaxinku7yar3" path="res://assets/actors/konan/dead_4.png" id="11_3mc5u"]
-[ext_resource type="Texture2D" uid="uid://t6762y6lix83" path="res://assets/actors/konan/dead_5.png" id="12_oj7gk"]
-[ext_resource type="Texture2D" uid="uid://ivrrrgjqiiwq" path="res://assets/actors/konan/idle_0.png" id="13_myc33"]
-[ext_resource type="Texture2D" uid="uid://b7batijhmrlr4" path="res://assets/actors/konan/idle_1.png" id="14_6k3l6"]
-[ext_resource type="Texture2D" uid="uid://o2nck1dfwdvo" path="res://assets/actors/konan/idle_2.png" id="15_bktno"]
-[ext_resource type="Texture2D" uid="uid://dl5aery4ieta5" path="res://assets/actors/konan/idle_3.png" id="16_eb84w"]
-[ext_resource type="Texture2D" uid="uid://bse1oysvuj8k3" path="res://assets/actors/konan/idle_4.png" id="17_ipdu8"]
-[ext_resource type="Texture2D" uid="uid://dq6cihl0h8fc3" path="res://assets/actors/konan/idle_5.png" id="18_yqy2p"]
-[ext_resource type="Texture2D" uid="uid://dqnx7gf3bcdpc" path="res://assets/actors/konan/run_0.png" id="19_gx8xh"]
-[ext_resource type="Texture2D" uid="uid://bmcc5y3n21c1t" path="res://assets/actors/konan/run_1.png" id="20_moq8p"]
-[ext_resource type="Texture2D" uid="uid://d3pesr8g5xiq2" path="res://assets/actors/konan/run_2.png" id="21_to5gq"]
-[ext_resource type="Texture2D" uid="uid://l202hcjovmiv" path="res://assets/actors/konan/run_3.png" id="22_fkgg6"]
-[ext_resource type="Texture2D" uid="uid://bbyebm7y6st33" path="res://assets/actors/konan/run_4.png" id="23_4qunl"]
-[ext_resource type="Texture2D" uid="uid://bybrmfbmkkod2" path="res://assets/actors/konan/run_5.png" id="24_qttmi"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_5a8t4"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/attack_0.png" id="1_yl2h6"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/attack_1.png" id="2_waenx"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/attack_2.png" id="3_4km7g"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/attack_3.png" id="4_y8ofp"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/attack_4.png" id="5_vl1ts"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/attack_5.png" id="6_ad5sp"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/dead_0.png" id="7_gc6qk"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/cast_paper_wings_00.png" id="7_p84y1"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/cast_paper_wings_01.png" id="8_86va1"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/dead_1.png" id="8_p84y1"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/dead_2.png" id="9_86va1"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/cast_paper_wings_02.png" id="9_ydx1k"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/cast_paper_wings_03.png" id="10_3mc5u"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/dead_3.png" id="10_ydx1k"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/dead_4.png" id="11_3mc5u"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/cast_paper_wings_04.png" id="11_oj7gk"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/cast_paper_wings_05.png" id="12_myc33"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/dead_5.png" id="12_oj7gk"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/idle_0.png" id="13_myc33"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/idle_1.png" id="14_6k3l6"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/idle_2.png" id="15_bktno"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/idle_3.png" id="16_eb84w"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/idle_4.png" id="17_ipdu8"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/idle_5.png" id="18_yqy2p"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/run_0.png" id="19_gx8xh"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/run_1.png" id="20_moq8p"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/run_2.png" id="21_to5gq"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/run_3.png" id="22_fkgg6"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/run_4.png" id="23_4qunl"]
+[ext_resource type="Texture2D" path="res://assets/actors/konan/run_5.png" id="24_qttmi"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_5a8t4"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_hxlrd"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_6k3l6"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_p84y1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_86va1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ydx1k")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_3mc5u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_oj7gk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_myc33")
+}],
+"loop": 0,
+"name": &"cast_paper_wings",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_5a8t4")
 key = &"konan"
-frames = SubResource("SpriteFrames_hxlrd")
+frames = SubResource("SpriteFrames_6k3l6")
+skill_anims = {
+&"paper_wings": &"cast_paper_wings"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

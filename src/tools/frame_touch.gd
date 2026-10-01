@@ -174,9 +174,10 @@ static func _stroke(image: Image, mark: Dictionary) -> void:
 			image.fill_rect(area, CLEAR)
 		return
 	var radius: int = maxi(size.x, 1)
-	var box := Rect2i(
-		at - Vector2i(radius, radius), Vector2i(radius * 2 + 1, radius * 2 + 1)
-	).intersection(bounds)
+	var box := (
+		Rect2i(at - Vector2i(radius, radius), Vector2i(radius * 2 + 1, radius * 2 + 1))
+		. intersection(bounds)
+	)
 	for y: int in range(box.position.y, box.end.y):
 		for x: int in range(box.position.x, box.end.x):
 			var dx: int = x - at.x

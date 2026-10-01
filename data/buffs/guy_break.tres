@@ -16,3 +16,4 @@ mods = {
 mods_growth = {
 &"enemy_defence": -8.0
 }
+duration_levels = PackedFloat32Array()

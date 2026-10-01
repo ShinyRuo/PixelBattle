@@ -80,9 +80,7 @@ func test_a_gap_smaller_than_the_threshold_keeps_one_figure_whole() -> void:
 	# 而那道光会被当成独立的一帧量进去。
 	# **两块都要大过 [constant PBSheetCutter.DEFAULT_CELL]**，否则小的那块
 	# 会被当成噪点丢掉 —— 那样这两条断言测的就不是「合不合并」了。
-	var image := _sheet(
-		Vector2i(200, 100), [Rect2i(20, 20, 40, 60), Rect2i(70, 25, 30, 40)]
-	)
+	var image := _sheet(Vector2i(200, 100), [Rect2i(20, 20, 40, 60), Rect2i(70, 25, 30, 40)])
 	PBSheetCutter.key_out(image)
 	# 两块之间空 10 像素：阈值 24（默认）应当把它们并成一格。
 	assert_eq(PBSheetCutter.cut(image).size(), 1, "空 10 像素、阈值 24 —— 该并成一格")
@@ -216,9 +214,7 @@ func test_the_wanted_count_comes_from_the_frame_count() -> void:
 	# 图集的格数就是一段动画的帧数。两处各写一个 6 的话，哪天默认帧数变了，
 	# 面板会一直报「切出 8 格，不是 6 格」而其实是对的。
 	assert_eq(
-		PBForgeSource.cells_wanted(),
-		PBSimConfig.new().anim_frames,
-		"该有几格要从 anim_frames 来，不写死"
+		PBForgeSource.cells_wanted(), PBSimConfig.new().anim_frames, "该有几格要从 anim_frames 来，不写死"
 	)
 
 

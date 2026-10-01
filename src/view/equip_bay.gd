@@ -37,8 +37,11 @@ func _ready() -> void:
 	add_child(drop)
 
 	_title = PBSkin.label(
-		self, rect.position + Vector2(PAD, 0.0), rect.size.x - PAD * 2.0,
-		PBSkin.FONT_BODY, PBSkin.TITLE
+		self,
+		rect.position + Vector2(PAD, 0.0),
+		rect.size.x - PAD * 2.0,
+		PBSkin.FONT_BODY,
+		PBSkin.TITLE
 	)
 	for i: int in PBSimConfig.new().equip_items_per_unit:
 		var tile := PBItemTile.new()
@@ -53,7 +56,11 @@ func _ready() -> void:
 ## [param deployed] 是「现在开打的话会是谁」—— **装备只发给上场的人**（§10），
 ## 所以没上场的忍者这一栏是空的，标题要说清是为什么。
 func refresh(
-	unit: PBUnit, state: PBRunState, cfg: PBSimConfig, deployed: Array[PBUnit]
+	unit: PBUnit,
+	state: PBRunState,
+	cfg: PBSimConfig,
+	deployed: Array[PBUnit],
+	editable: bool = true
 ) -> void:
 	_table = cfg.equipment
 	var index: int = deployed.find(unit) if unit != null else -1
@@ -63,11 +70,11 @@ func refresh(
 			tile.visible = false
 		return
 
-	var held: PackedStringArray = PBEquipRules.assign(
-		deployed, state.equip_parts, cfg, state.equipped
-	)[index]
-	var pins: Array = PBEquipRules.pinned_of(state.equipped, unit.key())
-	_title.text = "装备\n%d/%d" % [held.size(), cfg.equip_items_per_unit]
+	var held: PackedStringArray = (
+		PBEquipRules.assign(deployed, state.equip_parts, cfg, state.equipped)[index]
+	)
+	var pins: Array = PBEquipRules.pinned_of(state.equipped, unit.key()).duplicate()
+	_title.text = "装备 %d/%d" % [held.size(), cfg.equip_items_per_unit]
 	for i: int in _slots.size():
 		var tile: PBItemTile = _slots[i]
 		tile.visible = i < held.size()
@@ -79,7 +86,7 @@ func refresh(
 		if manual:
 			pins.erase(item_id)
 		tile.set_item(cfg.equipment.item(item_id), 1, not manual)
-		tile.draggable = manual
+		tile.draggable = manual and editable
 
 
 ## 说明卡走 [PBShopLabels]，和忍具仓库那边点开的是同一张。

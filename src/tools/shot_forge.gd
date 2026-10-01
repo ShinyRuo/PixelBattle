@@ -17,8 +17,8 @@ const HIT := &"hit"
 ## 贴图是屏幕尺寸的几倍（`Docs/素材规格_特效.md` §2.1），和人物同一档。
 const HD_FACTOR: int = 3
 
-## 键只许小写英文、数字、下划线：它同时是目录名、文件名和表里的一格。
-const KEY_PATTERN := "^[a-z0-9_]+$"
+## 键只许大小写英文、数字、下划线：它同时是目录名、文件名和表里的一格。
+const KEY_PATTERN := "^[A-Za-z0-9_]+$"
 
 ## 敌人皮键里的属性、形态写成人话（面板下拉框用）。皮键的拼法在 [method PBEnemyPool.key_for]。
 const ENEMY_ELEMENT_WORDS := {
@@ -53,7 +53,7 @@ static func key_error(key: String) -> String:
 		return "先填子弹键。"
 	var pattern := RegEx.create_from_string(KEY_PATTERN)
 	if pattern.search(key) == null:
-		return "子弹键只用小写英文、数字和下划线：%s" % key
+		return "子弹键只用大小写英文、数字和下划线：%s" % key
 	return ""
 
 

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_0.png" id="1_c4kmi"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_1.png" id="2_s0mn5"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_2.png" id="3_pef0v"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_3.png" id="4_mj8ei"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_4.png" id="5_t62ac"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_5.png" id="6_jemwt"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_0.png" id="7_v0dq0"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_1.png" id="8_i7ifo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_2.png" id="9_0who6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_3.png" id="10_fw4vr"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_4.png" id="11_cxliy"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_5.png" id="12_ghva7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_0.png" id="13_ws34g"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_1.png" id="14_3yky2"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_2.png" id="15_kfukx"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_3.png" id="16_cad24"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_4.png" id="17_m4fvm"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_5.png" id="18_waw8v"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_0.png" id="19_rke3g"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_1.png" id="20_odeq3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_2.png" id="21_dgncs"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_3.png" id="22_pw3kq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_4.png" id="23_fmra7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_5.png" id="24_1tn8i"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_unr3s"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_c4kmi"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_c4kmi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_s0mn5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_pef0v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_mj8ei")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_t62ac")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_jemwt")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_v0dq0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_i7ifo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_0who6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_fw4vr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_cxliy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ghva7")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_ws34g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_3yky2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_kfukx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_cad24")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_m4fvm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_waw8v")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_rke3g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_odeq3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_dgncs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_pw3kq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_fmra7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_1tn8i")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_unr3s")
+key = &"summon_shadow_clones"
+frames = SubResource("SpriteFrames_c4kmi")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 150.0

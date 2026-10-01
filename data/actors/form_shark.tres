@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/attack_0.png" id="1_hayeg"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/attack_1.png" id="2_msr3b"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/attack_2.png" id="3_vjxe6"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/attack_3.png" id="4_cau8a"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/attack_4.png" id="5_x3heo"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/attack_5.png" id="6_v5oev"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/dead_0.png" id="7_ra6lo"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/dead_1.png" id="8_xswj8"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/dead_2.png" id="9_dkcp0"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/dead_3.png" id="10_osvd7"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/dead_4.png" id="11_12p2h"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/dead_5.png" id="12_uj50x"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/idle_0.png" id="13_ctsv6"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/idle_1.png" id="14_msryo"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/idle_2.png" id="15_256m1"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/idle_3.png" id="16_15614"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/idle_4.png" id="17_muf0s"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/idle_5.png" id="18_4rg55"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/run_0.png" id="19_eefqq"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/run_1.png" id="20_ifmu0"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/run_2.png" id="21_dm3qf"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/run_3.png" id="22_77eo2"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/run_4.png" id="23_calqd"]
+[ext_resource type="Texture2D" path="res://assets/actors/form_shark/run_5.png" id="24_kvq41"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_7bv7s"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_t7h53"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_hayeg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_msr3b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_vjxe6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_cau8a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_x3heo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_v5oev")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_ra6lo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_xswj8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_dkcp0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_osvd7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_12p2h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_uj50x")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_ctsv6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_msryo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_256m1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_15614")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_muf0s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_4rg55")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_eefqq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_ifmu0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_dm3qf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_77eo2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_calqd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_kvq41")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_7bv7s")
+key = &"form_shark"
+frames = SubResource("SpriteFrames_t7h53")
+pixel_scale = 0.3
+smooth = true
+height_px = 200.0

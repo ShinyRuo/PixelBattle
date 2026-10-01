@@ -86,6 +86,7 @@ var _tier: int = -1
 
 ## 忍术范围圈的半径（像素）。0 表示不画。
 var _cast_px: float = 0.0
+var _cast_outline: PackedVector2Array = PackedVector2Array()
 
 ## 锁定档下可以点的那几个人的屏幕坐标（D 那一圈圈）。
 var _candidates: PackedVector2Array = PackedVector2Array()
@@ -123,6 +124,7 @@ func sync(
 	var tier: int = -1
 	var cast_px: float = 0.0
 	var picks := PackedVector2Array()
+	var outline := PackedVector2Array()
 	if live != null and mode != PBFieldPicker.Aim.OFF:
 		from = PBLayout.to_screen(live.pos, field)
 		var cast := PBSkillRules.cast_at(live, picker.aim_skill)
@@ -133,6 +135,11 @@ func sync(
 				# （[constant PBBondFunctionRules.PULL_RADIUS_SCALE]），而圈画小了
 				# 等于告诉玩家一件错的事。
 				cast_px = cast.skill.radius * PBLayout.px_per_unit(field)
+				if cast.skill.line_length > 0.0:
+					for point: Vector2 in PBSkillArea.outline(
+						cast.skill, live.pos, PBLayout.to_field(cursor, field)
+					):
+						outline.append(PBLayout.to_screen(point, field))
 			elif tier == PBSkill.Target.ALLY:
 				_gather_allies(picks, battle, field)
 			elif tier == PBSkill.Target.ENEMY:
@@ -140,6 +147,9 @@ func sync(
 	var orders := PackedVector2Array()
 	var tiers := PackedInt32Array()
 	_gather_orders(orders, tiers, battle, field)
+	if _cast_outline != outline:
+		_cast_outline = outline
+		queue_redraw()
 	_apply(links, from, cursor, mode, tier, cast_px, picks, orders, tiers)
 
 
@@ -175,18 +185,14 @@ static func _gather_orders(
 
 ## 锁定档下点得中的那几个人。**判据是 [method PBAttacker.is_targetable]**，和落地时那道门读同一份 ——
 ## 否则会画出「看着能点、点了空放」的候选。尾兽排除在外（`slot < 0`，没有本体）。
-static func _gather_allies(
-	out: PackedVector2Array, battle: PBBattleSim, field: Vector2
-) -> void:
+static func _gather_allies(out: PackedVector2Array, battle: PBBattleSim, field: Vector2) -> void:
 	for attacker: PBAttacker in battle.attackers():
 		if attacker.slot >= 0 and attacker.is_targetable():
 			out.append(PBLayout.to_screen(attacker.pos, field))
 
 
 ## 点敌人那一档下点得中的那几个。**判据是 [method PBEnemy.is_active]**，和 [method PBFieldPicker.enemy_at] 读同一份。
-static func _gather_enemies(
-	out: PackedVector2Array, battle: PBBattleSim, field: Vector2
-) -> void:
+static func _gather_enemies(out: PackedVector2Array, battle: PBBattleSim, field: Vector2) -> void:
 	for enemy: PBEnemy in battle.enemies():
 		if enemy.is_active(battle.current_tick()):
 			out.append(PBLayout.to_screen(enemy.pos(), field))
@@ -257,6 +263,7 @@ func _apply(
 
 ## 一条都不画（准备阶段、本局结束）。
 func clear() -> void:
+	_cast_outline = PackedVector2Array()
 	_apply(
 		PackedVector2Array(),
 		Vector2.ZERO,
@@ -279,9 +286,7 @@ func _draw() -> void:
 		var to := _orders[i * 2 + 1]
 		draw_polyline(PBLayout.ground_disc(at, ORDER_PX, SEGMENTS), ORDER_EDGE, WIDTH)
 		if at != to:
-			var hue := (
-				LINE_ALLY if _order_tiers[i] == PBSkill.Target.ALLY else LINE_CAST
-			)
+			var hue := LINE_ALLY if _order_tiers[i] == PBSkill.Target.ALLY else LINE_CAST
 			draw_dashed_line(at, to, hue, WIDTH, DASH)
 	if _from == Vector2.ZERO:
 		return
@@ -307,5 +312,7 @@ func _draw() -> void:
 	if _cast_px > 0.0:
 		# 地面上的圆画成椭圆，见 [method PBLayout.ground_disc]。
 		var ring := PBLayout.ground_disc(_cursor, _cast_px, SEGMENTS)
+		if not _cast_outline.is_empty():
+			ring = _cast_outline
 		draw_colored_polygon(ring, CAST_FILL)
 		draw_polyline(ring, CAST_EDGE, WIDTH)

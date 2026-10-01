@@ -3,16 +3,51 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_xyvpq"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_xuikb"]
 
+[sub_resource type="Resource" id="Resource_hdwhd"]
+script = ExtResource("1_xyvpq")
+id = &"enemy_lift"
+name_key = "buff.enemy_lift"
+icon_key = "buff.enemy_lift"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"airborne": 1.0,
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
+[sub_resource type="Resource" id="Resource_664l6"]
+script = ExtResource("1_xyvpq")
+id = &"kurotsuchi_stun"
+name_key = "buff.kurotsuchi_stun"
+icon_key = "buff.kurotsuchi_stun"
+kind = 1
+friendly = false
+duration_seconds = 0.5
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array(0.5, 0.5, 1, 1, 1, 1.5, 1.5, 1.5, 1.5, 2)
+
 [resource]
 script = ExtResource("2_xuikb")
+target = 2
 id = &"rising_earth"
 name_key = "skill.rising_earth"
-element = 4
+on_target = Array[ExtResource("1_xyvpq")]([SubResource("Resource_664l6")])
+on_start_target = Array[ExtResource("1_xyvpq")]([SubResource("Resource_hdwhd")])
+element = 3
 power_mult = 2.5
+damage_base = 200.0
+damage_growth = 200.0
+damage_stat = &"agility"
 radius = 0.11
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 300
-delay_ticks = 8
-knockback = 0.05
-slow_scale = 0.0
-slow_ticks = 30
+delay_ticks = 20
 mp_cost = 12.0
+mp_cost_levels = PackedFloat32Array(12, 16, 21, 25, 30, 34, 39, 43, 48, 52)

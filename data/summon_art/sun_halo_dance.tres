@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PBSummonArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/summon_art.gd" id="1_ntjtl"]
+
+[resource]
+script = ExtResource("1_ntjtl")
+actor_key = &"summon_sun_halo_dance"
+spawn_fx_key = &"summon_sun_halo_spawn"

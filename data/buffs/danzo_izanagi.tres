@@ -10,3 +10,4 @@ icon_key = "buff.danzo_izanagi"
 mods = {
 &"heal_max": 0.5
 }
+duration_levels = PackedFloat32Array()

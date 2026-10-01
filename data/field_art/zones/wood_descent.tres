@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/zones/wood_descent/frame_0.png" id="1_teicr"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/zones/wood_descent/frame_1.png" id="2_i8f7b"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/zones/wood_descent/frame_2.png" id="3_5jimt"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/zones/wood_descent/frame_3.png" id="4_esppd"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/zones/wood_descent/frame_4.png" id="5_o0u7b"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/zones/wood_descent/frame_5.png" id="6_nauwd"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_wpifp"]
+
+[resource]
+script = ExtResource("7_wpifp")
+frames = Array[Texture2D]([ExtResource("1_teicr"), ExtResource("2_i8f7b"), ExtResource("3_5jimt"), ExtResource("4_esppd"), ExtResource("5_o0u7b"), ExtResource("6_nauwd")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3,
+"count": 6,
+"floor": 0.93,
+"gap": 12,
+"layout": 0,
+"path": "res://aires/skills/skill_wood_descent_zone_v1.png",
+"rows": 2,
+"size": 384
+}

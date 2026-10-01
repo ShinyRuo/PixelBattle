@@ -91,7 +91,5 @@ func test_no_quantize_keeps_colors() -> void:
 ## 插件外壳里那句 preload 拼错了不报错，只表现为「底栏那块面板是空的」。
 func test_plugin_shell_points_at_the_panel() -> void:
 	var shell := FileAccess.get_file_as_string("res://addons/pixelate/plugin.gd")
-	assert_true(
-		shell.contains("res://src/tools/pixelate_panel.gd"), "插件外壳没指向 src/ 里的面板本体"
-	)
+	assert_true(shell.contains("res://src/tools/pixelate_panel.gd"), "插件外壳没指向 src/ 里的面板本体")
 	assert_true(ResourceLoader.exists("res://src/tools/pixelate_panel.gd"), "面板本体不在")

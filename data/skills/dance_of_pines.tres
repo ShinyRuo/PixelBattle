@@ -13,6 +13,7 @@ duration_seconds = 3.0
 mods = {
 &"damage_taken": 0.5
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_2al1v")
@@ -20,7 +21,13 @@ target = 0
 id = &"dance_of_pines"
 name_key = "skill.dance_of_pines"
 on_self = Array[ExtResource("1_i7713")]([SubResource("Resource_o0ytm")])
-power_mult = 1.8
+kind = 0
+damage_base = 50.0
+damage_growth = 50.0
+damage_stat = &"attack"
 radius = 0.17
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 mp_cost = 15.0
+mp_cost_levels = PackedFloat32Array(15, 20, 25, 30, 35, 40, 45, 50, 55, 60)

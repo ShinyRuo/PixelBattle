@@ -218,7 +218,7 @@ func test_pausing_and_speeding_up_reach_the_animation_too() -> void:
 	var empty: Array[PBEnemy] = []
 
 	pool.sync_allies(squad, nobody, field, empty)
-	var sprite := pool.find_children("", "AnimatedSprite2D", true, false)[0] as AnimatedSprite2D
+	var sprite := pool._sprites[0]
 	assert_gt(sprite.speed_scale, 0.0, "平时该在播")
 
 	pool.set_anim_speed(0.0)

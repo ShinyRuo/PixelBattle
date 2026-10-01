@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bd2m8lvit7ao2"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://do0l4h18vscdr" path="res://assets/actors/suigetsu/attack_0.png" id="1_evgag"]
-[ext_resource type="Texture2D" uid="uid://k76du3tu83v8" path="res://assets/actors/suigetsu/attack_1.png" id="2_c8yrg"]
-[ext_resource type="Texture2D" uid="uid://m5db653151we" path="res://assets/actors/suigetsu/attack_2.png" id="3_hgwko"]
-[ext_resource type="Texture2D" uid="uid://crotgcpd2bnjl" path="res://assets/actors/suigetsu/attack_3.png" id="4_q81jk"]
-[ext_resource type="Texture2D" uid="uid://kx17mdg2cy3f" path="res://assets/actors/suigetsu/attack_4.png" id="5_sl0nj"]
-[ext_resource type="Texture2D" uid="uid://cm8pt2eo42b87" path="res://assets/actors/suigetsu/attack_5.png" id="6_21p3d"]
-[ext_resource type="Texture2D" uid="uid://b3rb2txd5uywa" path="res://assets/actors/suigetsu/dead_0.png" id="7_dtmd7"]
-[ext_resource type="Texture2D" uid="uid://dgdirfga3a36g" path="res://assets/actors/suigetsu/dead_1.png" id="8_v2umb"]
-[ext_resource type="Texture2D" uid="uid://cjuuw4rwr5a6n" path="res://assets/actors/suigetsu/dead_2.png" id="9_4dpo3"]
-[ext_resource type="Texture2D" uid="uid://djmn4vuwqilq5" path="res://assets/actors/suigetsu/dead_3.png" id="10_kp6py"]
-[ext_resource type="Texture2D" uid="uid://c6506ru38cfvn" path="res://assets/actors/suigetsu/dead_4.png" id="11_5qhft"]
-[ext_resource type="Texture2D" uid="uid://beugvkyosshuo" path="res://assets/actors/suigetsu/dead_5.png" id="12_qqd4q"]
-[ext_resource type="Texture2D" uid="uid://cjfqlncjplldl" path="res://assets/actors/suigetsu/idle_0.png" id="13_ihv85"]
-[ext_resource type="Texture2D" uid="uid://dk73d686mrfsg" path="res://assets/actors/suigetsu/idle_1.png" id="14_ulfqj"]
-[ext_resource type="Texture2D" uid="uid://d3o5vfnr8ggvj" path="res://assets/actors/suigetsu/idle_2.png" id="15_1ck1m"]
-[ext_resource type="Texture2D" uid="uid://b0xlg3b7ulfko" path="res://assets/actors/suigetsu/idle_3.png" id="16_rdln8"]
-[ext_resource type="Texture2D" uid="uid://cbya0j1wqxn26" path="res://assets/actors/suigetsu/idle_4.png" id="17_kph2x"]
-[ext_resource type="Texture2D" uid="uid://dt0wy03tlrbtj" path="res://assets/actors/suigetsu/idle_5.png" id="18_5l4ip"]
-[ext_resource type="Texture2D" uid="uid://c5wq5id6j03p4" path="res://assets/actors/suigetsu/run_0.png" id="19_3o5t7"]
-[ext_resource type="Texture2D" uid="uid://dto2fhy7l0shc" path="res://assets/actors/suigetsu/run_1.png" id="20_nfdcv"]
-[ext_resource type="Texture2D" uid="uid://bydbif6l7aypf" path="res://assets/actors/suigetsu/run_2.png" id="21_y665c"]
-[ext_resource type="Texture2D" uid="uid://cgb0wyj1vk03a" path="res://assets/actors/suigetsu/run_3.png" id="22_fro51"]
-[ext_resource type="Texture2D" uid="uid://dohefebtrowo8" path="res://assets/actors/suigetsu/run_4.png" id="23_p6rcl"]
-[ext_resource type="Texture2D" uid="uid://ckxohyo48jlq0" path="res://assets/actors/suigetsu/run_5.png" id="24_3wbxa"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_vq68e"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/attack_0.png" id="1_evgag"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/attack_1.png" id="2_c8yrg"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/attack_2.png" id="3_hgwko"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/attack_3.png" id="4_q81jk"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/attack_4.png" id="5_sl0nj"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/attack_5.png" id="6_21p3d"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/dead_0.png" id="7_dtmd7"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/cast_water_dragon_00.png" id="7_v2umb"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/cast_water_dragon_01.png" id="8_4dpo3"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/dead_1.png" id="8_v2umb"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/dead_2.png" id="9_4dpo3"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/cast_water_dragon_02.png" id="9_kp6py"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/cast_water_dragon_03.png" id="10_5qhft"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/dead_3.png" id="10_kp6py"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/dead_4.png" id="11_5qhft"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/cast_water_dragon_04.png" id="11_qqd4q"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/cast_water_dragon_05.png" id="12_ihv85"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/dead_5.png" id="12_qqd4q"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/idle_0.png" id="13_ihv85"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/idle_1.png" id="14_ulfqj"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/idle_2.png" id="15_1ck1m"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/idle_3.png" id="16_rdln8"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/idle_4.png" id="17_kph2x"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/idle_5.png" id="18_5l4ip"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/run_0.png" id="19_3o5t7"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/run_1.png" id="20_nfdcv"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/run_2.png" id="21_y665c"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/run_3.png" id="22_fro51"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/run_4.png" id="23_p6rcl"]
+[ext_resource type="Texture2D" path="res://assets/actors/suigetsu/run_5.png" id="24_3wbxa"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_vq68e"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_evgag"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_ulfqj"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_v2umb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_4dpo3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_kp6py")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_5qhft")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_qqd4q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ihv85")
+}],
+"loop": 0,
+"name": &"cast_water_dragon",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_vq68e")
 key = &"suigetsu"
-frames = SubResource("SpriteFrames_evgag")
+frames = SubResource("SpriteFrames_ulfqj")
+skill_anims = {
+&"water_dragon": &"cast_water_dragon"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

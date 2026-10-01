@@ -40,6 +40,9 @@ const PICK_RADIUS_PX: float = 12.0
 ## **默认关**：开局第一眼应该是准备阶段。挂机观战按 `A`。
 @export var auto_play: bool = false
 
+var _debug: PBDebugPanel
+var _debug_button: Button
+
 var _cfg: PBSimConfig
 var _state: PBRunState
 var _strategy: PBStrategy
@@ -82,7 +85,6 @@ var _log := PBBattleLog.new()
 ## 选中那个忍者上一帧那几格技能的状态（[method PBSkillBar.state_mask]），真的翻面那一帧才重排指令卡。
 var _cast_ready: int = 0
 
-
 ## 击杀顿帧还剩几个物理帧。**它不碰 tick 序列**：期间只是不调
 ## `_advance_logic`，`_frame_counter` 也不动，走完之后 tick 一个不多一个不少。
 ## **绝不能用「跳过一个 tick」或者 `Engine.time_scale`**：前者直接改模拟结果，
@@ -93,7 +95,10 @@ var _hitstop_frames: int = 0
 @onready var _pool: PBEnemyPool = $Actors/Enemies
 @onready var _shots: PBShotPool = $Shots
 @onready var _allies: PBAllyPool = $Actors/Deployed
-@onready var _telegraph: PBTelegraphPool = $Telegraph
+@onready var _telegraph: PBTelegraphPool = $TelegraphClip/Telegraph
+@onready var _field_fx: PBFieldEffects = $TelegraphClip/FieldEffects
+@onready var _aura: PBAuraRing = $TelegraphClip/Aura
+@onready var _attack_range: PBAttackRangeRing = $TelegraphClip/AttackRange
 @onready var _floats: PBFloatTextPool = $Floats
 @onready var _fx: PBSkillFxPool = $SkillFx
 @onready var _aim: PBAimLines = $Aim
@@ -177,6 +182,7 @@ func _ready() -> void:
 	)
 	_fast_forward_to(start_wave)
 	_enter_prepare()
+	_build_debug()
 
 
 ## 玩家在准备阶段买了一笔。**钱走 [PBStrategy] 的原语，不由界面自己扣** ——
@@ -216,9 +222,7 @@ func _on_command(command_id: StringName) -> void:
 			return
 		PBCommandCard.CMD_DISPATCH:
 			# **走 [PBCardMoves] 那一份**：派任务要同时改两处状态。
-			PBCardMoves.toggle_quest(
-				_state, _strategy, _plan, _selection.unit_of(_state), _cfg
-			)
+			PBCardMoves.toggle_quest(_state, _strategy, _plan, _selection.unit_of(_state), _cfg)
 		PBCommandCard.CMD_BEAST_PICK:
 			_open_modal(_beasts)
 		PBCommandCard.CMD_BEAST_UP:
@@ -291,6 +295,8 @@ func _on_offer_picked(index: int) -> void:
 ## 玩家挂上/卸下一件装备。**走 [PBEquipRules] 的原语，界面不自己动
 ## [member PBRunState.equipped]** —— 和花钱、排名单同一个理由。
 func _on_equip_changed(item_id: StringName, put_on: bool) -> void:
+	if _phase != Phase.PREPARE or _run_over:
+		return
 	var unit := _selection.unit_of(_state)
 	if unit == null:
 		return
@@ -345,6 +351,8 @@ func _on_card_moved(
 
 
 func _physics_process(_delta: float) -> void:
+	if _debug != null and _debug.visible:
+		return
 	if _run_over:
 		return
 	match _phase:
@@ -367,6 +375,11 @@ func _physics_process(_delta: float) -> void:
 ## 直接读 keycode 而不是走 Input Map —— 那段序列化格式跨版本很脆，
 ## 项目规范要求用编辑器加而不是手写进 project.godot；操作方案定了再进 Input Map。
 func _unhandled_input(event: InputEvent) -> void:
+	if _debug != null and _debug.visible:
+		if event is InputEventKey and event.is_pressed() and event.keycode == KEY_ESCAPE:
+			_debug.close()
+		get_viewport().set_input_as_handled()
+		return
 	# 战场上的点击。**不看 [member _paused]**：暂停的时候也能点。准备阶段的拖动归拖放协议管（[PBDropArea]）。
 	if event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
@@ -622,6 +635,9 @@ func _refresh_battle_panels() -> void:
 	PBSkillBar.show_on(_command, _battle, _selected_attacker(), _picker)
 	_command.refresh(_selection, _state, _cfg, _plan, _plan.deployed)
 	_unit_info.refresh(_selection, _state, _cfg, _plan.wave, _plan.deployed)
+	_unit_info.show_live(_selected_attacker(), _battle.current_tick())
+	_gear.refresh(_selection.unit_of(_state), _state, _cfg, _plan.deployed, false)
+	_gear.visible = _selection.kind == PBSelection.Kind.UNIT
 
 
 ## 选中那个忍者这一波在场上的样子。反查在 [PBFieldPicker] 里。
@@ -652,9 +668,7 @@ func _on_field_click(at: Vector2) -> void:
 	var pick: float = PICK_RADIUS_PX
 	# 正在指定目标：只认敌人。点空地就当取消 —— 让「按错了」有一条退路。
 	if _picker.aim_mode == PBFieldPicker.Aim.TARGET:
-		_picker.aim(
-			_battle, _selected_attacker(), _picker.enemy_at(_battle, spot, field, pick)
-		)
+		_picker.aim(_battle, _selected_attacker(), _picker.enemy_at(_battle, spot, field, pick))
 		_picker.stop()
 		_refresh_battle_panels()
 		return
@@ -762,6 +776,7 @@ func _sync_visuals() -> void:
 	_pool.set_anim_speed(beat)
 	if _battle == null:
 		_pool.sync_enemies([], 0, field, false)
+		_field_fx.clear()
 		_telegraph.clear()
 		_fx.clear()
 		_shots.clear()
@@ -770,11 +785,19 @@ func _sync_visuals() -> void:
 		_feedback()
 		_fx.echo(_log, _battle.attackers(), field)
 		var now: int = _battle.current_tick()
-		_telegraph.sync_pending(_battle.attackers(), now, field)
+		_field_fx.sync_effects(
+			_battle.attackers(), _battle.enemies(), now, _cfg.tick_rate, field, _battle.barrages(), _log
+		)
+		_telegraph.sync_pending(_battle.attackers(), now, field, _battle.barrages())
 		# 飞行中的子弹与命中火花（sim 里真有的东西，见 [PBProjectile]）。
 		_shots.sync_shots(_battle, _plan.deployed, _log, field)
 		# 己方忍者。敌人那一份只用来查「他要打的那个在哪」（朝向）。
-		_allies.sync_allies(_battle.attackers(), _plan.deployed, field, _battle.enemies(), now)
+		var bond_auras := PBBondAuraArt.active_member_auras(
+			_state.bonded_units(_cfg), _plan.deployed, _cfg.bonds
+		)
+		_allies.sync_allies(
+			_battle.attackers(), _plan.deployed, field, _battle.enemies(), now, bond_auras
+		)
 		# §02 的第三层视觉编码：克得住的敌人加一圈亮边。
 		# 这是玩家在战斗中最需要的即时信息 —— 原版要点开技能说明才看得到。
 		var counterable: bool = _state.can_counter(_plan.wave.element)
@@ -791,9 +814,7 @@ func _sync_preview() -> void:
 	if _run_over:
 		_preview.text = ""
 		return
-	_preview.text = PBTopBarText.preview(
-		_state, _cfg, _rng, _phase == Phase.PREPARE, auto_play
-	)
+	_preview.text = PBTopBarText.preview(_state, _cfg, _rng, _phase == Phase.PREPARE, auto_play)
 
 
 ## 准备阶段：把上场名单画在他们的开战位置上。位置走 [method PBFormationRules.spot_of]，
@@ -801,6 +822,8 @@ func _sync_preview() -> void:
 func _sync_placed(field: Vector2) -> void:
 	if _run_over or _phase != Phase.PREPARE:
 		_allies.clear()
+		_attack_range.sync(Vector2.ZERO, 0.0)
+		_aura.clear()
 		return
 	var units := _fighting_now(PBFieldRoster.dispatch_preview(_state))
 	var spots := PBFormationRules.spots_of(units, _state.formation, _cfg)
@@ -809,13 +832,15 @@ func _sync_placed(field: Vector2) -> void:
 	if _selection.kind == PBSelection.Kind.UNIT:
 		live = PBFieldPicker.index_of(units, _selection.unit_id)
 	if live < 0:
-		_allies.show_range(Vector2.ZERO, 0.0)
+		_attack_range.sync(Vector2.ZERO, 0.0)
+		_aura.clear()
 		return
 	# 选中谁就画谁的射程圈 —— 摆位要有依据，而依据就是「他够得到哪」。
-	_allies.show_range(
+	_attack_range.sync(
 		PBLayout.to_screen(spots[live], field),
-		_cfg.reach_of(units[live].character) * PBLayout.px_per_unit(field)
+		PBAttackRangeRules.preview(units[live], _state, _cfg, units) * PBLayout.px_per_unit(field)
 	)
+	_aura.sync_preview(spots[live], _command.skill_definitions(), field)
 
 
 ## 选中那个忍者的射程圈与实时血蓝，每渲染帧一次（圈跟着他跑、血蓝每 tick 都变）。
@@ -823,14 +848,24 @@ func _sync_placed(field: Vector2) -> void:
 func _sync_selected(field: Vector2) -> void:
 	var live := _selected_attacker()
 	# 「他要打谁」「正在等你点哪儿」那几条虚线，见 [PBAimLines]。**暂停时 A 线画全场。**
-	_aim.sync(
-		# 鼠标同样走画布坐标，不走窗口像素 —— 见 [method _unhandled_input]。
-		_battle, field, live, _picker, get_global_mouse_position(), _paused
+	(
+		_aim
+		. sync(
+			# 鼠标同样走画布坐标，不走窗口像素 —— 见 [method _unhandled_input]。
+			_battle,
+			field,
+			live,
+			_picker,
+			get_global_mouse_position(),
+			_paused
+		)
 	)
 	if live == null:
-		_allies.show_range(Vector2.ZERO, 0.0)
+		_attack_range.sync(Vector2.ZERO, 0.0)
+		_aura.clear()
 		return
-	_allies.show_range(
+	_aura.sync_live(live, field)
+	_attack_range.sync(
 		PBLayout.to_screen(live.pos, field), live.reach * PBLayout.px_per_unit(field)
 	)
 	_unit_info.show_live(live, _battle.current_tick())
@@ -881,3 +916,50 @@ func _sync_info() -> void:
 	# 而不是报一份 0 杀 0 漏的战果（§01 说准备阶段不限时）。见 [PBTopBarText]。
 	var out: PBCombatOutcome = null if _phase == Phase.PREPARE else _battle.result()
 	_info.text = PBTopBarText.status(_state, _plan, out, _paused, _speed)
+
+
+func _build_debug() -> void:
+	_debug_button = Button.new()
+	var is_web := OS.has_feature("web")
+	_debug_button.name = "MenuButton" if is_web else "DebugButton"
+	_debug_button.text = "返回/菜单" if is_web else "Debug"
+	_debug_button.position = PBLayout.A_DEBUG.position
+	_debug_button.size = PBLayout.A_DEBUG.size
+	_debug_button.focus_mode = Control.FOCUS_NONE
+	PBSkin.style_button(_debug_button, PBSkin.Tone.QUIET)
+	_debug_button.size = PBLayout.A_DEBUG.size
+	$HUD.add_child(_debug_button)
+	_info.clip_text = true
+	_preview.clip_text = true
+	if is_web:
+		_debug_button.pressed.connect(_on_escape)
+		return
+	_debug = PBDebugPanel.new()
+	_debug.name = "DebugPanel"
+	$HUD.add_child(_debug)
+	_debug_button.pressed.connect(_open_debug)
+	_debug.deploy_requested.connect(_debug_deploy)
+
+
+func _open_debug() -> void:
+	if _offer.visible or _beasts.visible or _menu.visible:
+		return
+	_tip.hide_card()
+	_debug.configure(_cfg.characters, _phase == Phase.PREPARE and not _run_over)
+	_debug.open()
+
+
+func _debug_deploy(id: StringName) -> void:
+	if _phase != Phase.PREPARE or _run_over:
+		_debug.report("请在准备阶段添加出战忍者。")
+		return
+	var result := PBDebugRules.deploy(id, _state, _strategy, _plan, _cfg)
+	if result.error != "":
+		_debug.report(result.error)
+		return
+	auto_play = false
+	_set_panels_visible(true)
+	_select(PBSelection.Kind.UNIT, result.unit)
+	_sync_deployed()
+	_sync_visuals()
+	_debug.report("已出战，可继续添加；关闭窗口后按回车开打。")

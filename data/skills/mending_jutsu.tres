@@ -17,6 +17,23 @@ mods = {
 mods_growth = {
 &"heal": 125.0
 }
+duration_levels = PackedFloat32Array()
+
+[sub_resource type="Resource" id="Resource_3bskp"]
+script = ExtResource("1_lb42n")
+id = &"serpent_regen"
+name_key = "buff.serpent_regen"
+icon_key = "buff.serpent_regen"
+kind = 2
+duration_seconds = 12.0
+period_seconds = 1.0
+mods = {
+&"heal": 54.16666666666667
+}
+mods_growth = {
+&"heal": 54.16666666666667
+}
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_vsunv")
@@ -26,5 +43,9 @@ name_key = "skill.mending_jutsu"
 affects = 0
 on_hit = Array[ExtResource("1_lb42n")]([SubResource("Resource_8igcm")])
 element = 6
+on_rescue = Array[ExtResource("1_lb42n")]([SubResource("Resource_3bskp")])
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 560
 mp_cost = 8.0
+mp_cost_levels = PackedFloat32Array(8, 16, 24, 32, 40, 48, 56, 64, 72, 80)

@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_0.png" id="1_ucdg6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_1.png" id="2_2g8rl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_2.png" id="3_lwrb8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_3.png" id="4_2mcdy"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_4.png" id="5_pcvpq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/attack_5.png" id="6_vd4hv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_0.png" id="7_5qb1g"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_1.png" id="8_micaa"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_2.png" id="9_lid8s"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_3.png" id="10_isni1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_4.png" id="11_ujs56"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/dead_5.png" id="12_0c5sr"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_0.png" id="13_k1x6x"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_1.png" id="14_l76t3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_2.png" id="15_76yi7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_3.png" id="16_v64vv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_4.png" id="17_kk6jq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/idle_5.png" id="18_wmdg1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_0.png" id="19_ccii5"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_1.png" id="20_4dser"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_2.png" id="21_821hq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_3.png" id="22_3pwki"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_4.png" id="23_0meo7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_sun_halo_dance/run_5.png" id="24_0e0n0"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_qp7hw"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ucdg6"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ucdg6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_2g8rl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_lwrb8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_2mcdy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_pcvpq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_vd4hv")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_5qb1g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_micaa")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_lid8s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_isni1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ujs56")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_0c5sr")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_k1x6x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_l76t3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_76yi7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_v64vv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_kk6jq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_wmdg1")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_ccii5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_4dser")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_821hq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_3pwki")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_0meo7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_0e0n0")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_qp7hw")
+key = &"summon_sun_halo_dance"
+frames = SubResource("SpriteFrames_ucdg6")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 180.0

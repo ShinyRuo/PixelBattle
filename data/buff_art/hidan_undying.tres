@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hidan_undying/front_0.png" id="1_bnrul"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hidan_undying/front_1.png" id="2_tq0f7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hidan_undying/front_2.png" id="3_2jc4i"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hidan_undying/front_3.png" id="4_44x6w"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hidan_undying/front_4.png" id="5_y2s0f"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/hidan_undying/front_5.png" id="6_teqsv"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_7k3jd"]
+
+[resource]
+script = ExtResource("7_7k3jd")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_bnrul"), ExtResource("2_tq0f7"), ExtResource("3_2jc4i"), ExtResource("4_44x6w"), ExtResource("5_y2s0f"), ExtResource("6_teqsv")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

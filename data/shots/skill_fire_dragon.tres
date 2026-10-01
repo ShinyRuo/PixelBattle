@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/skill_fire_dragon/fly_0.png" id="1_wgu40"]
+[ext_resource type="Texture2D" path="res://assets/fx/skill_fire_dragon/fly_1.png" id="2_iv5ql"]
+[ext_resource type="Texture2D" path="res://assets/fx/skill_fire_dragon/fly_2.png" id="3_7waxf"]
+[ext_resource type="Script" path="res://src/view/shot_skin.gd" id="4_nmxfg"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_wyy0i"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_wgu40")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_iv5ql")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_7waxf")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 12.0
+}]
+
+[resource]
+script = ExtResource("4_nmxfg")
+key = &"skill_fire_dragon"
+frames = SubResource("SpriteFrames_wyy0i")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_fly = true
+additive_hit = true

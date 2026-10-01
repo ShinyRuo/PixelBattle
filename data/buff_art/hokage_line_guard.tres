@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3 uid="uid://rm4iwcjuaooc"]
+
+[ext_resource type="Script" uid="uid://33rfmk1npwku" path="res://src/view/buff_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c7arsne6nes1g" path="res://assets/fx/buffs/hokage_line_guard/back/frame_0.png" id="1_tm685"]
+[ext_resource type="Texture2D" uid="uid://83vgkrj6ddes" path="res://assets/fx/buffs/hokage_line_guard/back/frame_1.png" id="2_7e4vg"]
+[ext_resource type="Texture2D" uid="uid://ddxxtppv8uagk" path="res://assets/fx/buffs/hokage_line_guard/back/frame_2.png" id="3_5lojn"]
+[ext_resource type="Texture2D" uid="uid://brm2xwfskvner" path="res://assets/fx/buffs/hokage_line_guard/back/frame_3.png" id="4_l48vv"]
+[ext_resource type="Texture2D" uid="uid://g1nvgw0fexqd" path="res://assets/fx/buffs/hokage_line_guard/back/frame_4.png" id="5_xq1wr"]
+[ext_resource type="Texture2D" uid="uid://dbty3k8dk02rc" path="res://assets/fx/buffs/hokage_line_guard/back/frame_5.png" id="6_rcfd4"]
+
+[resource]
+script = ExtResource("1")
+back_frames = Array[Texture2D]([ExtResource("1_tm685"), ExtResource("2_7e4vg"), ExtResource("3_5lojn"), ExtResource("4_l48vv"), ExtResource("5_xq1wr"), ExtResource("6_rcfd4")])
+anchor = Vector2(128, 236)
+pixel_scale = 0.3999999999996362
+metadata/sheet_back = {
+"background": 1,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/buff_hokage_line_guard.png",
+"rows": 2.0,
+"size": 256.0
+}

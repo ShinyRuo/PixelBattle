@@ -77,14 +77,34 @@ func test_training_reaches_the_attackers_through_the_shared_fold() -> void:
 	var state := PBRunSim.new_state(_cfg)
 	var units: Array[PBUnit] = [_first_of(true), _first_of(false)]
 	var before := PBCombatRules.build_attackers(
-		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg,
-		null, 1, 0, {}, {}, {}, PBCombatRules.unit_mods(units, state, _cfg)
+		units,
+		PBElement.Type.PHYSICAL,
+		1.0,
+		PackedFloat64Array(),
+		_cfg,
+		null,
+		1,
+		0,
+		{},
+		{},
+		{},
+		PBCombatRules.unit_mods(units, state, _cfg)
 	)
 	state.training[PBTechRules.TRAIN_ATTACK] = 2
 	state.training[PBTechRules.TRAIN_HP] = 5
 	var after := PBCombatRules.build_attackers(
-		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg,
-		null, 1, 0, {}, {}, {}, PBCombatRules.unit_mods(units, state, _cfg)
+		units,
+		PBElement.Type.PHYSICAL,
+		1.0,
+		PackedFloat64Array(),
+		_cfg,
+		null,
+		1,
+		0,
+		{},
+		{},
+		{},
+		PBCombatRules.unit_mods(units, state, _cfg)
 	)
 	assert_gt(after[0].attack, before[0].attack, "近战的攻击力该真的涨")
 	assert_gt(after[0].attack_speed, before[0].attack_speed, "近战的攻速该真的涨")

@@ -42,9 +42,8 @@ const PER_LEVEL := {
 
 ## 这一条加给近战（true）还是远程（false）。
 ##
-## **判据是 [method PBCharacter.reach_tier]**，和站位、出不出子弹是同一个函数 ——
-## 另写一份「谁算近战」的话，一个站在前排、不发子弹的人可能吃不到近战科技，
-## 而那不报错。超远程（[constant PBCharacter.Reach.LONG]）算远程。
+## 默认按 [method PBCharacter.reach_tier]；远程形态由建队词条入口传入覆盖值，
+## 不改名册或开战坐标。超远程（[constant PBCharacter.Reach.LONG]）也算远程。
 const FOR_MELEE := {
 	TRAIN_ATTACK: true,
 	TRAIN_DEFENCE: true,
@@ -63,20 +62,20 @@ static func is_branch(branch: StringName) -> bool:
 
 
 ## 这一条训练对这个人生效吗。
-static func applies_to(branch: StringName, unit: PBUnit) -> bool:
+static func applies_to(branch: StringName, unit: PBUnit, force_ranged: bool = false) -> bool:
 	if not is_branch(branch) or unit == null or unit.character == null:
 		return false
-	var melee: bool = unit.character.reach_tier() == PBCharacter.Reach.MELEE
+	var melee: bool = not force_ranged and unit.character.reach_tier() == PBCharacter.Reach.MELEE
 	return bool(FOR_MELEE[branch]) == melee
 
 
 ## 这个人从 [param levels]（`{线: 等级}`，即 [member PBRunState.training]）
 ## 吃到的全部词条。**同键相加**：两条线都给攻击力时两份都算。
-static func unit_mods(unit: PBUnit, levels: Dictionary) -> Dictionary:
+static func unit_mods(unit: PBUnit, levels: Dictionary, force_ranged: bool = false) -> Dictionary:
 	var out := {}
 	for branch: StringName in BRANCHES:
 		var level: int = int(levels.get(branch, 0))
-		if level <= 0 or not applies_to(branch, unit):
+		if level <= 0 or not applies_to(branch, unit, force_ranged):
 			continue
 		var words: Dictionary = PER_LEVEL[branch]
 		for key: StringName in words:

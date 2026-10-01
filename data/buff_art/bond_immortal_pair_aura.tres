@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_immortal_pair_aura/back_0.png" id="1_xvhwb"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_immortal_pair_aura/back_1.png" id="2_kq32j"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_immortal_pair_aura/back_2.png" id="3_nutep"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_immortal_pair_aura/back_3.png" id="4_3t7nl"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_immortal_pair_aura/back_4.png" id="5_31inx"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_immortal_pair_aura/back_5.png" id="6_qpk44"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_xxq3l"]
+
+[resource]
+script = ExtResource("7_xxq3l")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_xvhwb"), ExtResource("2_kq32j"), ExtResource("3_nutep"), ExtResource("4_3t7nl"), ExtResource("5_31inx"), ExtResource("6_qpk44")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

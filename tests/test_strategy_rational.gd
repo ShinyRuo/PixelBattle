@@ -68,5 +68,3 @@ func test_a_duplicate_is_worth_the_same_body_but_no_bond() -> void:
 		PBValuation.expected_bond_gain(owned, cfg),
 		"羁绊那一侧才是重复卡的差价 —— 抽满之后再抽一张，一组羁绊都不多"
 	)
-
-

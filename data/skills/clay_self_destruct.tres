@@ -7,5 +7,14 @@
 script = ExtResource("2_24sc8")
 id = &"clay_self_destruct"
 name_key = "skill.clay_self_destruct"
-power_mult = 3.0
+kind = 0
+damage_base = 250.0
+damage_growth = 250.0
+target_hp = 0.08
+center_scale = 2.0
+damage_cap = 13000.0
+death_move_ticks = 20
 radius = 0.4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

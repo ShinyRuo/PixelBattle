@@ -84,11 +84,7 @@ func _wave_where(mine: PBElement.Type, want: PBElement.Relation) -> PBElement.Ty
 ## 这个角色的第一个技能，打在 [param wave] 那一波上是多少伤害。
 func _damage_against(character: PBCharacter, wave: PBElement.Type) -> float:
 	var squad := PBCombatRules.build_attackers(
-		[_unit_of(character)] as Array[PBUnit],
-		wave,
-		1.0,
-		PackedFloat64Array(),
-		_cfg
+		[_unit_of(character)] as Array[PBUnit], wave, 1.0, PackedFloat64Array(), _cfg
 	)
 	return squad[0].skills[0].skill.damage
 
@@ -101,9 +97,7 @@ func _squad(units: Array[PBUnit], with_skills: bool) -> Array[PBAttacker]:
 		cfg.field_height = 0.0
 		cfg.spawn_window = 0.0
 		cfg.skills = null
-	return PBCombatRules.build_attackers(
-		units, PBElement.Type.FIRE, 1.0, PackedFloat64Array(), cfg
-	)
+	return PBCombatRules.build_attackers(units, PBElement.Type.FIRE, 1.0, PackedFloat64Array(), cfg)
 
 
 # ── 伤害是派生量（M11-a）────────────────────────────────────────
@@ -124,12 +118,7 @@ func test_a_character_skill_eats_the_element_matchup_like_the_ultimate_does() ->
 	var weak := _damage_against(carrier, _wave_where(skill.element, PBElement.Relation.WEAK))
 	assert_gt(strong, 0.0, "前提：这个技能真的打伤害")
 	assert_gt(strong, weak, "打克制的那一波该更疼")
-	assert_almost_eq(
-		strong / weak,
-		_cfg.mult_counter / _cfg.mult_weak,
-		0.001,
-		"两波的比值该正好是那两个克制倍率的比"
-	)
+	assert_almost_eq(strong / weak, _cfg.mult_counter / _cfg.mult_weak, 0.001, "两波的比值该正好是那两个克制倍率的比")
 
 
 func test_a_character_skill_eats_the_team_multiplier_too() -> void:
@@ -244,11 +233,7 @@ func test_nobody_carries_more_than_two_skills() -> void:
 	# 决策 6。指令卡那一行只画得下两格（[constant PBCommandCard.SKILL_COMMANDS]）——
 	# 配了却放不出比没配更难查。
 	for character: PBCharacter in _carriers():
-		assert_lte(
-			character.skill_ids.size(),
-			PBCharacter.MAX_SKILLS,
-			"这个角色配多了：%s" % character.id
-		)
+		assert_lte(character.skill_ids.size(), PBCharacter.MAX_SKILLS, "这个角色配多了：%s" % character.id)
 
 
 func test_every_skill_id_on_a_character_can_actually_be_found() -> void:
@@ -269,6 +254,7 @@ func test_every_skill_in_the_table_has_an_owner() -> void:
 	# 它换到的是**接内容全程成立**，而「每个角色都有技能」那种断言
 	# 在内容永远落后于名册时等于断言「配完了没有」。
 	var owned: Dictionary = {}
+	var table := PBSkillLoader.table()
 	for character: PBCharacter in PBCharacterLoader.table().all():
 		for id: StringName in character.skill_ids:
 			owned[id] = character.id
@@ -276,9 +262,20 @@ func test_every_skill_in_the_table_has_an_owner() -> void:
 	for bond: PBBond in PBBondLoader.table().all():
 		for who: StringName in bond.member_skill_patches:
 			for id: StringName in bond.member_skill_patches[who]:
-				if (bond.member_skill_patches[who][id] as Dictionary).has(PBSkillPatchRules.ON_DEATH):
+				if (
+					(bond.member_skill_patches[who][id] as Dictionary).has(
+						PBSkillPatchRules.ON_DEATH
+					)
+					or (bond.member_skill_patches[who][id] as Dictionary).has(
+						PBSkillPatchRules.ON_ATTACK_CHANCE
+					)
+				):
 					owned[id] = who
-	var table := PBSkillLoader.table()
+				var patch: Dictionary = bond.member_skill_patches[who][id]
+				if float(patch.get(PBSkillPatchRules.FOLLOWUP_ENABLE, 0.0)) > 0.0:
+					owned[table.by_id(id).followup_id] = who
+				if float(patch.get(PBSkillPatchRules.VARIANT_ENABLE, 0.0)) > 0.0:
+					owned[table.by_id(id).variant_id] = who
 	for id: StringName in table.ids():
 		assert_true(owned.has(id), "技能 %s 没有主 —— 哪一边拼错了？" % id)
 
@@ -290,9 +287,20 @@ func test_every_buff_in_the_folder_is_reachable_from_some_skill() -> void:
 	var table := PBSkillLoader.table()
 	for id: StringName in table.ids():
 		var skill: PBSkill = table.by_id(id)
-		for buff: PBBuff in skill.on_hit:
-			used[buff.id] = true
-		for buff: PBBuff in skill.on_self:
+		if skill.transfer_buff != null:
+			used[skill.transfer_buff.id] = true
+		for buff: PBBuff in (
+			skill.on_hit
+			+ skill.on_primary
+			+ skill.enemy_aura_effects
+			+ skill.on_self
+			+ skill.on_target
+			+ skill.on_start_target
+			+ skill.on_rescue
+			+ skill.on_start_area
+			+ skill.zone_effects
+			+ skill.zone_ring_effects
+		):
 			used[buff.id] = true
 	# **技能不再是唯一的引用方**（M12-c2）：角色自带的被动也挂效果
 	# （[member PBCharacter.on_hit_buffs]）。不数这一路的话，带土那份晕眩
@@ -302,8 +310,14 @@ func test_every_buff_in_the_folder_is_reachable_from_some_skill() -> void:
 			used[buff.id] = true
 		for buff: PBBuff in character.low_hp_buffs:
 			used[buff.id] = true
-		for buff: PBBuff in character.lethal_buffs + character.struck_buffs + character.attack_buffs:
+		for buff: PBBuff in (
+			character.lethal_buffs + character.struck_buffs + character.attack_buffs
+		):
 			used[buff.id] = true
+	for bond: PBBond in PBBondLoader.table().all():
+		for buffs: Array in bond.member_buffs.values():
+			for buff: PBBuff in buffs:
+				used[buff.id] = true
 	var dir := DirAccess.open("res://data/buffs")
 	assert_not_null(dir, "buffs 目录该在")
 	for file_name: String in dir.get_files():
@@ -379,12 +393,13 @@ func test_the_skill_only_goes_off_when_a_player_orders_it() -> void:
 
 	# 后半句换一场新的来验：上面那 200 tick 很可能已经把这一波打完了，
 	# 而打完的战斗 [method PBBattleSim.step] 什么都不做 —— 连指令队列也不放。
+	squad[0].ultimate = null  # 单独验证手动入口，避免自动大招占用施法动作。
 	var live := PBBattleSim.new(PBWaveRules.build(7, _cfg, _rng), 0.0, 0.0, _cfg, squad)
 	live.step()
 	assert_true(live.cast_skill_on(squad[0], squad[0], 1), "而玩家下令时它必须放得出")
 	# **令先攒着，下一个 tick 才出手**（M7-h，见 [PBSkillOrders]）。
 	assert_eq(live.order_of(squad[0]), 1, "这一刻是攒在手上")
 	assert_eq(cast.ready_at, 0, "而且冷却还没开始走 —— 它从落地算起")
-	live.step()
+	PBCastTestClock.release(live, squad[0])
 	assert_gt(cast.ready_at, 0, "推进一个 tick，这一发真的放出去了")
 	assert_false(live.can_cast(squad[0], 1), "放过之后这一格就该是灰的")

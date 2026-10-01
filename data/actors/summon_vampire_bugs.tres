@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_0.png" id="1_8o73f"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_1.png" id="2_8o5sq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_2.png" id="3_7ex1t"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_3.png" id="4_vu0i5"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_4.png" id="5_krobe"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_5.png" id="6_4ixr6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_0.png" id="7_fkl0w"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_1.png" id="8_ejfwl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_2.png" id="9_oht15"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_3.png" id="10_0ralj"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_4.png" id="11_q3egv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_5.png" id="12_fi68q"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_0.png" id="13_5eycp"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_1.png" id="14_0by5x"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_2.png" id="15_aavls"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_3.png" id="16_b2cni"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_4.png" id="17_uc63l"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_5.png" id="18_2lie4"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_0.png" id="19_68k7h"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_1.png" id="20_dbd0q"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_2.png" id="21_0tqsx"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_3.png" id="22_q8ffo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_4.png" id="23_v5ajq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_5.png" id="24_885qf"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_fieas"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8o73f"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_8o73f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_8o5sq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_7ex1t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_vu0i5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_krobe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_4ixr6")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_fkl0w")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_ejfwl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_oht15")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_0ralj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_q3egv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_fi68q")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_5eycp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_0by5x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_aavls")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_b2cni")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_uc63l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_2lie4")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_68k7h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_dbd0q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_0tqsx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_q8ffo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_v5ajq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_885qf")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_fieas")
+key = &"summon_vampire_bugs"
+frames = SubResource("SpriteFrames_8o73f")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 150.0

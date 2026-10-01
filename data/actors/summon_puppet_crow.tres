@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/attack_0.png" id="1_7amwo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/attack_1.png" id="2_qsas1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/attack_2.png" id="3_m4bfw"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/attack_3.png" id="4_sr8dv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/attack_4.png" id="5_ihbw8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/attack_5.png" id="6_tdwwx"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/dead_0.png" id="7_s76kb"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/dead_1.png" id="8_s2nvl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/dead_2.png" id="9_3hqm4"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/dead_3.png" id="10_anjnj"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/dead_4.png" id="11_j35am"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/dead_5.png" id="12_lxe1p"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/idle_0.png" id="13_j1ftn"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/idle_1.png" id="14_0e4yh"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/idle_2.png" id="15_2ckm0"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/idle_3.png" id="16_ylf32"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/idle_4.png" id="17_3nm5o"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/idle_5.png" id="18_y5ql1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/run_0.png" id="19_omswl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/run_1.png" id="20_kop08"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/run_2.png" id="21_nqrjn"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/run_3.png" id="22_viiw0"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/run_4.png" id="23_vhicv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_puppet_crow/run_5.png" id="24_33wx2"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_libt1"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_7amwo"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_7amwo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_qsas1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_m4bfw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_sr8dv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ihbw8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_tdwwx")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_s76kb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_s2nvl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_3hqm4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_anjnj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_j35am")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_lxe1p")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_j1ftn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_0e4yh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_2ckm0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_ylf32")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_3nm5o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_y5ql1")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_omswl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_kop08")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_nqrjn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_viiw0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_vhicv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_33wx2")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_libt1")
+key = &"summon_puppet_crow"
+frames = SubResource("SpriteFrames_7amwo")
+pixel_scale = 0.3333333333333333
+smooth = true
+height_px = 150.0

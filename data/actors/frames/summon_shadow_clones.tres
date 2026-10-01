@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_0.png" id="1_laxu3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_1.png" id="2_sato8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_2.png" id="3_r2pd3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_3.png" id="4_tghuu"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_4.png" id="5_3oq0y"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/attack_5.png" id="6_l1n8v"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_0.png" id="7_ps84w"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_1.png" id="8_4fhip"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_2.png" id="9_81glo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_3.png" id="10_gb0rs"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_4.png" id="11_8b0f8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/dead_5.png" id="12_x7e5x"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_0.png" id="13_qj6cm"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_1.png" id="14_t0d4u"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_2.png" id="15_adhnd"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_3.png" id="16_47k8b"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_4.png" id="17_2nyt8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/idle_5.png" id="18_4mvua"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_0.png" id="19_go5eo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_1.png" id="20_av0sn"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_2.png" id="21_11s14"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_3.png" id="22_rhu8r"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_4.png" id="23_enrv1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_shadow_clones/run_5.png" id="24_bi6yu"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_laxu3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_sato8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_r2pd3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_tghuu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_3oq0y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_l1n8v")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_ps84w")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_4fhip")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_81glo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_gb0rs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_8b0f8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_x7e5x")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_qj6cm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_t0d4u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_adhnd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_47k8b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_2nyt8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_4mvua")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_go5eo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_av0sn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_11s14")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_rhu8r")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_enrv1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_bi6yu")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

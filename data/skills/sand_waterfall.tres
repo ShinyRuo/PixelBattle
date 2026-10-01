@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_tqh70"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_uopn3"]
+
+[sub_resource type="Resource" id="Resource_b3q4k"]
+script = ExtResource("1_tqh70")
+id = &"sand_waterfall_slow"
+name_key = "buff.sand_waterfall_slow"
+icon_key = "buff.sand_waterfall_slow"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+duration_levels = PackedFloat32Array()
+
+[resource]
+script = ExtResource("2_uopn3")
+id = &"sand_waterfall"
+name_key = "skill.sand_waterfall"
+element = 1
+damage_base = 100.0
+damage_growth = 100.0
+target_current_hp = 0.012
+target_nonhero_only = true
+radius = 0.2775
+hit_count = 10
+hit_interval_ticks = 10
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+zone_seconds = 4.0
+zone_radius = 0.275
+zone_effects = Array[ExtResource("1_tqh70")]([SubResource("Resource_b3q4k")])
+mp_cost_levels = PackedFloat32Array()

@@ -97,5 +97,5 @@ func _run_link() -> bool:
 		printerr(err)
 		return false
 	print("写好了：%s/%s.tres" % [_forge.data_dir, _key])
-	print("最后一步：把 data/characters/<角色>.tres 的 actor_key 填成 &\"%s\"" % _key)
+	print('最后一步：把 data/characters/<角色>.tres 的 actor_key 填成 &"%s"' % _key)
 	return true

@@ -17,6 +17,7 @@ mods = {
 mods_growth = {
 &"mana": 1.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_u5lgh")
@@ -27,5 +28,8 @@ affects = 0
 on_self = Array[ExtResource("1_cx5fe")]([SubResource("Resource_0jjv8")])
 element = 3
 radius = 0.3
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 mp_cost = 6.0
+mp_cost_levels = PackedFloat32Array()

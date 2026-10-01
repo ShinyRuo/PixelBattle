@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PBSkillStartArt" format=3 uid="uid://g0e0kbjtbb8r"]
+
+[ext_resource type="Script" uid="uid://0kk3glihvvba" path="res://src/view/skill_start_art.gd" id="1_bsbyt"]
+
+[resource]
+script = ExtResource("1_bsbyt")
+start_key = &"cast_wind"
+hide_flight = true

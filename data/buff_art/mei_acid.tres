@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/mei_acid/front_0.png" id="1_3bpvc"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/mei_acid/front_1.png" id="2_62nhc"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/mei_acid/front_2.png" id="3_r50gm"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/mei_acid/front_3.png" id="4_fhau7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/mei_acid/front_4.png" id="5_pvx33"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/mei_acid/front_5.png" id="6_lasbk"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_vx8a6"]
+
+[resource]
+script = ExtResource("7_vx8a6")
+front_frames = Array[Texture2D]([ExtResource("1_3bpvc"), ExtResource("2_62nhc"), ExtResource("3_r50gm"), ExtResource("4_fhau7"), ExtResource("5_pvx33"), ExtResource("6_lasbk")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## [PBBuff] 是定义，本类是「挂在这个单位身上、什么时候到期、谁给的、算完是多少」。
 ##
-## **由 [PBBuffBag] 复用，不要在战斗中 `.new()`**（§14 热路径），入口是 [method take]。
+## **由 [PBBuffBag] 复用**，入口是 [method take]。普通槽预分配，独立叠层槽仅在池不足时扩容。
 ##
 ## **数值在挂上来之前就算完了**：[member mods] 存的是这个施法者、这个等级下的实际数值，
 ## 战斗层不认识等级 —— 现算的话 [PBAttacker] 就得带上一个 `level` 字段。
@@ -18,6 +18,7 @@ var mods: Dictionary = {}
 
 ## 第几 tick 之后失效。**判据是 `at_tick <= until_tick`（含）**。
 var until_tick: int = -1
+var applied_at: int = -1
 
 ## 每隔几 tick 触发一次。0 = 不是周期型。
 var period_ticks: int = 0
@@ -30,25 +31,26 @@ var next_tick_at: int = -1
 ## 和「谁给的」可以是两个人，而猜错不报错。
 var source_slot: int = -1
 
+var harm_context: PBHarmContext = null
+var channel: PBSkillChannel = null
+
 
 ## 把这个实例重置成一份刚挂上的效果。**复用走这里，不要 `.new()`。**
 func take(
-	from: PBBuff,
-	values: Dictionary,
-	at_tick: int,
-	ticks: int,
-	period: int,
-	from_slot: int
+	from: PBBuff, values: Dictionary, at_tick: int, ticks: int, period: int, from_slot: int
 ) -> void:
 	buff = from
 	mods = values
 	until_tick = at_tick + ticks
+	applied_at = at_tick
 	period_ticks = period
 	# 第一次触发在**一个周期之后**，不是挂上的当场 —— 当场那一下属于
 	# 技能自己的瞬间载荷（`on_hit` 里另配一个 INSTANT），
 	# 两者合在一起的话「持续 5 秒每秒回 20」会回 6 次而不是 5 次。
 	next_tick_at = at_tick + period if period > 0 else -1
 	source_slot = from_slot
+	harm_context = null
+	channel = null
 
 
 ## 腾空这个槽位。
@@ -56,20 +58,29 @@ func clear() -> void:
 	buff = null
 	mods = {}
 	until_tick = -1
+	applied_at = -1
 	period_ticks = 0
 	next_tick_at = -1
 	source_slot = -1
+	harm_context = null
+	channel = null
 
 
 ## 这一 tick 它还算不算数。
 func is_live(at_tick: int) -> bool:
-	return buff != null and at_tick <= until_tick
+	return (
+		buff != null
+		and (buff.until_wave_end or at_tick <= until_tick)
+		and (channel == null or channel.is_live(at_tick))
+	)
 
 
 ## 还剩几 tick 到期。已经空了或过期了都返回 0。[PBBuffBag] 满了顶掉剩余最短的那一个。
 func left(at_tick: int) -> int:
 	if not is_live(at_tick):
 		return 0
+	if buff.until_wave_end:
+		return 2147483647
 	return until_tick - at_tick + 1
 
 

@@ -203,11 +203,7 @@ func test_the_two_placeholder_ladders_do_not_drift_apart() -> void:
 	# 稀有度阶梯写了两遍：`PBSimConfig.rarity_power`（真角色表的生成依据）
 	# 和 `PBStatRules.PLACEHOLDER_RARITY_DPS`（代码造角色时用）。
 	# 写歪了不报错，只会让合成表和真表的强度悄悄分叉。
-	assert_eq(
-		Array(PBStatRules.PLACEHOLDER_RARITY_DPS),
-		Array(_cfg.rarity_power),
-		"两份稀有度阶梯必须一致"
-	)
+	assert_eq(Array(PBStatRules.PLACEHOLDER_RARITY_DPS), Array(_cfg.rarity_power), "两份稀有度阶梯必须一致")
 	for rarity: int in PBUnit.Rarity.size():
 		var made := PBCharacter.make(
 			StringName("ladder_%d" % rarity), PBElement.Type.FIRE, rarity as PBUnit.Rarity

@@ -109,9 +109,7 @@ func test_the_canvas_stops_at_the_ceiling() -> void:
 			{"idle": shots}, {"idle": 1.0 * float(up)}, {"idle": [0] as Array[int]}
 		)
 		assert_lte(
-			float(canvas.y) / float(up),
-			float(PBActorForge.CANVAS_CEILING),
-			"%d 倍档越过了画布上限" % up
+			float(canvas.y) / float(up), float(PBActorForge.CANVAS_CEILING), "%d 倍档越过了画布上限" % up
 		)
 		# **压回去这一下不许无声。** 被压掉的是头，而画布、坐标、锚点
 		# 全部看起来完全正确 —— 命令行和插件都靠这个字段才说得出话。
@@ -128,16 +126,12 @@ func test_the_ceiling_keeps_the_tallest_pose_on_screen() -> void:
 	# 玩家原话要的是「加倍」（64 → 128），实测那样头会在 y = −30。
 	# 所以这一条同时是「为什么最后定在 1.5 倍」的记录。
 	assert_lte(
-		float(PBActorForge.CANVAS_CEILING),
-		PBLayout.GROUND_TOP,
-		"画布上限超过脚到屏幕顶的距离了 —— 抬手那几帧会戳出屏幕"
+		float(PBActorForge.CANVAS_CEILING), PBLayout.GROUND_TOP, "画布上限超过脚到屏幕顶的距离了 —— 抬手那几帧会戳出屏幕"
 	)
 	# 反过来也要钉：低于头顶留白的话，**站着的人**就白白被切了 ——
 	# 而那一截才是这条流水线真正保证的东西。
 	assert_gte(
-		float(PBActorForge.CANVAS_CEILING),
-		PBLayout.SPRITE_HEADROOM,
-		"画布上限不该比头顶留白还矮，那样站姿都装不下"
+		float(PBActorForge.CANVAS_CEILING), PBLayout.SPRITE_HEADROOM, "画布上限不该比头顶留白还矮，那样站姿都装不下"
 	)
 	assert_gte(
 		PBActorForge.CANVAS_CEILING,
@@ -221,9 +215,7 @@ func test_composing_seats_the_feet_on_the_bottom_edge() -> void:
 	var dir := _fake_take("%s/idle" % ROOT, 3, Rect2i(460, 100, 40, 360))
 	var shots := _forge.measure(dir)
 	var scale_of := _forge.scales({"idle": shots, "run": shots, "attack": shots})
-	var canvas: Vector2i = _forge.fit_canvas(
-		{"idle": shots}, scale_of, {"idle": [0] as Array[int]}
-	)
+	var canvas: Vector2i = _forge.fit_canvas({"idle": shots}, scale_of, {"idle": [0] as Array[int]})
 	var image := _forge.compose(shots[0], float(scale_of["idle"]))
 
 	assert_eq(image.get_size(), canvas, "出来的图就该是画布那么大")
@@ -255,9 +247,7 @@ func test_a_source_frame_that_is_not_mid_sized_keeps_its_feet() -> void:
 	var used := image.get_used_rect()
 	assert_gt(used.size.y, 0, "人得还在，别被裁没了")
 	assert_eq(used.end.y, image.get_height(), "脚必须还踩在画布底边上")
-	assert_almost_eq(
-		float(used.size.y), float(_forge.texture_height()), 2.0, "身高该缩到目标值，说明整个人都在"
-	)
+	assert_almost_eq(float(used.size.y), float(_forge.texture_height()), 2.0, "身高该缩到目标值，说明整个人都在")
 
 
 func test_measuring_one_frame_matches_measuring_the_whole_take() -> void:
@@ -289,9 +279,7 @@ func test_a_manual_nudge_moves_the_body_by_exactly_that_many_pixels() -> void:
 
 	var plain := _forge.compose(shots[0], scale)
 	assert_eq(
-		_forge.compose(shots[0], scale, Vector2i.ZERO).get_data(),
-		plain.get_data(),
-		"零偏移必须和不传逐位相同"
+		_forge.compose(shots[0], scale, Vector2i.ZERO).get_data(), plain.get_data(), "零偏移必须和不传逐位相同"
 	)
 	var moved := _forge.compose(shots[0], scale, Vector2i(3, -2))
 	assert_eq(

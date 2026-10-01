@@ -29,12 +29,6 @@ const HP_GOOD := Color(0.44, 0.82, 0.55)
 const HP_LOW := Color(0.90, 0.42, 0.42)
 const BAR_BACK := Color(0.10, 0.11, 0.14, 0.85)
 
-## 选中那个忍者的射程圈。画在这个池子的 `_draw` 里（先画自己再画子节点，自然落在小人底下），
-## 不另开一个节点 —— 否则「圈的位置」和「小人的位置」各算一遍，差几个像素就像没对准。
-const RANGE_FILL := Color(0.55, 0.78, 0.95, 0.06)
-const RANGE_EDGE := Color(0.62, 0.84, 0.98, 0.55)
-const RANGE_SEGMENTS: int = 32
-
 ## 攻击段最多快/慢到什么程度（[method _fit]）。不夹的话，一个攻速 0.85 的
 ## 角色会得到一段慢到看不出在动的挥击，而攻速 4 的那个会糊成一片。
 const FIT_MIN: float = 0.2
@@ -49,6 +43,9 @@ const FIT_MAX: float = 3.0
 ## 而画布留白多一点的那套素材会整体排错一档，**坐标却完全正确**。
 ##
 ## 锚在脚下之后，敌我共用同一把尺子，素材高矮不一也不会打乱前后。
+var _remains := PBSummonRemains.new()
+var _occupants: Array[String] = []
+
 var _anchors: Array[Node2D] = []
 
 var _sprites: Array[AnimatedSprite2D] = []
@@ -61,10 +58,15 @@ var _poses: Array[PBActorPose] = []
 ## 这一格现在挂着哪张皮。换人才重装 [SpriteFrames] —— 每帧重装的话
 ## 动画会永远停在第一帧，而那看起来就像「这个人不会动」。
 var _skins: Array[PBActorSkin] = []
-
-## 射程圈的屏幕圆心与半径。半径 0 = 不画。
-var _range_at: Vector2 = Vector2.ZERO
-var _range_px: float = 0.0
+var _glow_backs: Array[PBBuffGlow] = []
+var _glow_fronts: Array[PBBuffGlow] = []
+var _instant_backs: Array[PBBuffGlow] = []
+var _instant_fronts: Array[PBBuffGlow] = []
+var _spawn_fronts: Array[PBBuffGlow] = []
+var _spawn_ticks: Array[int] = []
+var _spawn_keys: Array[StringName] = []
+var _cast_backs: Array[PBCastGlow] = []
+var _cast_fronts: Array[PBCastGlow] = []
 
 ## 这一帧每个人的落脚点（屏幕坐标），影子画在这些点上。
 var _shadows: PackedVector2Array = PackedVector2Array()
@@ -84,20 +86,53 @@ func _ready() -> void:
 	var cfg := PBSimConfig.new()
 	_tick_rate = maxi(cfg.tick_rate, 1)
 	_frames_per_tick = maxf(float(Engine.physics_ticks_per_second) / float(_tick_rate), 1.0)
-	for _i: int in cfg.deploy_slots_max:
+	_ensure_capacity(cfg.deploy_slots_max)
+
+
+func _ensure_capacity(want: int) -> void:
+	_remains.ensure_capacity(want, self)
+	while _sprites.size() < want:
 		var anchor := Node2D.new()
 		add_child(anchor)
 		_anchors.append(anchor)
+		var glow_back := PBBuffGlow.new()
+		anchor.add_child(glow_back)
+		_glow_backs.append(glow_back)
+		var instant_back := PBBuffGlow.new()
+		anchor.add_child(instant_back)
+		_instant_backs.append(instant_back)
+		var cast_back := PBCastGlow.new()
+		anchor.add_child(cast_back)
+		_cast_backs.append(cast_back)
 		var sprite := AnimatedSprite2D.new()
 		# **不居中**：原点要落在脚底，偏移由那张皮给（[method PBActorSkin.draw_offset]）。
 		sprite.centered = false
 		sprite.visible = false
 		anchor.add_child(sprite)
 		_sprites.append(sprite)
+		var glow_front := PBBuffGlow.new()
+		glow_front.front = true
+		anchor.add_child(glow_front)
+		_glow_fronts.append(glow_front)
+		var instant_front := PBBuffGlow.new()
+		instant_front.front = true
+		anchor.add_child(instant_front)
+		_instant_fronts.append(instant_front)
+		var spawn_front := PBBuffGlow.new()
+		spawn_front.front = true
+		anchor.add_child(spawn_front)
+		_spawn_fronts.append(spawn_front)
+		_spawn_ticks.append(-1)
+		_spawn_keys.append(&"")
+		var cast_front := PBCastGlow.new()
+		cast_front.front = true
+		anchor.add_child(cast_front)
+		_cast_fronts.append(cast_front)
 		_backs.append(_add_rect(anchor, BAR, BAR_BACK))
 		_fills.append(_add_rect(anchor, BAR, HP_GOOD))
 		_poses.append(PBActorPose.new())
 		_skins.append(null)
+		_occupants.append("")
 
 
 ## 倍速（暂停和顿帧给 0）。**必须跟着走**：否则暂停时一群人还在原地跑步，而暂停时画面必须是静止的局面。
@@ -114,18 +149,25 @@ func sync_allies(
 	units: Array[PBUnit],
 	field: Vector2,
 	enemies: Array[PBEnemy],
-	current_tick: int = 0
+	current_tick: int = 0,
+	bond_auras: Dictionary = {}
 ) -> void:
+	_ensure_capacity(attackers.size())
+	_remains._tick_rate = _tick_rate
+	_remains.sync(attackers, current_tick, field)
 	var shown: int = 0
 	var feet := PackedVector2Array()
 	for attacker: PBAttacker in attackers:
+		if attacker.summoned and (attacker.expires_at == PBSummonRules.GONE or not attacker.alive):
+			continue
 		if shown >= _sprites.size():
 			break
 		# 尾兽那一个不画，见类顶部。
 		if attacker.slot < 0 or attacker.max_hp <= 0.0:
 			continue
 		var at := PBLayout.to_screen(attacker.pos, field)
-		var unit: PBUnit = units[attacker.slot] if attacker.slot < units.size() else null
+		var look_slot: int = attacker.appearance_slot if attacker.phantom else attacker.slot
+		var unit: PBUnit = units[look_slot] if look_slot >= 0 and look_slot < units.size() else null
 		_place(
 			shown,
 			at,
@@ -133,7 +175,9 @@ func sync_allies(
 			unit,
 			_look_x(attacker, enemies),
 			current_tick,
-			_in_range(attacker, enemies)
+			_in_range(attacker, enemies),
+			attackers,
+			bond_auras
 		)
 		# 死人不留影子 —— 人已经躺下了，一个还站在地上的影子会让人
 		# 以为他还在那儿挡着。
@@ -156,6 +200,13 @@ func sync_placed(units: Array[PBUnit], spots: Array[Vector2], field: Vector2) ->
 			continue
 		var at := PBLayout.to_screen(spots[i], field)
 		_anchors[i].position = at
+		_glow_backs[i].clear()
+		_glow_fronts[i].clear()
+		_instant_backs[i].clear()
+		_instant_fronts[i].clear()
+		_spawn_fronts[i].clear()
+		_cast_backs[i].clear()
+		_cast_fronts[i].clear()
 		var skin := _dress(i, units[i])
 		var sprite: AnimatedSprite2D = _sprites[i]
 		sprite.visible = true
@@ -171,40 +222,19 @@ func sync_placed(units: Array[PBUnit], spots: Array[Vector2], field: Vector2) ->
 
 ## 一个都不画（本局结束之后没有战场）。
 func clear() -> void:
+	_remains.clear()
 	for i: int in _sprites.size():
 		_hide(i)
 		# 上一波的位置与出手时刻一起丢掉：留着的话下一波第一帧会
 		# 从一个隔了半个战场的「上一帧」算出一次跑动。
 		_poses[i].reset(Vector2.INF, PBActorPose.FACE_RIGHT)
 	_set_shadows(PackedVector2Array())
-	show_range(Vector2.ZERO, 0.0)
 
 
-## 把射程圈画在 [param at]（屏幕坐标），半径 [param radius_px] 像素。
-## 半径给 0 就是收起来。
-func show_range(at: Vector2, radius_px: float) -> void:
-	if _range_at == at and is_equal_approx(_range_px, radius_px):
-		return
-	_range_at = at
-	_range_px = radius_px
-	queue_redraw()
-
-
-## 射程圈 + 每个人脚下的影子。
-##
-## **两样都画在这里而不是各自的精灵上**：本节点的位置恒为 (0,0)，
-## 而它装在一个 y 排序的层里（[PBLayout] 的 `Actors`）——
-## 于是它自己画的东西一律排在**全部单位后面**，敌我都盖不掉。
-## 影子和射程圈都是贴在地面上的东西，那正是它们该在的位置。
+## 影子画在地面层；射程圈另经裁切层绘制，避免远程大圈盖住任务栏和顶部文字。
 func _draw() -> void:
 	for at: Vector2 in _shadows:
 		draw_colored_polygon(PBLayout.ground_disc(at, SHADOW_RX, SHADOW_SEGMENTS), SHADOW_COLOR)
-	if _range_px <= 0.0:
-		return
-	# 地面上的圆画成椭圆，见 [constant PBLayout.Y_SCALE]。
-	var ring := PBLayout.ground_disc(_range_at, _range_px, RANGE_SEGMENTS)
-	draw_colored_polygon(ring, RANGE_FILL)
-	draw_polyline(ring, RANGE_EDGE, 1.0)
 
 
 ## 影子换了才重画。位置每帧都在动，所以这道门平时拦不住多少 ——
@@ -218,6 +248,44 @@ func _set_shadows(feet: PackedVector2Array) -> void:
 
 ## [param at] 是**落脚点**，不是中心，精灵的脚底贴在那个点上。
 ## y 排序问的是**谁的脚更靠下**；按中心锚的话高矮不同的人站在同一条线上会排出先后。
+func _aura_ids(
+	unit: PBAttacker, team: Array[PBAttacker], card: PBUnit = null, bond_auras: Dictionary = {}
+) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	if not unit.is_targetable():
+		return ids
+	for source: PBAttacker in team:
+		if not source.is_targetable():
+			continue
+		for cast: PBSkillCast in source.skills:
+			var skill := cast.skill
+			if source == unit:
+				var source_art := StringName("%s_source" % skill.id)
+				if PBBuffGlow.skin_for(source_art) != null and not ids.has(source_art):
+					ids.append(source_art)
+			var covered := PBHealingAuraRules.covers(source, unit, skill)
+			if PBMotionAuraRules.enabled(skill):
+				covered = (
+					covered
+					or source == unit
+					or (
+						skill.radius > 0.0
+						and source.pos.distance_to(unit.pos) <= skill.radius + 0.0000001
+					)
+				)
+			if skill.ranged_attack_aura > 0.0 and unit.ranged_attack:
+				covered = covered or source.pos.distance_to(unit.pos) <= skill.radius + 0.0000001
+			if covered:
+				var id := StringName("%s_aura" % skill.id)
+				if not ids.has(id):
+					ids.append(id)
+	if card != null and not unit.summoned:
+		for id: StringName in bond_auras.get(card.character.id, []):
+			if not ids.has(id):
+				ids.append(id)
+	return ids
+
+
 func _place(
 	index: int,
 	at: Vector2,
@@ -225,48 +293,88 @@ func _place(
 	unit: PBUnit,
 	look_x: float,
 	current_tick: int,
-	in_range: bool
+	in_range: bool,
+	team: Array[PBAttacker],
+	bond_auras: Dictionary
 ) -> void:
+	var occupant := "%s:%s" % [attacker.get_instance_id(), attacker.summon_serial]
+	if _occupants[index] != occupant:
+		_occupants[index] = occupant
+		_spawn_ticks[index] = current_tick
+		_spawn_keys[index] = (
+			PBSummonArt.for_skill(attacker.summon_skill_id).spawn_fx_key
+			if attacker.summoned else &""
+		)
+		_poses[index].reset(attacker.pos, PBActorPose.FACE_RIGHT)
+		_sprites[index].stop()
 	_anchors[index].position = at
-	var skin := _dress(index, unit)
+	var auras := _aura_ids(attacker, team, unit, bond_auras)
+	_glow_backs[index].sync_bag(attacker.buffs, current_tick, _tick_rate, attacker.alive, auras)
+	_glow_fronts[index].sync_bag(attacker.buffs, current_tick, _tick_rate, attacker.alive, auras)
+	var instant_age: int = current_tick - attacker.instant_fx_tick
+	_instant_backs[index].sync_instant(
+		attacker.instant_fx_id, instant_age, _tick_rate, attacker.alive
+	)
+	_instant_fronts[index].sync_instant(
+		attacker.instant_fx_id, instant_age, _tick_rate, attacker.alive
+	)
+	_spawn_fronts[index].sync_instant(
+		_spawn_keys[index], current_tick - _spawn_ticks[index], _tick_rate, attacker.alive
+	)
+	_cast_backs[index].sync_cast(attacker, current_tick, _tick_rate)
+	_cast_fronts[index].sync_cast(attacker, current_tick, _tick_rate)
+	var skin := _dress(
+		index, unit, attacker.summon_skill_id if attacker.summoned else &"",
+		_form_actor_key(attacker, current_tick)
+	)
 	var sprite: AnimatedSprite2D = _sprites[index]
 	sprite.visible = true
 
 	# **每一格都要问**：只看大招那一格的话，玩家手放的技能整段施法期间人站着不动。
-	var cast := _pending_cast(attacker)
+	var casting := attacker.casting
 	var hold: int = _hold_frames(attacker.attack_interval())
 	var pose: PBActorPose = _poses[index]
+	var departing: bool = attacker.death_move_until > current_tick
 	pose.update(
 		attacker.pos,
-		attacker.alive,
+		attacker.alive or departing,
 		attacker.next_shot_at,
-		cast != null,
+		casting.active(current_tick) and not departing,
 		look_x,
 		hold,
 		in_range,
-		attacker.swinging,
-		PBActorPose.windup_frames(attacker.windup_ticks, _frames_per_tick)
+		attacker.swinging and not departing,
+		PBActorPose.windup_frames(PBMotionAuraRules.windup_ticks(attacker), _frames_per_tick),
+		current_tick < attacker.attack_ends_at and not departing
 	)
 
 	var fit: float = 1.0
 	var anim: StringName = skin.anim_for(pose.state)
 	if pose.state == PBActorPose.State.ATTACK:
 		fit = _fit(skin, anim, attacker.attack_interval())
-	elif pose.state == PBActorPose.State.CAST and cast != null and cast.skill.id != &"":
+	elif pose.state == PBActorPose.State.CAST:
 		# 逐角色的忍术动画（[member PBActorSkin.skill_anims]），按 [member PBSkill.id] 查。
-		anim = skin.skill_anim(cast.skill.id)
+		anim = skin.skill_anim(casting.skill_id)
 	_animate(index, skin, anim, fit, PBActorPose.holds_last(pose.state), pose.swing_began)
+	if pose.state == PBActorPose.State.CAST:
+		sprite.pause()
+		var count := skin.frames.get_frame_count(anim)
+		sprite.frame = mini(int(casting.frame_at(current_tick) * count / 6.0), count - 1)
 
-	if not attacker.alive:
+	if not attacker.alive and not departing:
 		sprite.modulate = DEAD_COLOR
 	else:
 		var base: Color = Color.WHITE if unit == null else _tint(skin, unit.element)
 		sprite.modulate = PBBuffStrip.tinted(base, attacker.buffs, current_tick)
+		if attacker.phantom:
+			sprite.modulate = Color(0.65, 0.9, 1.0, 0.45)
+
+	_remains.remember(attacker, sprite, skin)
 
 	# 死了不画血条 —— 一条空血条和一条读不出来的血条长得一样，
 	# 而人已经躺下并压暗了，那一格信息不需要说两遍。
-	_backs[index].visible = attacker.alive
-	_fills[index].visible = attacker.alive
+	_backs[index].visible = attacker.alive and not attacker.phantom
+	_fills[index].visible = attacker.alive and not attacker.phantom
 	if not attacker.alive:
 		return
 	var lift: float = skin.head_px() + BAR_LIFT
@@ -305,9 +413,13 @@ func _look_x(attacker: PBAttacker, enemies: Array[PBEnemy]) -> float:
 
 ## 这一格该挂哪张皮。**没配就用白模** —— `assets/` 现在一个素材都没有，
 ## 所以今天走的全是这一条，见 [PBWhiteModel]。
-func _dress(index: int, unit: PBUnit) -> PBActorSkin:
-	var skin: PBActorSkin = null
-	if unit != null:
+func _dress(
+	index: int, unit: PBUnit, summon_id: StringName = &"", form_key: StringName = &""
+) -> PBActorSkin:
+	var skin := PBActorLibrary.skin_for(PBSummonArt.for_skill(summon_id).actor_key)
+	if skin == null:
+		skin = PBActorLibrary.skin_for(form_key)
+	if skin == null and unit != null:
 		skin = PBActorLibrary.skin_for(unit.character.actor_key)
 	if skin == null:
 		skin = PBWhiteModel.ally()
@@ -319,6 +431,22 @@ func _dress(index: int, unit: PBUnit) -> PBActorSkin:
 		sprite.scale = Vector2.ONE * skin.pixel_scale
 		sprite.texture_filter = skin.filter_mode()
 	return skin
+
+
+func _form_actor_key(attacker: PBAttacker, current_tick: int) -> StringName:
+	if attacker.summoned:
+		return &""
+	for state: PBBuffState in attacker.buffs.states():
+		if state.is_live(current_tick):
+			var art := PBFormArt.for_buff(state.buff.id)
+			if art.actor_key != &"":
+				return art.actor_key
+	for cast: PBSkillCast in attacker.skills:
+		if cast.skill != null and cast.skill.variant_art_id != &"":
+			var art := PBFormArt.for_buff(cast.skill.variant_art_id)
+			if art.actor_key != &"":
+				return art.actor_key
+	return &""
 
 
 ## 有没有一发在路上，有的话是哪一格。没有就返回 null。
@@ -387,6 +515,16 @@ func _fit(skin: PBActorSkin, anim: StringName, interval_ticks: int) -> float:
 
 
 func _hide(index: int) -> void:
+	_occupants[index] = ""
+	_spawn_keys[index] = &""
+	_spawn_ticks[index] = -1
+	_glow_backs[index].clear()
+	_glow_fronts[index].clear()
+	_instant_backs[index].clear()
+	_instant_fronts[index].clear()
+	_spawn_fronts[index].clear()
+	_cast_backs[index].clear()
+	_cast_fronts[index].clear()
 	_sprites[index].visible = false
 	_backs[index].visible = false
 	_fills[index].visible = false

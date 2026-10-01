@@ -1,3 +1,4 @@
+@tool
 class_name PBShotSkin
 extends Resource
 ## 一发子弹**长什么样**，以及它命中那一下**炸开长什么样**。

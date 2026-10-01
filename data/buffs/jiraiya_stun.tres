@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_24fss"]
+
+[resource]
+script = ExtResource("1_24fss")
+id = &"jiraiya_stun"
+name_key = "buff.jiraiya_stun"
+icon_key = "buff.jiraiya_stun"
+kind = 1
+friendly = false
+duration_seconds = 3.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/monstrous_strength/frame_0.png" id="1_4mvep"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/monstrous_strength/frame_1.png" id="2_mrli2"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/monstrous_strength/frame_2.png" id="3_cwhe7"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/monstrous_strength/frame_3.png" id="4_lpcvt"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/monstrous_strength/frame_4.png" id="5_3h2sb"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/monstrous_strength/frame_5.png" id="6_le0xh"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_8p0fj"]
+
+[resource]
+script = ExtResource("7_8p0fj")
+frames = Array[Texture2D]([ExtResource("1_4mvep"), ExtResource("2_mrli2"), ExtResource("3_cwhe7"), ExtResource("4_lpcvt"), ExtResource("5_3h2sb"), ExtResource("6_le0xh")])
+fps = 6.0

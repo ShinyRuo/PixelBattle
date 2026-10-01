@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_three_of_them_aura/back_0.png" id="1_77p1m"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_three_of_them_aura/back_1.png" id="2_l0twu"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_three_of_them_aura/back_2.png" id="3_hyy6l"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_three_of_them_aura/back_3.png" id="4_7qbcm"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_three_of_them_aura/back_4.png" id="5_nuoki"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_three_of_them_aura/back_5.png" id="6_wehky"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_76w3r"]
+
+[resource]
+script = ExtResource("7_76w3r")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_77p1m"), ExtResource("2_l0twu"), ExtResource("3_hyy6l"), ExtResource("4_7qbcm"), ExtResource("5_nuoki"), ExtResource("6_wehky")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

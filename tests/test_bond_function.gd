@@ -83,8 +83,8 @@ func test_the_crit_auras_reach_every_attacker_not_just_the_carrier() -> void:
 	# 载体之前建好的那几个拿不到，而那只表现为「站前排的忍者暴击率好像高一点」。
 	var units := _units_of(_bond_with_function())
 	var functions := {
-		&"whoever": [PBBondFunctionRules.CRIT_CHANCE, PBBondFunctionRules.CRIT_DAMAGE] as
-		Array[StringName]
+		&"whoever":
+		[PBBondFunctionRules.CRIT_CHANCE, PBBondFunctionRules.CRIT_DAMAGE] as Array[StringName]
 	}
 	var plain := _squad(units, {})
 	var buffed := _squad(units, functions)
@@ -146,9 +146,7 @@ func test_no_bond_matches_by_element_any_more() -> void:
 	# 只要哪天有人往 `data/bonds.tsv` 之外塞回一组按属性匹配的，
 	# 那个白送 1.705× 的池子就回来了，而它不报错。
 	for bond: PBBond in _cfg.bonds.all():
-		assert_ne(
-			int(bond.match_mode), int(PBBond.Match.ELEMENT), "%s 是按属性匹配的兜底羁绊" % bond.id
-		)
+		assert_ne(int(bond.match_mode), int(PBBond.Match.ELEMENT), "%s 是按属性匹配的兜底羁绊" % bond.id)
 
 
 func test_a_misspelled_function_key_is_rejected_instead_of_ignored() -> void:
@@ -177,8 +175,7 @@ func test_a_function_needs_both_the_headcount_and_the_carrier_on_the_field() -> 
 			without_carrier.append(unit)
 
 	assert_true(
-		PBBondRules.active_functions(bonded, bonded, _cfg.bonds).has(carrier_id),
-		"凑齐了且载体上场，功能该发出去"
+		PBBondRules.active_functions(bonded, bonded, _cfg.bonds).has(carrier_id), "凑齐了且载体上场，功能该发出去"
 	)
 	assert_false(
 		PBBondRules.active_functions(bonded, without_carrier, _cfg.bonds).has(carrier_id),
@@ -200,15 +197,11 @@ func test_dispatching_the_squad_costs_the_function_too() -> void:
 		state.add_unit(unit)
 	var carrier_id: StringName = bond.function_carrier_at(bond.full_tier_count())
 	var kept := state.bonded_units(_cfg)
-	assert_true(
-		PBBondRules.active_functions(kept, kept, _cfg.bonds).has(carrier_id), "不派遣时功能在"
-	)
+	assert_true(PBBondRules.active_functions(kept, kept, _cfg.bonds).has(carrier_id), "不派遣时功能在")
 
 	state.dispatched = 1
 	var sent := state.bonded_units(_cfg)
-	assert_false(
-		PBBondRules.active_functions(sent, kept, _cfg.bonds).has(carrier_id), "派出去就该掉档"
-	)
+	assert_false(PBBondRules.active_functions(sent, kept, _cfg.bonds).has(carrier_id), "派出去就该掉档")
 
 
 # ── 战斗层 ────────────────────────────────────────────────────
@@ -252,9 +245,7 @@ func test_rooting_stops_the_advance_and_boosts_damage_in_the_same_window() -> vo
 	_cfg.ultimate_delay_seconds = 0.0
 	var wave := _wave(9)
 	assert_lt(
-		_front_progress(PBBondFunctionRules.ROOT, wave),
-		_front_progress(&"", wave),
-		"定身期间队伍该停在原地"
+		_front_progress(PBBondFunctionRules.ROOT, wave), _front_progress(&"", wave), "定身期间队伍该停在原地"
 	)
 
 
@@ -319,15 +310,7 @@ func test_the_carrier_gets_the_function_through_build_attackers() -> void:
 	var carrier_id: StringName = bond.function_carrier_at(bond.full_tier_count())
 	var functions := {carrier_id: [PBBondFunctionRules.GATHER] as Array[StringName]}
 	var squad := PBCombatRules.build_attackers(
-		units,
-		PBElement.Type.PHYSICAL,
-		1.0,
-		PackedFloat64Array(),
-		_cfg,
-		null,
-		1,
-		0,
-		functions
+		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg, null, 1, 0, functions
 	)
 	var seen: int = 0
 	for i: int in units.size():
@@ -387,15 +370,7 @@ func _units_of(bond: PBBond) -> Array[PBUnit]:
 ## 一队攻击者，带上给定的功能表。
 func _squad(units: Array[PBUnit], functions: Dictionary) -> Array[PBAttacker]:
 	return PBCombatRules.build_attackers(
-		units,
-		PBElement.Type.PHYSICAL,
-		1.0,
-		PackedFloat64Array(),
-		_cfg,
-		null,
-		1,
-		0,
-		functions
+		units, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), _cfg, null, 1, 0, functions
 	)
 
 

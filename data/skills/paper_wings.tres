@@ -16,6 +16,7 @@ mods = {
 mods_growth = {
 &"damage_scale": 0.02
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_fbvk6")
@@ -25,5 +26,8 @@ name_key = "skill.paper_wings"
 affects = 0
 on_self = Array[ExtResource("1_apge6")]([SubResource("Resource_qn2ln")])
 element = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 440
 mp_cost = 9.0
+mp_cost_levels = PackedFloat32Array()

@@ -32,7 +32,7 @@ var _list: ItemList
 
 
 func _ready() -> void:
-	for anim: String in PBActorForge.anim_names():
+	for anim: String in PBActorForge.anim_names(true):
 		_picks[anim] = [] as Array[int]
 	var marks := HBoxContainer.new()
 	marks.add_child(_button("＋ 要这一帧", _on_take))
@@ -120,8 +120,7 @@ func _on_all() -> void:
 		said.emit("[color=#71d08c]%s 段 %d 帧全选上了[/color]，顺序就是切出来的顺序。" % [_anim, want])
 		return
 	said.emit(
-		"[color=#e0a666]全选了 %d 帧，而一段要 %d 帧[/color]。多了用「移除」删，少了用「复制」补。"
-		% [picked.size(), want]
+		"[color=#e0a666]全选了 %d 帧，而一段要 %d 帧[/color]。多了用「移除」删，少了用「复制」补。" % [picked.size(), want]
 	)
 
 

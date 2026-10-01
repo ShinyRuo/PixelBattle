@@ -76,11 +76,12 @@ func test_every_ally_skill_on_the_roster_really_lands_in_a_battle() -> void:
 			var squad := PBCombatRules.build_attackers(
 				units, PBElement.Type.FIRE, 1.0, PackedFloat64Array(), _cfg
 			)
+			squad[0].ultimate = null
 			var sim := PBBattleSim.new(PBWaveRules.build(20, _cfg, _rng), 0.0, 0.0, _cfg, squad)
 			sim.step()
 			squad[0].mp = squad[0].max_mp
 			assert_true(sim.cast_skill_now(squad[0], i + 1), "%s 该放得出" % skill.id)
-			sim.step()
+			PBCastTestClock.release(sim, squad[0])
 			sim.step()
 			assert_gt(squad[0].buffs.count(sim.current_tick()), 0, "%s 放完身上该有效果" % skill.id)
 			seen += 1

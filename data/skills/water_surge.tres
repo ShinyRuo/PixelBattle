@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_vksf8"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_numh5"]
+
+[resource]
+script = ExtResource("2_numh5")
+id = &"water_surge"
+name_key = "skill.water_surge"
+element = 4
+damage_base = 140.0
+damage_growth = 140.0
+radius = 0.056
+hit_count = 14
+hit_interval_ticks = 2
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+radius_growth = 0.006
+travel_step = 0.01775
+wave_count = 5
+wave_interval_ticks = 2
+fan_spread_degrees = 70.0
+fan_steps = 5
+delay_ticks = 2
+mp_cost_levels = PackedFloat32Array()

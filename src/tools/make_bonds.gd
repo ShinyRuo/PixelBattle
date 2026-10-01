@@ -19,6 +19,7 @@ const COL_CARRIER: int = 4
 const COL_MEMBERS: int = 5
 const COL_MEMBER_FX: int = 6
 const COL_PATCHES: int = 7
+const COL_BUFFS: int = 8
 
 ## 满档加成 = 本值 ×（满档人数 − 1）。斜率从既有数据反推（3 人 0.28、4 人 0.42），
 ## 拍一个新斜率的话此前所有扫描结论都要重扫。
@@ -134,6 +135,13 @@ func _fill_members(bond: PBBond, row: PackedStringArray, members: Array) -> Stri
 ## 列的写法：`角色id:技能id:键=量,键=量;角色id:技能id:...`。词汇表见 [PBSkillPatchRules]，
 ## **不认识的键直接报错退出** —— 静默跳过的表现正是「配了不生效」。
 func _fill_patches(bond: PBBond, row: PackedStringArray, members: Array) -> String:
+	var buff_error := _fill_buffs(bond, row)
+	if buff_error != "":
+		return buff_error
+	return _parse_patches(bond, row, members)
+
+
+func _parse_patches(bond: PBBond, row: PackedStringArray, members: Array) -> String:
 	var cell: String = row[COL_PATCHES] if row.size() > COL_PATCHES else ""
 	if cell == "":
 		return ""
@@ -159,7 +167,27 @@ func _fill_patches(bond: PBBond, row: PackedStringArray, members: Array) -> Stri
 		mine[skill_id] = theirs
 		out[who] = mine
 	bond.member_skill_patches = out
-	return ""## 表里没有的 `.tres` 一律删掉 —— 6 组属性型兜底就是这样离场的。
+	return ""
+
+
+func _fill_buffs(bond: PBBond, row: PackedStringArray) -> String:
+	if row.size() <= COL_BUFFS or row[COL_BUFFS] == "":
+		return ""
+	for chunk: String in row[COL_BUFFS].split(";", false):
+		var pair := chunk.split(":")
+		if pair.size() != 2:
+			return "开场效果格式应为 成员:buff键,buff键"
+		var buffs: Array[PBBuff] = []
+		for id: String in pair[1].split(",", false):
+			var path := "res://data/buffs/%s.tres" % id
+			if not ResourceLoader.exists(path) or not load(path) is PBBuff:
+				return "开场 BUFF 资源不存在：%s" % id
+			buffs.append(load(path) as PBBuff)
+		bond.member_buffs[StringName(pair[0])] = buffs
+	return PBBondBuffRules.validate(bond)
+
+
+## 表里没有的 `.tres` 一律删掉。
 func _sweep(wanted: Dictionary) -> void:
 	var dir := DirAccess.open(OUT_DIR)
 	if dir == null:

@@ -86,7 +86,7 @@ static func active_functions(
 ## 盖的话凑满两组只拿到一组的量，而它不报错。
 ## 两份名单的分工同 [method active_functions]。
 static func active_passives(
-	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable
+	bonded: Array[PBUnit], deployed: Array[PBUnit], table: PBBondTable, include_opening: bool = true
 ) -> Dictionary:
 	var out: Dictionary = {}
 	if table == null:
@@ -107,6 +107,8 @@ static func active_passives(
 				var more: float = float(bond.member_functions[who][key])
 				mine[key] = float(mine.get(key, 0.0)) + more
 			out[who] = mine
+	if include_opening:
+		PBBondBuffRules.preview(out, PBBondBuffRules.collect(bonded, deployed, table))
 	return out
 
 
@@ -140,6 +142,8 @@ static func active_skill_patches(
 				mine[skill_id] = theirs
 			out[who] = mine
 	return out
+
+
 ## 每组羁绊现在到场几个成员，`{ 羁绊 id: 人数 }`。
 ##
 ## 给估值用：**「再抽一张值多少」要对整个卡池问一遍**，
@@ -227,5 +231,3 @@ static func choose_field(
 				if bond.counts(picked):
 					counts[bond.id] = int(counts.get(bond.id, 0)) + 1
 	return chosen
-
-

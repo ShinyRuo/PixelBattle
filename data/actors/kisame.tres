@@ -1,32 +1,44 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://dy227wmob32gw"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://psdmdjbuyu1t" path="res://assets/actors/kisame/attack_0.png" id="1_buc64"]
-[ext_resource type="Texture2D" uid="uid://cubd443nlbxxf" path="res://assets/actors/kisame/attack_1.png" id="2_e8a0f"]
-[ext_resource type="Texture2D" uid="uid://dwtepi8lar0o4" path="res://assets/actors/kisame/attack_2.png" id="3_jpsth"]
-[ext_resource type="Texture2D" uid="uid://cs5ngudidf7wn" path="res://assets/actors/kisame/attack_3.png" id="4_8wwtm"]
-[ext_resource type="Texture2D" uid="uid://bejgfk881ojnn" path="res://assets/actors/kisame/attack_4.png" id="5_ge7le"]
-[ext_resource type="Texture2D" uid="uid://dqxbxkms1h7ec" path="res://assets/actors/kisame/dead_0.png" id="6_5f5bv"]
-[ext_resource type="Texture2D" uid="uid://bfwdehh58dm87" path="res://assets/actors/kisame/attack_5.png" id="6_jf5eb"]
-[ext_resource type="Texture2D" uid="uid://dkilnlo1rkex2" path="res://assets/actors/kisame/dead_1.png" id="7_jf5eb"]
-[ext_resource type="Texture2D" uid="uid://bf1f2ywc5bpo7" path="res://assets/actors/kisame/dead_2.png" id="8_s15nl"]
-[ext_resource type="Texture2D" uid="uid://dhfkn3ekosl3d" path="res://assets/actors/kisame/idle_0.png" id="9_v2of6"]
-[ext_resource type="Texture2D" uid="uid://p3p2gbhtd2bf" path="res://assets/actors/kisame/idle_1.png" id="10_dpwhh"]
-[ext_resource type="Texture2D" uid="uid://doygkiku5ww4i" path="res://assets/actors/kisame/dead_3.png" id="10_v2of6"]
-[ext_resource type="Texture2D" uid="uid://nj7xju0uxhj0" path="res://assets/actors/kisame/idle_2.png" id="11_4krkw"]
-[ext_resource type="Texture2D" uid="uid://carcoidei1ob0" path="res://assets/actors/kisame/dead_4.png" id="11_dpwhh"]
-[ext_resource type="Texture2D" uid="uid://ccilupks45o7l" path="res://assets/actors/kisame/dead_5.png" id="12_4krkw"]
-[ext_resource type="Texture2D" uid="uid://bg35bbt7v2vig" path="res://assets/actors/kisame/idle_3.png" id="12_eimt6"]
-[ext_resource type="Texture2D" uid="uid://xa1ek0aq1fs" path="res://assets/actors/kisame/idle_4.png" id="13_jpsth"]
-[ext_resource type="Texture2D" uid="uid://c160m13m1g7r5" path="res://assets/actors/kisame/run_0.png" id="13_o1rx5"]
-[ext_resource type="Texture2D" uid="uid://ds2em1p7k8djh" path="res://assets/actors/kisame/idle_5.png" id="14_8wwtm"]
-[ext_resource type="Texture2D" uid="uid://mm1mteyeu4nb" path="res://assets/actors/kisame/run_1.png" id="14_nkt0e"]
-[ext_resource type="Texture2D" uid="uid://bil38og8283rx" path="res://assets/actors/kisame/run_2.png" id="15_gq0s2"]
-[ext_resource type="Texture2D" uid="uid://dkekaaatuqdy1" path="res://assets/actors/kisame/run_3.png" id="16_vtgqo"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="17_s3bao"]
-[ext_resource type="Texture2D" uid="uid://r4flajvdqoiy" path="res://assets/actors/kisame/run_4.png" id="19_ge7le"]
-[ext_resource type="Texture2D" uid="uid://ctmdp8iumnlv2" path="res://assets/actors/kisame/run_5.png" id="20_5f5bv"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/attack_0.png" id="1_buc64"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/attack_1.png" id="2_e8a0f"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/attack_2.png" id="3_jpsth"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/attack_3.png" id="4_8wwtm"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/attack_4.png" id="5_ge7le"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/dead_0.png" id="6_5f5bv"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/attack_5.png" id="6_jf5eb"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_infinite_sharks_00.png" id="7_gq0s2"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/dead_1.png" id="7_jf5eb"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/dead_2.png" id="8_s15nl"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_infinite_sharks_01.png" id="8_vtgqo"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_infinite_sharks_02.png" id="9_s3bao"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/idle_0.png" id="9_v2of6"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/idle_1.png" id="10_dpwhh"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/dead_3.png" id="10_v2of6"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_infinite_sharks_03.png" id="10_vugpg"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/idle_2.png" id="11_4krkw"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/dead_4.png" id="11_dpwhh"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_infinite_sharks_04.png" id="11_ser0r"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/dead_5.png" id="12_4krkw"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_infinite_sharks_05.png" id="12_8102g"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/idle_3.png" id="12_eimt6"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_shark_cut_00.png" id="13_fs3mm"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/idle_4.png" id="13_jpsth"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/run_0.png" id="13_o1rx5"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_shark_cut_01.png" id="14_08bwb"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/idle_5.png" id="14_8wwtm"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/run_1.png" id="14_nkt0e"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/run_2.png" id="15_gq0s2"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_shark_cut_02.png" id="15_m8sev"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_shark_cut_03.png" id="16_ndobu"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/run_3.png" id="16_vtgqo"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_shark_cut_04.png" id="17_8q081"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="17_s3bao"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/cast_shark_cut_05.png" id="18_0kp2u"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/run_4.png" id="19_ge7le"]
+[ext_resource type="Texture2D" path="res://assets/actors/kisame/run_5.png" id="20_5f5bv"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_eimt6"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_yb6pt"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +62,52 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_gq0s2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_vtgqo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_s3bao")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_vugpg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_ser0r")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_8102g")
+}],
+"loop": 0,
+"name": &"cast_infinite_sharks",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_fs3mm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_08bwb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_m8sev")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_ndobu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_8q081")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_0kp2u")
+}],
+"loop": 0,
+"name": &"cast_shark_cut",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +182,11 @@ animations = [{
 [resource]
 script = ExtResource("17_s3bao")
 key = &"kisame"
-frames = SubResource("SpriteFrames_eimt6")
+frames = SubResource("SpriteFrames_yb6pt")
+skill_anims = {
+&"infinite_sharks": &"cast_infinite_sharks",
+&"shark_cut": &"cast_shark_cut"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

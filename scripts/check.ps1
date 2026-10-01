@@ -24,8 +24,8 @@
     默认不跑：慢档验证配平结论，耗时随数据与规则变化。
     日常改代码跑默认档，具体数量和耗时以本次报告为准。
 
-    **改了 PBSimConfig 的数值、改了估值口径、动了角色表分布、里程碑验收，
-    就要跑这个。** 判据写在 tests/test_balance_scan.gd 开头。
+    仅在用户明确要求或已授权专项深度验证时运行；修改、提交、数值变动和验收不自动触发。
+    优先默认功能档与针对性验证。协作约定见 CLAUDE.md。
 
 .EXAMPLE
     .\scripts\check.ps1
@@ -328,7 +328,7 @@ if (-not $SkipTests) {
                      -RequiredPattern '(?m)^\s*Tests\s+[1-9][0-9]*\s*$' `
                      -ShowOutput
         if (-not $Deep) {
-            Write-Host '  慢档（配平扫描）已跳过 —— 改了数值或做验收时跑 .\scripts\check.ps1 -Deep' -ForegroundColor Yellow
+            Write-Host '  慢档（配平扫描）未运行 —— 仅在明确要求或已授权专项深度验证时使用 -Deep' -ForegroundColor Yellow
         }
 } else {
     $script:Skipped += 'GUT 单元测试（-SkipTests）'

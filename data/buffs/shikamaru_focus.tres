@@ -16,3 +16,4 @@ mods = {
 mods_growth = {
 &"mana": 1.0
 }
+duration_levels = PackedFloat32Array()

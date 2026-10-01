@@ -6,9 +6,7 @@
 script = ExtResource("1_gii5g")
 id = &"art_duo"
 name_key = "bond.art_duo"
-match_mode = 0
 member_ids = Array[StringName]([&"sasori", &"deidara"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])

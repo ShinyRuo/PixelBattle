@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_tsuchikage_guard_aura/back_0.png" id="1_b1465"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_tsuchikage_guard_aura/back_1.png" id="2_w8vmv"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_tsuchikage_guard_aura/back_2.png" id="3_il5ge"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_tsuchikage_guard_aura/back_3.png" id="4_adfn0"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_tsuchikage_guard_aura/back_4.png" id="5_n2j3q"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_tsuchikage_guard_aura/back_5.png" id="6_jhwfn"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_pysf3"]
+
+[resource]
+script = ExtResource("7_pysf3")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_b1465"), ExtResource("2_w8vmv"), ExtResource("3_il5ge"), ExtResource("4_adfn0"), ExtResource("5_n2j3q"), ExtResource("6_jhwfn")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

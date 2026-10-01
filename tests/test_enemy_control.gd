@@ -28,6 +28,7 @@ func before_each() -> void:
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = FIXED_SEED
 
+
 # ── 晕眩：定住的另一半（M12-c2）──────────────────────────────
 
 
@@ -66,20 +67,23 @@ func test_being_stunned_does_not_bank_up_shots() -> void:
 	assert_eq(enemy.next_shot_at, 0, "定身期间那个数一步都不该动")
 
 
-func test_the_holds_in_the_real_table_now_stop_both_halves() -> void:
-	# 六份禁锢是同一件事的六个实例。只补一处的表现是
-	# 「影子模仿术定得住、追牙之术定不住」，而两边的配置看起来都对。
+func test_real_roots_and_stuns_control_movement_and_attacks_independently() -> void:
+	# 定身只管移动；禁止攻击显式配置 stun 或 disarm，后者仍允许主动施法。
 	var table := PBSkillLoader.table()
 	var checked: int = 0
 	for id: StringName in table.ids():
 		for buff: PBBuff in table.by_id(id).on_hit:
 			if float(buff.mods.get(PBBuffRules.ENEMY_SPEED_SCALE, 1.0)) != 0.0:
 				continue
-			assert_gt(
-				float(buff.mods.get(PBBuffRules.STUN, 0.0)),
-				0.0,
-				"「%s」定住了走位却没定住出手" % buff.id
-			)
+			var enemy := _enemy()
+			_hang(enemy, buff, 0)
+			enemy.speed = 0.1
+			var at := enemy.pos()
+			enemy.march_to(Vector2.ZERO, 1.0, 0)
+			assert_eq(enemy.pos(), at, "定身必须禁止移动")
+			var stunned: bool = float(buff.mods.get(PBBuffRules.STUN, 0.0)) > 0.0
+			var disarmed: bool = float(buff.mods.get(PBBuffRules.DISARM, 0.0)) > 0.0
+			assert_eq(enemy.ready_to_fire(0), not (stunned or disarmed), "定身和禁止攻击独立")
 			checked += 1
 	assert_gt(checked, 0, "真表里一份禁锢都没有的话，上面什么都没量")
 
@@ -103,9 +107,7 @@ func test_two_blinds_multiply_instead_of_adding_up() -> void:
 	var enemy := _enemy()
 	_hang(enemy, _lasting(&"a", {PBBuffRules.ENEMY_HIT_SCALE: 0.5}, 5.0), 0)
 	_hang(enemy, _lasting(&"b", {PBBuffRules.ENEMY_HIT_SCALE: 0.5}, 5.0), 0)
-	assert_almost_eq(
-		enemy.buffs.amount(PBBuffRules.ENEMY_HIT_SCALE, 0), 0.25, 0.0001, "两份该连乘"
-	)
+	assert_almost_eq(enemy.buffs.amount(PBBuffRules.ENEMY_HIT_SCALE, 0), 0.25, 0.0001, "两份该连乘")
 
 
 func test_nobody_misses_without_a_blind_and_no_dice_are_rolled() -> void:
@@ -131,6 +133,7 @@ func test_missing_is_decided_before_melee_and_ranged_split() -> void:
 	var text := FileAccess.get_file_as_string("res://src/core/sim/battle_sim.gd")
 	assert_ne(text, "", "读得到 battle_sim.gd")
 	assert_eq(text.split("PBBuffRules.misses(").size() - 1, 1, "致盲只许判一处")
+
 
 ## 一个站在场上、血量写死的敌人。
 func _enemy() -> PBEnemy:
@@ -162,4 +165,3 @@ func _hang(enemy: PBEnemy, buff: PBBuff, at_tick: int) -> void:
 		buff.duration_ticks(_cfg),
 		buff.period_ticks(_cfg)
 	)
-

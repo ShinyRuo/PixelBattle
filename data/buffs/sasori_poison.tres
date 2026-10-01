@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_p4e1f"]
+
+[resource]
+script = ExtResource("1_p4e1f")
+id = &"sasori_poison"
+name_key = "buff.sasori_poison"
+icon_key = "buff.sasori_poison"
+kind = 2
+independent_stacks = true
+friendly = false
+duration_seconds = 5.0
+period_seconds = 1.0
+mods = {
+&"harm": 14.0
+}
+mods_growth = {
+&"harm": 4.0
+}
+duration_levels = PackedFloat32Array()

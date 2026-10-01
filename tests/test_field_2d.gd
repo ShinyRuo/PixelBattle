@@ -42,11 +42,7 @@ func test_a_flat_field_still_matches_the_analytic_queue_model() -> void:
 			var wave := _wave(index)
 			var ticked := PBBattleSim.new(wave, dps, 0.0, _cfg).run_to_end()
 			var solved := PBCombatRules.resolve(wave, dps, 0.0, _cfg)
-			assert_eq(
-				ticked.kills,
-				solved.kills,
-				"第 %d 波 %.0f DPS：压平之后两个模型该杀一样多" % [index, dps]
-			)
+			assert_eq(ticked.kills, solved.kills, "第 %d 波 %.0f DPS：压平之后两个模型该杀一样多" % [index, dps])
 			assert_eq(ticked.leaked, solved.leaked, "漏怪数也该一样")
 
 

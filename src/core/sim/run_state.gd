@@ -218,12 +218,14 @@ func field_units(cfg: PBSimConfig) -> Array[PBUnit]:
 ## 现在有哪些卡在给羁绊计数（§09）：**在场的人全额生效，派出去做任务的暂时失效**（§06）。
 ## 后一条缺了的话「这一波我要羁绊，还是要钱」就没有代价。
 ## 没钦定时派出去的是出战席末尾那几个 —— 派人一定要少一个打手。
-func bonded_units(cfg: PBSimConfig) -> Array[PBUnit]:
+func bonded_units(cfg: PBSimConfig, preview: bool = false) -> Array[PBUnit]:
 	var pool := field_units(cfg)
+	# 手动准备名单还未锁入 dispatched；预览按任务栏人数算，不能借用上一波人数。
+	var count: int = dispatch_manual.size() if preview else dispatched
 	# 没人钦定就是纯末尾规则，走一刀切片 —— 这条路在扫描里一局要跑上万次。
 	if dispatch_manual.is_empty():
-		return pool.slice(0, maxi(pool.size() - dispatched, 0))
-	var away := dispatch_picks(cfg)
+		return pool.slice(0, maxi(pool.size() - count, 0))
+	var away := dispatch_picks(cfg, count)
 	var out: Array[PBUnit] = []
 	for unit: PBUnit in pool:
 		if not away.has(unit):

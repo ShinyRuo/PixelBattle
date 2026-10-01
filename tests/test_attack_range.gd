@@ -23,9 +23,7 @@ func test_original_units_convert_with_the_skill_table_ruler() -> void:
 func test_a_character_without_a_range_falls_back_to_its_tier() -> void:
 	var character := PBCharacter.make(&"probe_range", PBElement.Type.PHYSICAL, PBUnit.Rarity.R)
 	assert_eq(character.attack_range, 0.0, "前提：代码现造的角色没配射程")
-	assert_eq(
-		_cfg.reach_of(character), _cfg.reach_distance(character.reach_tier()), "没配就按射程档的默认距离"
-	)
+	assert_eq(_cfg.reach_of(character), _cfg.reach_distance(character.reach_tier()), "没配就按射程档的默认距离")
 
 
 func test_every_roster_character_has_an_original_range() -> void:
@@ -48,11 +46,7 @@ func test_melee_stands_in_front_and_ranged_shoots_farther() -> void:
 func test_no_melee_ninja_is_outranged_by_melee_enemies() -> void:
 	# 敌人一走进自己的射程就站住。比忍者长的话，那个近战忍者结构上永远够不着他。
 	for character: PBCharacter in PBCharacterLoader.table().all():
-		assert_gte(
-			_cfg.reach_of(character),
-			_cfg.enemy_reach,
-			"%s 的射程比敌人近战还短，贴不上去" % character.id
-		)
+		assert_gte(_cfg.reach_of(character), _cfg.enemy_reach, "%s 的射程比敌人近战还短，贴不上去" % character.id)
 	assert_lte(_cfg.enemy_reach, _cfg.reach_melee, "默认近战档也要够得着")
 
 

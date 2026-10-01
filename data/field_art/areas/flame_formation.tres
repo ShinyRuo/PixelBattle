@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://s0fhmb7ut4bm"]
+
+[ext_resource type="Texture2D" uid="uid://cb2fdoafv1ynx" path="res://assets/fx/fields/areas/flame_formation/frame_0.png" id="1_0m86t"]
+[ext_resource type="Texture2D" uid="uid://knib2pgq2rdf" path="res://assets/fx/fields/areas/flame_formation/frame_1.png" id="2_nsytg"]
+[ext_resource type="Texture2D" uid="uid://trcq5i1xigt3" path="res://assets/fx/fields/areas/flame_formation/frame_2.png" id="3_cdw8x"]
+[ext_resource type="Texture2D" uid="uid://xm4pugra6m0p" path="res://assets/fx/fields/areas/flame_formation/frame_3.png" id="4_v4qr3"]
+[ext_resource type="Texture2D" uid="uid://dr6a3baono7fp" path="res://assets/fx/fields/areas/flame_formation/frame_4.png" id="5_uux3d"]
+[ext_resource type="Texture2D" uid="uid://v856y0wqhuj" path="res://assets/fx/fields/areas/flame_formation/frame_5.png" id="6_intqw"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_rd2pq"]
+
+[resource]
+script = ExtResource("7_rd2pq")
+frames = Array[Texture2D]([ExtResource("1_0m86t"), ExtResource("2_nsytg"), ExtResource("3_cdw8x"), ExtResource("4_v4qr3"), ExtResource("5_uux3d"), ExtResource("6_intqw")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_flame_formation_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

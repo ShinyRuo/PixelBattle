@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_o71eh"]
+
+[resource]
+script = ExtResource("1_o71eh")
+id = &"hero_family"
+name_key = "bond.hero_family"
+member_ids = Array[StringName]([&"naruto", &"kushina", &"minato"])
+tier_counts = Array[int]([3])
+tier_power = Array[float]([0.28])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"minato": {
+&"all_stats_total_bonus": 0.2,
+&"attack_interval_reduction": 0.2
+},
+&"naruto": {
+&"all_stats_total_bonus": 0.2
+}
+}
+member_skill_patches = {
+&"kushina": {
+&"battle_chakra": {
+&"heal_aura_hit_chance": 0.09,
+&"heal_aura_lost": 0.07
+}
+},
+&"minato": {
+&"flying_raijin_chain": {
+&"attack_repeats_add": 1.0
+}
+},
+&"naruto": {
+&"kurama_cloak": {
+&"heal_aura_max_set": 0.02
+}
+}
+}

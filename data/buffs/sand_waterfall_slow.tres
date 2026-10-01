@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_7sbwr"]
+
+[resource]
+script = ExtResource("1_7sbwr")
+id = &"sand_waterfall_slow"
+name_key = "buff.sand_waterfall_slow"
+icon_key = "buff.sand_waterfall_slow"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_speed_scale": 0.0
+}
+duration_levels = PackedFloat32Array()

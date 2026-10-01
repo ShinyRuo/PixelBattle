@@ -10,5 +10,7 @@ icon_key = "buff.lee_whirl"
 kind = 1
 duration_seconds = 3.5
 mods = {
-&"damage_taken": 0.35
+&"channel": 1.0,
+&"ninjutsu_immune": 1.0
 }
+duration_levels = PackedFloat32Array()

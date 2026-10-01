@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://vvfarhc88rya"]
+
+[ext_resource type="Texture2D" uid="uid://dvmgpucuw751c" path="res://assets/fx/fields/pulses/wood_descent/frame_0.png" id="1_32j6l"]
+[ext_resource type="Texture2D" uid="uid://cdod7073c4aum" path="res://assets/fx/fields/pulses/wood_descent/frame_1.png" id="2_lv3ty"]
+[ext_resource type="Texture2D" uid="uid://db6te6r8nm8h" path="res://assets/fx/fields/pulses/wood_descent/frame_2.png" id="3_crp2f"]
+[ext_resource type="Texture2D" uid="uid://cipggpsod0u4l" path="res://assets/fx/fields/pulses/wood_descent/frame_3.png" id="4_eula8"]
+[ext_resource type="Texture2D" uid="uid://dux02kkymgb7" path="res://assets/fx/fields/pulses/wood_descent/frame_4.png" id="5_y2aku"]
+[ext_resource type="Texture2D" uid="uid://dgcrcgqosofea" path="res://assets/fx/fields/pulses/wood_descent/frame_5.png" id="6_kgc73"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_6yg7t"]
+
+[resource]
+script = ExtResource("7_6yg7t")
+frames = Array[Texture2D]([ExtResource("1_32j6l"), ExtResource("2_lv3ty"), ExtResource("3_crp2f"), ExtResource("4_eula8"), ExtResource("5_y2aku"), ExtResource("6_kgc73")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_wood_descent_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

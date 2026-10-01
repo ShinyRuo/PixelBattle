@@ -26,11 +26,7 @@ var _seen: int = -1
 ## 绝不碰 `Engine.time_scale`（那是 §12 存档回滚与 §13 每日种子的地基），
 ## 而「怎么不推进」是阶段机的事。
 func poll(
-	battle: PBBattleSim,
-	wave: PBWave,
-	pool: PBEnemyPool,
-	floats: PBFloatTextPool,
-	field: Vector2
+	battle: PBBattleSim, wave: PBWave, pool: PBEnemyPool, floats: PBFloatTextPool, field: Vector2
 ) -> int:
 	var enemies: Array[PBEnemy] = battle.enemies()
 	var crits: Dictionary = _crit_slots(battle.log_to)

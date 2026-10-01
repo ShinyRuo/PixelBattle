@@ -89,9 +89,7 @@ func cut(sheet_path: String, keys: PackedStringArray, out_dir: String) -> String
 	var rows: Array = found["rows"]
 	var cells: int = cols.size() * rows.size()
 	if keys.size() != cells:
-		return "量出来是 %d 列 × %d 行 = %d 格，而给了 %d 个键。" % [
-			cols.size(), rows.size(), cells, keys.size()
-		]
+		return "量出来是 %d 列 × %d 行 = %d 格，而给了 %d 个键。" % [cols.size(), rows.size(), cells, keys.size()]
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var exe := PBActorForge.ffmpeg_path()
 	if exe == "":
@@ -139,8 +137,15 @@ func _one(exe: String, sheet: String, col: Vector2i, row: Vector2i, to: String) 
 	var code := OS.execute(
 		exe,
 		[
-			"-v", "error", "-y", "-i", ProjectSettings.globalize_path(sheet),
-			"-vf", _filter(col, row, want.x), "-frames:v", "1",
+			"-v",
+			"error",
+			"-y",
+			"-i",
+			ProjectSettings.globalize_path(sheet),
+			"-vf",
+			_filter(col, row, want.x),
+			"-frames:v",
+			"1",
 			ProjectSettings.globalize_path(to)
 		],
 		log,
@@ -166,9 +171,12 @@ func _one(exe: String, sheet: String, col: Vector2i, row: Vector2i, to: String) 
 ## 是因为它顺带要按档次切 alpha；这里只有一档，交给 ffmpeg 更省事。
 func _filter(col: Vector2i, row: Vector2i, width: int) -> String:
 	return (
-		"crop=%d:%d:%d:%d,colorkey=0xFF00FF:%.2f:0.0,format=rgba,"
-		+ "premultiply=inplace=1,scale=%d:-1:flags=area,unpremultiply=inplace=1"
-	) % [col.y, row.y, col.x, row.x, KEY_TOLERANCE, width]
+		(
+			"crop=%d:%d:%d:%d,colorkey=0xFF00FF:%.2f:0.0,format=rgba,"
+			+ "premultiply=inplace=1,scale=%d:-1:flags=area,unpremultiply=inplace=1"
+		)
+		% [col.y, row.y, col.x, row.x, KEY_TOLERANCE, width]
+	)
 
 
 ## 抠背景剩下的那一圈毛。**只切近乎透明的**，软边照原样留着 ——

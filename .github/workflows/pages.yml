@@ -1,0 +1,88 @@
+name: Publish Web game to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out game source
+        uses: actions/checkout@v4
+
+      - name: Restore Godot 4.7.2 Web tools
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/bin/godot-4.7.2
+            ~/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_debug.zip
+            ~/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_release.zip
+          key: godot-4.7.2-web-nothreads-v1
+
+      - name: Install official Godot 4.7.2 and single-thread Web template
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin" "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          curl -fL --retry 3 --retry-delay 3 \
+            "https://godot-releases.nbg1.your-objectstorage.com/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" \
+            -o "$RUNNER_TEMP/godot.zip"
+          unzip -p "$RUNNER_TEMP/godot.zip" Godot_v4.7.2-stable_linux.x86_64 \
+            > "$HOME/.local/bin/godot-4.7.2"
+          chmod +x "$HOME/.local/bin/godot-4.7.2"
+          curl -fL --retry 3 --retry-delay 3 \
+            "https://godot-releases.nbg1.your-objectstorage.com/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" \
+            -o "$RUNNER_TEMP/templates.tpz"
+          unzip -p "$RUNNER_TEMP/templates.tpz" templates/web_nothreads_debug.zip \
+            > "$HOME/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_debug.zip"
+          unzip -p "$RUNNER_TEMP/templates.tpz" templates/web_nothreads_release.zip \
+            > "$HOME/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_release.zip"
+
+      - name: Import and export game
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s assets/fonts/NotoSansSC-VF.ttf
+          test -s assets/fonts/OFL.txt
+          cp scripts/web_export_presets.cfg export_presets.cfg
+          mkdir -p build/web
+          "$HOME/.local/bin/godot-4.7.2" --headless --path . --editor --import --quiet
+          "$HOME/.local/bin/godot-4.7.2" --headless --path . --export-release Web build/web/index.html --quiet
+          test -s build/web/index.html
+          test -s build/web/index.pck
+          test -s build/web/index.wasm
+          cp assets/fonts/OFL.txt build/web/FONT_LICENSE.txt
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Web files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_rasengan_stun/front_0.png" id="1_yupce"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_rasengan_stun/front_1.png" id="2_btjih"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_rasengan_stun/front_2.png" id="3_18vmb"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_rasengan_stun/front_3.png" id="4_kpr4p"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_rasengan_stun/front_4.png" id="5_6drs7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sage_rasengan_stun/front_5.png" id="6_8iiua"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_3r2ea"]
+
+[resource]
+script = ExtResource("7_3r2ea")
+front_frames = Array[Texture2D]([ExtResource("1_yupce"), ExtResource("2_btjih"), ExtResource("3_18vmb"), ExtResource("4_kpr4p"), ExtResource("5_6drs7"), ExtResource("6_8iiua")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

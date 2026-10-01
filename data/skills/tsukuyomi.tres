@@ -15,6 +15,7 @@ mods = {
 &"enemy_speed_scale": 0.0,
 &"stun": 1.0
 }
+duration_levels = PackedFloat32Array()
 
 [sub_resource type="Resource" id="Resource_ffr1v"]
 script = ExtResource("1_hcniy")
@@ -31,14 +32,19 @@ mods = {
 mods_growth = {
 &"harm": 100.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_86uta")
 target = 2
 id = &"tsukuyomi"
+shot_key = &"skill_tsukuyomi"
 name_key = "skill.tsukuyomi"
 on_hit = Array[ExtResource("1_hcniy")]([SubResource("Resource_qbfmy"), SubResource("Resource_ffr1v")])
 element = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 300
 shot_cross_seconds = 0.3
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 14, 18, 22, 26, 30, 34, 38, 42, 46)

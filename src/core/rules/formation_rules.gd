@@ -35,9 +35,7 @@ static func apply(
 ## **夹而不是拒绝** —— 拒绝的话玩家拖到界限外松手就什么都没发生，
 ## 他不知道是没拖动还是不让摆。夹回来至少把「最远只能到这」演示了一遍。
 static func clamp_spot(at: Vector2, cfg: PBSimConfig) -> Vector2:
-	return Vector2(
-		clampf(at.x, 0.0, cfg.deploy_limit_x), clampf(at.y, 0.0, cfg.field_height)
-	)
+	return Vector2(clampf(at.x, 0.0, cfg.deploy_limit_x), clampf(at.y, 0.0, cfg.field_height))
 
 
 ## 玩家把 [param unit] 摆到了 [param at]。**界面只走这一条路。**

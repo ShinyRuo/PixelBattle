@@ -49,9 +49,7 @@ func test_the_bond_route_and_the_character_route_write_the_same_field() -> void:
 		PBPassiveRules.grant_all(by_bond, {key: amount})
 		var by_self := PBAttacker.new()
 		PBPassiveRules.grant(by_self, key, amount)
-		assert_eq(
-			_snapshot(by_bond), _snapshot(by_self), "「%s」两条路写出来的必须一样" % key
-		)
+		assert_eq(_snapshot(by_bond), _snapshot(by_self), "「%s」两条路写出来的必须一样" % key)
 
 
 func test_two_sources_stack_instead_of_overwriting() -> void:
@@ -104,8 +102,7 @@ func test_two_rate_sources_add_up_instead_of_compounding() -> void:
 	var attacker := PBAttacker.new()
 	attacker.move_speed = 0.010
 	PBPassiveRules.equip(
-		attacker,
-		[{PBPassiveRules.MOVE_SPEED_BONUS: 0.5}, {PBPassiveRules.MOVE_SPEED_BONUS: 0.5}]
+		attacker, [{PBPassiveRules.MOVE_SPEED_BONUS: 0.5}, {PBPassiveRules.MOVE_SPEED_BONUS: 0.5}]
 	)
 	assert_almost_eq(attacker.move_speed, 0.020, 0.000001, "两份 +50% 该相加成 +100%")
 
@@ -188,6 +185,9 @@ func test_nobody_carries_a_passive_and_a_skill_that_do_the_same_thing() -> void:
 
 func _snapshot(one: PBAttacker) -> Array:
 	return [
+		one.ranged_range,
+		one.stack_harm_bonus,
+		one.stack_defence,
 		one.crit_chance,
 		one.crit_bonus,
 		one.crit_on_hit,
@@ -200,6 +200,9 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.bite_lost,
 		one.reflect,
 		one.damage_bonus,
+		one.all_damage_bonus,
+		one.taijutsu_bonus,
+		one.ninjutsu_resist,
 		one.move_speed_bonus,
 		one.low_hp_at,
 		one.drain_cut,
@@ -209,6 +212,8 @@ func _snapshot(one: PBAttacker) -> Array:
 		one.heal_power,
 		one.struck_aura,
 		one.struck_boost,
+		one.struck_strength_bonus,
+		one.struck_dodge,
 		one.struck_summon,
 		one.open_low_hp,
 		one.undying_end_heal,
@@ -286,9 +291,7 @@ func test_a_telling_blow_hangs_the_passives_own_effect_on_the_target() -> void:
 	var enemies := _pack(1)
 	var out := PBCombatOutcome.new()
 	PBStrikeRules.land(attacker, enemies[0], 10.0, true, enemies, _cfg, 0, null, out)
-	assert_gt(
-		enemies[0].buffs.amount(PBBuffRules.STUN, 0), 0.0, "打出要害就该把效果挂上去"
-	)
+	assert_gt(enemies[0].buffs.amount(PBBuffRules.STUN, 0), 0.0, "打出要害就该把效果挂上去")
 
 
 func test_an_ordinary_hit_hangs_nothing() -> void:

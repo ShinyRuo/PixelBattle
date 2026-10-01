@@ -60,7 +60,11 @@ func _ready() -> void:
 	)
 	add_child(drop)
 	_title = PBSkin.label(
-		self, rect.position + Vector2(PAD, 1.0), rect.size.x - PAD * 2.0, PBSkin.FONT_BODY, PBSkin.TITLE
+		self,
+		rect.position + Vector2(PAD, 1.0),
+		rect.size.x - PAD * 2.0,
+		PBSkin.FONT_BODY,
+		PBSkin.TITLE
 	)
 
 	# 裁剪区：滚出去的那几行必须真的看不见，否则会漫到 G 和 H 上面。
@@ -121,8 +125,7 @@ func refresh(
 		if not tile.visible:
 			continue
 		tile.position = Vector2(
-			float(i % COLUMNS) * PITCH.x,
-			float(i / COLUMNS - _row_offset) * PITCH.y
+			float(i % COLUMNS) * PITCH.x, float(i / COLUMNS - _row_offset) * PITCH.y
 		)
 		tile.set_unit(idle[i], wave.element)
 		if selection.kind == PBSelection.Kind.UNIT and selection.unit_id == idle[i].key():
@@ -155,9 +158,7 @@ func _can_drop_data(_at: Vector2, data: Variant) -> bool:
 func _drop_data(_at: Vector2, data: Variant) -> void:
 	var card := PBUnitTile.card_of(data)
 	if not card.is_empty():
-		card_dropped.emit(
-			StringName(card["zone"]), StringName(card["unit"]), PBUnitTile.ZONE_STASH
-		)
+		card_dropped.emit(StringName(card["zone"]), StringName(card["unit"]), PBUnitTile.ZONE_STASH)
 
 
 ## 滚轮翻行。**钳在两头**，滚过尾巴会得到一个空框。

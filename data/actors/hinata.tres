@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bjfgh5vd5rtsf"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://y04l6o8vb08d" path="res://assets/actors/hinata/attack_0.png" id="1_m7a1v"]
-[ext_resource type="Texture2D" uid="uid://bkawpy03fs3ki" path="res://assets/actors/hinata/attack_1.png" id="2_38idw"]
-[ext_resource type="Texture2D" uid="uid://byxaudw5j7fdi" path="res://assets/actors/hinata/attack_2.png" id="3_m27e7"]
-[ext_resource type="Texture2D" uid="uid://dannau8u6tw6c" path="res://assets/actors/hinata/attack_3.png" id="4_u25hu"]
-[ext_resource type="Texture2D" uid="uid://fa2oj5gh5e8j" path="res://assets/actors/hinata/attack_4.png" id="5_k455o"]
-[ext_resource type="Texture2D" uid="uid://dqdbcn2ym38li" path="res://assets/actors/hinata/attack_5.png" id="6_1yrwv"]
-[ext_resource type="Texture2D" uid="uid://byw6rgbaovxr" path="res://assets/actors/hinata/dead_0.png" id="7_r6bkr"]
-[ext_resource type="Texture2D" uid="uid://q1vqxkya3yi3" path="res://assets/actors/hinata/dead_1.png" id="8_7a12m"]
-[ext_resource type="Texture2D" uid="uid://dy4j8uos5lg28" path="res://assets/actors/hinata/dead_2.png" id="9_ue753"]
-[ext_resource type="Texture2D" uid="uid://cd3m6shff2cj5" path="res://assets/actors/hinata/dead_3.png" id="10_dwvus"]
-[ext_resource type="Texture2D" uid="uid://do3t7iigvthqu" path="res://assets/actors/hinata/dead_4.png" id="11_cxe7q"]
-[ext_resource type="Texture2D" uid="uid://dprsyurn24evq" path="res://assets/actors/hinata/dead_5.png" id="12_o8x41"]
-[ext_resource type="Texture2D" uid="uid://camdfcemhntro" path="res://assets/actors/hinata/idle_0.png" id="13_ysk18"]
-[ext_resource type="Texture2D" uid="uid://dwiufbqfoyg54" path="res://assets/actors/hinata/idle_1.png" id="14_01gyy"]
-[ext_resource type="Texture2D" uid="uid://uydpnj0bbwlt" path="res://assets/actors/hinata/idle_2.png" id="15_g58vi"]
-[ext_resource type="Texture2D" uid="uid://dlngfmqst62fv" path="res://assets/actors/hinata/idle_3.png" id="16_ojgew"]
-[ext_resource type="Texture2D" uid="uid://ccsj13r7aary2" path="res://assets/actors/hinata/idle_4.png" id="17_tu5da"]
-[ext_resource type="Texture2D" uid="uid://cmdxuh1kiuv84" path="res://assets/actors/hinata/idle_5.png" id="18_iek0q"]
-[ext_resource type="Texture2D" uid="uid://dkvpnhkel7yh5" path="res://assets/actors/hinata/run_0.png" id="19_3iggu"]
-[ext_resource type="Texture2D" uid="uid://dbsuaqknc8ycr" path="res://assets/actors/hinata/run_1.png" id="20_0narh"]
-[ext_resource type="Texture2D" uid="uid://cre14w0fdlpgg" path="res://assets/actors/hinata/run_2.png" id="21_6w5dq"]
-[ext_resource type="Texture2D" uid="uid://bx8swqv0se2xc" path="res://assets/actors/hinata/run_3.png" id="22_dxurk"]
-[ext_resource type="Texture2D" uid="uid://cbi0njsrbw4ph" path="res://assets/actors/hinata/run_4.png" id="23_fcrrr"]
-[ext_resource type="Texture2D" uid="uid://bdvfn0myvabd8" path="res://assets/actors/hinata/run_5.png" id="24_tqu5c"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_vimcf"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/attack_0.png" id="1_m7a1v"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/attack_1.png" id="2_38idw"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/attack_2.png" id="3_m27e7"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/attack_3.png" id="4_u25hu"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/attack_4.png" id="5_k455o"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/attack_5.png" id="6_1yrwv"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/cast_palm_rotation_00.png" id="7_7a12m"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/dead_0.png" id="7_r6bkr"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/dead_1.png" id="8_7a12m"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/cast_palm_rotation_01.png" id="8_ue753"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/cast_palm_rotation_02.png" id="9_dwvus"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/dead_2.png" id="9_ue753"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/cast_palm_rotation_03.png" id="10_cxe7q"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/dead_3.png" id="10_dwvus"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/dead_4.png" id="11_cxe7q"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/cast_palm_rotation_04.png" id="11_o8x41"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/dead_5.png" id="12_o8x41"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/cast_palm_rotation_05.png" id="12_ysk18"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/idle_0.png" id="13_ysk18"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/idle_1.png" id="14_01gyy"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/idle_2.png" id="15_g58vi"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/idle_3.png" id="16_ojgew"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/idle_4.png" id="17_tu5da"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/idle_5.png" id="18_iek0q"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/run_0.png" id="19_3iggu"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/run_1.png" id="20_0narh"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/run_2.png" id="21_6w5dq"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/run_3.png" id="22_dxurk"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/run_4.png" id="23_fcrrr"]
+[ext_resource type="Texture2D" path="res://assets/actors/hinata/run_5.png" id="24_tqu5c"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_vimcf"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_4lvau"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_01gyy"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_7a12m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_ue753")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_dwvus")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_cxe7q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_o8x41")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ysk18")
+}],
+"loop": 0,
+"name": &"cast_palm_rotation",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_vimcf")
 key = &"hinata"
-frames = SubResource("SpriteFrames_4lvau")
+frames = SubResource("SpriteFrames_01gyy")
+skill_anims = {
+&"palm_rotation": &"cast_palm_rotation"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

@@ -6,12 +6,41 @@
 script = ExtResource("1_gx6qk")
 id = &"five_kage"
 name_key = "bond.five_kage"
-match_mode = 0
 member_ids = Array[StringName]([&"tsunade", &"gaara", &"mei", &"raikage", &"onoki"])
-match_element = 5
 tier_counts = Array[int]([5])
 tier_power = Array[float]([0.56])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
-member_skill_patches = {}
+member_functions = {
+&"gaara": {
+&"all_stats_total_bonus": 0.2
+},
+&"raikage": {
+&"struck_dodge": 0.5,
+&"struck_strength_bonus": 0.2
+}
+}
+member_skill_patches = {
+&"gaara": {
+&"sand_burial": {
+&"variant_enable": 1.0
+}
+},
+&"mei": {
+&"boil_acid": {
+&"variant_enable": 1.0
+}
+},
+&"onoki": {
+&"dust_release": {
+&"rebate_cooldown_seconds": 1.5,
+&"rebate_delay_seconds": 0.08,
+&"rebate_mana_scale": 0.5
+}
+},
+&"tsunade": {
+&"monstrous_strength": {
+&"on_attack_chance": 0.2
+}
+}
+}

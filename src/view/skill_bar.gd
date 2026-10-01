@@ -31,6 +31,10 @@ static func show_on(
 		for i: int in PBSkillRules.cast_count(live):
 			var cast := PBSkillRules.cast_at(live, i)
 			if cast == null:
+				names.append("")
+				ready.append(false)
+				wait.append(0)
+				skills.append(null)
 				continue
 			names.append(label_of(cast.skill, i))
 			ready.append(battle.can_cast(live, i))

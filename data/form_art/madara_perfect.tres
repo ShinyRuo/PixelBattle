@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="PBFormArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/form_art.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+actor_key = &"form_susanoo_perfect"

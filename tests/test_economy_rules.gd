@@ -97,9 +97,7 @@ func test_quest_table_matches_spec_costs() -> void:
 	# 战场上一个人都不剩。人口科技的追求目标就是这么来的。
 	assert_eq(PBEconomyRules.quest_cost_units(0), 2, "C 级任务派 2 人")
 	assert_eq(PBEconomyRules.quest_cost_units(4), 4, "SSS 级任务派 4 人")
-	assert_gte(
-		PBEconomyRules.quest_cost_units(4), _cfg.deploy_slots_base, "SSS 应该吃掉整个初始出战席"
-	)
+	assert_gte(PBEconomyRules.quest_cost_units(4), _cfg.deploy_slots_base, "SSS 应该吃掉整个初始出战席")
 	for grade: int in PBEconomyRules.QUEST_TABLE.size():
 		var early := PBEconomyRules.quest_reward(grade, 1)
 		var late := PBEconomyRules.quest_reward(grade, 40)

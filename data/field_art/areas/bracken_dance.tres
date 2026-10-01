@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/bracken_dance/frame_0.png" id="1_pn3nh"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/bracken_dance/frame_1.png" id="2_euumo"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/bracken_dance/frame_2.png" id="3_tlpjc"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/bracken_dance/frame_3.png" id="4_jmoqw"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/bracken_dance/frame_4.png" id="5_al7lv"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/bracken_dance/frame_5.png" id="6_lnttb"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_alqwk"]
+
+[resource]
+script = ExtResource("7_alqwk")
+frames = Array[Texture2D]([ExtResource("1_pn3nh"), ExtResource("2_euumo"), ExtResource("3_tlpjc"), ExtResource("4_jmoqw"), ExtResource("5_al7lv"), ExtResource("6_lnttb")])
+fps = 6.0

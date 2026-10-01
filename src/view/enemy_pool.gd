@@ -78,6 +78,9 @@ const FLASH_COLOR := Color(1.0, 1.0, 1.0)
 var _keys: Dictionary = {}
 
 var _nodes: Array[AnimatedSprite2D] = []
+var _anchors: Array[Node2D] = []
+var _glow_backs: Array[PBBuffGlow] = []
+var _glow_fronts: Array[PBBuffGlow] = []
 
 ## 每人一份动画状态，和己方共用一份实现，见 [PBActorPose]。
 var _poses: Array[PBActorPose] = []
@@ -118,12 +121,22 @@ func _ready() -> void:
 	_skins.resize(cfg.count_cap)
 	_flash.resize(cfg.count_cap)
 	for i: int in cfg.count_cap:
+		var anchor := Node2D.new()
+		add_child(anchor)
+		_anchors.append(anchor)
+		var back := PBBuffGlow.new()
+		anchor.add_child(back)
+		_glow_backs.append(back)
 		var node := AnimatedSprite2D.new()
 		# **不居中**：原点要落在脚底，偏移由那张皮给 —— 和己方同一把尺子，
 		# 否则 y 排序会把敌我按差一个身高的两个基准排（见 [member PBAllyPool._anchors]）。
 		node.centered = false
 		node.visible = false
-		add_child(node)
+		anchor.add_child(node)
+		var front := PBBuffGlow.new()
+		front.front = true
+		anchor.add_child(front)
+		_glow_fronts.append(front)
 		_nodes[i] = node
 		_poses.append(PBActorPose.new())
 
@@ -148,23 +161,49 @@ func sync_enemies(
 		var node: AnimatedSprite2D = _nodes[i]
 		if i >= enemies.size():
 			node.visible = false
+			_glow_backs[i].clear()
+			_glow_fronts[i].clear()
 			continue
 		var enemy: PBEnemy = enemies[i]
 		if not _on_screen(i, enemy, current_tick):
 			node.visible = false
+			_glow_backs[i].clear()
+			_glow_fronts[i].clear()
 			continue
 		node.visible = true
 		# **位置是落脚点，画布靠 `offset` 往上抬**：抬节点本身的话 y 排序按画布左上角排，
 		# 而己方锚在脚下，两把尺子差一个身高 —— 站在前面的忍者会被后面的敌人盖住。
-		node.position = screen_position(enemy, field)
+		_anchors[i].position = screen_position(enemy, field)
 		_dress(i, enemy)
+		# 只抬画面，不改脚下位置、阴影与排序；落地后恢复素材的原始偏移。
+		var lift := Vector2(0.0, -_lift(enemy, current_tick))
+		node.offset = _skins[i].draw_offset() + lift
+		for glow: PBBuffGlow in [_glow_backs[i], _glow_fronts[i]]:
+			glow.position = lift * node.scale
+			glow.sync_bag(enemy.buffs, current_tick, _tick_rate, enemy.is_active(current_tick))
 		_animate(i, enemy)
 		# 身上挂着东西就染一层，**排在血量与白闪之后**：三层各说一句（还剩多少血、刚挨了一下、被上了状态）。
 		node.modulate = PBBuffStrip.tinted(_color_of(i, enemy), enemy.buffs, current_tick)
-		feet.append(node.position)
+		if enemy.controlled(current_tick):
+			node.modulate = node.modulate.lerp(Color(0.35, 1.0, 0.65), 0.7)
+		feet.append(_anchors[i].position)
 	_ringed = show_counter_ring
 	_set_shadows(feet)
 	_decay_flash()
+
+
+## 用效果自身的 tick 窗口画起落，不依赖渲染帧率。重叠击飞取最高一份。
+func _lift(enemy: PBEnemy, tick: int) -> float:
+	var height: float = 0.0
+	if not enemy.alive:
+		return height
+	for state: PBBuffState in enemy.buffs.states():
+		if not state.is_live(tick) or not state.mods.has(PBBuffRules.AIRBORNE):
+			continue
+		var span: float = float(maxi(state.until_tick - state.applied_at, 1))
+		var phase: float = clampf(float(tick - state.applied_at) / span, 0.0, 1.0)
+		height = maxf(height, sin(phase * PI) * 18.0)
+	return height
 
 
 ## 这一格现在画不画。

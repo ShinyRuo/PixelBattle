@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bmappbai7r8ou"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://c5nteb5ba17ij" path="res://assets/actors/shino/attack_0.png" id="1_otaov"]
-[ext_resource type="Texture2D" uid="uid://c6q6kw2v71sd3" path="res://assets/actors/shino/attack_1.png" id="2_76rrq"]
-[ext_resource type="Texture2D" uid="uid://sfo3ehhv3fr8" path="res://assets/actors/shino/attack_2.png" id="3_352hl"]
-[ext_resource type="Texture2D" uid="uid://ci0hgov1j28se" path="res://assets/actors/shino/attack_3.png" id="4_nf4qh"]
-[ext_resource type="Texture2D" uid="uid://drt2jje2d708q" path="res://assets/actors/shino/attack_4.png" id="5_trimt"]
-[ext_resource type="Texture2D" uid="uid://cfbgathjup25t" path="res://assets/actors/shino/attack_5.png" id="6_cfpte"]
-[ext_resource type="Texture2D" uid="uid://broevoywjhprc" path="res://assets/actors/shino/dead_0.png" id="7_uywe2"]
-[ext_resource type="Texture2D" uid="uid://dy1t0kieb3ojr" path="res://assets/actors/shino/dead_1.png" id="8_uriqm"]
-[ext_resource type="Texture2D" uid="uid://bq04ttpycbgh3" path="res://assets/actors/shino/dead_2.png" id="9_bikr5"]
-[ext_resource type="Texture2D" uid="uid://bgt5ckn1ncaos" path="res://assets/actors/shino/dead_3.png" id="10_vicbk"]
-[ext_resource type="Texture2D" uid="uid://djp8e7cawls46" path="res://assets/actors/shino/dead_4.png" id="11_uwh7p"]
-[ext_resource type="Texture2D" uid="uid://tc2nx61ifdgc" path="res://assets/actors/shino/dead_5.png" id="12_lsgkc"]
-[ext_resource type="Texture2D" uid="uid://cfppxiabjtw7c" path="res://assets/actors/shino/idle_0.png" id="13_8m2jb"]
-[ext_resource type="Texture2D" uid="uid://c7ijn55s63pvu" path="res://assets/actors/shino/idle_1.png" id="14_yp1he"]
-[ext_resource type="Texture2D" uid="uid://t6eb4mcdso5t" path="res://assets/actors/shino/idle_2.png" id="15_43r1i"]
-[ext_resource type="Texture2D" uid="uid://dnqct737fh360" path="res://assets/actors/shino/idle_3.png" id="16_7s0ai"]
-[ext_resource type="Texture2D" uid="uid://dwk5q7g503ff0" path="res://assets/actors/shino/idle_4.png" id="17_ee4j2"]
-[ext_resource type="Texture2D" uid="uid://b2r0cnypa6hfy" path="res://assets/actors/shino/idle_5.png" id="18_1w3k4"]
-[ext_resource type="Texture2D" uid="uid://cyauwtgit6hpj" path="res://assets/actors/shino/run_0.png" id="19_6lisq"]
-[ext_resource type="Texture2D" uid="uid://dh7y6j48ay1jw" path="res://assets/actors/shino/run_1.png" id="20_svby5"]
-[ext_resource type="Texture2D" uid="uid://bsg6y2uemq0l1" path="res://assets/actors/shino/run_2.png" id="21_ru3dy"]
-[ext_resource type="Texture2D" uid="uid://bia75li5s3mo4" path="res://assets/actors/shino/run_3.png" id="22_prlib"]
-[ext_resource type="Texture2D" uid="uid://c37018ioc88n6" path="res://assets/actors/shino/run_4.png" id="23_ykfrv"]
-[ext_resource type="Texture2D" uid="uid://dxgjskm15f74j" path="res://assets/actors/shino/run_5.png" id="24_f2p3g"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_ie4gr"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/attack_0.png" id="1_otaov"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/attack_1.png" id="2_76rrq"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/attack_2.png" id="3_352hl"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/attack_3.png" id="4_nf4qh"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/attack_4.png" id="5_trimt"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/attack_5.png" id="6_cfpte"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/cast_vampire_bugs_00.png" id="7_uriqm"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/dead_0.png" id="7_uywe2"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/cast_vampire_bugs_01.png" id="8_bikr5"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/dead_1.png" id="8_uriqm"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/dead_2.png" id="9_bikr5"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/cast_vampire_bugs_02.png" id="9_vicbk"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/cast_vampire_bugs_03.png" id="10_uwh7p"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/dead_3.png" id="10_vicbk"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/cast_vampire_bugs_04.png" id="11_lsgkc"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/dead_4.png" id="11_uwh7p"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/cast_vampire_bugs_05.png" id="12_8m2jb"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/dead_5.png" id="12_lsgkc"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/idle_0.png" id="13_8m2jb"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/idle_1.png" id="14_yp1he"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/idle_2.png" id="15_43r1i"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/idle_3.png" id="16_7s0ai"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/idle_4.png" id="17_ee4j2"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/idle_5.png" id="18_1w3k4"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/run_0.png" id="19_6lisq"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/run_1.png" id="20_svby5"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/run_2.png" id="21_ru3dy"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/run_3.png" id="22_prlib"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/run_4.png" id="23_ykfrv"]
+[ext_resource type="Texture2D" path="res://assets/actors/shino/run_5.png" id="24_f2p3g"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_ie4gr"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_hkcap"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_yp1he"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_uriqm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_bikr5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_vicbk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_uwh7p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_lsgkc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_8m2jb")
+}],
+"loop": 0,
+"name": &"cast_vampire_bugs",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_ie4gr")
 key = &"shino"
-frames = SubResource("SpriteFrames_hkcap")
+frames = SubResource("SpriteFrames_yp1he")
+skill_anims = {
+&"vampire_bugs": &"cast_vampire_bugs"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

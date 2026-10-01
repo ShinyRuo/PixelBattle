@@ -26,8 +26,9 @@ enum Kind {
 	PERIODIC,
 }
 
-## 全局唯一 id。**同一个 id 在一个单位身上只留一份**（决策 5：重复施放刷新时长），
+## 全局唯一 id。**默认同一个 id 在一个单位身上只留一份**（重复施放刷新时长），
 ## 所以它同时是 [PBBuffBag] 里的去重键。
+## 显式 independent_stacks 的敌方周期效果例外，每次命中保留独立计时。
 @export var id: StringName = &""
 
 ## 查语言表用的键。显示名只在渲染层出现，`src/` 其余地方一个字都不该有。
@@ -37,6 +38,12 @@ enum Kind {
 @export var icon_key: String = ""
 
 @export var kind: Kind = Kind.INSTANT
+## 每次命中保留独立周期与到期；不占普通六槽，只用于敌方周期伤害与减甲。
+@export var independent_stacks: bool = false
+## 整波状态没有虚构到期秒数；仍占普通槽，允许主动取消或被挤出。
+@export var until_wave_end: bool = false
+## 同 ID 不同施法者各留一份；同来源刷新，仍共享普通容量。
+@export var per_source: bool = false
 
 ## 增益还是减益。**只影响渲染层**（信息栏图标的底色、战场上染冷染暖），
 ## 战斗结算一个字都不读它 —— 一个「-20% 攻」的 buff 在数值上就是 0.8，
@@ -63,6 +70,21 @@ enum Kind {
 ## 出现在这里的键**必须**也在 [member mods] 里；反过来不要求
 ## （「这一项不随等级长」是合法的，率型键通常都这样）。
 @export var mods_growth: Dictionary = {}
+## 非线性分级值；仅对列出的键覆盖线性公式，首项须与基数一致。
+@export var mods_levels: Dictionary = {}
+
+## 每跳的属性项，叠加在按等级计算的 harm 上；空表示没有属性项。
+@export var harm_stat: StringName = &""
+@export var harm_mult: float = 0.0
+
+## 非线性时长表；空时使用 duration_seconds，超出表长时取最后一级。
+@export var duration_levels: PackedFloat32Array = PackedFloat32Array()
+
+
+func seconds_at(level: int = 1) -> float:
+	if duration_levels.is_empty():
+		return duration_seconds
+	return duration_levels[clampi(level - 1, 0, duration_levels.size() - 1)]
 
 
 ## 进不进 [PBBuffBag]。瞬间的那一档当场结算完就没了，不占槽位。
@@ -78,7 +100,7 @@ func period_ticks(cfg: PBSimConfig) -> int:
 
 
 ## 持续多少 tick。瞬间的那一档返回 0。
-func duration_ticks(cfg: PBSimConfig) -> int:
+func duration_ticks(cfg: PBSimConfig, level: int = 1) -> int:
 	if not is_lasting():
 		return 0
-	return PBBuffRules.to_ticks(duration_seconds, cfg)
+	return PBBuffRules.to_ticks(seconds_at(level), cfg)

@@ -51,6 +51,8 @@ func add(bond: PBBond) -> bool:
 		return false
 	if not _functions_are_sane(bond):
 		return false
+	if PBBondBuffRules.validate(bond) != "":
+		return false
 	_all.append(bond)
 	_by_id[bond.id] = bond
 	return true

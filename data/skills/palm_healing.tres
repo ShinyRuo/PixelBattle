@@ -14,6 +14,7 @@ mods = {
 mods_growth = {
 &"heal": 180.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_3gsg6")
@@ -22,5 +23,9 @@ id = &"palm_healing"
 name_key = "skill.palm_healing"
 affects = 0
 on_hit = Array[ExtResource("1_fc2ed")]([SubResource("Resource_5pwlc")])
+kind = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 20
 mp_cost = 3.0
+mp_cost_levels = PackedFloat32Array(3, 6, 9, 12, 15, 18, 21, 25, 29, 32)

@@ -60,7 +60,7 @@ static func pick_spot(
 		if not enemy.has_spawned(tick):
 			# 后面的出场更晚，这一 tick 不会再有目标了。
 			break
-		if not enemy.alive:
+		if not enemy.is_hostile(tick):
 			continue
 		var at: float = enemy.distance - enemy.speed * float(lead)
 		# 落地前就冲进基地的敌人不算 —— 那时候他已经不在场上了。

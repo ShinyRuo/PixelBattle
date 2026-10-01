@@ -11,6 +11,7 @@ icon_key = "buff.pein_rebirth"
 mods = {
 &"heal_max": 0.1
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_7u035")
@@ -20,3 +21,6 @@ affects = 0
 on_hit = Array[ExtResource("1_8pgv2")]([SubResource("Resource_jwv0x")])
 element = 6
 radius = 0.6
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

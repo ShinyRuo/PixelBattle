@@ -5,11 +5,23 @@
 
 [resource]
 script = ExtResource("2_udsfa")
+target = 0
 id = &"false_darkness"
 name_key = "skill.false_darkness"
 element = 2
-power_mult = 2.5
-radius = 0.16
+power_mult = 0.1
+damage_base = 30.0
+damage_growth = 30.0
+damage_stat = &"strength"
+damage_stat_floor = true
+radius = 0.2625
+hit_count = 60
+scatter_steps = 7
+volley_size = 3
+hit_interval_ticks = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+hit_radius = 0.0775
 cooldown_ticks = 400
-delay_ticks = 10
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 12, 14, 16, 19, 22, 25, 28, 33, 38)

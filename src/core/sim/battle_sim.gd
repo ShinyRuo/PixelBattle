@@ -51,10 +51,14 @@ var _leak_damage: float = 0.0
 ## 飞行中的子弹。**一次建满、之后只改字段**，和敌人池同一条规矩（§14）。
 var _shots: Array[PBProjectile] = []
 
+## 已出手的多段技能，结束的槽位在下次施法时复用。
+var _barrages: Array[PBSkillBarrage] = []
+
 ## 子弹每 tick 飞多远。由 `projectile_cross_seconds` 反推，不是新拍的参数。
 var _shot_speed: float = 0.0
 
 var _enemy_speed: float = 0.0
+var _controlled_present: bool = false
 var _tick: int = 0
 
 ## 大招落点策略（§02 的双端差异）。从配置抄一份，一波之内不变。
@@ -106,6 +110,7 @@ func _init(
 		var solo: Array[PBAttacker] = [PBAttacker.whole_field(dps, cfg.field_diagonal())]
 		_attackers = solo
 	for attacker: PBAttacker in _attackers:
+		PBAttributeRules.reset(attacker, cfg)
 		attacker.prime(cfg.tick_rate, cfg)
 		# 召唤物的位子开波是**空着**的，走 `revive()` 的话它会满血站在场上。
 		if attacker.summoned:
@@ -122,6 +127,8 @@ func _init(
 			if cast != null:
 				cast.reset()
 	_orders.reset(_attackers.size())
+	PBAllyAuraRules.install(_attackers)
+	PBMotionAuraRules.install(_attackers)
 
 	var leak_mult: float = cfg.boss_leak_mult if wave.is_boss() else 1.0
 	_leak_damage = wave.atk_each * leak_mult * (1.0 - clampf(def_reduction, 0.0, 0.95))
@@ -149,6 +156,7 @@ func step() -> void:
 	_orders.flush(_attackers, _cfg, _tick, log_to)
 	_tick += 1
 	_resolve_ultimates()
+	PBSacrificeRules.expire(_attackers, _tick, log_to, _outcome)
 	# 到点的召唤物散场。**排在技能落地之后**：本体同一 tick 放的新一发能用上刚空出来的位子。
 	PBSummonRules.expire(_attackers, _tick)
 	# **排在技能落地之后**：这一 tick 挂上的 buff 对这一 tick 的出手就生效。
@@ -159,10 +167,16 @@ func step() -> void:
 	# **飞行结算排在出手之前**：这一 tick 发出去的子弹不该同一 tick 落地，否则飞行时间等于 0。
 	_advance_shots()
 	_deal_damage()
+	_controlled_present = PBMindRules.any_controlled(_enemies, _tick)
+	for enemy: PBEnemy in _enemies:
+		PBEnemyAbilityRules.advance(enemy, _attackers, _cfg, _tick, _crit_rng, log_to, _outcome)
 	_enemies_attack()
 	_advance_and_leak()
 	# **排在所有会死人的阶段之后**：挨打、子弹、自身掉血死的人同一 tick 放掉阵亡技能。
 	_fire_death_casts()
+	for attacker: PBAttacker in _attackers:
+		if PBCastTimeline.interrupted(attacker, _tick):
+			attacker.casting.cancel(attacker)
 	_separate()
 
 
@@ -224,12 +238,20 @@ func _spawn_all(wave: PBWave, cfg: PBSimConfig) -> void:
 ## 施法延迟等于 0 —— 而那个延迟正是 §02 分层验收的全部依据
 ## （见 [PBSkill] 顶部）。
 func _resolve_ultimates() -> void:
+	for barrage: PBSkillBarrage in _barrages:
+		_outcome.kills += barrage.advance(_enemies, _front, _cfg, _tick, _crit_rng, log_to)
 	for attacker: PBAttacker in _attackers:
+		attacker.casting.advance(attacker, _cfg, _tick, log_to)
 		# **每一格都要过一遍**：只扫大招那一格的话玩家手放的技能永远落不了地，而按钮那边一切正常。
 		for i: int in PBSkillRules.cast_count(attacker):
 			var cast := PBSkillRules.cast_at(attacker, i)
 			# 已经下达的照样落地，哪怕施法者中途死了 —— 技能已经出手了。
+			PBSkillRebateRules.advance(attacker, cast, _tick)
+			if cast != null and _tick < cast.release_at:
+				continue
 			# 那是 §02 施法延迟的直接后果，也是「预判」这件事的对称代价。
+			if cast != null and cast.is_pending():
+				PBSkillRules.prepare_target(cast, _enemies, _cfg, _tick)
 			if cast != null and cast.is_pending() and _tick >= cast.lands_at:
 				_land_skill(attacker, cast)
 	for attacker: PBAttacker in _attackers:
@@ -242,7 +264,7 @@ func _resolve_ultimates() -> void:
 		if cast.skill.target != PBSkill.Target.GROUND:
 			continue
 		# 第二道门槛：冷却转好了还得有蓝。
-		if not attacker.can_pay(cast.skill.mp_cost):
+		if not PBSkillRules.can_cast(attacker, 0, _tick):
 			continue
 		var spot := PBAimRules.pick_spot(
 			_aim_policy,
@@ -323,7 +345,7 @@ func can_cast(attacker: PBAttacker, index: int = 0) -> bool:
 func _order(attacker: PBAttacker, spot: Vector2) -> void:
 	var cast: PBSkillCast = attacker.ultimate
 	cast.cast(spot, _tick)
-	PBSkillOrders.issue(attacker, cast, _cfg, _tick, log_to)
+	PBSkillOrders.begin(attacker, cast, _cfg, _tick, log_to)
 
 
 ## 一发技能落地：圈人、挂效果、位置操纵全部交给 [PBSkillRules]。
@@ -333,19 +355,37 @@ func _order(attacker: PBAttacker, spot: Vector2) -> void:
 ## 不挑目标的打全场。全场效果（减速 / 全队增伤 / 重置冷却）三档共用。
 func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 	var skill := cast.skill
+	if (
+		skill.summon_focus
+		and (
+			cast.target_slot < 0
+			or cast.target_slot >= _enemies.size()
+			or not _enemies[cast.target_slot].is_hostile(_tick)
+		)
+	):
+		cast.land(_tick)
+		return
 	# 召唤物跟着**下达**而不是命中（同扣蓝），而且**排在子弹那条提前 return 之前** ——
 	# 召唤技能恰好是子弹技能时，排在后面的话一只都不会出现。
-	PBSummonRules.raise_from(_attackers, attacker, skill, _tick, _cfg)
+	PBSummonRules.raise_from(
+		_attackers, attacker, skill, _tick, _cfg, -1, cast.caster_level, cast.target_slot
+	)
 	# **子弹技能：这一刻只是出膛**，伤害与 `on_hit` 等飞到才结算。冷却从出膛算起
 	# （子弹追着目标走，没有「落点已定、还没结算」的预判窗口）。
 	if skill.shot_cross_seconds > 0.0:
 		_launch_skill(attacker, cast)
 		cast.land(_tick)
 		return
-	var damage: float = float(_roll_skill(attacker, skill)[PBCritRules.DAMAGE])
+	if skill.hit_count > 1:
+		_start_barrage(attacker, cast)
+		cast.land(_tick)
+		return
+	var damage: float = float(
+		_roll_skill(attacker, skill, cast.take_first_bonus())[PBCritRules.DAMAGE]
+	)
 	match skill.target:
 		PBSkill.Target.ALLY:
-			PBSkillRules.land_on_ally(cast, _attackers, _cfg, _tick)
+			PBSkillRules.land_on_ally(cast, _attackers, _cfg, _tick, attacker)
 		PBSkill.Target.NONE:
 			if skill.affects == PBSkill.Party.ENEMIES:
 				_outcome.kills += PBSkillRules.land_on_field(
@@ -354,9 +394,13 @@ func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 			else:
 				PBSkillRules.land_around_allies(cast, attacker.pos, _attackers, _cfg, _tick)
 		PBSkill.Target.ENEMY:
-			_outcome.kills += PBSkillRules.land_on_enemy(
-				cast, _enemies, _cfg, _tick, attacker, damage
-			)
+			var primary: int = cast.target_slot
+			for target: int in PBSkillTargets.enemies(cast, _enemies, _tick):
+				cast.target_slot = target
+				_outcome.kills += PBSkillRules.land_on_enemy(
+					cast, _enemies, _cfg, _tick, attacker, damage
+				)
+			cast.target_slot = primary
 		_:
 			if skill.affects == PBSkill.Party.ALLIES:
 				PBSkillRules.land_around_allies(cast, cast.spot, _attackers, _cfg, _tick)
@@ -369,65 +413,159 @@ func _land_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
 		_slow_until = _tick + skill.slow_ticks
 	PBSkillRules.apply_team_buff(skill, _attackers, _tick)
 	PBSkillRules.reset_other_cooldowns(skill, cast, _attackers, _tick)
+	if skill.echo_delay_ticks > 0:
+		_start_echo(attacker, cast)
+	var followup := PBSkillFollowupRules.prepare(cast, attacker, _enemies, _tick)
+	if followup != null:
+		_start_sequence(attacker, followup, _tick + followup.skill.delay_ticks)
 	cast.land(_tick)
 
 
-## 刚倒下的人把阵亡技能放掉（[member PBAttacker.death_casts]）。落点是尸体。
+func _start_barrage(attacker: PBAttacker, cast: PBSkillCast) -> void:
+	if cast.skill.travel_step > 0.0:
+		_start_sequence(attacker, cast, _tick)
+		return
+	var sequence: PBSkillBarrage = _spare_barrage(
+		cast.skill.pulse_radius_step > 0.0, false, cast.skill.zone_seconds > 0.0
+	)
+	sequence.team = _attackers
+	sequence.begin(attacker, cast, _tick)
+	_outcome.kills += sequence.advance(_enemies, _front, _cfg, _tick, _crit_rng, log_to)
+	PBSkillRules.apply_team_buff(cast.skill, _attackers, _tick)
+	PBSkillRules.reset_other_cooldowns(cast.skill, cast, _attackers, _tick)
+	if cast.skill.slow_ticks > 0 and cast.skill.slow_scale < 1.0:
+		_slow_scale = cast.skill.slow_scale
+		_slow_until = _tick + cast.skill.slow_ticks
+
+
+func _start_sequence(attacker: PBAttacker, cast: PBSkillCast, start: int) -> void:
+	for i: int in maxi(cast.skill.wave_count, 1):
+		var sequence := _spare_barrage(false, cast.skill.travel_step > 0.0)
+		sequence.begin(attacker, cast, start + i * cast.skill.wave_interval_ticks)
+		if not cast.skill.on_start_area.is_empty():
+			_outcome.kills += sequence.advance(_enemies, _front, _cfg, _tick, _crit_rng, log_to)
+
+
+func _spare_barrage(
+	expanding: bool = false, travelling: bool = false, zone: bool = false
+) -> PBSkillBarrage:
+	for previous: PBSkillBarrage in _barrages:
+		if (
+			not previous.active()
+			and (previous is PBExpandingStrike) == expanding
+			and (previous is PBTravelWave) == travelling
+			and (previous is PBHazardZone) == zone
+		):
+			return previous
+	var sequence: PBSkillBarrage
+	if zone:
+		sequence = PBHazardZone.new()
+	elif travelling:
+		sequence = PBTravelWave.new()
+	else:
+		sequence = PBExpandingStrike.new() if expanding else PBSkillBarrage.new()
+	_barrages.append(sequence)
+	return sequence
+
+
+## 复用连击排期与命中结算；只复制伤害，不把首次命中的状态效果带过去。
+func _start_echo(attacker: PBAttacker, original: PBSkillCast) -> void:
+	var repeat := PBSkillCast.new(original.skill.clone(), original.caster_level)
+	repeat.spot = original.spot
+	repeat.skill.radius *= repeat.skill.echo_radius_scale
+	repeat.skill.on_hit.clear()
+	repeat.skill.on_target.clear()
+	repeat.skill.on_start_target.clear()
+	repeat.skill.on_self.clear()
+	repeat.skill.gather = false
+	repeat.skill.knockback = 0.0
+	var begun: int = original.lands_at - original.skill.delay_ticks
+	_spare_barrage().begin(attacker, repeat, begun + original.skill.echo_delay_ticks)
+
+
+## 渲染层只读，用最后一段的实际落点画命中圈。
+func barrages() -> Array[PBSkillBarrage]:
+	return _barrages
+
+
+## 刚倒下的人排期阵亡技能；指定窗口内向致命来源快照移动，到期在当前位置施放。
 ##
 ## 走 [method _land_skill]，和手动施法同一条路：伤害按他的战力、打死的怪照常记账、
 ## 回血圈照样按半径圈人。不进 [PBSkillOrders]，也不查冷却和蓝 —— 死人没有这两样。
 func _fire_death_casts() -> void:
 	for attacker: PBAttacker in _attackers:
-		if not attacker.death_pending:
+		if attacker.death_pending:
+			attacker.death_pending = false
+			for cast: PBSkillCast in attacker.death_casts:
+				cast.lands_at = attacker.death_tick + cast.skill.death_move_ticks
+				attacker.death_move_until = maxi(attacker.death_move_until, cast.lands_at)
+		if attacker.death_move_until < 0:
 			continue
-		attacker.death_pending = false
+		if _tick > attacker.death_tick and _tick <= attacker.death_move_until:
+			attacker.pos = attacker.pos.move_toward(attacker.death_target, attacker.move_speed)
 		for cast: PBSkillCast in attacker.death_casts:
+			if not cast.is_pending() or _tick < cast.lands_at:
+				continue
 			cast.spot = attacker.pos
 			if log_to != null:
 				log_to.ultimate(_tick, attacker.slot, cast.skill.affects == PBSkill.Party.ALLIES)
 			_land_skill(attacker, cast)
+		if _tick >= attacker.death_move_until:
+			attacker.death_move_until = -1
 	_skip_dead()
 
 
 ## 一发技能这一次打多少、暴没暴（[method PBCritRules.hit]）。**一发只掷一次**，范围里的每个敌人吃同一个结果。
 ## 不打敌人或者没有伤害的技能不掷 —— 掷了就算不暴也拨动了那条流（同 [PBCritRules] 顶部那条）。
-func _roll_skill(attacker: PBAttacker, skill: PBSkill) -> Dictionary:
-	if skill.affects != PBSkill.Party.ENEMIES or skill.damage <= 0.0:
-		return {PBCritRules.DAMAGE: skill.damage, PBCritRules.CRIT: false}
-	return PBCritRules.hit(attacker, skill.damage, skill.kind, _tick, _crit_rng)
+func _roll_skill(attacker: PBAttacker, skill: PBSkill, bonus: float = 0.0) -> Dictionary:
+	var raw: float = PBAllyAuraRules.skill_damage(attacker, skill, bonus, _tick)
+	if skill.affects != PBSkill.Party.ENEMIES or raw <= 0.0:
+		return {PBCritRules.DAMAGE: raw, PBCritRules.CRIT: false}
+	return PBCritRules.hit(attacker, raw, skill.kind, _tick, _crit_rng)
 
 
 ## 一发子弹技能出膛。池子满了或目标已经不在名单里就当空放 ——
 ## **不退回「瞬间结算」**，否则同一个技能在池子满的时候变成另一种技能。
 func _launch_skill(attacker: PBAttacker, cast: PBSkillCast) -> void:
-	var shot := PBShotRules.free_shot(_shots)
-	if shot == null:
-		return
 	var skill := cast.skill
 	var at_ally: bool = skill.target == PBSkill.Target.ALLY
-	var limit: int = _attackers.size() if at_ally else _enemies.size()
-	if cast.target_slot < 0 or cast.target_slot >= limit:
+	var selected: PackedInt32Array = (
+		PBSkillTargets.allies(cast, _attackers)
+		if at_ally
+		else PBSkillTargets.enemies(cast, _enemies, _tick)
+	)
+	if selected.is_empty() or PBShotRules.free_shot(_shots) == null:
+		if (skill.channel_control or skill.mind_control) and attacker.channel != null:
+			attacker.channel.active = false
 		return
 	# 速度由「飞完全场要几秒」反推，和普攻子弹同一条换算
 	# （[member PBSimConfig.projectile_cross_seconds]）—— 两处各拍一个速度单位
 	# 的话，「技能子弹比普攻快多少」会变成一个没人说得清的数。
-	var per_tick: float = _cfg.field_length / maxf(
-		skill.shot_cross_seconds * float(_cfg.tick_rate), 1.0
+	var per_tick: float = (
+		_cfg.field_length / maxf(skill.shot_cross_seconds * float(_cfg.tick_rate), 1.0)
 	)
 	# 暴击和增伤在**出膛那一刻**定下来（同普攻子弹）：飞到时施法者可能已经死了。
 	var rolled := _roll_skill(attacker, skill)
-	shot.launch(
-		attacker.pos,
-		cast.target_slot,
-		float(rolled[PBCritRules.DAMAGE]),
-		per_tick,
-		at_ally,
-		skill.element,
-		attacker.slot,
-		skill,
-		cast.caster_level,
-		bool(rolled[PBCritRules.CRIT])
-	)
+	for target: int in selected:
+		var shot := PBShotRules.free_shot(_shots)
+		if shot == null:
+			break
+		shot.launch(
+			attacker.pos,
+			target,
+			float(rolled[PBCritRules.DAMAGE]),
+			per_tick,
+			at_ally,
+			skill.element,
+			attacker.slot,
+			skill,
+			cast.caster_level,
+			bool(rolled[PBCritRules.CRIT])
+		)
+		shot.primary_target = target == selected[0]
+		if (skill.channel_control or skill.mind_control) and shot.primary_target:
+			shot.channel = attacker.channel
+			shot.channel.target_ref = weakref(_enemies[target])
 
 
 ## 这一 tick 敌人走多快。1.0 是正常速度，减速生效期间小于 1。
@@ -439,7 +577,10 @@ func _speed_scale() -> float:
 ## 周期伤害打死的敌人要计进 [member PBCombatOutcome.kills]，规则层当场扣血的话杀敌数就有了第二个来源。
 ## 敌人那一趟从 [member _front] 起扫、碰到没出场的就停（数组按出场顺序排）。
 func _advance_buffs() -> void:
+	PBEnemyAuraRules.advance(_attackers, _enemies, _cfg, _tick)
+	PBHealingAuraRules.advance(_attackers, _cfg, _tick)
 	for attacker: PBAttacker in _attackers:
+		PBTemporaryAttributeRules.refresh(attacker, _cfg, _tick)
 		var drain: float = PBBuffRules.advance_ally(attacker, _tick, _cfg.tick_rate)
 		# 自身掉血（地之咒印）。扣血与阵亡记账走和挨打同一个落点。
 		if drain > 0.0 and attacker.alive:
@@ -450,14 +591,11 @@ func _advance_buffs() -> void:
 			break
 		if not enemy.alive:
 			continue
-		var harm: float = PBBuffRules.advance_enemy(enemy, _tick)
+		var harm: float = PBBuffRules.advance_enemy(enemy, _tick, _cfg)
 		if harm <= 0.0:
 			continue
-		# 持续伤害算忍术（[PBDamageKind]），吃忍术抗性；挂上去的时候就没有出手的人，不算穿透。
-		var dealt: float = PBStrikeRules.mitigated(
-			null, enemy, harm, PBDamageKind.Type.NINJUTSU, _cfg, _tick
-		)
-		if enemy.take_damage(dealt, _tick):
+
+		if enemy.take_damage(harm, _tick):
 			_outcome.kills += 1
 	_skip_dead()
 
@@ -472,9 +610,7 @@ func _deal_damage() -> void:
 
 ## 子弹飞一个 tick，够到目标就结算（[PBShotRules]）。目标死了子弹就消失，见 [PBProjectile] 顶部。
 func _advance_shots() -> void:
-	PBShotRules.advance(
-		_shots, _enemies, _attackers, _cfg, _tick, log_to, _outcome, _crit_rng
-	)
+	PBShotRules.advance(_shots, _enemies, _attackers, _cfg, _tick, log_to, _outcome, _crit_rng)
 	_skip_dead()
 
 
@@ -489,15 +625,19 @@ func _move_attackers() -> void:
 	for attacker: PBAttacker in _attackers:
 		if not attacker.alive or attacker.move_speed <= 0.0:
 			continue
+		if attacker.casting.active(_tick) or PBSkillChannel.blocked(attacker, _tick):
+			continue
+		if attacker.swinging or _tick < attacker.attack_ends_at:
+			continue
 		var target := _nearest_enemy(attacker)
 		if target == null:
-			attacker.pos = attacker.pos.move_toward(attacker.home, attacker.move_speed)
+			attacker.pos = attacker.pos.move_toward(
+				attacker.home, PBMotionAuraRules.move_step(attacker)
+			)
 			continue
 		if attacker.can_reach(target.pos()):
 			continue
-		var leash: float = PBMoveRules.leash_for(
-			attacker, target, _named_target(attacker), _cfg
-		)
+		var leash: float = PBMoveRules.leash_for(attacker, target, _named_target(attacker), _cfg)
 		if attacker.shot_speed > 0.0:
 			PBMoveRules.press_forward(attacker, target, leash)
 		else:
@@ -529,7 +669,7 @@ func _nearest_enemy(attacker: PBAttacker) -> PBEnemy:
 		if not enemy.has_spawned(_tick):
 			# 后面的出场更晚，这一 tick 不会再有目标了。
 			break
-		if not enemy.alive:
+		if not enemy.is_hostile(_tick):
 			continue
 		var gap: float = attacker.pos.distance_to(enemy.pos())
 		if best == null or gap < best_gap:
@@ -594,9 +734,7 @@ func name_target(attacker: PBAttacker, slot: int) -> void:
 
 ## 防挤：把重合的单位推开。**两边都做**，实现在 [PBCrowdRules]。
 func _separate() -> void:
-	PBCrowdRules.separate_enemies(
-		_enemies, _front, _tick, _cfg.unit_min_gap, _cfg.field_height
-	)
+	PBCrowdRules.separate_enemies(_enemies, _front, _tick, _cfg.unit_min_gap, _cfg.field_height)
 	PBCrowdRules.separate_attackers(_attackers, _cfg.unit_min_gap)
 
 
@@ -614,6 +752,13 @@ func _enemies_attack() -> void:
 			break
 		if not enemy.alive or enemy.damage_per_shot <= 0.0:
 			continue
+		if (
+			_controlled_present
+			and PBEnemyDuelRules.attack(
+				enemy, _enemies, _attackers, _shots, _cfg, _tick, _crit_rng, log_to, _outcome
+			)
+		):
+			continue
 		var target := PBTargetRules.nearest_defender(_attackers, enemy)
 		if target == null:
 			continue
@@ -627,6 +772,8 @@ func _enemies_attack() -> void:
 		if not enemy.ready_to_fire(_tick):
 			continue
 		# 抬手，同己方那一支 —— 这里目标已经找到了，不用再问一遍。
+		if not enemy.swinging:
+			PBHealingAuraRules.on_attacked(target, _attackers, _crit_rng)
 		if enemy.begin_swing(_tick):
 			continue
 		enemy.on_fired(_tick)
@@ -634,6 +781,14 @@ func _enemies_attack() -> void:
 		# 和晕眩不同档：晕眩连手都抬不起来（[method PBEnemy.ready_to_fire]）。
 		if PBBuffRules.misses(enemy, _tick, _crit_rng):
 			continue
+		var swing: Dictionary = PBCritRules.enemy_strike(enemy, _tick, _crit_rng)
+		var hit := PBEnemyHitContext.new(
+			_attackers,
+			swing[PBCritRules.CRIT],
+			swing[PBCritRules.KIND],
+			enemy.armor_pen,
+			enemy.ninjutsu_pen
+		)
 		# 远程的那一份走弹道，减伤与克制在命中时才折算。
 		if enemy.shot_speed > 0.0:
 			var shot := PBShotRules.free_shot(_shots)
@@ -641,25 +796,29 @@ func _enemies_attack() -> void:
 				shot.launch(
 					enemy.pos(),
 					_attackers.find(target),
-					enemy.damage_per_shot,
+					swing[PBCritRules.DAMAGE],
 					enemy.shot_speed,
 					true,
 					enemy.element,
-					enemy.slot
+					enemy.slot,
+					null,
+					1,
+					swing[PBCritRules.CRIT]
 				)
+				shot.enemy_hit = hit
 			continue
 		# 折算、播报、扣血、阵亡、反弹全在那一处，子弹那一路调的是同一个。
 		PBStrikeRules.hurt_ally(
 			target,
 			enemy,
-			enemy.damage_per_shot,
+			swing[PBCritRules.DAMAGE],
 			enemy.element,
 			_cfg,
 			_tick,
 			_crit_rng,
 			log_to,
 			_outcome,
-			_attackers
+			hit
 		)
 
 
@@ -678,14 +837,20 @@ func _advance_and_leak() -> void:
 			break
 		if not enemy.alive:
 			continue
+		# 已进入交战就站定，不再追着移动的围攻圆向后调整距离。
+		if enemy.engaged:
+			continue
 		var prey := PBTargetRules.nearest_ally(_attackers, enemy)
+		if (
+			_controlled_present
+			and PBEnemyDuelRules.move(enemy, _enemies, _attackers, speed_scale, _tick)
+		):
+			continue
 		if prey != null:
-			# **围到自己那一格上去**，否则先到的堵死近侧、后面的垫成长队。咬住了的照样走这一条 ——
+			# 尚未接敌时才围到自己的站位，避免所有敌人挤在同一点。
 			# 那个点在忍者身前，越不过他（见 [method PBEnemy.siege_to]）。
 			enemy.siege_to(
-				PBCrowdRules.siege_spot(
-					prey.pos, enemy.slot, enemy.reach, _cfg.field_height
-				),
+				PBCrowdRules.siege_spot(prey.pos, enemy.slot, enemy.reach, _cfg.field_height),
 				speed_scale,
 				_tick
 			)

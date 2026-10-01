@@ -28,19 +28,12 @@ attack_speed_base = 0.6896551724137931
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
-def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 1
 reach = 2
 attack_range = 600.0
-attack_shape = 0
-ultimate_element_override = -1
 skill_ids = Array[StringName]([&"white_copy"])
 passives = {
 &"struck_cd": 13.0
 }
-on_hit_buffs = Array[ExtResource("1_r4nwb")]([])
-low_hp_buffs = Array[ExtResource("1_r4nwb")]([])
-lethal_buffs = Array[ExtResource("1_r4nwb")]([])
 struck_buffs = Array[ExtResource("1_r4nwb")]([ExtResource("3_cv1qi")])
-attack_buffs = Array[ExtResource("1_r4nwb")]([])

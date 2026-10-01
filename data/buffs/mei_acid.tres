@@ -7,15 +7,13 @@ script = ExtResource("1_ism6p")
 id = &"mei_acid"
 name_key = "buff.mei_acid"
 icon_key = "buff.mei_acid"
-kind = 2
+kind = 1
 friendly = false
 duration_seconds = 4.0
-period_seconds = 1.0
 mods = {
-&"enemy_defence": -3.0,
-&"harm": 30.0
+&"enemy_defence": -3.0
 }
 mods_growth = {
-&"enemy_defence": -3.0,
-&"harm": 30.0
+&"enemy_defence": -3.0
 }
+duration_levels = PackedFloat32Array()

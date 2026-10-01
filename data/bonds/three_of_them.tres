@@ -6,17 +6,15 @@
 script = ExtResource("1_dkj7s")
 id = &"three_of_them"
 name_key = "bond.three_of_them"
-match_mode = 0
 member_ids = Array[StringName]([&"obito", &"kakashi", &"rin_nohara"])
-match_element = 5
 tier_counts = Array[int]([3])
 tier_power = Array[float]([0.28])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
 member_skill_patches = {
 &"rin_nohara": {
 &"inspire": {
+&"extra_target_radius_set": 0.5,
 &"targets_add": 4.0
 }
 }

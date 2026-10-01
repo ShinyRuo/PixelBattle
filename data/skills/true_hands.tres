@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_4lhiw"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_n5c3f"]
+
+[sub_resource type="Resource" id="Resource_6s6rv"]
+script = ExtResource("1_4lhiw")
+id = &"true_hands_stun"
+name_key = "buff.true_hands_stun"
+icon_key = "buff.true_hands_stun"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
+[resource]
+script = ExtResource("2_n5c3f")
+id = &"true_hands"
+name_key = "skill.true_hands"
+on_start_area = Array[ExtResource("1_4lhiw")]([SubResource("Resource_6s6rv")])
+element = 6
+power_mult = 0.1666666666666667
+damage_base = 13.33333333333333
+damage_growth = 13.33333333333333
+damage_stat = &"strength"
+damage_stat_floor = true
+radius = 0.195
+hit_count = 15
+hit_interval_ticks = 4
+pulse_delay_ticks = 24
+area_refresh_ticks = PackedInt32Array(0, 20, 40, 60)
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

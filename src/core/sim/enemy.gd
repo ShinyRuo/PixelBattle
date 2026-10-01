@@ -18,6 +18,10 @@ enum Rank {
 
 ## 还活着（没被打死、也没走到基地）。
 var alive: bool = false
+var level: int = 1
+## 英雄身份与波次档位独立。现有 PVE 怪物均为非英雄；不把 BOSS 自动当英雄。
+var is_hero: bool = false
+var control_ref: WeakRef = null
 
 var hp: float = 0.0
 var max_hp: float = 0.0
@@ -28,6 +32,26 @@ var armor: float = 0.0
 
 ## 忍术抗性（成数）。只减**忍术**伤害，读点同上；临时增减走 [constant PBBuffRules.ENEMY_RESIST]。
 var ninjutsu_resist: float = 0.0
+
+## 普攻闪避与体术暴击的基础值；临时变化复用 DODGE / CRIT_CHANCE / CRIT_DAMAGE。
+var dodge: float = 0.0
+var crit_chance: float = 0.0
+var crit_bonus: float = 0.0
+
+## 本次出生后闪掉几次普攻。调用方据此跳过命中触发，不自己判概率。
+var dodge_count: int = 0
+
+## 敌人攻击的伤害类型与词条，和七种克制属性独立。
+var damage_kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU
+var intellect: float = 0.0
+var ninjutsu_coefficient: float = 1.0
+var ninjutsu_crit_chance: float = 0.0
+var ninjutsu_crit_bonus: float = 0.0
+var taijutsu_bonus: float = 0.0
+var ninjutsu_bonus: float = 0.0
+var all_damage_bonus: float = 0.0
+var armor_pen: float = 0.0
+var ninjutsu_pen: float = 0.0
 
 ## 本波的属性。同一波内所有敌人属性相同（§04），存在个体上是为了
 ## 将来的「混合属性波」（§04 的 50 波后机制）不用改结构。
@@ -104,12 +128,18 @@ var slot: int = 0
 ## **随敌人一起造，不在战斗中 `.new()`**。**[method spawn] 必须清它**。
 var buffs: PBBuffBag = PBBuffBag.new()
 
+var abilities: Array[PBEnemyAbility] = []
+var ability_ready_at: PackedInt32Array = PackedInt32Array()
+
 
 ## 把这个实例重置成一个刚出生的敌人。对象池复用走这里，不要 `.new()`。
 func spawn(
 	wave: PBWave, enemy_speed: float, at_x: float, at_tick: int, at_lane: float = 0.0
 ) -> void:
 	alive = true
+	is_hero = false
+	level = maxi(wave.enemy_level, 1)
+	control_ref = null
 	max_hp = wave.hp_each
 	hp = max_hp
 	element = wave.element
@@ -117,6 +147,20 @@ func spawn(
 	atk = wave.atk_each
 	armor = wave.armor_each
 	ninjutsu_resist = wave.resist_each
+	dodge = wave.dodge_each
+	crit_chance = wave.crit_chance_each
+	crit_bonus = wave.crit_bonus_each
+	damage_kind = wave.damage_kind
+	intellect = wave.intellect_each
+	ninjutsu_coefficient = wave.ninjutsu_coefficient
+	ninjutsu_crit_chance = wave.ninjutsu_crit_chance
+	ninjutsu_crit_bonus = wave.ninjutsu_crit_bonus
+	taijutsu_bonus = wave.taijutsu_bonus
+	ninjutsu_bonus = wave.ninjutsu_bonus
+	all_damage_bonus = wave.all_damage_bonus
+	armor_pen = wave.armor_pen
+	ninjutsu_pen = wave.ninjutsu_pen
+	dodge_count = 0
 	distance = at_x
 	start_x = at_x
 	lane = at_lane
@@ -129,6 +173,14 @@ func spawn(
 	# 和 [method PBSkillCast.reset] 顶上记着的「上一场剩下的冷却漏进下一场」
 	# 是同一个形状，而它同样不报任何错。
 	buffs.clear()
+	abilities.clear()
+	ability_ready_at.clear()
+	for ability: PBEnemyAbility in wave.abilities:
+		if ability == null or ability.validate() != "":
+			push_error("敌方主动技能配置无效")
+			continue
+		abilities.append(ability)
+		ability_ready_at.append(at_tick)
 
 
 ## 定下这个敌人的攻击方式。[method spawn] 之后调一次。
@@ -170,7 +222,10 @@ static func rank_of(wave: PBWave) -> Rank:
 func ready_to_fire(current_tick: int) -> bool:
 	if not alive or current_tick < next_shot_at:
 		return false
-	return buffs.amount(PBBuffRules.STUN, current_tick) <= 0.0
+	return (
+		buffs.amount(PBBuffRules.STUN, current_tick) <= 0.0
+		and buffs.amount(PBBuffRules.DISARM, current_tick) <= 0.0
+	)
 
 
 ## 出了一手，转入下一次的间隔。**减掉起手那一段**，理由同
@@ -207,6 +262,21 @@ func is_active(current_tick: int) -> bool:
 	return alive and current_tick >= spawn_tick
 
 
+func controlled(current_tick: int) -> bool:
+	if control_ref == null:
+		return false
+	var state: PBBuffState = control_ref.get_ref()
+	return (
+		state != null
+		and state.is_live(current_tick)
+		and float(state.mods.get(PBBuffRules.DOMINATED, 0.0)) > 0.0
+	)
+
+
+func is_hostile(current_tick: int) -> bool:
+	return is_active(current_tick) and not controlled(current_tick)
+
+
 ## 只问出场，不问死活。
 ##
 ## 敌人数组按出场顺序排列，遍历时「碰到一个还没出场的就可以停」—— 那个 `break` 必须**只看出场**：
@@ -218,12 +288,26 @@ func has_spawned(current_tick: int) -> bool:
 
 ## 扣血。返回这次是否把它打死了（溢出伤害的结算点）。
 ##
-## **易伤在这里面乘**：调用方有六处，漏乘一处就是「某一种攻击方式吃不到易伤」。
+## **顺序：普攻闪避 → 易伤 × 受伤倍率 → 护盾 → 扣血**。护甲 / 忍术抗性由伤害类型入口先折算。
+## 减伤与护盾统一在这里，技能、持续伤害、反弹等调用方不自己判。
 ## [param at_tick] **没有默认值**：给了默认值的话漏传的调用方会静默拿到一个所有效果都已过期的 tick。
-func take_damage(amount: float, at_tick: int) -> bool:
+func take_damage(
+	amount: float,
+	at_tick: int,
+	rng: RandomNumberGenerator = null,
+	dodgeable: bool = false,
+	element: PBElement.Type = PBElement.Type.PHYSICAL
+) -> bool:
 	if not alive:
 		return false
-	hp -= amount * buffs.amount(PBBuffRules.HURT, at_tick)
+	# 只有普攻传 dodgeable；技能、持续伤害和反弹不掷闪避。零概率不推进随机流。
+	if dodgeable and amount > 0.0 and rng != null:
+		var chance: float = clampf(dodge + buffs.amount(PBBuffRules.DODGE, at_tick), 0.0, 1.0)
+		if chance > 0.0 and rng.randf() < chance:
+			dodge_count += 1
+			return false
+	var hurt: float = maxf(amount, 0.0) * _damage_scale(at_tick, element)
+	hp -= buffs.absorb(hurt, at_tick)
 	if hp <= 0.0:
 		hp = 0.0
 		alive = false
@@ -231,7 +315,7 @@ func take_damage(amount: float, at_tick: int) -> bool:
 	return false
 
 
-## 打死它还要多少**伤害**——不是还剩多少血。易伤已经折算进去。
+## 打死它还要多少**伤害**——不是还剩多少血。折算易伤、受伤倍率与有效护盾。
 ##
 ## ## 只有溢出那一条路需要它
 ##
@@ -241,10 +325,28 @@ func take_damage(amount: float, at_tick: int) -> bool:
 ## 而那条路径正是与 [PBCombatRules] 解析式排队模型对拍的锚点 ——
 ## 差一点点的表现是「退化路径和解析式对不上」，一条既有测试会红。
 ##
-## 没有任何易伤时倍率精确等于 1.0，除法逐位无损。
-func damage_to_kill(at_tick: int) -> float:
-	var mult: float = buffs.amount(PBBuffRules.HURT, at_tick)
-	return hp if mult <= 0.0 else hp / mult
+## 无敌时返回 INF，不能假装用有限伤害能杀死。无效果时倍率为 1、护盾为 0，逐位无损。
+func damage_to_kill(at_tick: int, element: PBElement.Type = PBElement.Type.PHYSICAL) -> float:
+	var mult: float = _damage_scale(at_tick, element)
+	return INF if mult <= 0.0 else (hp + buffs.shield_left(at_tick)) / mult
+
+
+## 受伤倍率只有这一份算法，扣血与溢出消耗共用。负倍率按 0 算，不把伤害反转成治疗。
+func _damage_scale(at_tick: int, element: PBElement.Type) -> float:
+	return (
+		maxf(buffs.amount(PBBuffRules.HURT, at_tick), 0.0)
+		* maxf(buffs.amount(PBBuffRules.DAMAGE_TAKEN, at_tick), 0.0)
+		* element_hurt_scale(element, at_tick)
+	)
+
+
+## 混合属性的周期伤害须在合并前逐份折算；其他伤害由 take_damage 统一调用。
+func element_hurt_scale(element: PBElement.Type, at_tick: int) -> float:
+	return (
+		maxf(buffs.amount(PBBuffRules.SAGE_HURT_SCALE, at_tick), 0.0)
+		if element == PBElement.Type.SAGE
+		else 1.0
+	)
 
 
 ## 前进一个 tick。返回是否在这一 tick 走到了基地。

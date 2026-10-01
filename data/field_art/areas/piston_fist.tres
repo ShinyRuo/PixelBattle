@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/piston_fist/frame_0.png" id="1_uj3mb"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/piston_fist/frame_1.png" id="2_362qh"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/piston_fist/frame_2.png" id="3_il0d5"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/piston_fist/frame_3.png" id="4_3wiqi"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/piston_fist/frame_4.png" id="5_ss7tj"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/piston_fist/frame_5.png" id="6_h1yd3"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_rdpnc"]
+
+[resource]
+script = ExtResource("7_rdpnc")
+frames = Array[Texture2D]([ExtResource("1_uj3mb"), ExtResource("2_362qh"), ExtResource("3_il0d5"), ExtResource("4_3wiqi"), ExtResource("5_ss7tj"), ExtResource("6_h1yd3")])
+fps = 6.0

@@ -160,8 +160,14 @@ func at(index: int) -> Vector2:
 func _place_shot(
 	slot: int, shot: PBProjectile, battle: PBBattleSim, deployed: Array[PBUnit], field: Vector2
 ) -> void:
+	if shot.skill != null and PBSkillStartArt.flight_hidden(shot.skill.id):
+		_fly[slot].visible = false
+		_travelled[slot] = -1.0
+		return
 	var goal: Vector2 = _goal_of(shot, battle)
 	var shooter := _actor_skin(shot.source, not shot.at_ally, battle, deployed)
+	if shot.summon_skill_id != &"":
+		shooter = PBActorLibrary.skin_for(PBSummonArt.for_skill(shot.summon_skill_id).actor_key)
 	var victim := _actor_skin(shot.target, shot.at_ally, battle, deployed)
 	var lead: float = 1.0 if goal.x >= shot.from.x else -1.0
 	var muzzle: Vector2 = NO_SKIN_MUZZLE if shooter == null else shooter.muzzle()
@@ -183,20 +189,22 @@ func _place_shot(
 	# **不按「变短了」判**：子弹追着目标飞，目标绕到射手身后时路程会一点点变短，那样判的话它每帧都从头播。
 	var travelled: float = shot.from.distance_to(shot.pos)
 	var fresh: bool = (
-		_travelled[slot] < 0.0
-		or shot.from != _from[slot]
-		or travelled < _travelled[slot] * 0.5
+		_travelled[slot] < 0.0 or shot.from != _from[slot] or travelled < _travelled[slot] * 0.5
 	)
 	_travelled[slot] = travelled
 	_from[slot] = shot.from
 	var art := _shot_skin(shot.source, not shot.at_ally, deployed, battle)
+	if shot.summon_skill_id != &"":
+		art = _skill_art(PBSummonArt.for_skill(shot.summon_skill_id).shot_key)
+	if shot.skill != null:
+		art = _skill_art(shot.skill.shot_key)
 	var spot := from.lerp(to, gone)
 	_show(_fly[slot], art, spot, to - from, shot.at_ally, &"", fresh)
 	_spots[_shown] = spot
 	_shown += 1
 
 
-## 地面技能的子弹：**地面档那段施法延迟本来就是飞行时间**。进度直接读 `lands_at`，
+## 地面延迟期间可选的飞行表现，进度直接读 `lands_at`；不参与碰撞或触发区域。
 ## 伤害与 buff 仍然在 `lands_at` 那一 tick 结算。锁定档的子弹技能走 [PBProjectile]，不经过这里。
 ## 返回用了几个精灵。
 func _place_casts(battle: PBBattleSim, deployed: Array[PBUnit], field: Vector2) -> int:
@@ -207,16 +215,22 @@ func _place_casts(battle: PBBattleSim, deployed: Array[PBUnit], field: Vector2) 
 			if used >= _casts.size():
 				return used
 			var cast := PBSkillRules.cast_at(attacker, i)
-			if cast == null or not cast.is_pending() or cast.lands_at <= now:
+			if (
+				cast == null
+				or not cast.is_pending()
+				or cast.lands_at <= now
+				or now < cast.release_at
+			):
 				continue
 			if cast.skill.target != PBSkill.Target.GROUND or cast.skill.delay_ticks <= 0:
 				continue
+			if PBSkillStartArt.flight_hidden(cast.skill.id):
+				continue
 			var skin := _actor_skin(attacker.slot, true, battle, deployed)
 			var muzzle: Vector2 = NO_SKIN_MUZZLE if skin == null else skin.muzzle()
-			var lead: float = 1.0 if cast.spot.x >= attacker.pos.x else -1.0
-			var from := (
-				PBLayout.to_screen(attacker.pos, field) + Vector2(muzzle.x * lead, muzzle.y)
-			)
+			var origin := cast.origin if PBSkillCast.is_spot(cast.origin) else attacker.pos
+			var lead: float = 1.0 if cast.spot.x >= origin.x else -1.0
+			var from := PBLayout.to_screen(origin, field) + Vector2(muzzle.x * lead, muzzle.y)
 			# 落点是**地上一个点**，所以终点不加胸口偏移 —— 加了的话
 			# 子弹会停在落点上方，而预示圈画在地上，两者对不上。
 			var to := PBLayout.to_screen(cast.spot, field)
@@ -248,23 +262,30 @@ func _place_casts(battle: PBBattleSim, deployed: Array[PBUnit], field: Vector2) 
 ## 火花的美术取**打人那一方**配的那份（[member PBShotSkin.anim_hit]），
 ## 位置取**挨打那一个**的胸口：两处各配一个的话，「子弹打在胸口、
 ## 火花炸在脚下」迟早发生。
-func _echo(
-	battle: PBBattleSim, deployed: Array[PBUnit], book: PBBattleLog, field: Vector2
-) -> void:
+func _echo(battle: PBBattleSim, deployed: Array[PBUnit], book: PBBattleLog, field: Vector2) -> void:
 	if book == null:
 		return
 	for i: int in range(book.fresh_from(_echoed), book.entries.size()):
 		var entry: Dictionary = book.entries[i]
 		var kind: int = int(entry.get("kind", -1))
-		if kind != PBBattleLog.Kind.HIT_ENEMY and kind != PBBattleLog.Kind.HIT_ALLY:
+		if (
+			kind
+			not in [
+				PBBattleLog.Kind.HIT_ENEMY, PBBattleLog.Kind.HIT_ALLY, PBBattleLog.Kind.SKILL_IMPACT
+			]
+		):
 			continue
 		var to_ally: bool = kind == PBBattleLog.Kind.HIT_ALLY
+		if kind == PBBattleLog.Kind.SKILL_IMPACT:
+			to_ally = bool(entry.get("to_ally", false))
 		var victim := _actor_skin(int(entry.get("target", -1)), to_ally, battle, deployed)
 		var spot := _screen_of(int(entry.get("target", -1)), to_ally, battle, field)
 		if spot == PBSkillCast.NO_SPOT:
 			continue
 		var chest: Vector2 = NO_SKIN_CHEST if victim == null else victim.chest()
 		var art := _shot_skin(int(entry.get("source", -1)), not to_ally, deployed, battle)
+		if entry.has("shot_key"):
+			art = _skill_art(StringName(entry["shot_key"]))
 		_spark(art, spot + chest, to_ally)
 	_echoed = book.total
 
@@ -389,6 +410,12 @@ func _actor_skin(
 	if slot < 0:
 		return null
 	if ally:
+		if battle != null and slot < battle.attackers().size():
+			var attacker: PBAttacker = battle.attackers()[slot]
+			if attacker.summoned:
+				return PBActorLibrary.skin_for(
+					PBSummonArt.for_skill(attacker.summon_skill_id).actor_key
+				)
 		if slot >= deployed.size():
 			return null
 		return PBActorLibrary.skin_for(deployed[slot].character.actor_key)
@@ -396,9 +423,7 @@ func _actor_skin(
 	if slot >= enemies.size():
 		return null
 	var enemy: PBEnemy = enemies[slot]
-	return PBActorLibrary.skin_for(
-		PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged)
-	)
+	return PBActorLibrary.skin_for(PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged))
 
 
 ## [param slot] 那个单位的普攻子弹长什么样：己方读名册配的 [member PBCharacter.shot_key]，
@@ -407,16 +432,21 @@ func _actor_skin(
 ## **己方读角色，不读形象**：同一张形象可以换一颗子弹，而子弹是逐个忍者配的（不按属性推）。
 ## **敌人读皮键**：它没有角色，皮键就是「这一种怪」—— 和画它的 [PBEnemyPool] 同一个键，
 ## 各拼各的话「火系 BOSS 拿着水系小怪的子弹」迟早发生。**槽位号敌我重叠**，所以先分敌我再查。
-func _shot_skin(
-	slot: int, ally: bool, deployed: Array[PBUnit], battle: PBBattleSim
-) -> PBShotSkin:
+func _shot_skin(slot: int, ally: bool, deployed: Array[PBUnit], battle: PBBattleSim) -> PBShotSkin:
 	var key: StringName = &""
 	if ally:
 		if slot >= 0 and slot < deployed.size():
 			key = deployed[slot].character.shot_key
 	elif battle != null and slot >= 0 and slot < battle.enemies().size():
 		var enemy: PBEnemy = battle.enemies()[slot]
-		key = PBEnemyShotTable.shot_for(PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged))
+		key = PBEnemyShotTable.shot_for(
+			PBEnemyPool.skin_key(enemy.element, enemy.rank, enemy.ranged)
+		)
+	var art := PBShotLibrary.skin_for(key)
+	return PBWhiteModel.shot() if art == null else art
+
+
+func _skill_art(key: StringName) -> PBShotSkin:
 	var art := PBShotLibrary.skin_for(key)
 	return PBWhiteModel.shot() if art == null else art
 

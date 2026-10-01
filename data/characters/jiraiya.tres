@@ -9,10 +9,8 @@ id = &"jiraiya"
 name_key = "char.jiraiya"
 icon_key = "jiraiya"
 actor_key = &"jiraiya"
-shot_key = &""
 element = 0
 def_element = 3
-primary = 0
 strength = 35.0
 agility = 20.0
 intellect = 14.0
@@ -27,21 +25,13 @@ attack_speed_base = 0.6666666666666666
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
-def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 1
 reach = 1
 attack_range = 125.0
-attack_shape = 0
-ultimate_element_override = -1
 skill_ids = Array[StringName]([&"rasengan_flame"])
 passives = {
 &"defence": 20.0,
 &"melee_reflect": 0.2,
 &"melee_taken": -0.15
 }
-on_hit_buffs = Array[ExtResource("1_r5syu")]([])
-low_hp_buffs = Array[ExtResource("1_r5syu")]([])
-lethal_buffs = Array[ExtResource("1_r5syu")]([])
-struck_buffs = Array[ExtResource("1_r5syu")]([])
-attack_buffs = Array[ExtResource("1_r5syu")]([])

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_yqkkl"]
+
+[resource]
+script = ExtResource("1_yqkkl")
+id = &"madara_perfect"
+name_key = "buff.madara_perfect"
+icon_key = "buff.madara_perfect"
+kind = 1
+duration_seconds = 2.0
+mods = {
+&"all_stats_bonus": 0.2,
+&"defence": 10.0,
+&"ninjutsu_resist": 0.4,
+&"reach_bonus": 275.0
+}
+mods_growth = {
+&"defence": 10.0
+}
+duration_levels = PackedFloat32Array(2, 2, 3, 3, 3, 4, 4, 5, 5, 6)

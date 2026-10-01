@@ -61,10 +61,7 @@ func test_the_bite_is_capped_so_a_boss_cannot_be_melted_by_a_percentage() -> voi
 	enemies[0].max_hp = 1000000.0
 	enemies[0].hp = 1000000.0
 	assert_almost_eq(
-		_bite_of(attacker, enemies),
-		10.0 * PBStrikeRules.BITE_CAP,
-		0.001,
-		"封在这一下伤害的几倍上"
+		_bite_of(attacker, enemies), 10.0 * PBStrikeRules.BITE_CAP, 0.001, "封在这一下伤害的几倍上"
 	)
 
 

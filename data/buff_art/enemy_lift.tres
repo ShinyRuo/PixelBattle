@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/enemy_lift/front_0.png" id="1_kgeq7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/enemy_lift/front_1.png" id="2_cii42"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/enemy_lift/front_2.png" id="3_2y3nj"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/enemy_lift/front_3.png" id="4_1sjry"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/enemy_lift/front_4.png" id="5_nkblv"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/enemy_lift/front_5.png" id="6_jeprk"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_dnmxi"]
+
+[resource]
+script = ExtResource("7_dnmxi")
+front_frames = Array[Texture2D]([ExtResource("1_kgeq7"), ExtResource("2_cii42"), ExtResource("3_2y3nj"), ExtResource("4_1sjry"), ExtResource("5_nkblv"), ExtResource("6_jeprk")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

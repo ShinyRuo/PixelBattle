@@ -6,16 +6,23 @@
 script = ExtResource("1_wqxu0")
 id = &"truest_friends"
 name_key = "bond.truest_friends"
-match_mode = 0
 member_ids = Array[StringName]([&"itachi", &"shisui"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
 member_functions = {
 &"itachi": {
-&"crit_chance": 0.22
+&"ninjutsu_bonus": 0.12,
+&"ninjutsu_crit_chance": 0.07
 }
 }
-member_skill_patches = {}
+member_skill_patches = {
+&"shisui": {
+&"sun_halo_dance": {
+&"phantom_add": 1.0,
+&"summon_power_set": 0.55,
+&"summon_secs_scale": 1.5
+}
+}
+}

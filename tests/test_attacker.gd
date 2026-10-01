@@ -46,7 +46,9 @@ func test_one_whole_field_attacker_reproduces_the_scalar_dps_path() -> void:
 			var rebuilt := PBBattleSim.new(wave, 0.0, 0.0, _cfg, solo).run_to_end()
 			assert_eq(rebuilt.kills, scalar.kills, "第 %d 波 DPS=%.0f：击杀数应完全相同" % [wave_index, dps])
 			assert_eq(rebuilt.leaked, scalar.leaked, "第 %d 波 DPS=%.0f：漏怪数应完全相同" % [wave_index, dps])
-			assert_eq(rebuilt.ticks, scalar.ticks, "第 %d 波 DPS=%.0f：tick 数应完全相同" % [wave_index, dps])
+			assert_eq(
+				rebuilt.ticks, scalar.ticks, "第 %d 波 DPS=%.0f：tick 数应完全相同" % [wave_index, dps]
+			)
 
 
 func test_attacker_dps_sums_to_the_reported_team_dps() -> void:

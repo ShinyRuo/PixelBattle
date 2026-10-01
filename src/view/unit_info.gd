@@ -68,6 +68,9 @@ var _strip: PBBuffStrip
 ## [method refresh] 之间，那时调用方手上那几份名单已经不在栈上了。
 var _state: PBRunState
 var _cfg: PBSimConfig
+var _shown_unit: PBUnit = null
+var _display_stats: PBStats = null
+var _bond_text: String = ""
 
 ## 现在站在场上的角色 id。羁绊成员的第一档颜色按它判。
 var _on_field: Dictionary = {}
@@ -89,11 +92,7 @@ func _ready() -> void:
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_head = PBSkin.label(
-		self,
-		PANEL_RECT.position + Vector2(6.0, 1.0),
-		HEAD_WIDTH,
-		PBSkin.FONT_TITLE,
-		PBSkin.TITLE
+		self, PANEL_RECT.position + Vector2(6.0, 1.0), HEAD_WIDTH, PBSkin.FONT_TITLE, PBSkin.TITLE
 	)
 	_hp_back = _add_bar(PANEL_RECT.position + HP_AT, BAR_BACK)
 	_hp_fill = _add_bar(PANEL_RECT.position + HP_AT, HP_COLOR)
@@ -142,7 +141,7 @@ func refresh(
 	if unit == null:
 		_show_team(state, cfg, wave, bond_aware)
 		return
-	_show_unit(unit, selection, state, cfg, wave)
+	_show_unit(unit, selection, state, cfg, wave, deployed)
 
 
 ## 战斗中把血蓝条与效果图标刷成真值（§02）。**每渲染帧调一次。**
@@ -155,27 +154,40 @@ func show_live(live: PBAttacker, at_tick: int = 0) -> void:
 	_set_bar(_mp_back, _mp_fill, 1.0 if live.max_mp <= 0.0 else live.mp / live.max_mp)
 	if _cfg != null:
 		_strip.show_bag(live.buffs, at_tick, _cfg)
+		if _shown_unit != null and _display_stats != null:
+			if PBLiveReadout.update(_display_stats, live, _cfg, at_tick):
+				_body.text = _attribute_text(_shown_unit, _display_stats) + "\n" + _bond_text
 
 
 ## 没选人时显示**整队的账**（「整队现在什么样」正是这个空档该回答的问题）。
 ## **只写已经生效的那几组**：羁绊只有「够」和「不够」两种状态，没凑上的也摊开等于把整张表抄在面板上。
 ## 「都有谁」在悬停卡里。
 func _show_team(state: PBRunState, cfg: PBSimConfig, wave: PBWave, bond_aware: bool) -> void:
+	_shown_unit = null
+	_display_stats = null
 	_portrait.visible = false
 	_set_bar(_hp_back, _hp_fill, 0.0)
 	_set_bar(_mp_back, _mp_fill, 0.0)
-	var units := state.bonded_units(cfg)
-	_head.text = "第 %d 波（%s）　金 %d" % [
-		wave.index, PBUnitTile.ELEMENT_NAMES.get(wave.element, "?"), state.gold
-	]
+	var units := state.bonded_units(cfg, true)
+	_head.text = (
+		"第 %d 波（%s）　金 %d"
+		% [wave.index, PBUnitTile.ELEMENT_NAMES.get(wave.element, "?"), state.gold]
+	)
 	var lines := PackedStringArray()
 	lines.append(
-		"羁绊 ×%.2f　在场 %d　B:%s"
-		% [state.bond_mult(cfg), units.size(), "羁绊" if bond_aware else "战力"]
+		(
+			"羁绊 ×%.2f　在场 %d　B:%s"
+			% [
+				1.0 + PBBondRules.power_bonus(units, cfg.bonds),
+				units.size(),
+				"羁绊" if bond_aware else "战力"
+			]
+		)
 	)
 	lines.append_array(_tier_lines(cfg, units))
-	if state.dispatched > 0:
-		lines.append(PBSkin.tint("出任务 %d 人（不算羁绊）" % state.dispatched, PBSkin.DIM))
+	var away: int = PBFieldRoster.dispatch_preview(state).size()
+	if away > 0:
+		lines.append(PBSkin.tint("出任务 %d 人（不算羁绊）" % away, PBSkin.DIM))
 	_body.text = "\n".join(lines)
 
 
@@ -207,41 +219,60 @@ func _link(bond: PBBond, label: String) -> String:
 
 
 func _show_unit(
-	unit: PBUnit, selection: PBSelection, state: PBRunState, cfg: PBSimConfig, wave: PBWave
+	unit: PBUnit,
+	selection: PBSelection,
+	state: PBRunState,
+	cfg: PBSimConfig,
+	wave: PBWave,
+	deployed: Array[PBUnit]
 ) -> void:
-	var stats := unit.stats(cfg)
+	var stats := PBPreparationReadout.of(unit, state, cfg, wave, deployed)
+	_shown_unit = unit
+	_display_stats = stats
 	_portrait.visible = true
 	_portrait.set_unit(unit, wave.element)
 
 	# **不写星级**（玩家定的）：重复抽到的是另一个人，这个数恒为 1，一个永远不变的数字只会让人以为漏了一套养成系统。
 	var away: String = "　出任务中" if selection.kind == PBSelection.Kind.DISPATCHED else ""
-	_head.text = "%s　%s　Lv%d%s" % [
-		PBLocale.of_character(unit.character),
-		PBUnitTile.RARITY_NAMES[int(unit.rarity)],
-		unit.level,
-		away,
-	]
+	_head.text = (
+		"%s　%s　Lv%d%s"
+		% [
+			PBLocale.of_character(unit.character),
+			PBUnitTile.RARITY_NAMES[int(unit.rarity)],
+			unit.level,
+			away,
+		]
+	)
 	# 准备阶段没有战斗实例，显示满条是诚实的（开波时每波满血满蓝）。战斗中由 [method show_live] 每帧覆盖。
 	_set_bar(_hp_back, _hp_fill, 1.0)
 	_set_bar(_mp_back, _mp_fill, 1.0)
 
+	_bond_text = _bond_line(unit, state, cfg)
+	_body.text = _attribute_text(unit, stats) + "\n" + _bond_text
+
+
+func _attribute_text(unit: PBUnit, stats: PBStats) -> String:
 	var lines := PackedStringArray()
-	# 攻防属性跟在攻、防后面（玩家定的），省出来的那一行给羁绊。攻速在第二行：放第一行末尾会折行。
+	# 攻防属性跟在攻、防后面；攻速放第二行，避免第一行折行挤掉羁绊。
 	# **防属性必须写**：头像上只标了攻属性，而很多人攻防不同系。括号用半角，全角的第一行放不下。
-	lines.append(
-		"血 %.0f　蓝 %.0f　攻 %.0f(%s)　防 %.0f(%s)"
-		% [
-			stats.hp,
-			stats.mp,
-			stats.atk,
-			PBUnitTile.ELEMENT_NAMES.get(unit.element, "?"),
-			stats.def,
-			PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?"),
-		]
+	(
+		lines
+		. append(
+			(
+				"血 %.0f　蓝 %.0f　攻 %.0f(%s)　防 %.0f(%s)"
+				% [
+					stats.hp,
+					stats.mp,
+					stats.atk,
+					PBUnitTile.ELEMENT_NAMES.get(unit.element, "?"),
+					stats.def,
+					PBUnitTile.ELEMENT_NAMES.get(unit.def_element, "?"),
+				]
+			)
+		)
 	)
 	lines.append("%s　攻速 %.2f" % [_secondary_line(unit, stats), stats.attack_speed])
-	lines.append(_bond_line(unit, state, cfg))
-	_body.text = "\n".join(lines)
+	return "\n".join(lines)
 
 
 ## 力/敏/智，**主属性加粗**。哪一项是主属性决定了这张卡往哪个方向长（§03A）。
@@ -270,7 +301,7 @@ func _secondary_line(unit: PBUnit, stats: PBStats) -> String:
 func _bond_line(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> String:
 	if cfg.bonds == null:
 		return "羁绊：无"
-	var counted := state.bonded_units(cfg)
+	var counted := state.bonded_units(cfg, true)
 	var plain := PackedStringArray()
 	var marked := PackedStringArray()
 	for bond: PBBond in cfg.bonds.all():
@@ -344,12 +375,13 @@ func _bond_body(bond: PBBond) -> String:
 
 ## 悬停卡的标题：够没够，差几个。
 func _bond_head(bond: PBBond) -> String:
-	var active: int = PBBondRules.active_count(bond, _state.bonded_units(_cfg))
+	var active: int = PBBondRules.active_count(bond, _state.bonded_units(_cfg, true))
 	var need: int = bond.full_tier_count()
 	if active >= need:
-		return "%s　%d/%d 已生效 +%.0f%%" % [
-			PBLocale.of_bond(bond), active, need, bond.bonus_at(active) * 100.0
-		]
+		return (
+			"%s　%d/%d 已生效 +%.0f%%"
+			% [PBLocale.of_bond(bond), active, need, bond.bonus_at(active) * 100.0]
+		)
 	return "%s　%d/%d　还差 %d 人" % [PBLocale.of_bond(bond), active, need, need - active]
 
 

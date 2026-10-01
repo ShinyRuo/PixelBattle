@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://b8avk4xkssdc2"]
+
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://coqqgraxv2osl" path="res://assets/fx/fields/areas/ash_burn/frame_0.png" id="1_ugne5"]
+[ext_resource type="Texture2D" uid="uid://beykmqnhll0m7" path="res://assets/fx/fields/areas/ash_burn/frame_1.png" id="2_ll1i5"]
+[ext_resource type="Texture2D" uid="uid://uluxmg4d78og" path="res://assets/fx/fields/areas/ash_burn/frame_2.png" id="3_j2016"]
+[ext_resource type="Texture2D" uid="uid://dorh61bk4qr2l" path="res://assets/fx/fields/areas/ash_burn/frame_3.png" id="4_6ilw7"]
+[ext_resource type="Texture2D" uid="uid://dwbei6g0218fm" path="res://assets/fx/fields/areas/ash_burn/frame_4.png" id="5_22fnd"]
+[ext_resource type="Texture2D" uid="uid://dcmdcrii2o3tv" path="res://assets/fx/fields/areas/ash_burn/frame_5.png" id="6_wye8b"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_ugne5"), ExtResource("2_ll1i5"), ExtResource("3_j2016"), ExtResource("4_6ilw7"), ExtResource("5_22fnd"), ExtResource("6_wye8b")])
+metadata/sheet = {
+"background": 3,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_ash_burn_area.png",
+"rows": 2.0,
+"size": 256.0
+}

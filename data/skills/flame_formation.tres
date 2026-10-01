@@ -18,6 +18,7 @@ mods = {
 mods_growth = {
 &"harm": 60.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_f6wvu")
@@ -25,8 +26,13 @@ id = &"flame_formation"
 name_key = "skill.flame_formation"
 on_hit = Array[ExtResource("1_rue5x")]([SubResource("Resource_h1uce")])
 element = 0
-power_mult = 2.8
+damage_base = 350.0
+damage_growth = 350.0
+damage_stat = &"intellect"
 radius = 0.18
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 340
 delay_ticks = 10
 mp_cost = 15.0
+mp_cost_levels = PackedFloat32Array(15, 22, 29, 36, 43, 50, 57, 64, 71, 78)

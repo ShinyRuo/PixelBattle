@@ -12,3 +12,4 @@ duration_seconds = 3.0
 mods = {
 &"damage_taken": 0.5
 }
+duration_levels = PackedFloat32Array()

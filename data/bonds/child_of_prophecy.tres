@@ -6,9 +6,7 @@
 script = ExtResource("1_uic5t")
 id = &"child_of_prophecy"
 name_key = "bond.child_of_prophecy"
-match_mode = 0
 member_ids = Array[StringName]([&"naruto", &"jiraiya"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
@@ -18,4 +16,3 @@ member_functions = {
 &"dodge": 0.2
 }
 }
-member_skill_patches = {}

@@ -65,12 +65,7 @@ func _init() -> void:
 		return
 	write.store_string(text + "\n")
 	write.close()
-	print(
-		(
-			"语言表写好了：%d 个角色名 + %d 组羁绊名 + %d 个技能名 + %d 份效果名"
-			% [characters, bonds, skills, buffs]
-		)
-	)
+	print("语言表写好了：%d 个角色名 + %d 组羁绊名 + %d 个技能名 + %d 份效果名" % [characters, bonds, skills, buffs])
 	quit(0)
 
 

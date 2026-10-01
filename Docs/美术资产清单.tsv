@@ -1,0 +1,367 @@
+﻿类别	对象ID	名称	归属	资源键	模板	内容	当前接入状态
+人物动作	kurenai_run	夕日红奔跑	夕日红	kurenai/run	RUN	原著忍者跑姿；右腿与左腿依次完成伸展、脚跟接触、全脚承重；以MARKED/PLAIN身份固定腿饰；成对骨架等长；膝盖自然、脚底不滑、身体中轴固定	已按六相步态重绘并替换；六帧可见高度139～142px；268×156、10fps、原缩放不变；逐帧及真实第12波单人实战已检查（2026-09-26）
+人物动作	chojuro_run	长十郎奔跑	长十郎	chojuro/run	RUN	原著忍者跑姿；双臂后摆；鲆鲽锁定背部；A/B腿依次完成伸展、脚跟接触、全脚承重；成对骨架等长；脚底不滑、身体中轴固定	已按六相步态重绘并替换；360×186、10fps、原缩放不变；可见总高度150～158px；逐帧及真实第12波单人实战已检查（2026-09-26）
+人物动作	danzo_run	团藏奔跑	团藏	danzo/run	RUN	原著忍者跑姿；双臂后摆；披片锁定腰部；A/B腿依次完成伸展、脚跟接触、全脚承重；成对骨架等长；脚底不滑、身体中轴固定	已按六相步态重绘并替换；248×186、10fps、原缩放不变；可见高度152～153px；逐帧及真实第12波单人实战已检查（2026-09-26）
+人物动作	deidara_run	迪达拉奔跑	迪达拉	deidara/run	RUN	原著忍者跑姿；双臂后摆；晓袍、黏土包和马尾保持连续；A/B腿完成六相步态；成对骨架等长；脚底不滑、中轴固定	已重绘替换；374×186、10fps、原缩放不变；可见高度152～153px；逐帧及真实第12波单人实战已检查（2026-09-26）
+人物动作	obito_run	带土奔跑	宇智波带土	obito/run	RUN	螺旋面具、晓袍固定；左腿近层右腿远层完成六相；双臂后摆、中轴固定	已重绘替换；350×188；可见高度152～153px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	chiyo_run	千代奔跑	千代婆婆	chiyo/run	RUN	矮小老年体态、发髻与披肩固定；左右腿六相等长；脚底不滑	已重绘替换；166×144；可见高度117～119px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	jugo_run	重吾奔跑	重吾	jugo/run	RUN	橙发、咒印臂与紫绳固定；左右腿六相等长；中轴固定	已重绘替换；210×158；可见高度129～130px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	kakuzu_run	角都奔跑	角都	kakuzu/run	RUN	面罩、绿眼、晓袍固定；长袍不遮膝踝与承重脚	已重绘替换；228×158；可见高度130px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	shino_run	志乃奔跑	油女志乃	shino/run	RUN	墨镜、高领灰外套固定；左右腿六相等长；中轴固定	已重绘替换；226×158；可见高度129～130px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	tendo_run	天道奔跑	天道佩恩	tendo/run	RUN	橙发、面钉与晓袍固定；左右腿六相等长；脚底不滑	已重绘替换；144×158；可见高度130px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	zetsu_run	绝奔跑	黑绝	zetsu/run	RUN	捕蝇草叶冠、黑面黄眼与晓袍固定；长袍不吞腿	已重绘替换；164×178；可见高度149～150px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	suigetsu_run	水月奔跑	鬼灯水月	suigetsu/run	RUN	白发、紫衣与斩首大刀固定；大刀不推动人物中轴	已重绘替换；602×288；可见高度153px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	kakashi_run	卡卡西奔跑	旗木卡卡西	kakashi/run	RUN	银发、遮眼护额、面罩与上忍马甲固定；左右腿六相等长	已重绘替换；606×192；可见高度153～154px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	kisame_run	鬼鲛奔跑	干柿鬼鲛	kisame/run	RUN	鲨鱼脸、晓袍与鲛肌固定；大刀六帧尺寸和绑点一致	已重绘替换；408×192；可见高度152～154px；逐帧、动画及实战已检查（2026-09-26）
+人物动作	shadow_bind_cast	影子模仿术施法动作	奈良鹿丸	cast_shadow_bind	CAST	原著鼠印低身施术；第4帧释放并持续保持；控制结束后播放第5、6帧松印起身；影子连线不烘焙进人物	已生成六帧并绑定shadow_bind；288×186、10fps、原缩放不变；持续保持与收招实战已检查（2026-09-26）
+人物动作	mind_transfer_cast	心转分身之术施法动作	山中井野	cast_mind_transfer	CAST	双手指框瞄准；第4帧持续保持；控制结束播放第5、6帧	已生成六帧并绑定mind_transfer；保持与收招实战已检查（2026-09-27）
+人物动作	palm_healing_cast	掌仙术施法动作	春野樱	cast_palm_healing	CAST	双掌朝受术者推出；治疗光独立	已生成六帧并绑定palm_healing；第4帧实战已检查（2026-09-27）
+人物动作	reincarnation_cast	己生转生施法动作	千代婆婆	cast_reincarnation	CAST	低身双掌传递生命；保持老年较矮体型	已生成六帧并绑定reincarnation；第4帧实战已检查（2026-09-27）
+人物动作	human_bullet_cast	肉弹战车施法动作	秋道丁次	cast_human_bullet	CAST	收身团成滚动核心；沟槽与尘土独立	已生成六帧并绑定human_bullet；第4帧实战已检查（2026-09-27）
+人物动作	thousand_needles_cast	千杀水翔施法动作	白	cast_thousand_needles	CAST	原著单手结印；水针区域独立	已生成六帧并绑定thousand_needles；第4帧实战已检查（2026-09-27）
+人物动作	kagura_eye_cast	神乐心眼施法动作	香燐	cast_kagura_eye	CAST	闭眼胸前集中结印；感知光独立	已生成六帧并绑定kagura_eye；第4帧实战已检查（2026-09-27）
+人物动作	fang_pass_cast	通牙施法动作	犬冢牙	cast_fang_pass	CAST	头肩前驱、身体收紧为旋钻核心；风轨独立	已生成六帧并绑定fang_pass；第4帧实战已检查（2026-09-27）
+人物动作	inspire_cast	鼓舞施法动作	野原琳	cast_inspire	CAST	双掌向队友送出鼓舞；受益光独立	已生成六帧并绑定inspire；第4帧实战已检查（2026-09-27）
+人物动作	leaf_whirl_cast	木叶旋风施法动作	李洛克	cast_leaf_whirl	CAST	右腿高位回旋踢，第4帧完全伸展	已生成六帧并绑定leaf_whirl；第4帧实战已检查（2026-09-27）
+人物动作	strategist_cast	天才军师施法动作	奈良鹿丸	cast_strategist	CAST	托腮思考后指向战场；不复用影子鼠印	已生成六帧并绑定strategist；第4帧实战已检查（2026-09-27）
+人物动作	tool_control_cast	操具术施法动作	天天	cast_tool_control	CAST	腰侧取卷轴并展开，第4帧持卷轴结印；忍具弹幕独立	已生成六帧并绑定tool_control；第4帧实战已检查（2026-09-27）
+人物动作	hidden_mist_cast	雾隐之术施法动作	桃地再不斩	cast_hidden_mist	CAST	斩首大刀稳定背负，胸前结印；雾效独立	已生成六帧并绑定hidden_mist；第4帧实战已检查（2026-09-27）
+人物动作	release_blades_cast	解放双刀施法动作	长十郎	cast_release_blades	CAST	拔出鲆鲽并在第4帧双手向前展开	已生成六帧并绑定release_blades；第4帧实战已检查（2026-09-27）
+人物动作	paper_wings_cast	纸翼施法动作	小南	cast_paper_wings	CAST	纸翼展开至第4帧完全张开；飞散纸片独立	已生成六帧并绑定paper_wings；第4帧实战已检查（2026-09-27）
+人物动作	eight_gates_cast	八门遁甲施法动作	迈特凯	cast_eight_gates	CAST	宽马步双拳压腰爆发；绿色气焰独立	已生成六帧并绑定eight_gates；第4帧实战已检查（2026-09-27）
+人物动作	water_wall_cast	水阵壁施法动作	千手扉间	cast_water_wall	CAST	一手口前结印、一手向前支撑；水墙独立	已生成六帧并绑定water_wall；第4帧实战已检查（2026-09-27）
+人物动作	dark_walk_cast	黑暗行之术施法动作	千手扉间	cast_dark_walk	CAST	双指停在眼前、另一掌低位前伸；黑暗覆盖独立	已生成六帧并绑定dark_walk；第4帧实战已检查（2026-09-27）
+人物动作	kurama_cloak_cast	九尾外衣施法动作	漩涡鸣人	cast_kurama_cloak	CAST	握拳屈膝后仰头爆发；九尾外衣与查克拉独立	已生成六帧并绑定kurama_cloak；第4帧运行时已检查（常驻光环用内存验收施放，2026-09-27）
+人物动作	battle_chakra_cast	尾兽查克拉·历战施法动作	漩涡玖辛奈	cast_battle_chakra	CAST	双拳下压的稳定爆发姿势；红色查克拉独立	已生成六帧并绑定battle_chakra；第4帧运行时已检查（常驻光环用内存验收施放，2026-09-27）
+人物动作	gale_dance_cast	气流乱舞施法动作	手鞠	cast_gale_dance	CAST	巨扇展开并在第4帧向右挥击；风效独立	已生成六帧并绑定gale_dance；第4帧运行时已检查（常驻光环用内存验收施放，2026-09-27）
+人物动作	adamantine_chains_cast	金刚封锁施法动作	漩涡玖辛奈	cast_adamantine_chains	CAST	双掌向前展开并收紧束缚；锁链独立	已生成六帧并绑定adamantine_chains；第4帧实战已检查（2026-09-27）
+人物动作	leaf_gale_cast	木叶刚力旋风施法动作	迈特凯	cast_leaf_gale	CAST	支撑膝深屈、攻击腿贴地水平扫击	已生成六帧并绑定leaf_gale；第4帧实战已检查（2026-09-27）
+人物动作	shadow_clones_cast	影分身之术施法动作	漩涡鸣人	cast_shadow_clones	CAST	胸前保持原著十字印；分身与烟雾独立	已生成六帧并绑定shadow_clones；第4帧实战已检查（2026-09-27）
+人物动作	pursuing_fangs_cast	土遁·追牙之术施法动作	旗木卡卡西	cast_pursuing_fangs	CAST	低身单掌按地通灵；忍犬、土裂和烟雾独立	已生成六帧并绑定pursuing_fangs；第4帧实战已检查（召唤物隐藏验收，2026-09-27）
+人物动作	puppet_crow_cast	乌鸦傀儡施法动作	勘九郎	cast_puppet_crow	CAST	双臂分层前伸、十指操控；乌鸦傀儡和查克拉线独立	已生成六帧并绑定puppet_crow；第4帧实战已检查（召唤物隐藏验收，2026-09-27）
+人物动作	chidori_cast	千鸟施法动作	宇智波佐助	cast_chidori	CAST	低身蓄力、右臂前刺；雷光独立	已生成六帧并绑定chidori；第4帧实战已检查（2026-09-27）
+人物动作	palm_rotation_cast	八卦掌·回天施法动作	日向雏田	cast_palm_rotation	CAST	双掌展开旋身；紫色回天环独立	已生成六帧并绑定palm_rotation；第4帧实战已检查（2026-09-27）
+人物动作	kaiten_cast	回天施法动作	日向宁次	cast_kaiten	CAST	低身拧转、双掌收紧；蓝色回天环独立	已生成六帧并绑定kaiten；第4帧实战已检查（2026-09-27）
+人物动作	rasengan_flame_cast	豪炎螺旋丸施法动作	自来也	cast_rasengan_flame	CAST	蓄力后低身向前出掌；螺旋丸与火焰独立	已生成六帧并绑定rasengan_flame；第4帧实战已检查（2026-09-27）
+人物动作	almighty_push_cast	神罗天征施法动作	天道	cast_almighty_push	CAST	收束起手后单掌外推；斥力波独立	已生成六帧并绑定almighty_push；第4帧实战已检查（2026-09-27）
+人物动作	great_fireball_cast	豪火球之术施法动作	宇智波鼬	cast_great_fireball	CAST	胸前结印、第4帧指印贴口吐火；火球独立	已生成六帧并绑定great_fireball；第4帧实战已检查（2026-09-27）
+人物动作	tsukuyomi_cast	月读施法动作	宇智波鼬	cast_tsukuyomi	CAST	双指置于眼旁、第4帧写轮眼凝视；红黑瞳光独立	已生成六帧并绑定tsukuyomi；第4帧实战已检查（2026-09-27）
+人物动作	fire_dragon_cast	火龙炎弹施法动作	猿飞日斩	cast_fire_dragon	CAST	火遁指印贴口、低身吐火；火龙独立	已生成六帧并绑定fire_dragon；第4帧实战已检查（2026-09-27）
+人物动作	earth_dragon_cast	土龙弹施法动作	猿飞日斩	cast_earth_dragon	CAST	手杖支撑、低身单掌按地；土龙独立	已生成六帧并绑定earth_dragon；第4帧实战已检查（2026-09-27）
+人物动作	water_dragon_cast	水龙弹术施法动作	鬼灯水月	cast_water_dragon	CAST	低身结水遁印；斩首大刀固定背后，水龙独立	已生成六帧并绑定water_dragon；第4帧实战已检查（2026-09-27）
+人物动作	haze_illusion_cast	幻术·霞施法动作	夕日红	cast_haze_illusion	CAST	眼旁结印、第4帧双指前指；霞幻术子弹独立	已生成六帧并绑定haze_illusion；第4帧实战已检查（2026-09-27）
+人物动作	rising_earth_cast	开土升掘施法动作	黑土	cast_rising_earth	CAST	结土遁印、第4帧低身单掌按地；地形效果独立	已生成六帧并绑定rising_earth；第4帧实战已检查（2026-09-27）
+人物动作	light_rock_cast	轻重岩之术施法动作	黑土	cast_light_rock	CAST	站立双掌上托；光环效果独立	已生成六帧并绑定light_rock；第4帧运行时已检查（常驻光环用内存验收施放，2026-09-27）
+人物动作	great_breakthrough_cast	风遁·大突破施法动作	大蛇丸	cast_great_breakthrough	CAST	结印后前倾贴口吐息；风效独立	已生成六帧并绑定great_breakthrough；第4帧实战已检查（2026-09-27）
+人物动作	dust_release_cast	尘遁·原界剥离之术施法动作	大野木	cast_dust_release	CAST	保持矮小体型、第4帧双掌向前构形；尘遁方块独立	已生成六帧并绑定dust_release；第4帧实战已检查（2026-09-27）
+人物动作	false_darkness_cast	雷遁·伪暗施法动作	角都	cast_false_darkness	CAST	晓袍稳定、第4帧前倾伸掌；雷击段独立	已生成六帧并绑定false_darkness；第4帧人物动作实战已检查（雷击段未在该截图验收，2026-09-27）
+人物动作	sand_burial_cast	砂缚柩施法动作	我爱罗	cast_sand_burial	CAST	右臂前伸、第4帧握拳束砂；砂缚区域独立	已生成六帧并绑定sand_burial；第4帧实战已检查（2026-09-27）
+人物动作	infinite_sharks_cast	水遁·无限鲛施法动作	干柿鬼鲛	cast_infinite_sharks	CAST	鲛肌稳定背负、第4帧双掌推出；水鲛子弹独立	已生成六帧并绑定infinite_sharks；第4帧实战已检查（2026-09-27）
+人物动作	root_burial_cast	木遁·树根爆葬施法动作	志村团藏	cast_root_burial	CAST	绷带与披片稳定、第4帧低身伸掌触地；树根独立	已生成六帧并绑定root_burial；第4帧实战已检查（2026-09-27）
+人物动作	iron_sand_cast	砂铁界法施法动作	赤砂之蝎	cast_iron_sand	CAST	绯流琥外壳与蝎尾稳定、第4帧前探指挥；砂铁独立	已生成六帧并绑定iron_sand；第4帧人物动作实战已检查（砂铁段未在该截图验收，2026-09-27）
+人物动作	boil_acid_cast	沸遁·溶解爆酸施法动作	照美冥	cast_boil_acid	CAST	第4帧俯身贴口吐息；酸雾区域独立	已生成六帧并绑定boil_acid；第4帧实战已检查（2026-09-27）
+人物动作	dance_of_pines_cast	唐松之舞施法动作	君麻吕	cast_dance_of_pines	CAST	第4帧宽站姿展开身体骨刺；独立骨刺区域另层	已生成六帧并绑定dance_of_pines；第4帧实战已检查（2026-09-27）
+人物动作	piston_fist_cast	活塞拳·零式施法动作	重吾	cast_piston_fist	CAST	第4帧咒印臂前伸直拳；受击反馈独立	已生成六帧并绑定piston_fist；第4帧人物动作实战已检查（2026-09-27）
+人物动作	clay_spider_cast	黏土蜘蛛施法动作	迪达拉	cast_clay_spider	CAST	腰包取料、第4帧向地面放出；黏土蜘蛛与爆炸独立	已生成六帧并绑定clay_spider；第4帧人物动作实战已检查（2026-09-27）
+人物动作	flame_formation_cast	宇智波·火焰阵施法动作	宇智波带土	cast_flame_formation	CAST	螺旋面具和晓袍稳定、第4帧单掌外推；火焰阵独立	已生成六帧并绑定flame_formation；第4帧人物动作实战已检查（火焰阵未在该截图验收，2026-09-28）
+人物动作	white_copy_cast	白绝复制体施法动作	绝	cast_white_copy	CAST	捕蝇草叶冠稳定、第4帧双手向下展开；复制体独立	已生成六帧并绑定white_copy；第4帧人物动作检查（召唤物隐藏验收，2026-09-28）
+人物动作	vampire_bugs_cast	通灵术·吸血虫施法动作	油女志乃	cast_vampire_bugs	CAST	高领与袖口稳定、第4帧双臂前伸放虫；虫群独立	已生成六帧并绑定vampire_bugs；第4帧人物动作检查（召唤物隐藏验收，2026-09-28）
+人物动作	white_rage_cast	仙法·白激之术施法动作	药师兜	cast_white_rage	CAST	仙人状态与白蛇尾稳定、第4帧合掌前推；强光独立	已生成六帧并绑定white_rage；第4帧人物动作实战已检查（2026-09-28）
+人物动作	deep_forest_cast	森罗万象施法动作	千手柱间	cast_deep_forest	CAST	红甲、长发与护额稳定；第4帧合印定姿，树根独立	已生成六帧并绑定deep_forest；第4帧人物动作实战已检查（2026-09-28）
+人物动作	flying_raijin_ball_cast	瞬身螺旋丸施法动作	波风水门	cast_flying_raijin_ball	CAST	白色火焰披风稳定；第4帧低身前掌突进，螺旋丸独立	已生成六帧并绑定flying_raijin_ball；第4帧人物动作实战已检查（2026-09-28）
+人物动作	wood_descent_cast	树界降临施法动作	千手柱间	cast_wood_descent	CAST	红甲、长发与护额稳定；第4帧双掌按地，树根区域独立	已生成V2六帧并绑定wood_descent；第4帧人物动作实战已检查（2026-09-28）
+人物动作	mirror_ward_cast	幻术·镜守施法动作	夕日红	cast_mirror_ward	CAST	第4帧胸前双手护印；镜面护盾独立	已生成六帧并绑定mirror_ward；第4帧人物动作实战已检查（2026-09-28）
+人物动作	susanoo_cast	须佐能乎施法动作	宇智波斑	cast_susanoo	CAST	第4帧宽站姿张臂爆发；须佐骨架独立	已生成六帧并绑定susanoo；人物与须佐同屏已检查，buff结算未由该截图验证（2026-09-28）
+人物动作	lightning_armor_cast	雷遁护甲施法动作	艾（雷影）	cast_lightning_armor	CAST	第4帧低身双拳压腰；雷弧独立	已生成六帧并绑定lightning_armor；人物与雷弧同屏已检查，buff结算未由该截图验证（2026-09-28）
+人物动作	malice_sense_cast	恶意感知施法动作	仙人鸣人	cast_malice_sense	CAST	第4帧双指贴额、另一掌低位展开；感知光环独立	已生成六帧并绑定malice_sense；人物与光环同屏已检查，buff结算未由该截图验证（2026-09-28）
+人物动作	kotoamatsukami_cast	别天神·光芒施法动作	宇智波止水	cast_kotoamatsukami	CAST	第4帧双指贴眼侧、写轮眼凝视；眼形光环独立	已生成六帧并绑定kotoamatsukami；人物与光环同屏已检查，buff结算未由该截图验证（2026-09-28）
+人物动作	mending_jutsu_cast	强力再生术施法动作	药师兜	cast_mending_jutsu	CAST	第4帧双掌前推治疗；白蛇尾与眼镜稳定，治疗光独立	已生成六帧并绑定mending_jutsu；第4帧实战截图已检查（2026-09-28）
+人物动作	shark_cut_cast	鲛肌·削灭斩动作	干柿鬼鲛	cast_shark_cut	CAST	第4帧双手握鲛肌向右下斜斩，武器连续	已生成六帧并绑定shark_cut；概率触发限制仅在内存验收中解除，人物动作截图已检查（2026-09-28）
+人物动作	sun_halo_dance_cast	宇智波流·日晕舞动作	宇智波止水	cast_sun_halo_dance	CAST	第4帧持短刀向右横斩，扩圈幻影独立	已生成六帧并绑定sun_halo_dance；人物动作已截图检查，扩圈幻影未在该帧验收（2026-09-28）
+人物动作	flying_raijin_chain_cast	飞雷神之术动作	波风水门	cast_flying_raijin_chain	CAST	第4帧持三叉苦无低身前刺，与螺旋丸出掌区分	已生成六帧并绑定flying_raijin_chain；概率触发限制仅在内存验收中解除，人物动作截图已检查（2026-09-28）
+人物动作	giant_rasengan_cast	仙法·超大玉螺旋丸动作	仙人鸣人	cast_giant_rasengan	CAST	第4帧低身双掌向前推出，球体与冲击光效独立	已生成六帧并绑定giant_rasengan；人物动作及目标眩晕已检查，球体未在该帧验收（2026-09-28）
+人物动作	ash_burn_cast	火遁·灰积烧动作	猿飞阿斯玛	cast_ash_burn	CAST	第4帧双指贴口低身吐息，积灰区域点燃独立	已生成六帧并绑定ash_burn；人物动作实战已检查，后续落地未在该帧验收（2026-09-28）
+技能	palm_healing	掌仙术	春野樱	skill_palm_healing_hit	H	绿色掌仙治疗上升光点；施法者手掌光与受益者恢复闪光分开	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	reincarnation	己生转生	千代婆婆	skill_reincarnation_link	L	青绿生命传递丝线连施法者与受益者；牺牲结束撤线，三围状态光独立	已生成透明六帧并绑定 links/reincarnation_gift；编辑器与真实施法传递/千代死亡后截图已检查（2026-09-29）
+技能	reincarnation	己生转生	千代婆婆	skill_reincarnation_hit	H	青绿生命传递丝线、施法者消散、接收者三色属性强化闪光；持续三围光见额外状态表	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	human_bullet	肉弹战车	秋道丁次	skill_human_bullet_area	A	已生成：200码滚动沟槽、尘环与碎石透明单次六帧；人体滚动仍为独立动作	已绑定：areas/human_bullet，384×384、6fps；0.4秒延迟，编辑器与实战已检查（2026-09-25）
+技能	human_bullet	肉弹战车	秋道丁次	skill_human_bullet_hit	H	滚动冲击轨迹、尘土与落点冲击；人体滚动另做施法动作，不能烘焙在区域图里	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	thousand_needles	千杀水翔	白	skill_thousand_needles_area	A	已生成：280码水纹聚集、水针涌起与碎冰消散透明单次六帧；不是独立飞弹	已绑定：areas/thousand_needles，384×384、6fps；0.5秒延迟，编辑器与实战已检查（2026-09-25）
+技能	thousand_needles	千杀水翔	白	skill_thousand_needles_hit	H	地面涌起水针群和碎冰水花；不是独立飞弹，先做落点素材	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	mind_transfer	心转分身之术	山中井野	skill_mind_transfer_fly	F	已生成：淡蓝精神光团朝右飞行三帧透明序列；控制持续用 ino_seize	已绑定：data/shots/skill_mind_transfer，48px长边、3帧、12fps、加色、朝向飞行方向；无独立命中段，实战已检查（2026-09-25）
+技能	mind_transfer	心转分身之术	山中井野	skill_mind_transfer_hit	H	淡蓝精神光团飞行、精神入体涟漪；控制持续用 ino_seize	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	kagura_eye	神乐心眼	香燐	skill_kagura_eye_cast	C	红色感知起手波纹；持续感知光使用 karin_ward	已生成透明六帧并绑定 cast_kagura_eye；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	fang_pass	通牙	犬冢牙	skill_fang_pass_area	A	已生成：200码白色旋钻风轨、尘土与碎石透明单次六帧；身体姿态独立	已绑定：areas/fang_pass，384×384、6fps；0.3秒延迟，编辑器与实战已检查（2026-09-25）
+技能	fang_pass	通牙	犬冢牙	skill_fang_pass_hit	H	横向白色旋钻风轨与尘土命中；身体姿态独立	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	inspire	鼓舞	野原琳	skill_inspire_hit	H	金色鼓舞星芒，受益者持续使用 rin_cheer	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	leaf_whirl	木叶旋风	李洛克	skill_leaf_whirl_area	A	环身绿色旋风与连续腿击风痕；旋转期间使用 lee_whirl	已生成透明六帧并绑定七次真实范围脉冲；逐段及清理截图已检查（2026-09-28）
+技能	leaf_whirl	木叶旋风	李洛克	skill_leaf_whirl_hit	H	环身绿色旋风与连续腿击风痕；旋转期间使用 lee_whirl	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	strategist	天才军师	奈良鹿丸	skill_strategist_area	A	淡蓝策略符纹和恢复查克拉点；无文字；持续效果使用 shikamaru_focus	复用已完成 buff_shikamaru_focus 六帧本人回蓝光点；技能 on_hit 为空、无友方范围收益，暂不绘制误导性的 0.3 策略圈（2026-09-29）
+技能	shadow_bind	影子模仿术	奈良鹿丸	skill_shadow_bind_fly	F	已生成：贴地黑紫影带三帧透明飞行；持续控制连线独立	已绑定：data/shots/skill_shadow_bind，72px高清长边、3帧、12fps、普通透明；无独立命中段，实战已检查（2026-09-25）
+技能	shadow_bind	影子模仿术	奈良鹿丸	skill_shadow_bind_link	L	已生成：黑紫贴地影带六帧透明循环，施法者脚到目标脚可拉伸	已绑定：data/field_art/links/shadow_hold，6帧、8fps、42px连线宽度；真实控制状态驱动，实战已检查（2026-09-25）
+技能	shadow_bind	影子模仿术	奈良鹿丸	skill_shadow_bind_hit	H	黑色地面影子前伸、施法者脚到目标脚的可拉伸影带、目标脚底束缚；真实控制连线已接，专属 PNG 待生成	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	tool_control	忍具操纵	天天	skill_tool_control_cast	C	卷轴展开与武器召出闪光；持续使用 tenten_tools	已生成透明六帧并绑定 cast_tool_control；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	hidden_mist	雾隐之术	桃地再不斩	skill_hidden_mist_cast	C	脚下白雾升起；环身雾层使用 zabuza_mist，不画覆盖全地图的大雾	已生成透明六帧并绑定 cast_hidden_mist；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	release_blades	鲆鲽·解放	长十郎	skill_release_blades_cast	C	蓝色武器查克拉爆发；持续使用 chojuro_release	已生成透明六帧并绑定 cast_release_blades；按握刀位置缩放校准，编辑器与真实施法截图已检查（2026-09-29）
+技能	paper_wings	纸天使之术	小南	skill_paper_wings_cast	C	白纸聚合成翼的起手散纸；持续纸翼用 konan_wings	已生成透明六帧并绑定 cast_paper_wings；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	eight_gates	八门遁甲	迈特凯	skill_eight_gates_cast	C	绿色查克拉开门爆发；环身绿焰使用 guy_gate	已生成透明六帧并绑定 cast_eight_gates；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	water_wall	水遁·水阵壁	千手扉间	skill_water_wall_area	A	环身水墙升起/消散；防御期间使用 tobirama_wall	复用已完成 buff_tobirama_wall 六帧透明环身水幕；真实施法与状态实战截图已检查，不叠加重复水墙（2026-09-28）
+技能	water_surge	水冲波	千手扉间	skill_water_surge_area	A	可重复拼接的向外水浪单元和浪头水花；五波扇形由代码排布	已生成透明六帧窄浪前缘并绑定 areas/water_surge；五波七十段按真实落点和方向拼接，编辑器与实战截图已检查（2026-09-28）
+技能	water_surge	水冲波	千手扉间	skill_water_surge_hit	H	可重复拼接的向外水浪单元和浪头水花；五波扇形由代码排布	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	kurama_cloak	九尾人柱力	漩涡鸣人	skill_kurama_cloak_area	A	柔和金色治疗脉冲与环身恢复光；当前为恢复光环，九尾外衣形象独立列出	由已完成的 kurama_cloak_aura 透明六帧实时恢复光环承担；实际受益者截图已检查，无需重复区域图（2026-09-28）
+技能	battle_chakra	尾兽查克拉·历战	漩涡玖辛奈	skill_battle_chakra_area	A	蓝红查克拉治疗光环、英雄一家受击治疗闪光	区域光环由已完成的 battle_chakra_aura 透明六帧实时覆盖承担；受击闪光 H 按用户要求暂缓（2026-09-28）
+技能	battle_chakra	尾兽查克拉·历战	漩涡玖辛奈	skill_battle_chakra_hit	H	蓝红查克拉治疗光环、英雄一家受击治疗闪光	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	gale_dance	气流乱舞	手鞠	skill_gale_dance_area	A	脚下青色风流与远程攻击增益风纹；不绘制带伤害的龙卷	由已完成的 gale_dance_aura 透明六帧实时远程增益光环承担；范围内远程友军截图已检查（2026-09-28）
+技能	mirror_ward	幻术·镜守	夕日红	skill_mirror_ward_hit	H	镜面光片浮现；持续忍术吸收罩使用 kurenai_shield（此技能确实有忍术护盾）	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	fire_dragon	火遁·火龙炎弹	猿飞日斩	skill_fire_dragon_area	A	已生成：火流卷入、龙首状火焰坍缩与圆形爆发六帧；不含独立飞行体	已绑定：areas/fire_dragon，384×384、6fps、380码、0.5秒延迟，编辑器与实战已检查（2026-09-25）
+技能	fire_dragon	火遁·火龙炎弹	猿飞日斩	skill_fire_dragon_fly	F	已生成：火焰龙首与短焰尾三帧透明飞行循环	已绑定：data/shots/skill_fire_dragon，84px高清长边、3帧、12fps、加色；沿0.5秒地面延迟载体显示，实战已检查（2026-09-25）
+技能	fire_dragon	火遁·火龙炎弹	猿飞日斩	skill_fire_dragon_hit	H	火龙喷吐落点与火焰爆发；当前区域命中，飞龙飞行图可后补表现载体	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	earth_dragon	土遁·土龙弹	猿飞日斩	skill_earth_dragon_area	A	沿直线的土龙冲击单元、石块爆碎；不要把整条长线画死	已生成透明六帧短土脊并绑定 areas/earth_dragon；按真实施法原点与 0.5 直线长度拼接，编辑器与实战截图已检查（2026-09-28）
+技能	earth_dragon	土遁·土龙弹	猿飞日斩	skill_earth_dragon_fly	F	已生成：岩土龙首、石板与碎石三帧透明飞行循环	已绑定：data/shots/skill_earth_dragon，84px高清长边、3帧、12fps、普通透明；沿0.4秒地面延迟载体显示，实战已检查（2026-09-25）
+技能	earth_dragon	土遁·土龙弹	猿飞日斩	skill_earth_dragon_hit	H	沿直线的土龙冲击单元、石块爆碎；不要把整条长线画死	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	false_darkness	雷遁·伪暗	角都	skill_false_darkness_area	A	每 0.2 秒同时三道小型落雷，共 20 轮；各道半径 155 码，跟随来源随机落点，专属命中特效接口待接	已生成透明六帧并绑定 areas/false_darkness；按真实随机落点逐道播放，三道同轮及二十轮清理实战截图已检查（2026-09-28）
+技能	false_darkness	雷遁·伪暗	角都	skill_false_darkness_hit	H	每 0.2 秒同时三道小型落雷，共 20 轮；各道半径 155 码，跟随来源随机落点，专属命中特效接口待接	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	dust_release	尘遁·原界剥离之术	大野木	skill_dust_release_area	A	已生成：白色几何结界、晶面与分解闪光透明六帧	已绑定：areas/dust_release，384×384、6fps、340码、0.6秒延迟，编辑器与实战已检查（2026-09-25）
+技能	dust_release	尘遁·原界剥离之术	大野木	skill_dust_release_hit	H	半透明白色几何尘遁结界、白色分解爆闪；区域参数由代码控制	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	great_breakthrough	风遁·大突破	大蛇丸	skill_great_breakthrough_area	A	已生成：200码风刃/风压与尘流透明单次六帧序列	已绑定：areas/great_breakthrough，384×384、6fps；第4帧立即生效，无飞行子弹（2026-09-25）
+技能	great_breakthrough	风遁·大突破	大蛇丸	skill_great_breakthrough_hit	H	向前扩散的风刃/风压单元，命中尘流	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	chidori	千鸟	宇智波佐助	skill_chidori_cast	C	持手蓝白雷电；落点电弧冲击另项暂缓，人物与闪电分开	已生成持手雷电透明六帧并绑定 cast_chidori；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	chidori	千鸟	宇智波佐助	skill_chidori_area	A	已生成：蓝白雷种、分叉电弧与碎裂落点透明六帧；不含人物/手持层	已绑定：areas/chidori，384×384、6fps、300码、0.3秒延迟，编辑器与实战已检查（2026-09-25）
+技能	chidori	千鸟	宇智波佐助	skill_chidori_hit	H	持手蓝白雷电、落点电弧冲击；人物与闪电分开	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	dark_walk	幻术·黑暗行之术	千手扉间	skill_dark_walk_area	A	已生成：黑紫烟幕、破碎暗环侵入与消散透明六帧；持续黑雾仍独立	已绑定：areas/dark_walk，384×384、6fps、300码、0.5秒延迟，编辑器与实战已检查（2026-09-25）
+技能	iron_sand	沙铁界法	蝎	skill_iron_sand_area	A	已生成：单个400码黑色铁砂尖刺群与砂粒透明六帧循环；三十次落点由代码驱动	已绑定：pulses/iron_sand，384×384、6fps；编辑器与实战已检查（2026-09-25）
+技能	iron_sand	沙铁界法	蝎	skill_iron_sand_hit	H	黑色铁砂尖刺群与砂粒循环；持续三十次落点由代码驱动	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	boil_acid	沸遁·溶解爆酸	照美冥	skill_boil_acid_area	A	已生成：340码中央伤害圆浓酸涡流透明六帧循环；持续减益圆另用 skill_boil_acid_zone	已绑定：pulses/boil_acid，384×384、6fps；编辑器与实战已检查（2026-09-25）
+技能	boil_acid	沸遁·溶解爆酸	照美冥	skill_boil_acid_hit	H	酸雾区域循环、酸液小喷发；一个中心单元复用到周围五区	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	boil_acid_kage	沸遁·溶解爆酸·五影	照美冥	skill_boil_acid_kage_area	A	已生成：680码中央大伤害圆亮黄绿/淡青浓酸涡流透明六帧；14个减益圆另用 skill_boil_acid_kage_zone	已绑定：pulses/boil_acid_kage，384×384、6fps；编辑器与真实五影战斗已检查（2026-09-25）
+技能	sand_burial	砂缚柩	我爱罗	skill_sand_burial_hit	H	单目标沙团合拢和压碎；各目标缠绕使用 sand_coffin	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	sand_waterfall	砂瀑大葬	我爱罗	skill_sand_waterfall_area	A	已生成：555码高密度翻涌流沙与沙瀑脉冲透明六帧；550码减速环另用 skill_sand_waterfall_zone	已绑定：pulses/sand_waterfall，384×384、6fps；编辑器与真实五影战斗已检查（2026-09-25）
+技能	sand_waterfall	砂瀑大葬	我爱罗	skill_sand_waterfall_hit	H	流沙大范围翻涌循环、沙瀑脉冲；区域尺度在引擎配置	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	infinite_sharks	水遁·无限鲛	干柿鬼鲛	skill_infinite_sharks_fly	F	已生成：蓝色水鲨与泡沫尾迹三帧透明飞行循环；地面鲨浪独立	已绑定：data/shots/skill_infinite_sharks，84px高清长边、3帧、12fps、加色；沿0.5秒延迟载体显示且不改变十段结算，实战已检查（2026-09-25）
+技能	infinite_sharks	水遁·无限鲛	干柿鬼鲛	skill_infinite_sharks_area	A	已生成：380码地面鲨鳍浪涡透明六帧循环；飞行载体与受击水花不在本项，350码减益环独立	已绑定：pulses/infinite_sharks，384×384、6fps；编辑器与实战已检查（2026-09-25）
+技能	infinite_sharks	水遁·无限鲛	干柿鬼鲛	skill_infinite_sharks_hit	H	蓝色鲨鱼状飞行载体、地面鲨浪循环、水花命中；载体可绑定并沿既有 0.5 秒延迟显示，不改变十段区域结算	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	shark_cut	鲛肌·削灭斩	干柿鬼鲛	skill_shark_cut_hit	H	鲛肌横斩水刃与查克拉吸取水光；起手概率触发，不要求独立施法动作	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	shark_form	鲛人形态	干柿鬼鲛	skill_shark_form_area	A	鲛人周围水压波与水刃命中；实体四态单列，光环使用 shark_pressure	已生成透明六帧随身水压环并绑定 areas/shark_form；鬼鲛羁绊变体跟随与倒下撤除实战截图已检查，敌人脚边 shark_pressure B 独立（2026-09-29）
+技能	shark_form	鲛人形态	干柿鬼鲛	skill_shark_form_hit	H	鲛人周围水压波与水刃命中；实体四态单列，光环使用 shark_pressure	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	root_burial	木遁·树根爆葬	志村团藏	skill_root_burial_area	A	树根先缠绕目标、再木刺爆开；延迟控制使用 danzo_root_hold	已生成透明六帧并绑定目标落地区域；真实延迟、爆开和清理截图已检查（2026-09-28）
+技能	root_burial	木遁·树根爆葬	志村团藏	skill_root_burial_hit	H	树根先缠绕目标、再木刺爆开；延迟控制使用 danzo_root_hold	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	adamantine_chains	封印术·金刚封锁	漩涡玖辛奈	skill_adamantine_chains_area	A	已生成：金色封印环、锁链向心盘绕与锁结消散透明六帧；持续束缚链独立	已绑定：areas/adamantine_chains，384×384、6fps、350码、立即落地，编辑器与实战已检查（2026-09-25）
+技能	adamantine_chains	封印术·金刚封锁	漩涡玖辛奈	skill_adamantine_chains_link	L	金色锁链直段连接玖辛奈手臂与目标躯干；目标束缚环另用 kushina_chains 状态图	已生成透明六帧并绑定 links/kushina_chains；真实技能状态连线/到期撤线和编辑器截图已检查（2026-09-29）
+技能	adamantine_chains	封印术·金刚封锁	漩涡玖辛奈	skill_adamantine_chains_hit	H	金色锁链直段、链头及目标束缚环；目标沉默持续使用 kushina_chains	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	rasengan_flame	豪炎螺旋丸	自来也	skill_rasengan_flame_cast	C	手持橙红螺旋火球；近身受击旋爆 H 暂缓，此招不是飞行子弹	已生成手持螺旋火球透明六帧并绑定 cast_rasengan_flame；校准手掌，编辑器与真实施法截图已检查（2026-09-29）
+技能	rasengan_flame	豪炎螺旋丸	自来也	skill_rasengan_flame_hit	H	手持橙红螺旋火球和近身旋爆；此招不是飞行子弹	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	piston_fist	活塞拳·零式	重吾	skill_piston_fist_area	A	向前空气冲击圆与拳击碎石，羁绊追加段复用同一素材	已生成透明六帧；普通版与羁绊四段真实落点均已绑定并截图检查（2026-09-28）
+技能	piston_fist	活塞拳·零式	重吾	skill_piston_fist_hit	H	向前空气冲击圆与拳击碎石，羁绊追加段复用同一素材	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	rising_earth	土遁·开土升掘	黑土	skill_rising_earth_area	A	目标脚下土柱升起、碎岩落下、落地冲击；击飞不画人物	已生成透明六帧并绑定目标落地区域；真实延迟、土柱升起及清理截图已检查（2026-09-28）
+技能	rising_earth	土遁·开土升掘	黑土	skill_rising_earth_hit	H	目标脚下土柱升起、碎岩落下、落地冲击；击飞不画人物	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	light_rock	土遁·轻重岩之术	黑土	skill_light_rock_area	A	脚下轻岩漂浮碎粒与淡黄加速光；增益区域由实际光环范围控制	由已完成的 light_rock_aura 透明六帧实时加速光环承担；实际覆盖截图已检查，无需重复区域图（2026-09-28）
+技能	leaf_gale	木叶刚力旋风	迈特凯	skill_leaf_gale_hit	H	绿色腿击风弧、破甲碎片、命中冲击	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	dance_of_pines	唐松之舞	君麻吕	skill_dance_of_pines_area	A	周身短骨刺伸展、骨刺冲击；骨甲持续使用 kimimaro_bone	已生成透明六帧并绑定自身瞬发区域；真实施法、骨刺展开及清理截图已检查（2026-09-28）
+技能	dance_of_pines	唐松之舞	君麻吕	skill_dance_of_pines_hit	H	周身短骨刺伸展、骨刺冲击；骨甲持续使用 kimimaro_bone	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	kaiten	八卦掌·回天	日向宁次	skill_kaiten_area	A	蓝白旋转查克拉半球起落；短时无敌使用 neji_kaiten	已生成透明六帧并绑定自身瞬发区域；真实施法、展开与清理截图已检查（2026-09-28）
+技能	palm_rotation	八卦掌·回天	日向雏田	skill_palm_rotation_area	A	淡紫旋转守护圈；受益者短时光使用 hyuga_guard	已生成透明六帧并绑定友方自身区域；实际施法与单次清理截图已检查（2026-09-28）
+技能	pursuing_fangs	追牙之术	旗木卡卡西	skill_pursuing_fangs_hit	H	通灵烟与目标脚下咬合尘土；五只忍犬使用同一套召唤物四态	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	water_dragon	水遁·水龙弹术	鬼灯水月	skill_water_dragon_fly	F	已生成：朝右的青蓝水龙首与水流躯干三帧透明飞行循环	已绑定：data/shots/skill_water_dragon，84px高清长边、3帧、12fps、加色、朝向飞行方向；无独立命中段，实战已检查（2026-09-25）
+技能	water_dragon	水遁·水龙弹术	鬼灯水月	skill_water_dragon_hit	H	朝右的水龙弹飞行循环与水花炸裂，可绑定真实技能弹道	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	haze_illusion	幻术·霞	夕日红	skill_haze_illusion_fly	F	已生成：红紫霞雾、粉色亮核与少量花瓣三帧透明飞行循环；持续使用 kurenai_haze	已绑定：data/shots/skill_haze_illusion，60px高清长边、3帧、12fps、加色、朝向飞行方向；无独立命中段，实战已检查（2026-09-25）
+技能	haze_illusion	幻术·霞	夕日红	skill_haze_illusion_hit	H	红紫幻术霞光飞行与花瓣/雾纹命中；持续使用 kurenai_haze	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	susanoo	须佐能乎	宇智波斑	skill_susanoo_hit	H	紫蓝查克拉震荡冲击；持续半身骨架护体使用 madara_susanoo，非独立召唤物	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	lightning_armor	雷遁护甲	艾（雷影）	skill_lightning_armor_cast	C	蓝白电流起手爆闪；持续使用 raikage_armor	已生成透明六帧并绑定 cast_lightning_armor；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	malice_sense	恶意感知	仙人鸣人	skill_malice_sense_cast	C	金色感知一闪；持续使用 sage_sense	已生成透明六帧并绑定 cast_malice_sense；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	kotoamatsukami	别天神·光芒	宇智波止水	skill_kotoamatsukami_cast	C	绿色幻术光芒起手；持续使用 shisui_kotoama	已生成透明六帧并绑定 cast_kotoamatsukami；编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	mending_jutsu	强力再生术	仙人兜	skill_mending_jutsu_hit	H	白绿色细胞再生亮点，持续使用 kabuto_mend	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	great_fireball	大豪火球	宇智波鼬	skill_great_fireball_area	A	已生成：橙红火球坍缩、环形爆发与余焰透明六帧；当前非真实飞弹	已绑定：areas/great_fireball，384×384、6fps、220码、0.4秒延迟，编辑器与实战已检查（2026-09-25）
+技能	great_fireball	大豪火球	宇智波鼬	skill_great_fireball_fly	F	已生成：球形豪火球、内焰旋流与短焰尾三帧透明飞行循环	已绑定：data/shots/skill_great_fireball，84px高清长边、3帧、12fps、加色；沿0.4秒地面延迟载体显示，实战已检查（2026-09-25）
+技能	great_fireball	大豪火球	宇智波鼬	skill_great_fireball_hit	H	橙红火球区域爆炸与散落余焰；当前非真实飞弹	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	white_rage	仙法·白激之术	仙人兜	skill_white_rage_area	A	已生成：白龙状光线、折射晶片与震动环透明六帧；沉默状态层独立	已绑定：areas/white_rage，384×384、6fps、350码、0.5秒延迟，编辑器与实战已检查（2026-09-25）
+技能	white_rage	仙法·白激之术	仙人兜	skill_white_rage_hit	H	白龙状闪光和高亮震动波；白激沉默使用 kabuto_silence	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	flame_formation	宇智波·火焰阵	宇智波带土	skill_flame_formation_area	A	已生成：断续火印、环形火阵爆发与余烬透明六帧；目标余烬仍独立	已绑定：areas/flame_formation，384×384、6fps、360码、0.5秒延迟，不新增持续伤害，编辑器与实战已检查（2026-09-25）
+技能	wood_descent	树界降临	千手柱间	skill_wood_descent_area	A	已生成：固定350码尖锐树根区域，透明六帧循环，12次半秒伤害；减速区另用 skill_wood_descent_zone	已绑定：pulses/wood_descent，384×384、6fps；编辑器与实战已检查（2026-09-25）
+技能	wood_descent	树界降临	千手柱间	skill_wood_descent_hit	H	固定350码树根区域，12次半秒伤害，循环素材；减速区另用 skill_wood_descent_zone	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	sun_halo_dance	宇智波流·日晕舞	宇智波止水	skill_sun_halo_dance_area	A	橙红刀光日晕分段和连续斩击；幻影可先复用止水四态加透明度	已生成透明六帧橙红单圈并绑定 areas/sun_halo_dance；九段真实扩圈逐段播放，幻影独立保留，编辑器与实战截图已检查（2026-09-29）
+技能	sun_halo_dance	宇智波流·日晕舞	宇智波止水	skill_sun_halo_dance_hit	H	橙红刀光日晕分段和连续斩击；幻影可先复用止水四态加透明度	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	flying_raijin_ball	瞬身螺旋丸	波风水门	skill_flying_raijin_ball_cast	C	原地瞬移前金色短闪与手持蓝色螺旋丸；非飞弹，入场和命中另计	已生成透明六帧并绑定 cast_flying_raijin_ball；编辑器与真实施法起手/瞬移后截图已检查（2026-09-29）
+技能	flying_raijin_ball	瞬身螺旋丸	波风水门	skill_flying_raijin_ball_hit	H	金色瞬移离场/入场闪光、蓝色螺旋丸命中；球在手中，不是飞弹	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	flying_raijin_chain	飞雷神之术	波风水门	skill_flying_raijin_chain_hit	H	连续金色短闪和近身斩击；复用瞬移闪光，不新增独立施法动作	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	giant_rasengan	仙法·超大玉螺旋丸	仙人鸣人	skill_giant_rasengan_cast	C	双掌前方形成超大蓝色螺旋球；非飞行子弹，命中爆散另计	已生成透明六帧并绑定 cast_giant_rasengan；缩小球径后编辑器与真实施法起手/释放截图已检查（2026-09-29）
+技能	giant_rasengan	仙法·超大玉螺旋丸	仙人鸣人	skill_giant_rasengan_hit	H	手持巨大蓝色螺旋球与大范围螺旋爆散；非飞行子弹	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	almighty_push	神罗天征	天道佩恩	skill_almighty_push_area	A	由身体向外扩散的透明冲击环；反弹持续用 tendo_repulse	已生成透明六帧并绑定自身瞬发区域；真实施法、扩散和清理截图已检查（2026-09-28）
+技能	deep_forest	森罗万象	千手柱间	skill_deep_forest_hit	H	目标脚下木根急速合拢；持续木根使用 hashirama_bind	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	deity_gates	明神门	千手柱间	skill_deity_gates_area	A	朱红鸟居从上方落下、落地尘环；三次落地复用单个鸟居，不烘焙三连序列	已生成透明六帧并绑定追加技能三次真实扩张落点；逐次及清理截图已检查（2026-09-28）
+技能	deity_gates	明神门	千手柱间	skill_deity_gates_hit	H	朱红鸟居从上方落下、落地尘环；三次落地复用单个鸟居，不烘焙三连序列	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	tsukuyomi	月读	宇智波鼬	skill_tsukuyomi_fly	F	已生成：红黑瞳光亮核、双弧与暗红尾迹三帧透明飞行；持续效果独立	已绑定：data/shots/skill_tsukuyomi，60px高清长边、3帧、12fps、加色；无独立命中段，实战已检查（2026-09-25）
+技能	tsukuyomi	月读	宇智波鼬	skill_tsukuyomi_hit	H	红黑瞳光弹与血月闪光；持续囚禁/磨蚀分两层见对应 buff	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	shadow_clones	多重影分身之术	漩涡鸣人	skill_shadow_clones_hit	H	白色通灵烟的出现与消失；鸣人分身四态可复用本体	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	white_copy	白绝复制体	黑绝	skill_white_copy_hit	H	白色孢子聚合与消散；复制体四态见召唤物表	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	puppet_crow	傀儡术·乌鸦	勘九郎	skill_puppet_crow_hit	H	傀儡烟尘出现和木片消散；乌鸦四态与攻击子弹见召唤物表	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	vampire_bugs	通灵术·吸血虫	油女志乃	skill_vampire_bugs_hit	H	虫群出现/散开、吸血返回细光线；虫群实体与远程弹见召唤物表	专属贴图接口待接；现有通用反馈不等于此素材已实现
+技能	vampire_bugs	通灵术·吸血虫	油女志乃	skill_vampire_bugs_link	L	虫群实际普攻吸血后，目标到虫群的紫色短暂回流细线；不画受击爆发	已生成透明六帧亮度修订版并绑定 links/vampire_bugs；召唤虫真实普攻吸血与撤线截图、编辑器已检查（2026-09-29）
+技能	clay_spider	黏土蜘蛛	迪达拉	skill_clay_spider_area	A	已生成：黏土蜘蛛聚集、白橙爆炸、陶土碎片与烟尘透明六帧；不是独立召唤单位	已绑定：areas/clay_spider，384×384、6fps、200码、0.5秒延迟，编辑器与实战已检查（2026-09-25）
+技能	clay_spider	黏土蜘蛛	迪达拉	skill_clay_spider_hit	H	小黏土蜘蛛落点显现、白色爆炸与碎片；当前不是独立召唤单位	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	ash_burn	火遁·灰积烧	猿飞阿斯玛	skill_ash_burn_area	A	灰黑烟灰单次落地动画、橙色点火爆燃；现在为一次范围伤害加致盲，烟雾残留不附加伤害	已接入用户整图：3×2 六帧，256×256，10 fps；灰黑烟雾去底；真实落地后单次播放
+技能	ash_burn	火遁·灰积烧	猿飞阿斯玛	skill_ash_burn_hit	H	灰黑烟灰单次落地动画、橙色点火爆燃；现在为一次范围伤害加致盲，烟雾残留不附加伤害	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	bracken_dance	早蕨之舞	君麻吕	skill_bracken_dance_area	A	地面长骨林破土与骨刺尘爆；死亡触发，不需要活人施法六帧	已生成透明六帧并绑定阵亡派生技能落地区域；真实阵亡触发、峰值和清理截图已检查（2026-09-28）
+技能	bracken_dance	早蕨之舞	君麻吕	skill_bracken_dance_hit	H	地面长骨林破土与骨刺尘爆；死亡触发，不需要活人施法六帧	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	monstrous_strength	怪力爆发	纲手	skill_monstrous_strength_area	A	小型地裂爆炸单元复用七个落点、主目标上冲气流；普攻触发	已生成透明六帧并绑定普攻触发七落点；实际触发与播放截图已检查（2026-09-28）
+技能	monstrous_strength	怪力爆发	纲手	skill_monstrous_strength_hit	H	小型地裂爆炸单元复用七个落点、主目标上冲气流；普攻触发	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	clay_self_destruct	起爆黏土·自爆	迪达拉	skill_clay_self_destruct_area	A	中心白亮橙边大爆炸、环状冲击与黏土碎片；阵亡触发	已生成透明六帧并绑定阵亡派生技能落地区域；真实移动后爆炸、峰值和清理截图已检查（2026-09-28）
+技能	clay_self_destruct	起爆黏土·自爆	迪达拉	skill_clay_self_destruct_hit	H	中心白亮橙边大爆炸、环状冲击与黏土碎片；阵亡触发	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	samsara_rebirth	轮回天生之术	天道佩恩	skill_samsara_rebirth_area	A	绿色复苏环和每个受益者恢复亮点；当前为恢复效果，不宣称死亡忍者复活	已生成透明六帧并绑定阵亡派生技能友方恢复区域；真实触发、峰值和清理截图已检查（2026-09-28）
+技能	samsara_rebirth	轮回天生之术	天道佩恩	skill_samsara_rebirth_hit	H	绿色复苏环和每个受益者恢复亮点；当前为恢复效果，不宣称死亡忍者复活	专属贴图接口待接；现有通用反馈不等于此素材已实现
+BUFF	heal_burst	治疗	角色/目标	buff_heal_burst	H	绿色掌仙恢复光点	已生成透明六帧并绑定瞬时恢复接口；掌仙术真实触发截图已检查（2026-09-26）
+BUFF	haku_chill	水翔·迟滞	角色/目标	buff_haku_chill	B	已生成：浅蓝冰晶与脚底冷雾六帧透明循环	已绑定：data/buff_art/haku_chill，前层6帧、8fps、加色；千杀水翔真实状态实战已检查（2026-09-25）
+BUFF	rin_cheer	鼓舞	角色/目标	buff_rin_cheer	B	已生成：金色上升星芒与细环六帧透明循环	已绑定：data/buff_art/rin_cheer，前层6帧、8fps、加色；鼓舞真实施放截图已检查（2026-09-25）
+BUFF	karin_ward	神乐心眼	角色/目标	buff_karin_ward	B	已生成：暗红感知波纹六帧透明循环，无厚重护盾外壳	已绑定：data/buff_art/karin_ward，前层6帧、8fps、加色；真实施放截图已检查（2026-09-25）
+BUFF	lee_whirl	木叶旋风·旋转	角色/目标	buff_lee_whirl	B	已生成：环身绿色旋转风带六帧透明循环	已绑定：data/buff_art/lee_whirl，前层6帧、8fps、加色；真实施放截图已检查（2026-09-25）
+BUFF	kiba_spin	通牙·无敌	角色/目标	buff_kiba_spin	B	已生成：白色螺旋风壳六帧透明循环	已绑定：data/buff_art/kiba_spin，前层6帧、8fps、加色；真实施放截图已检查（2026-09-25）
+BUFF	zabuza_mist	雾隐	角色/目标	buff_zabuza_mist	B	已生成：灰白薄雾环身六帧透明循环	已绑定：data/buff_art/zabuza_mist，前层6帧、8fps、普通透明；真实施放截图已检查（2026-09-25）
+BUFF	shikamaru_focus	天才军师	角色/目标	buff_shikamaru_focus	B	已生成：淡蓝策略光点与头部细光六帧透明循环	已绑定：data/buff_art/shikamaru_focus，前层6帧、8fps、加色；真实施放截图已检查（2026-09-25）
+BUFF	tenten_tools	忍具操纵	角色/目标	buff_tenten_tools	B	已生成：纸符、小忍具与金色轨迹六帧透明循环	已绑定：data/buff_art/tenten_tools，前层6帧、8fps、加色；真实施放截图已检查（2026-09-26）
+BUFF	ino_seize	心转·束缚	角色/目标	buff_ino_seize	B	已生成：蓝紫精神环与头顶控制符纹六帧透明循环	已绑定：data/buff_art/ino_seize，前层6帧、8fps、加色；真实施放截图已检查（2026-09-26）
+BUFF	shadow_hold	影子禁锢	角色/目标	buff_shadow_hold	B	已生成：脚底黑影与腿部影子束带六帧透明循环	已绑定：data/buff_art/shadow_hold，前层6帧、8fps、普通透明；真实状态实战已检查（2026-09-25）
+BUFF	chojuro_release	鲆鲽解放	角色/目标	buff_chojuro_release	B	已生成：蓝色流动武器查克拉外沿六帧透明循环	已绑定：data/buff_art/chojuro_release，前层6帧、8fps、加色；真实施放截图已检查（2026-09-26）
+BUFF	konan_wings	纸天使之术	角色/目标	buff_konan_wings	B	已生成：白色折纸双翼与少量飘纸六帧透明循环	已绑定：data/buff_art/konan_wings，背后层6帧、8fps、加色；真实施放截图已检查（2026-09-26）
+BUFF	guy_gate	八门遁甲·生门	角色/目标	buff_guy_gate	B	已生成：绿色上升查克拉火焰六帧透明循环	已绑定：data/buff_art/guy_gate，前层6帧、8fps、加色；真实施放截图已检查（2026-09-26）
+BUFF	kimimaro_bone	唐松之舞·骨甲	角色/目标	buff_kimimaro_bone	B	象牙色短骨刺护体外沿	已绑定六帧普通透明前层，实战已检查（2026-09-26）
+BUFF	tobirama_wall	水遁·水阵壁	角色/目标	buff_tobirama_wall	B	环身水幕，不画吸收数值或护盾破碎	已绑定六帧加色前层，实战已检查（2026-09-26）
+BUFF	neji_kaiten	回天·无敌	角色/目标	buff_neji_kaiten	B	蓝白高速回旋半球	已绑定六帧加色前层，实战已检查（2026-09-26）
+BUFF	hyuga_guard	回天·守护	角色/目标	buff_hyuga_guard	B	淡紫旋转守护薄环	已绑定六帧加色前层，实战已检查（2026-09-26）
+BUFF	kurenai_shield	幻术·镜守	角色/目标	buff_kurenai_shield	B	红紫镜片式忍术吸收罩，耗尽时可播放碎镜	已绑定六帧普通透明前层，实战已检查（2026-09-26）
+BUFF	burn	灼烧	角色/目标	buff_burn	B	橙红小火焰与少量火星	已绑定六帧加色前层，实战已检查（2026-09-26）
+BUFF	sand_coffin	砂缚柩·缠绕	角色/目标	buff_sand_coffin	B	脚到腰部的沙带合拢	已绑定六帧普通透明前层，实战已检查（2026-09-26）
+BUFF	sand_waterfall_slow	砂瀑大葬·流砂	角色/目标	buff_sand_waterfall_slow	B	脚底流沙陷落漩涡	已绑定六帧普通透明前层，五影变体实战已检查（2026-09-26）
+BUFF	mei_acid	溶解爆酸	角色/目标	buff_mei_acid	B	绿色酸滴与护甲腐蚀纹	已绑定六帧加色前层，实战已检查（2026-09-26）
+BUFF	mei_acid_kage	溶解爆酸·五影降甲	角色/目标	buff_mei_acid_kage	B	复用酸滴，五影档加浓少许	已绑定独立六帧加色前层，五影变体实战已检查（2026-09-26）
+BUFF	mei_acid_pace	溶解爆酸·迟缓	角色/目标	buff_mei_acid_pace	B	稀薄酸雾环绕手臂和脚部	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kakashi_bind	追牙·束缚	角色/目标	buff_kakashi_bind	B	脚下忍犬咬合尘环；犬本体单独绘制	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	suigetsu_bind	水龙·禁锢	角色/目标	buff_suigetsu_bind	B	缠身水流与水环	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kurenai_haze	幻术·霞	角色/目标	buff_kurenai_haze	B	已生成：红紫花瓣、霞雾与眩惑纹六帧透明循环	已绑定：data/buff_art/kurenai_haze，前层6帧、8fps、加色；真实状态实战已检查（2026-09-25）
+BUFF	madara_susanoo	须佐能乎	角色/目标	buff_madara_susanoo	B	紫蓝半透明须佐骨架，分前肋骨与后轮廓	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	madara_shock	须佐能乎·震慑	角色/目标	buff_madara_shock	B	头顶紫色短震荡纹	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	raikage_armor	雷遁护甲	角色/目标	buff_raikage_armor	B	蓝白跳动雷弧包身	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	sage_sense	恶意感知	角色/目标	buff_sage_sense	B	金色微弱感知粒子环	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	shisui_kotoama	别天神·光芒	角色/目标	buff_shisui_kotoama	B	绿色柔和瞳光与细羽状波纹	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kabuto_mend	强力再生术	角色/目标	buff_kabuto_mend	B	白绿色再生光点，向身体汇聚	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	hashirama_bind	森罗万象·缠绕	角色/目标	buff_hashirama_bind	B	脚底树根缠绕到腰部	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	gate_stun	明神门·镇压	角色/目标	buff_gate_stun	B	朱红镇压符纹；鸟居实体在技能层	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	hashirama_forest	树界降临·减速	角色/目标	buff_hashirama_forest	B	青绿枝叶与侵蚀孢子	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	itachi_moon_hold	月读·囚	角色/目标	buff_itachi_moon_hold	B	已生成：血月红黑束缚框六帧透明循环，不烘焙人物	已绑定：data/buff_art/itachi_moon_hold，前层6帧、8fps、加色；与磨蚀层同坐标实战已检查（2026-09-25）
+BUFF	itachi_moon_grind	月读·磨蚀	角色/目标	buff_itachi_moon_grind	B	已生成：细小红色刺痛光点六帧透明循环	已绑定：data/buff_art/itachi_moon_grind，前层6帧、8fps、加色；与囚禁层叠加实战已检查（2026-09-25）
+BUFF	obito_embers	火焰阵·余烬	角色/目标	buff_obito_embers	B	暗红余烬和零散火星	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	obito_warp	扭曲·钉住	角色/目标	buff_obito_warp	B	深紫旋涡束缚纹	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	tobirama_dark	黑暗行之术	角色/目标	buff_tobirama_dark	B	黑烟遮目与稀薄暗雾	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	asuma_ash	灰积烧·致盲	角色/目标	buff_asuma_ash	B	头部烟灰遮目，身体只留少量灰粒	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	tsunade_byakugou	百豪之术	角色/目标	buff_tsunade_byakugou	B	绿色恢复脉冲与额头紫色微光	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	tsunade_guard	百豪之术·免伤	角色/目标	buff_tsunade_guard	B	短暂亮白绿色免伤轮廓	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	bee_cloak	尾兽外衣	角色/目标	buff_bee_cloak	B	深红尾兽查克拉外衣	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kimimaro_curse	地之咒印	角色/目标	buff_kimimaro_curse	B	紫黑咒印气流与灰白骨粒	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	hidan_undying	死司凭血	角色/目标	buff_hidan_undying	B	红黑血纹法阵与环身细线	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	danzo_izanagi	伊邪那岐	角色/目标	buff_danzo_izanagi	H	淡红写轮眼纹一闪后绿色恢复	已生成透明六帧并绑定瞬时恢复接口；致命伤被动真实触发截图已检查（2026-09-26）
+BUFF	danzo_blur	伊邪那岐·失明	角色/目标	buff_danzo_blur	B	局部眼部暗纹，弱化为小提示避免长时间遮挡	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	pein_rebirth	轮回天生之术	角色/目标	buff_pein_rebirth	H	绿色恢复上升光点	已生成透明六帧并绑定瞬时恢复接口；和平期望阵亡技能真实触发截图已检查（2026-09-26）
+BUFF	zetsu_ephemera	蜉蝣	角色/目标	buff_zetsu_ephemera	B	白色孢子与半透明土色消隐轮廓	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	obito_kamui	神威·虚化	角色/目标	buff_obito_kamui	B	黑紫扭曲漩涡包身	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	gaara_sand_guard	沙之守护	角色/目标	buff_gaara_sand_guard	B	贴身沙甲流动，普通混合	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	mei_charm	妩媚	角色/目标	buff_mei_charm	B	粉红细小花瓣与魅惑波纹	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	onoki_weight	加重岩之术	角色/目标	buff_onoki_weight	B	脚底岩重符纹与下沉尘粒	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	sasori_venom	傀儡之体·毒	角色/目标	buff_sasori_venom	B	紫色慢速毒雾	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	sasori_poison	傀儡之体·毒伤	角色/目标	buff_sasori_poison	B	紫绿毒滴，小量循环，层数不靠叠加几十套光效表达	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	raikage_blade	雷梨热刀	角色/目标	buff_raikage_blade	B	浓蓝雷电与力量上升短线	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	raikage_blade_guard	雷梨热刀·无敌	角色/目标	buff_raikage_blade_guard	B	亮白雷电瞬间保护轮廓	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	guy_break	木叶刚力旋风·破甲	角色/目标	buff_guy_break	B	灰色碎甲片与绿色裂纹	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	guy_stun	木叶刚力旋风·眩晕	角色/目标	buff_guy_stun	B	头顶绿色短震荡星点	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	tendo_repulse	神罗天征·反弹	角色/目标	buff_tendo_repulse	B	环身透明反弹折射圈	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kushina_chains	金刚封锁·沉默	角色/目标	buff_kushina_chains	B	金色缠身锁链与封印纹	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kisame_sharks	无限鲛·眩晕	角色/目标	buff_kisame_sharks	B	已生成：头顶蓝色震荡水纹六帧透明循环	已绑定：data/buff_art/kisame_sharks，前层6帧、8fps、加色、0.10缩放并上移44px；隔离区域层实战已检查（2026-09-25）
+BUFF	shark_pressure	鲛人·水域压制	角色/目标	buff_shark_pressure	B	脚边深蓝水压涟漪	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kabuto_silence	白激·沉默	角色/目标	buff_kabuto_silence	B	白色振动纹与头部封口细环	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	sage_rasengan_stun	超大玉·眩晕	角色/目标	buff_sage_rasengan_stun	B	头顶蓝白短震荡星点	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	jiraiya_stun	豪炎·眩晕	角色/目标	buff_jiraiya_stun	B	头顶橙红短震荡星点	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	minato_stun	瞬身·眩晕	角色/目标	buff_minato_stun	B	头顶金蓝短震荡星点	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	enemy_lift	击飞	角色/目标	buff_enemy_lift	B	脚底向上气流，实际人物升降由代码处理	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	jugo_slow	活塞拳·迟缓	角色/目标	buff_jugo_slow	B	灰黑气压束带与慢速碎粒	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	kurotsuchi_stun	开土升掘·眩晕	角色/目标	buff_kurotsuchi_stun	B	头顶土黄短震荡星点	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	danzo_root_hold	树根束缚	角色/目标	buff_danzo_root_hold	B	深褐树根束缚	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	hiruzen_earth_slow	土龙弹·减速	角色/目标	buff_hiruzen_earth_slow	B	脚底土块与尘粒缠绕	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	hokage_line_guard	历代火影 +30 护甲	实际受益成员	buff_hokage_line_guard	B	低亮度包裹光，前后分层；数值不重复加算	整波可撤销状态已接；忍者前后层可在 BUFF光效页绑定，六帧专属 PNG 已切分并绑定（背后层）
+BUFF	reincarnation_gift	千代三围受赠	实际受益成员	buff_reincarnation_gift	B	低亮度包裹光，前后分层；数值不重复加算	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+待迁移状态	kurama_cloak_aura	九尾人柱力恢复	实际受益成员	buff_kurama_cloak_aura	B	低亮度包裹光，前后分层；数值不重复加算	专属六帧显示已接并按实际覆盖显示；真实增益仍未统一迁为 BUFF
+待迁移状态	battle_chakra_aura	历战恢复	实际受益成员	buff_battle_chakra_aura	B	低亮度包裹光，前后分层；数值不重复加算	专属六帧显示已接并按实际覆盖显示；真实增益仍未统一迁为 BUFF
+待迁移状态	light_rock_aura	轻重岩增速	实际受益成员	buff_light_rock_aura	B	低亮度包裹光，前后分层；数值不重复加算	专属六帧显示已接并按实际覆盖显示；真实增益仍未统一迁为 BUFF
+待迁移状态	gale_dance_aura	远程攻击强化	实际受益成员	buff_gale_dance_aura	B	低亮度包裹光，前后分层；数值不重复加算	专属六帧显示已接并按实际覆盖显示；真实增益仍未统一迁为 BUFF
+召唤/形态	summon_shadow_clones	影分身	影分身	summon_shadow_clones	S	原著鸣人造型四态各六帧；近战无需远程弹	独立四态、原著体型与奔跑中轴已检查；六帧白色出生烟summon_shadow_clones_spawn已切图绑定，编辑器及真实三分身出生／烟消散截图已检查（2026-09-29）
+召唤/形态	summon_white_copy	白绝复制体	白绝复制体	summon_white_copy	S	原著白绝复制体四态各六帧；近战无需远程弹	四态已生成绑定、与忍者同高；六帧白色孢子出生烟summon_white_copy_spawn已切图绑定，编辑器及绝真实召唤／消散截图已检查（2026-09-29）
+召唤/形态	summon_puppet_crow	傀儡乌鸦	傀儡乌鸦	summon_puppet_crow	S	原著木制乌鸦傀儡四态各六帧；远程毒针飞行段	四态已生成绑定、与忍者同高，保留qianben；沙灰色六帧出生烟summon_puppet_crow_spawn已切图绑定，编辑器及勘九郎真实召唤／消散截图已检查（2026-09-29）
+召唤/形态	summon_vampire_bugs	吸血虫群	吸血虫群	summon_vampire_bugs	S	一簇寄坏虫作为一个单位，四态各六帧；远程虫弹	四态已绑定、与忍者同高，保留bugsball与吸血回流线；六帧银紫出生旋雾summon_vampire_bugs_spawn已切图绑定，十簇真实召唤的可读性及消散已截图检查（2026-09-29）
+召唤/形态	summon_pursuing_fangs	追牙忍犬	追牙忍犬	summon_pursuing_fangs	S	原著忍犬四态各六帧；dead白烟消散；近战无需远程弹	四态已绑定、体型为忍者一半；低矮六帧出生烟summon_pursuing_fangs_spawn已切图绑定，五只真实召唤的逐只烟圈与消散已截图检查（2026-09-29）
+召唤/形态	summon_sun_halo_dance	日晕舞幻影	日晕舞幻影	summon_sun_halo_dance	S	复用止水身份与四态动作，重制半透明冷蓝紫雷影四态各六帧；当前近战，不要求飞弹或受击图	独立四态已绑定、与止水同高且奔跑中轴锁定；六帧冷蓝紫出生显形光summon_sun_halo_spawn已切图绑定，编辑器及真实日晕舞幻影显形／消散截图已检查（2026-09-29）
+召唤/形态	form_shark	鲛人形态	鲛人形态	form_shark	S	鲛人四态各 6 帧，可选施法六帧；水系远程普攻弹/命中	四态各六帧已绑定真实鬼鲛羁绊变体，编辑器与实战已截图检查；腿环仅奔跑态出现，后续可统一（2026-09-29）
+召唤/形态	form_kurama	九尾外衣鸣人	九尾外衣鸣人	form_kurama	S	优先包裹光；若改轮廓则独立四态，勿与普通过程中的恢复光混为一项	已生成六帧透明双尾查克拉后层并以 kurama_cloak_source 绑定技能来源；脚底治疗范围光环仍独立，受益队友不显示外衣；实战源/受益者截图已检查（2026-09-29）
+羁绊	haku_and_zabuza	随雪而逝	白、桃地再不斩	bond_haku_and_zabuza_aura	B	六帧低亮雪环；仅真实激活羁绊的白与再不斩显示，非成员不显示；原生机制另核	已出图切图绑定；编辑器六帧与真实羁绊三人同场截图已检查（2026-09-30）
+羁绊	immortal_pair	不死二人组	角都、飞段	bond_immortal_pair_aura	B	六帧低亮暗红缝线环；仅真实激活羁绊的角都与飞段显示，不修改复活效果	已出图切图绑定；编辑器六帧与角都、飞段、鸣人三人同场截图已检查（2026-09-30）
+羁绊	akatsuki_four	晓之四象	宇智波鼬、迪达拉、小南、黑绝	bond_akatsuki_four_aura	B	六帧低亮黑红云纹环；仅真实激活满档的四名成员显示，不改变技能与 BUFF	已出图切图绑定；编辑器六帧与四成员加鸣人同场截图已检查（2026-09-30）
+羁绊	kai_squad	凯班	迈特凯、李洛克、天天、日向宁次	bond_kai_squad_aura	B	六帧低亮叶风脚环；仅真实激活满档的四名成员显示，不改变技能与 BUFF	已出图切图绑定；编辑器六帧与四成员加鸣人同场截图已检查（2026-09-30）
+羁绊	hyuga_pair	日向兄妹	日向宁次、日向雏田	bond_hyuga_pair_aura	B	六帧低亮淡紫柔拳脚环；仅真实激活的宁次与雏田显示，不改变技能与 BUFF	已出图切图绑定；编辑器六帧与宁次、雏田、鸣人同场截图已检查（2026-09-30）
+羁绊	sand_siblings	砂忍三巨头	我爱罗、手鞠、勘九郎	bond_sand_siblings_aura	B	六帧低亮沙风脚环；仅真实激活满档三成员显示，与现有青色脚边效果叠加时透明度单独降至 0.35	已出图切图绑定；编辑器六帧与三成员加鸣人同场截图已检查（2026-09-30）
+羁绊	earth_curse	地之咒印	君麻吕、大蛇丸	bond_earth_curse_aura	B	六帧低亮暗紫咒纹脚环；仅真实激活的两名成员显示，不替代咒印形态与技能	已出图切图绑定；编辑器六帧与君麻吕、大蛇丸、鸣人同场截图已检查（2026-09-30）
+羁绊	my_cage	吾之牢笼	君麻吕、重吾	bond_my_cage_aura	B	六帧骨白暗橙脚环；仅真实激活的君麻吕与重吾显示，不改变技能与 BUFF	已出图切图绑定；编辑器六帧与君麻吕、重吾、鸣人同场截图已检查（2026-09-30）
+羁绊	five_kage	五影齐聚	纲手、我爱罗、照美冥、艾（雷影）、大野木	bond_five_kage_aura	B	六帧低亮金色五点脚环；仅真实满档的五位成员显示，不改变各自技能与 BUFF	已出图切图绑定；编辑器六帧与五影加鸣人同场截图已检查（2026-09-30）
+羁绊	lightning_blades	绝牛雷犁热刀	艾（雷影）、奇拉比	bond_lightning_blades_aura	B	六帧细蓝白电弧脚环；仅真实激活的艾和奇拉比显示，不改变技能、BUFF 或暴击	第三版已出图切图绑定；编辑器六帧与艾、奇拉比、鸣人同场截图已检查（2026-09-30）
+羁绊	hokage_line	历代火影	千手柱间、千手扉间、猿飞日斩、波风水门、纲手	buff_hokage_line_guard	B	buff_hokage_line_guard；+30 护甲护体光，禁止护盾	已接开场护甲 BUFF 与忍者环身光；六帧专属 PNG 已切分并绑定（背后层）
+羁绊	senju_brothers	千手兄弟	千手柱间、千手扉间	bond_senju_brothers_aura	B	六帧木水交织脚环；仅真实激活的柱间与扉间显示，不冒充历代火影护甲光	已出图切图绑定；编辑器六帧与柱间、扉间、鸣人同场截图已检查（2026-09-30）
+羁绊	brothers_bond	兄弟的爱恨	宇智波鼬、宇智波佐助	bond_brothers_bond_aura	B	六帧暗红暗紫双弧脚环；仅真实激活的鼬与佐助显示，不替代眼术和须佐	已出图切图绑定；编辑器六帧与鼬、佐助、鸣人同场截图已检查（2026-09-30）
+羁绊	vermilion_pair	朱雀与南斗	宇智波鼬、干柿鬼鲛	bond_vermilion_pair_aura	B	六帧暗红云纹与深蓝水纹脚环；仅真实激活的鼬与鬼鲛显示，不替代技能或形态	已出图切图绑定；编辑器六帧与鼬、鬼鲛、鸣人同场截图已检查（2026-09-30）
+羁绊	divine_wound	神赐予的伤痛	小南、天道佩恩	bond_divine_wound_aura	B	六帧灰白纸片与淡紫波纹脚环；仅真实激活的小南与天道佩恩显示，不替代技能或形态	已出图切图绑定；编辑器六帧与小南、天道佩恩、鸣人同场截图已检查（2026-09-30）
+羁绊	masterminds	幕后黑手	宇智波斑、宇智波带土、仙人兜、天道佩恩、黑绝	bond_masterminds_aura	B	六帧暗靛五点脚环；仅真实满档激活的五位成员显示，不替代技能或 BUFF	已出图切图绑定；编辑器六帧与五人、鸣人同场截图已检查（2026-09-30）
+羁绊	team_seven	第七班	漩涡鸣人、宇智波佐助、春野樱、旗木卡卡西	bond_team_seven_aura	B	六帧低亮木叶绿四色点脚环；仅真实满档激活的第七班四人显示，不替代技能或 BUFF	已出图切图绑定；编辑器六帧与四人、我爱罗同场截图已检查（2026-09-30）
+羁绊	ino_shika_cho	第十班	奈良鹿丸、秋道丁次、山中井野、猿飞阿斯玛	bond_ino_shika_cho_aura	B	六帧青灰猪鹿蝶抽象点纹脚环；仅真实满档激活的第十班四人显示，不替代技能或 BUFF	已出图切图绑定；编辑器六帧与四人、鸣人同场截图已检查（2026-09-30）
+羁绊	sannin	木叶三忍	自来也、大蛇丸、纲手	bond_sannin_aura	B	六帧朱红、深紫、浅金三段脚环；仅真实满档激活的三忍显示，不替代技能或召唤	已出图切图绑定；编辑器六帧与三人、鸣人同场截图已检查（2026-09-30）
+羁绊	taka	鹰小队	宇智波佐助、鬼灯水月、重吾、香燐	bond_taka_aura	B	六帧炭灰冷青四羽纹脚环；仅真实满档激活的鹰小队四人显示，不替代技能或形态	已出图切图绑定；编辑器六帧与四人、鸣人同场截图已检查（2026-09-30）
+羁绊	puppet_masters	傀儡匠心	千代婆婆、勘九郎	bond_puppet_masters_aura	B	六帧旧铜与青线结点脚环；仅真实激活的千代婆婆与勘九郎显示，不替代傀儡或技能线	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	inner_love	内心的爱	千代婆婆、蝎	bond_inner_love_aura	B	六帧旧金与灰玫瑰缝线脚环；仅真实激活的千代婆婆与蝎显示，不替代复活术或技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	hero_family	英雄一家	漩涡鸣人、漩涡玖辛奈、波风水门	bond_hero_family_aura	B	六帧暖白与橘红淡蓝三点脚环；已有亮环叠加，羁绊环降至 0.35 透明度；不替代治疗或 H 受击闪光	已出图切图绑定；编辑器六帧与三人、我爱罗同场截图已检查（2026-09-30）
+羁绊	leaf_and_root	叶与根	猿飞日斩、志村团藏	bond_leaf_and_root_aura	B	六帧叶绿与深褐根纹脚环；仅真实激活的日斩与团藏显示，不替代火龙术或根系技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	strategist_couple	军师夫妇	手鞠、奈良鹿丸	bond_strategist_couple_aura	B	六帧浅砂金与冷灰双弧脚环；仅真实激活的手鞠与鹿丸显示，已有青白脚环叠加使可见度有限	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	tsuchikage_guard	土影护卫	大野木、黑土	bond_tsuchikage_guard_aura	B	六帧赭土灰岩石纹脚环；仅真实激活的大野木与黑土显示，黑土已有金环叠光；不替代技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	crimson_dusk	夕阳之红	猿飞阿斯玛、夕日红	bond_crimson_dusk_aura	B	六帧绛红落日橙双弧脚环；仅真实激活的阿斯玛与红显示，不替代幻术或查克拉刀	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	master_and_pupil	师徒决战	大蛇丸、猿飞日斩	bond_master_and_pupil_aura	B	六帧旧金与暗紫相对断环；仅真实激活的大蛇丸与日斩显示，不替代封印或忍术攻击	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	shadow_and_blade	影与玉	猿飞阿斯玛、奈良鹿丸	bond_shadow_and_blade_aura	B	六帧冷灰影线与暖金棋点脚环；仅真实激活的阿斯玛与鹿丸显示，不替代影子术或查克拉刀	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	truest_friends	最真的挚友	宇智波鼬、宇智波止水	bond_truest_friends_aura	B	六帧暗红青灰交织脚环；仅真实激活的鼬与止水显示，不替代写轮眼或幻影技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	mizukage_guard	水影护卫	照美冥、长十郎	bond_mizukage_guard_aura	B	六帧深青水线与珍珠灰水滴脚环；仅真实激活的照美冥与长十郎显示，不替代技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	eternal_rivals	永远的对手	迈特凯、旗木卡卡西	bond_eternal_rivals_aura	B	六帧叶绿与银灰对称脚环；仅真实激活的凯与卡卡西显示，不替代八门或雷切	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	power_of_youth	青春的力量	迈特凯、李洛克	bond_power_of_youth_aura	B	六帧春叶绿双线与双叶点纹脚环；仅真实激活的凯与李洛克显示，不替代八门或体术技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	child_of_prophecy	预言之子	漩涡鸣人、自来也	bond_child_of_prophecy_aura	B	六帧鼠尾草绿、纸白与橙金点光脚环；仅真实激活的鸣人与自来也显示，不替代技能	已出图切图绑定；编辑器六帧与两人、我爱罗同场截图已检查（2026-09-30）
+羁绊	three_of_them	三人的羁绊	宇智波带土、旗木卡卡西、野原琳	bond_three_of_them_aura	B	六帧暗玫红、银灰与暖琥珀三段细环；仅真实激活的带土、卡卡西、琳显示，不替代技能	已出图切图绑定；编辑器六帧与三人、鸣人同场截图已检查（2026-09-30）
+羁绊	team_eight	第八班·集合	夕日红、日向雏田、油女志乃、犬冢牙	bond_team_eight_aura	B	六帧低亮紫灰与月蓝四点脚环；仅真实激活的红、雏田、志乃、牙显示，不替代技能	已出图切图绑定；编辑器六帧与四人、鸣人同场截图已检查（2026-09-30）
+羁绊	uchiha_clan	宇智波一族	宇智波斑、宇智波带土、宇智波鼬、宇智波佐助、宇智波止水	bond_uchiha_clan_aura	B	六帧暗绯红五点细环；仅真实激活的五位成员显示，不替代技能；与其他双人羁绊环可叠加	已出图切图绑定；编辑器六帧与五人、鸣人同场截图已检查（2026-09-30）
+羁绊	destined_couple	终成眷属	仙人鸣人、日向雏田	bond_destined_couple_aura	B	六帧杏金与浅紫双线脚环；仅真实激活的仙人鸣人与雏田显示，普通鸣人不显示	已出图切图绑定；编辑器六帧与两人、普通鸣人同场截图已检查（2026-09-30）
+羁绊	art_duo	艺术二人组	蝎、迪达拉	bond_art_duo_aura	B	六帧赭金与暗赤双半环；仅真实激活的蝎和迪达拉显示，不替代技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-09-30）
+羁绊	peace_wish	和平的期望	天道佩恩、仙人鸣人	bond_peace_wish_aura	B	六帧雨蓝与晨金对向细环；仅真实激活的天道佩恩与仙人鸣人显示，普通鸣人不显示	已出图切图绑定；编辑器六帧与两人、普通鸣人同场截图已检查（2026-09-30）
+羁绊	byakugou_seal	百豪之印	纲手、春野樱	bond_byakugou_seal_aura	B	六帧玫紫、象牙双线与双菱点光脚环；仅真实激活的纲手与小樱显示，不替代百豪发动或治疗技能	已出图切图绑定；编辑器六帧与两人、鸣人同场截图已检查（2026-10-01）
+羁绊	joint_training	共同修行	漩涡鸣人、奇拉比	bond_joint_training_aura	B	六帧蜜金与珊瑚橙双线脚环；仅真实激活的鸣人与奇拉比显示；鸣人已有金色脚光叠加	已出图切图绑定；编辑器六帧与两人、我爱罗同场截图已检查（2026-10-01）
+技能	boil_acid	沸遁·溶解爆酸	照美冥	skill_boil_acid_zone	A	单个稀薄减益圆、透明底六帧循环；多圆由引擎排列，不烘焙整组；与伤害区分开	已生成V1六帧透明素材并绑定 zones/boil_acid；384×384、6fps；编辑器与实际战斗已检查（2026-09-25）
+技能	boil_acid_kage	沸遁·溶解爆酸·五影	照美冥	skill_boil_acid_kage_zone	A	单个稀薄减益圆、透明底六帧循环；14圆由引擎排列，不烘焙整组；与伤害区分开	已生成V1六帧透明素材并绑定 zones/boil_acid_kage；384×384、6fps；编辑器与实际战斗已检查（2026-09-25）
+技能	sand_burial	砂缚柩	我爱罗	skill_sand_burial_area	A	单个俯视沙圈、透明底六帧循环；实际伤害范围由引擎缩放	已生成V1并绑定 pulses/sand_burial；384×384、6fps；编辑器与实际战斗已检查（2026-09-25）
+技能	sand_waterfall	砂瀑大葬	我爱罗	skill_sand_waterfall_zone	A	单个宽幅流沙减速圆、透明底六帧循环；与独立伤害区分开	已生成V1并绑定 zones/sand_waterfall；384×384、6fps；编辑器与实际战斗已检查（2026-09-25）
+技能	infinite_sharks	水遁·无限鲛	干柿鬼鲛	skill_infinite_sharks_zone	A	单个稀薄深蓝/青色水压减益圆、透明底六帧循环；与伤害区分开	已生成并绑定：zones/infinite_sharks，384×384、6fps；350码、0.5秒延迟后持续2秒，独立伤害区不因此完成
+技能	true_hands	真数千手	千手柱间	skill_true_hands_area	A	已生成：固定落点木佛/千手轮廓与地面树根，透明六帧循环，伤害半径390码；不是独立召唤单位	已绑定：pulses/true_hands，384×384、6fps；tick30至86十五段排期不变
+技能	true_hands	真数千手	千手柱间	skill_true_hands_hit	H	拳击落地尘土与碎石；单次六帧；30次视觉打击对应15笔伤害，不能由特效新增伤害	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+技能	susanoo_perfect	完全体须佐能乎	宇智波斑	skill_susanoo_hit	H	复用普通须佐开启瞬间冲击；完全体轮廓与持续包裹光另见形态和BUFF项	复用已有交付键；瞬间专属冲击绑定仍待接，无需生成远程子弹
+BUFF	madara_perfect	完全体须佐能乎	宇智波斑	buff_madara_perfect	B	蓝紫色完整须佐包裹光，前后两层同画布/脚底锚点，六帧循环；取消到期即撤下	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	true_hands_stun	真数千手·震慑	千手柱间	buff_true_hands_stun	B	受击敌人头顶淡金木纹震慑标志，六帧循环；不覆盖敌人轮廓	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+形态	susanoo_perfect	完全体须佐能乎形态	宇智波斑	form_susanoo_perfect	S	蓝紫完整须佐包裹斑的战场轮廓；idle/run/attack/dead各六帧，可选skill1六帧；攻击距离400码仍为近战，不画飞弹	已生成并绑定独立四态，按真实 madara_perfect BUFF 切换和到期还原；资源预览及真实羁绊施法截图已检查，旧占位环身光仅在完整形态出现时撤下（2026-09-29）
+技能	wood_descent	树界降临·减速区	千手柱间	skill_wood_descent_zone	A	固定350码圆内低亮度树根缠绕，六帧循环，持续6秒；不烘焙敌人或伤害数字	已生成V1六帧透明素材并绑定 zones/wood_descent；384×384、6fps；编辑器与实际战斗已检查（2026-09-25）
+羁绊	strongest_ninja	最强忍者	宇智波斑、千手柱间	buff_madara_perfect	B	复用完全体须佐BUFF与真数千手区域；羁绊不单独要求开场全员光罩	羁绊已入表；效果随技能施放，不在开场提前获得完全体加成
+技能	serpent_array	万蛇罗之阵	大蛇丸	skill_serpent_array_area	A	已生成：俯视蛇影蓄势圈，透明六帧首尾循环，持续3秒；控制400码、伤害405码；不是召唤物	已绑定：startups/serpent_array，384×384、6fps；tick6至65蓄势
+技能	serpent_array	万蛇罗之阵	大蛇丸	skill_serpent_array_hit	H	群蛇咬击与尘土；单次六帧；无飞行子弹	暂缓制作与开发（2026-09-24）：技能受击反馈使用掉血飘字；此H条目仅作历史参考，已有素材/配置保留。
+BUFF	serpent_regen	蛇之意志·再生	药师兜	buff_serpent_regen	B	青白包裹光；前后两层六帧循环，最长12秒；取消或挤出撤下	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	serpent_slow	万蛇罗之阵·减速	大蛇丸	buff_serpent_slow	B	脚底低位蛇影缠绕，六帧循环，持续3秒	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+BUFF	serpent_silence	万蛇罗之阵·沉默	大蛇丸	buff_serpent_silence	B	头顶紫色封声标记，六帧循环，持续0.5+0.3×等级秒	已绑定透明六帧状态图，配置与素材完整（2026-09-26）
+羁绊	serpent_will	蛇之意志	大蛇丸+药师兜	buff_serpent_regen	B	复用低血量救援再生光；不额外要求开场全员光罩	再生BUFF可绑定；蛇阵和敌方状态见对应条目
+技能	serpent_array	万蛇罗之阵	大蛇丸	skill_serpent_array_burst	A	已生成：俯视整个蛇阵爆发、咬合、消散的透明单次六帧；正方形画布；无飞行子弹	已绑定：areas/serpent_array，384×384、6fps；tick66落地，逐目标咬击H仍暂缓
+技能	true_hands	真数千手	千手柱间	skill_true_hands_start	A	木佛/千手轮廓聚集、树根蓄势，透明六帧循环；释放后首段前1.2秒，复用伤害区素材	已绑定：startups/true_hands，384×384、6fps；tick6至29蓄势
+技能	sand_burial	砂缚柩	我爱罗	skill_sand_burial_start	A	俯视沙圈聚拢，六帧循环；释放后首段前0.5秒，复用区域素材	已复用V1并绑定 startups/sand_burial；384×384、6fps；实际战斗已检查（2026-09-25）
+光环	kurama_cloak_aura	九尾人柱力·恢复光环	鸣人及受益者	buff_kurama_cloak_aura	B	淡金脚底薄环与上升光点；透明六帧	已生成切图并绑定实时恢复覆盖判定；自身半径0，实战截图检查（2026-09-28）
+光环	battle_chakra_aura	尾兽查克拉·历战光环	玖辛奈及受益者	buff_battle_chakra_aura	B	蓝红脚底薄环与少量查克拉光点；透明六帧	已生成切图并绑定实时恢复覆盖判定；范围内友军截图检查（2026-09-28）
+光环	light_rock_aura	轻重岩光环	黑土及受益者	buff_light_rock_aura	B	土黄脚底薄环与细小浮尘；透明六帧	已生成切图并绑定实时攻移速覆盖判定；基础仅自身截图检查（2026-09-28）
+光环	gale_dance_aura	气流乱舞光环	手鞠及受益远程忍者	buff_gale_dance_aura	B	青绿脚底薄环与风叶微粒；透明六帧	已生成切图并绑定实时远程强化覆盖判定；范围内远程友军截图检查（2026-09-28）

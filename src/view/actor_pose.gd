@@ -82,9 +82,8 @@ func reset(at: Vector2, face: int) -> void:
 ## - [param shot_at] 传 `next_shot_at`，**它变大就是刚出了一手**。
 ## - [param look_at] 是他要看的那个东西的战场 x；[constant @GDScript.NAN] 表示照移动方向看，站着不动保持原朝向。
 ## - [param attack_hold] 是攻击动画该占几帧（一整个攻击间隔，[method PBAllyPool._hold_frames]）。
-## - [param in_range] 是他这一刻够不够得着，**没有默认值**。「刚出过一手」挂到下一手，而 sim 中途可能已经让他
-##   跑起来 —— 够不着就不算在打，否则是挥着手滑行。判据用 sim 的结论（己方 `can_reach(aim_at)`，
-##   敌人 [member PBEnemy.engaged]），不拿位移大小去猜（防挤的推动和走路一 tick 的位移分不开）。
+## - [param in_range] 只约束无模拟锁定时的表现余量。
+## - [param attack_locked] 为模拟中的普攻起手/收招锁；目标越界不能取消它。
 ## - [param swinging] 直接读 [member PBAttacker.swinging]，不拿 `next_shot_at` 反推（收招和起手期间是同一个数）。
 ##   [param windup] 是起手占几帧，只用来算收招还剩多长。给 false / 0 就是不起手。
 func update(
@@ -96,7 +95,8 @@ func update(
 	attack_hold: int,
 	in_range: bool,
 	swinging: bool = false,
-	windup: int = 0
+	windup: int = 0,
+	attack_locked: bool = false
 ) -> void:
 	if _prev_pos == Vector2.INF:
 		_prev_pos = at
@@ -134,9 +134,8 @@ func update(
 		_move_left = 0
 	elif casting:
 		state = State.CAST
-	elif (swinging or _attack_left > 0) and in_range:
-		# **够不着就不算在打**（见 [param in_range]）。倒计时不清零：到位之后要么立刻出新的一手，
-		# 要么还没到，中途清掉只会多一次状态跳变。
+	elif attack_locked or swinging or (_attack_left > 0 and in_range):
+		# 模拟锁定的起手与收招优先于射程变化，避免被移动目标切成跑步。
 		state = State.ATTACK
 	elif _move_left > 0:
 		state = State.RUN

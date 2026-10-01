@@ -10,10 +10,13 @@ name_key = "buff.tobirama_dark"
 icon_key = "buff.tobirama_dark"
 kind = 1
 friendly = false
-duration_seconds = 3.0
+duration_seconds = 2.0
 mods = {
-&"enemy_hit_scale": 0.5
+&"enemy_attack_speed_scale": 0.5,
+&"enemy_hit_scale": 0.5,
+&"enemy_speed_scale": 0.5
 }
+duration_levels = PackedFloat32Array(2, 2, 3, 3, 3, 4, 4, 5, 5, 6)
 
 [resource]
 script = ExtResource("2_fsdcb")
@@ -21,10 +24,14 @@ id = &"dark_walk"
 name_key = "skill.dark_walk"
 on_hit = Array[ExtResource("1_r8ib1")]([SubResource("Resource_dtrmf")])
 element = 4
-power_mult = 2.7
+power_mult = 2.5
+damage_base = 300.0
+damage_growth = 300.0
+damage_stat = &"agility"
 radius = 0.15
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 delay_ticks = 10
-slow_scale = 0.5
-slow_ticks = 60
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 16, 23, 31, 40, 50, 61, 73, 86, 100)

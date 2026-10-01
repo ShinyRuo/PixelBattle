@@ -3,15 +3,49 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_vfto4"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_jdjx3"]
 
+[sub_resource type="Resource" id="Resource_hdwhd"]
+script = ExtResource("1_vfto4")
+id = &"enemy_lift"
+name_key = "buff.enemy_lift"
+icon_key = "buff.enemy_lift"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"airborne": 1.0,
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
+[sub_resource type="Resource" id="Resource_lrixc"]
+script = ExtResource("1_vfto4")
+id = &"jugo_slow"
+name_key = "buff.jugo_slow"
+icon_key = "buff.jugo_slow"
+kind = 1
+friendly = false
+duration_seconds = 3.0
+mods = {
+&"enemy_attack_speed_scale": 0.5,
+&"enemy_speed_scale": 0.5
+}
+duration_levels = PackedFloat32Array()
+
 [resource]
 script = ExtResource("2_jdjx3")
+target = 0
 id = &"piston_fist"
 name_key = "skill.piston_fist"
-power_mult = 2.4
+on_hit = Array[ExtResource("1_vfto4")]([SubResource("Resource_hdwhd"), SubResource("Resource_lrixc")])
+kind = 0
+power_mult = 2.0
+damage_base = 150.0
+damage_growth = 150.0
+damage_stat = &"strength"
 radius = 0.15
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 320
-delay_ticks = 8
-knockback = 0.05
-slow_scale = 0.5
-slow_ticks = 60
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 16, 22, 28, 34, 40, 46, 52, 58, 64)

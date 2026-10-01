@@ -176,10 +176,10 @@ func test_generated_characters_carry_the_roster_shot() -> void:
 # ── 子弹资源 ────────────────────────────────────────────────────
 
 
-func test_a_key_is_lowercase_words_only() -> void:
+func test_a_key_uses_safe_filename_characters() -> void:
 	assert_eq(PBShotForge.key_error("fire_ball2"), "", "小写、数字、下划线")
 	assert_ne(PBShotForge.key_error(""), "", "空的不行")
-	assert_ne(PBShotForge.key_error("Fire Ball"), "", "大写和空格不行（它是目录名也是表里的一格）")
+	assert_ne(PBShotForge.key_error("Fire Ball"), "", "空格不行（它是目录名也是表里的一格）")
 
 
 func test_assemble_builds_a_looping_flight_and_a_one_shot_hit() -> void:

@@ -177,12 +177,7 @@ func _on_choose(index: int) -> void:
 	for i: int in _cards.size():
 		_cards[i].button_pressed = i == index
 	var small := _shots[index]
-	_say(
-		(
-			"选中 %d 高（%d×%d）。按③保存。"
-			% [PBPixelate.LEVELS[index], small.get_width(), small.get_height()]
-		)
-	)
+	_say("选中 %d 高（%d×%d）。按③保存。" % [PBPixelate.LEVELS[index], small.get_width(), small.get_height()])
 
 
 func _on_save() -> void:

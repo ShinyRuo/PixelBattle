@@ -127,9 +127,7 @@ func test_a_debuff_wins_when_both_are_on() -> void:
 	bag.add(bad, {}, 0, bad.duration_ticks(_cfg), 0)
 	var base := Color(0.5, 0.5, 0.5, 1.0)
 	assert_eq(
-		PBBuffStrip.tinted(base, bag, 1),
-		PBBuffStrip.tinted(base, _bag_with(false), 1),
-		"两样都有时按减益染"
+		PBBuffStrip.tinted(base, bag, 1), PBBuffStrip.tinted(base, _bag_with(false), 1), "两样都有时按减益染"
 	)
 
 

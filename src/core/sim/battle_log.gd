@@ -20,6 +20,7 @@ enum Kind {
 	ALLY_DOWN,  ## 忍者倒下
 	BASE_HIT,  ## 基地挨了一下（漏怪）
 	ULTIMATE,  ## 谁放了忍术
+	SKILL_IMPACT,  ## 无伤害技能接触目标，仅用于表现，不是一次伤害
 }
 
 ## 最多留多少条（约等于往回翻二十秒）。
@@ -49,16 +50,49 @@ func note(at_tick: int, text: String) -> void:
 ## [param crit] 是这一下暴没暴。**只有播报说得准** —— 血量里混着暴击和易伤，
 ## 还会把几帧的小伤害攒成一个数，结构上分不出哪一下是暴击。
 func hit(
-	at_tick: int, source: int, target: int, amount: float, to_ally: bool, crit: bool = false
+	at_tick: int,
+	source: int,
+	target: int,
+	amount: float,
+	to_ally: bool,
+	crit: bool = false,
+	owner: int = -1,
+	shot_key: StringName = &"",
+	leech: float = 0.0
 ) -> void:
-	_add({
+	var entry: Dictionary = {
 		"kind": Kind.HIT_ALLY if to_ally else Kind.HIT_ENEMY,
 		"tick": at_tick,
 		"source": source,
 		"target": target,
 		"amount": amount,
 		"crit": crit,
-	})
+	}
+	if owner >= 0:
+		entry["owner"] = owner
+	if shot_key != &"":
+		entry["shot_key"] = shot_key
+	if leech > 0.0:
+		entry["leech"] = leech
+	_add(entry)
+
+
+## 治疗 / 控制也需要命中反馈，不能伪造一次伤害来驱动显示。
+func skill_impact(
+	at_tick: int, source: int, target: int, to_ally: bool, shot_key: StringName
+) -> void:
+	if shot_key == &"":
+		return
+	_add(
+		{
+			"kind": Kind.SKILL_IMPACT,
+			"tick": at_tick,
+			"source": source,
+			"target": target,
+			"to_ally": to_ally,
+			"shot_key": shot_key,
+		}
+	)
 
 
 ## 一个忍者倒下了。**怪物死亡不记**，见 [enum Kind]。

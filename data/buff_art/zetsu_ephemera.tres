@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zetsu_ephemera/front_0.png" id="1_jjvh8"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zetsu_ephemera/front_1.png" id="2_ao2yt"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zetsu_ephemera/front_2.png" id="3_8dewg"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zetsu_ephemera/front_3.png" id="4_u154o"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zetsu_ephemera/front_4.png" id="5_s1i0v"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zetsu_ephemera/front_5.png" id="6_34kwg"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_8if62"]
+
+[resource]
+script = ExtResource("7_8if62")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_jjvh8"), ExtResource("2_ao2yt"), ExtResource("3_8dewg"), ExtResource("4_u154o"), ExtResource("5_s1i0v"), ExtResource("6_34kwg")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

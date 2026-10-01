@@ -64,6 +64,8 @@ static func build(wave_index: int, cfg: PBSimConfig, rng: RandomNumberGenerator)
 	wave.index = wave_index
 	wave.element = element_of(wave_index)
 	wave.shape = roll_shape(wave_index, cfg, rng)
+	if wave.is_boss():
+		wave.enemy_level = 2 + floori(float(wave_index) / 4.0)
 
 	# 血量与攻击共用同一条指数曲线；波型倍率只作用在血量上。
 	var scale: float = growth_scale(wave_index, cfg)
@@ -71,6 +73,9 @@ static func build(wave_index: int, cfg: PBSimConfig, rng: RandomNumberGenerator)
 	wave.atk_each = cfg.atk_base * scale
 	wave.armor_each = cfg.enemy_armor(wave.shape, wave_index)
 	wave.resist_each = cfg.enemy_resist(wave.shape, wave_index)
+	wave.dodge_each = cfg.enemy_dodge
+	wave.crit_chance_each = cfg.enemy_crit_chance
+	wave.crit_bonus_each = cfg.enemy_crit_bonus
 	wave.count = count_of(wave_index, cfg, wave.shape)
 	wave.reward_gold = cfg.gold_base + cfg.gold_rate * wave_index
 	return wave

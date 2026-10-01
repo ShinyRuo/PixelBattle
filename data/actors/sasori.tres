@@ -1,32 +1,38 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://scn18d34u57x"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://bf3nnlg20ixpf" path="res://assets/actors/sasori/attack_0.png" id="1_wcqey"]
-[ext_resource type="Texture2D" uid="uid://xm6vfwa36xus" path="res://assets/actors/sasori/attack_1.png" id="2_bw55k"]
-[ext_resource type="Texture2D" uid="uid://c2vus265xk7u5" path="res://assets/actors/sasori/attack_2.png" id="3_u7f8p"]
-[ext_resource type="Texture2D" uid="uid://ccn2ynff548l5" path="res://assets/actors/sasori/attack_3.png" id="4_2v5aw"]
-[ext_resource type="Texture2D" uid="uid://bohe608qu2flb" path="res://assets/actors/sasori/attack_4.png" id="5_st03c"]
-[ext_resource type="Texture2D" uid="uid://8evppccifxe1" path="res://assets/actors/sasori/attack_5.png" id="6_nhfy7"]
-[ext_resource type="Texture2D" uid="uid://drm74on2iwm6x" path="res://assets/actors/sasori/dead_0.png" id="7_g43eq"]
-[ext_resource type="Texture2D" uid="uid://blvo7xfvsp5fp" path="res://assets/actors/sasori/dead_1.png" id="8_3fptb"]
-[ext_resource type="Texture2D" uid="uid://cqv3qha2km6tu" path="res://assets/actors/sasori/dead_2.png" id="9_wxh8c"]
-[ext_resource type="Texture2D" uid="uid://daguyaymtytwl" path="res://assets/actors/sasori/dead_3.png" id="10_a6fij"]
-[ext_resource type="Texture2D" uid="uid://dpxr0pselbo7l" path="res://assets/actors/sasori/dead_4.png" id="11_xyx3m"]
-[ext_resource type="Texture2D" uid="uid://xdsf6javeei3" path="res://assets/actors/sasori/dead_5.png" id="12_vl17e"]
-[ext_resource type="Texture2D" uid="uid://ddfijfvbmkv8j" path="res://assets/actors/sasori/idle_0.png" id="13_j0hii"]
-[ext_resource type="Texture2D" uid="uid://cuepblug8yaes" path="res://assets/actors/sasori/idle_1.png" id="14_p15q6"]
-[ext_resource type="Texture2D" uid="uid://dc1avkjarngj4" path="res://assets/actors/sasori/idle_2.png" id="15_nx2nt"]
-[ext_resource type="Texture2D" uid="uid://bjjwxq7qd2dq5" path="res://assets/actors/sasori/idle_3.png" id="16_tim3y"]
-[ext_resource type="Texture2D" uid="uid://d0lunguarvwx7" path="res://assets/actors/sasori/idle_4.png" id="17_yvjbj"]
-[ext_resource type="Texture2D" uid="uid://b8oalvp12dk0l" path="res://assets/actors/sasori/idle_5.png" id="18_bk1ke"]
-[ext_resource type="Texture2D" uid="uid://t8fxnn0tcrya" path="res://assets/actors/sasori/run_0.png" id="19_g0ie6"]
-[ext_resource type="Texture2D" uid="uid://yoyurpi7ylbd" path="res://assets/actors/sasori/run_1.png" id="20_yp2ts"]
-[ext_resource type="Texture2D" uid="uid://cg6ymgrupg8gk" path="res://assets/actors/sasori/run_2.png" id="21_f1q46"]
-[ext_resource type="Texture2D" uid="uid://s27ok3lrajf2" path="res://assets/actors/sasori/run_3.png" id="22_7qg61"]
-[ext_resource type="Texture2D" uid="uid://i22sl35wm676" path="res://assets/actors/sasori/run_4.png" id="23_b1k1u"]
-[ext_resource type="Texture2D" uid="uid://ccm8jvq18qatq" path="res://assets/actors/sasori/run_5.png" id="24_dq80f"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_jymcx"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/attack_0.png" id="1_wcqey"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/attack_1.png" id="2_bw55k"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/attack_2.png" id="3_u7f8p"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/attack_3.png" id="4_2v5aw"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/attack_4.png" id="5_st03c"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/attack_5.png" id="6_nhfy7"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/cast_iron_sand_00.png" id="7_3fptb"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/dead_0.png" id="7_g43eq"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/dead_1.png" id="8_3fptb"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/cast_iron_sand_01.png" id="8_wxh8c"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/cast_iron_sand_02.png" id="9_a6fij"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/dead_2.png" id="9_wxh8c"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/dead_3.png" id="10_a6fij"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/cast_iron_sand_03.png" id="10_xyx3m"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/cast_iron_sand_04.png" id="11_vl17e"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/dead_4.png" id="11_xyx3m"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/cast_iron_sand_05.png" id="12_j0hii"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/dead_5.png" id="12_vl17e"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/idle_0.png" id="13_j0hii"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/idle_1.png" id="14_p15q6"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/idle_2.png" id="15_nx2nt"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/idle_3.png" id="16_tim3y"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/idle_4.png" id="17_yvjbj"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/idle_5.png" id="18_bk1ke"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/run_0.png" id="19_g0ie6"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/run_1.png" id="20_yp2ts"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/run_2.png" id="21_f1q46"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/run_3.png" id="22_7qg61"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/run_4.png" id="23_b1k1u"]
+[ext_resource type="Texture2D" path="res://assets/actors/sasori/run_5.png" id="24_dq80f"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_jymcx"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_wcqey"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_p15q6"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +56,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_3fptb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_wxh8c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_a6fij")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_xyx3m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_vl17e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_j0hii")
+}],
+"loop": 0,
+"name": &"cast_iron_sand",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +153,10 @@ animations = [{
 [resource]
 script = ExtResource("25_jymcx")
 key = &"sasori"
-frames = SubResource("SpriteFrames_wcqey")
+frames = SubResource("SpriteFrames_p15q6")
+skill_anims = {
+&"iron_sand": &"cast_iron_sand"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

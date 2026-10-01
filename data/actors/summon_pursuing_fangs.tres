@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/attack_0.png" id="1_2uuil"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/attack_1.png" id="2_v11kj"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/attack_2.png" id="3_u6lkm"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/attack_3.png" id="4_b4pkw"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/attack_4.png" id="5_hxfr2"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/attack_5.png" id="6_5ensa"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/dead_0.png" id="7_glwfm"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/dead_1.png" id="8_wkxsu"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/dead_2.png" id="9_dig2g"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/dead_3.png" id="10_doc6i"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/dead_4.png" id="11_e8nat"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/dead_5.png" id="12_ihskl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/idle_0.png" id="13_tpnih"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/idle_1.png" id="14_lnfdn"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/idle_2.png" id="15_sg7ff"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/idle_3.png" id="16_4jwe7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/idle_4.png" id="17_k6ygr"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/idle_5.png" id="18_cxbf8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/run_0.png" id="19_ufnx0"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/run_1.png" id="20_rj6wd"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/run_2.png" id="21_6dv4i"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/run_3.png" id="22_k1cl6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/run_4.png" id="23_e68s6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_pursuing_fangs/run_5.png" id="24_2f6qd"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_60w3n"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_2uuil"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_2uuil")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_v11kj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_u6lkm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_b4pkw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_hxfr2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_5ensa")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_glwfm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_wkxsu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_dig2g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_doc6i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_e8nat")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ihskl")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_tpnih")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_lnfdn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_sg7ff")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_4jwe7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_k6ygr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_cxbf8")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_ufnx0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_rj6wd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_6dv4i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_k1cl6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_e68s6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_2f6qd")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]
+
+[resource]
+script = ExtResource("25_60w3n")
+key = &"summon_pursuing_fangs"
+frames = SubResource("SpriteFrames_2uuil")
+pixel_scale = 0.16666666666666666
+smooth = true
+height_px = 150.0

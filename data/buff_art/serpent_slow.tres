@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/serpent_slow/front_0.png" id="1_1bas2"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/serpent_slow/front_1.png" id="2_bjh3a"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/serpent_slow/front_2.png" id="3_6qn2e"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/serpent_slow/front_3.png" id="4_87ph3"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/serpent_slow/front_4.png" id="5_dq3nh"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/serpent_slow/front_5.png" id="6_32wfm"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_pecyr"]
+
+[resource]
+script = ExtResource("7_pecyr")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_1bas2"), ExtResource("2_bjh3a"), ExtResource("3_6qn2e"), ExtResource("4_87ph3"), ExtResource("5_dq3nh"), ExtResource("6_32wfm")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

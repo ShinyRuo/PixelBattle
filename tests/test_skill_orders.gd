@@ -53,9 +53,7 @@ func _skill(tier: int, delay: int = 0) -> PBSkill:
 	var out := PBSkill.new()
 	out.id = &"probe"
 	out.target = tier
-	out.affects = (
-		PBSkill.Party.ALLIES if tier == PBSkill.Target.ALLY else PBSkill.Party.ENEMIES
-	)
+	out.affects = (PBSkill.Party.ALLIES if tier == PBSkill.Target.ALLY else PBSkill.Party.ENEMIES)
 	out.radius = 1.0
 	out.cooldown_ticks = 100
 	out.delay_ticks = delay
@@ -102,6 +100,8 @@ func test_the_order_waits_and_nothing_moves_while_it_waits() -> void:
 
 	sim.step()
 	assert_eq(sim.order_of(squad[0]), -1, "推进一个 tick 就放出去了")
+	assert_eq(_casts_logged(book), 0, "起手还没释放")
+	PBCastTestClock.release(sim, squad[0])
 	assert_eq(_casts_logged(book), 1, "播报也是这时候才记")
 
 
@@ -227,5 +227,5 @@ func test_the_auto_policy_never_goes_through_the_queue() -> void:
 	# 第二个落地。**队列在这中间一次都没被用到。**
 	sim.step()
 	assert_eq(sim.orders().count(), 0, "自动档一条指令都没进过队列")
-	sim.step()
+	PBCastTestClock.release(sim, caster)
 	assert_gt(sim.result().kills, 0, "而那一发照旧按原来的节奏落了地")

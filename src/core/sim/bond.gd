@@ -59,6 +59,8 @@ enum Match {
 ## 那条防的是给每人发同一份倍率，而这里给每人发不同的机制。倍率型仍然不许人手一份。
 ## 不在场就不兑现。
 @export var member_functions: Dictionary = {}
+## 每成员的整波开场效果；数值与静态成员补丁不得重复配置。
+@export var member_buffs: Dictionary = {}
 
 ## 满档时**每个在场成员各自的技能补丁**。形状是 `{角色id: {技能id: {补丁键: 量}}}`，
 ## 词汇表见 [PBSkillPatchRules]。原版羁绊的主形状（「强化本人的某个具名技能」）。

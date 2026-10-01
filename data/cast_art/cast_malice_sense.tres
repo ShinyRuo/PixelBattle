@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_malice_sense/back/frame_0.png" id="1_v2mkq"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_malice_sense/back/frame_1.png" id="2_tm2bi"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_malice_sense/back/frame_2.png" id="3_yloqw"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_malice_sense/back/frame_3.png" id="4_10cbd"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_malice_sense/back/frame_4.png" id="5_y451v"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_malice_sense/back/frame_5.png" id="6_m3656"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_j7pvs"]
+
+[resource]
+script = ExtResource("7_j7pvs")
+back_frames = Array[Texture2D]([ExtResource("1_v2mkq"), ExtResource("2_tm2bi"), ExtResource("3_yloqw"), ExtResource("4_10cbd"), ExtResource("5_y451v"), ExtResource("6_m3656")])
+fps = 20.0
+anchor = Vector2(128, 128)
+offset = Vector2(0, -28)
+pixel_scale = 0.4
+metadata/sheet_back = {
+"background": 0,
+"center": true,
+"columns": 3,
+"count": 6,
+"layout": 0,
+"path": "res://aires/skills/skill_malice_sense_cast_v1.png",
+"rows": 2,
+"size": 256
+}

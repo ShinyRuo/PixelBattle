@@ -37,11 +37,9 @@ var _shots: Array = []
 ## 调完就该导出，而导出之后它已经烤进那几张 png 了。
 var _nudges: Dictionary = {}
 
-
 ## `{段名: 倍率}`。**空 = 每段 1.00 = 一字不差**（同 [member _nudges]）。
 ## **按段各存各的**：存一个数的话切到别的段还留着上一段的倍率，导出时静默乘上去。
 var _zooms: Dictionary = {}
-
 
 ## 当前这一段的缩放比（中间帧 → 成品）。方向键和青线要拿它换算，
 ## 而它只在换段/擦完那几下算一次 —— 每帧现算的话翻一次帧要重量整段。
@@ -74,7 +72,7 @@ func _ready() -> void:
 	add_child(row)
 	row.add_child(_build_side())
 	row.add_child(_build_preview())
-	for anim: String in PBActorForge.anim_names():
+	for anim: String in PBActorForge.anim_names(true):
 		_nudges[anim] = {}
 	# **在 `add_child` 之后接线**：[PBForgeSource] 的控件是它在 `_ready` 里建的，进树之前 `bind` 落不到实处。
 	_source.bind(_forge)
@@ -97,11 +95,11 @@ func _build_side() -> Control:
 
 	_key_edit = LineEdit.new()
 	_key_edit.text = "asm"
-	_key_edit.tooltip_text = "角色键：短、全小写。它会变成目录名和 actor_key"
+	_key_edit.tooltip_text = "角色键：短、全小写。召唤物也用独立键；生成四态形象表后到战场特效 → 召唤物表现绑定"
 	side.add_child(_titled("角色键", _key_edit))
 
 	_anim_pick = OptionButton.new()
-	for anim: String in PBActorForge.anim_names():
+	for anim: String in PBActorForge.anim_names(true):
 		_anim_pick.add_item(anim)
 	_anim_pick.item_selected.connect(func(_i: int) -> void: _switch_anim())
 	side.add_child(_titled("这一段", _anim_pick))
@@ -159,6 +157,10 @@ func _build_side() -> Control:
 	side.add_child(_button("① 导出四段（帧自动定）", _on_export_all))
 	side.add_child(_button("② 导出（只覆盖这一段）", _on_export))
 	side.add_child(_button("③ 生成形象表", _on_link))
+	var summon_tip := Label.new()
+	summon_tip.text = "召唤物同样加工四态；生成后到\n战场特效 → 召唤物表现绑定。"
+	summon_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	side.add_child(summon_tip)
 	scroll.add_child(side)
 	column.add_child(scroll)
 	# 固定在这一栏最底下，不跟着滚 —— 见上面那段。
@@ -252,9 +254,7 @@ func _build_preview() -> Control:
 	_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	# 尺子上标哪两条线，**两个数都从流水线拿**，否则尺子和导出会对「站姿多高」「上限在哪」说两个数。
-	_canvas.mark_at(
-		_forge.texture_height(), PBActorForge.CANVAS_CEILING * maxi(_forge.scale_up, 1)
-	)
+	_canvas.mark_at(_forge.texture_height(), PBActorForge.CANVAS_CEILING * maxi(_forge.scale_up, 1))
 	_canvas.anchor_aimed.connect(_on_anchor_aimed)
 	_canvas.dabbed.connect(func(at: Vector2i) -> void: _eraser.on_dabbed(at))
 	_canvas.wiped.connect(func(area: Rect2i) -> void: _eraser.on_wiped(area))
@@ -338,9 +338,9 @@ func _show(to: int) -> void:
 	_picks_ui.aim_at(_anim(), _shots, _index)
 	# **下标 0 起，而总数是总数**（写「/ size-1」的话六帧永远显示成「/ 5」）。
 	# 下标不改成 1 起：挑帧列表存的就是这个数，两处必须同一个。
-	_count_label.text = "第 %d 帧（共 %d 帧）%s" % [
-		_index, _shots.size(), "　✓已选" if _picks_ui.holds(_index) else ""
-	]
+	_count_label.text = (
+		"第 %d 帧（共 %d 帧）%s" % [_index, _shots.size(), "　✓已选" if _picks_ui.holds(_index) else ""]
+	)
 	_refresh_frame()
 
 
@@ -428,8 +428,10 @@ func _on_nudge_all() -> void:
 	for i: int in _shots.size():
 		table[i] = nudge
 	_say(
-		"[color=#71d08c]偏移 %d, %d 套到 %s 段全部 %d 帧。[/color]"
-		% [nudge.x, nudge.y, _anim(), _shots.size()]
+		(
+			"[color=#71d08c]偏移 %d, %d 套到 %s 段全部 %d 帧。[/color]"
+			% [nudge.x, nudge.y, _anim(), _shots.size()]
+		)
 	)
 
 
@@ -461,6 +463,9 @@ func _on_export() -> void:
 	if picked.is_empty():
 		picked = _forge.frames_for(shots, anim)
 		_set_picked(picked)
+	if anim in ["skill1", "skill2"] and picked.size() != 6:
+		_say("[color=#e06666]技能动作必须选择六帧，第 4 帧为释放姿态。[/color]")
+		return
 	var scale := _scale_for(anim, shots)
 	if scale <= 0.0:
 		return
@@ -481,15 +486,16 @@ func _on_export() -> void:
 	if _forge.clamped:
 		_say(
 			(
-				"[color=#e0a666]%s 段 %d 帧，画布 %d×%d —— 撞上画布上限，"
-				+ "头被切掉了一截。挑帧里有跳得太高的那一张？[/color]"
+				("[color=#e0a666]%s 段 %d 帧，画布 %d×%d —— 撞上画布上限，" + "头被切掉了一截。挑帧里有跳得太高的那一张？[/color]")
+				% [anim, picked.size(), canvas.x, canvas.y]
 			)
-			% [anim, picked.size(), canvas.x, canvas.y]
 		)
 	else:
 		_say(
-			"[color=#71d08c]%s 段 %d 帧覆盖好了[/color]，画布 %d×%d。都行了按③。"
-			% [anim, picked.size(), canvas.x, canvas.y]
+			(
+				"[color=#71d08c]%s 段 %d 帧覆盖好了[/color]，画布 %d×%d。都行了按③。"
+				% [anim, picked.size(), canvas.x, canvas.y]
+			)
 		)
 	await _rescan()
 	await _relink_if_needed(key)
@@ -529,6 +535,15 @@ func _on_export_all() -> void:
 
 	var scales := _zoomed(_forge.scales(takes, _source.shares_idle_scale()))
 	var canvas := _forge.fit_canvas(takes, scales, chosen)
+	# 重做基础四态时也保留已制作技能动作的统一画布。
+	var had := _forge.canvas_on_disk(key)
+	canvas = Vector2i(maxi(canvas.x, had.x), maxi(canvas.y, had.y))
+	_forge.canvas = canvas
+	if had != Vector2i.ZERO and had != canvas:
+		var error := _forge.recanvas(key, canvas)
+		if error != "":
+			_say(error)
+			return
 	for anim: String in PBActorForge.anim_names():
 		var err := _write_take(
 			key, anim, takes[anim], chosen[anim], float(scales[anim]), _nudges.get(anim, {})
@@ -540,18 +555,16 @@ func _on_export_all() -> void:
 	if _forge.clamped:
 		_say(
 			(
-				"[color=#e0a666]四段出好了，画布 %d×%d —— 撞上画布上限，"
-				+ "头被切掉了一截。逐段翻一遍，把跳得太高的那张换掉。[/color]"
+				("[color=#e0a666]四段出好了，画布 %d×%d —— 撞上画布上限，" + "头被切掉了一截。逐段翻一遍，把跳得太高的那张换掉。[/color]")
+				% [canvas.x, canvas.y]
 			)
-			% [canvas.x, canvas.y]
 		)
 	else:
 		_say(
 			(
-				"[color=#71d08c]四段出好了[/color]，画布 %d×%d。"
-				+ "逐段翻一遍，不满意就重挑再按②；都行了按③。"
+				("[color=#71d08c]四段出好了[/color]，画布 %d×%d。" + "逐段翻一遍，不满意就重挑再按②；都行了按③。")
+				% [canvas.x, canvas.y]
 			)
-			% [canvas.x, canvas.y]
 		)
 	await _rescan()
 	# **① 也要维持它自己弄坏的那个不变量**（见 [method _relink_if_needed]）。
@@ -649,11 +662,13 @@ func _on_link() -> void:
 	await _rescan()
 	_say(
 		(
-			"[color=#71d08c]形象表出好了。[/color]最后一步：把 "
-			+ "data/characters/<角色>.tres 的 actor_key 填成 &\"%s\"，"
-			+ "再开预览台看一眼（scenes/actor_lab.tscn）。"
+			(
+				"[color=#71d08c]形象表出好了。[/color]最后一步：把 "
+				+ 'data/characters/<角色>.tres 的 actor_key 填成 &"%s"，'
+				+ "再开预览台看一眼（scenes/actor_lab.tscn）。"
+			)
+			% key
 		)
-		% key
 	)
 
 

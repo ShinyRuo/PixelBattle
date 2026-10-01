@@ -125,11 +125,7 @@ func test_the_real_squad_gets_a_mana_bar_from_its_intellect() -> void:
 		state.add_unit(PBUnit.new(character))
 	var deployed := PBValuation.deployed_by_raw_power(state, cfg)
 	var squad := PBCombatRules.build_attackers(
-		deployed,
-		PBElement.Type.PHYSICAL,
-		1.0,
-		PackedFloat64Array(),
-		cfg
+		deployed, PBElement.Type.PHYSICAL, 1.0, PackedFloat64Array(), cfg
 	)
 	assert_gt(squad.size(), 0, "该有人上场")
 	for i: int in deployed.size():

@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://src/view/battle_view.gd" id="1_view"]
 [ext_resource type="Script" path="res://src/view/enemy_pool.gd" id="2_pool"]
@@ -21,6 +21,9 @@
 [ext_resource type="Script" path="res://src/view/skill_fx_pool.gd" id="20_skillfx"]
 [ext_resource type="Script" path="res://src/view/system_menu.gd" id="20_menu"]
 [ext_resource type="Script" path="res://src/view/battle_log_panel.gd" id="21_log"]
+[ext_resource type="Script" path="res://src/view/aura_ring.gd" id="22_aura"]
+[ext_resource type="Script" path="res://src/view/attack_range_ring.gd" id="23_range"]
+[ext_resource type="Script" path="res://src/view/field_effects.gd" id="24_fieldfx"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_view")
@@ -39,8 +42,21 @@ color = Color(0.17, 0.18, 0.22, 1)
 mouse_filter = 2
 color = Color(0.52, 0.66, 0.88, 0.9)
 
-[node name="Telegraph" type="Node2D" parent="."]
+[node name="TelegraphClip" type="Control" parent="."]
+clip_contents = true
+mouse_filter = 2
+
+[node name="Telegraph" type="Node2D" parent="TelegraphClip"]
 script = ExtResource("13_telegraph")
+
+[node name="FieldEffects" type="Node2D" parent="TelegraphClip"]
+script = ExtResource("24_fieldfx")
+
+[node name="AttackRange" type="Node2D" parent="TelegraphClip"]
+script = ExtResource("23_range")
+
+[node name="Aura" type="Node2D" parent="TelegraphClip"]
+script = ExtResource("22_aura")
 
 [node name="Actors" type="Node2D" parent="."]
 y_sort_enabled = true

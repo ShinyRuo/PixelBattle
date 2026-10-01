@@ -10,19 +10,25 @@ name_key = "buff.shadow_hold"
 icon_key = "buff.shadow_hold"
 kind = 1
 friendly = false
-duration_seconds = 4.0
+duration_seconds = 2.5
 mods = {
 &"enemy_speed_scale": 0.0,
 &"stun": 1.0
 }
+duration_levels = PackedFloat32Array(2.5, 2.5, 4, 4, 4, 5.5, 5.5, 6, 6, 7.5)
 
 [resource]
 script = ExtResource("2_hlhnr")
 target = 2
 id = &"shadow_bind"
+shot_key = &"skill_shadow_bind"
 name_key = "skill.shadow_bind"
 on_hit = Array[ExtResource("1_2cqek")]([SubResource("Resource_uyypq")])
+channel_control = true
 element = 3
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
 shot_cross_seconds = 0.3
 mp_cost = 12.0
+mp_cost_levels = PackedFloat32Array(12, 24, 36, 48, 60, 72, 84, 96, 108, 120)

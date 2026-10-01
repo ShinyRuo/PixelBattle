@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_0.png" id="1_05m7r"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_1.png" id="2_wmvah"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_2.png" id="3_w3e1g"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_3.png" id="4_e32od"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_4.png" id="5_n3wqe"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/attack_5.png" id="6_llpcb"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_0.png" id="7_0wxse"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_1.png" id="8_54gfv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_2.png" id="9_ow0yq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_3.png" id="10_5uonc"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_4.png" id="11_0edij"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/dead_5.png" id="12_673j5"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_0.png" id="13_o47mp"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_1.png" id="14_c8vkx"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_2.png" id="15_u5frs"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_3.png" id="16_w5qdl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_4.png" id="17_snrmt"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/idle_5.png" id="18_yu3i6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_0.png" id="19_ga2nf"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_1.png" id="20_04qv3"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_2.png" id="21_lv4l7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_3.png" id="22_0k1xr"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_4.png" id="23_1pf48"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_vampire_bugs/run_5.png" id="24_2l6e1"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_05m7r")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_wmvah")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_w3e1g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_e32od")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_n3wqe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_llpcb")
+}],
+"loop": 0,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_0wxse")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_54gfv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ow0yq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_5uonc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_0edij")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_673j5")
+}],
+"loop": 0,
+"name": &"dead",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_o47mp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_c8vkx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_u5frs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_w5qdl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_snrmt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_yu3i6")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_ga2nf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_04qv3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_lv4l7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_0k1xr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_1pf48")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_2l6e1")
+}],
+"loop": 1,
+"name": &"run",
+"speed": 10.0
+}]

@@ -51,19 +51,14 @@ func reset(size: int) -> void:
 ## 哪一档看哪个由**技能自己**说（[member PBSkill.target]），
 ## 不由调用方分档：分了就是第二份真相，而它和技能表可以分叉。
 func place(
-	attackers: Array[PBAttacker],
-	at: int,
-	index: int,
-	spot: Vector2,
-	target_slot: int,
-	tick: int
+	attackers: Array[PBAttacker], at: int, index: int, spot: Vector2, target_slot: int, tick: int
 ) -> bool:
 	if at < 0 or at >= _index.size():
 		return false
 	var cast := PBSkillRules.cast_at(attackers[at], index)
 	if cast == null or not PBSkillRules.can_cast(attackers[at], index, tick):
 		return false
-	if not _fits(cast.skill, spot, target_slot, attackers):
+	if not _fits(cast.skill, spot, target_slot, attackers, attackers[at]):
 		return false
 	if _index[at] < 0:
 		_count += 1
@@ -114,7 +109,7 @@ func flush(attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int, book: PBBa
 		var cast := PBSkillRules.cast_at(attacker, index)
 		if cast == null or not PBSkillRules.can_cast(attacker, index, tick):
 			continue
-		if not _fits(cast.skill, _spot[at], _target[at], attackers):
+		if not _fits(cast.skill, _spot[at], _target[at], attackers, attacker):
 			continue
 		match cast.skill.target:
 			PBSkill.Target.GROUND:
@@ -123,20 +118,33 @@ func flush(attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int, book: PBBa
 				cast.cast_on(_target[at], tick)
 			_:
 				cast.cast_now(tick)
-		issue(attacker, cast, cfg, tick, book)
+		begin(attacker, cast, cfg, tick, book)
 	_count = 0
 
 
-## 下达之后共同要做的三件事：扣蓝、挂自增益、记播报。
-## **自动档也走这里**，否则「手放的扣蓝、自动放的不扣」迟早出现。
-##
-## - **蓝在下达时扣**，不是落地时 —— 否则施法延迟那段窗口里还能再下达一发。
-## - [member PBSkill.on_self] 同理在这一刻挂，否则玩家看到的是「按下去没反应」。
-## - 播报也记在这一刻：落地还隔着一整段施法延迟。
+## 起手预扣查克拉；有本体的单位等待第 4 帧才挂自身效果与记播报。
+## 无本体的场外技能没有人物动作，仍当场释放。自动与手动共用此入口。
+static func begin(
+	attacker: PBAttacker, cast: PBSkillCast, cfg: PBSimConfig, tick: int, book: PBBattleLog
+) -> void:
+	if attacker.slot < 0:
+		attacker.pay(PBSkillCostRules.mana(cast.skill, cast.caster_level))
+		issue(attacker, cast, cfg, tick, book)
+		return
+	attacker.casting.begin(attacker, cast, cfg, tick)
+
+
+## 第 4 帧释放，查克拉已在起手预扣。
 static func issue(
 	attacker: PBAttacker, cast: PBSkillCast, cfg: PBSimConfig, tick: int, book: PBBattleLog
 ) -> void:
-	attacker.pay(cast.skill.mp_cost)
+	if cast.skill.channel_control or cast.skill.mind_control:
+		if attacker.channel != null:
+			attacker.channel.active = false
+		attacker.channel = PBSkillChannel.new()
+		attacker.channel.caster_ref = weakref(attacker)
+		attacker.swinging = false
+	cast.origin = attacker.pos
 	PBSkillRules.apply_on_self(attacker, cast, cfg, tick)
 	if book != null:
 		book.ultimate(tick, attacker.slot, cast.skill.affects == PBSkill.Party.ALLIES)
@@ -148,7 +156,11 @@ static func issue(
 ## 点敌人那一档**只查槽位，不查死活**：从下令到子弹飞到隔着好几个 tick，
 ## 「目标没了就空放」在落地那一侧已经写好了（[method PBSkillRules.land_on_enemy]）。
 static func _fits(
-	skill: PBSkill, spot: Vector2, target_slot: int, attackers: Array[PBAttacker]
+	skill: PBSkill,
+	spot: Vector2,
+	target_slot: int,
+	attackers: Array[PBAttacker],
+	caster: PBAttacker
 ) -> bool:
 	match skill.target:
 		PBSkill.Target.GROUND:
@@ -156,7 +168,7 @@ static func _fits(
 		PBSkill.Target.ALLY:
 			if target_slot < 0 or target_slot >= attackers.size():
 				return false
-			return attackers[target_slot].is_targetable()
+			return PBSacrificeRules.can_target(skill, attackers[target_slot], caster)
 		PBSkill.Target.ENEMY:
 			return target_slot >= 0
 		PBSkill.Target.NONE:

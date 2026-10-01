@@ -13,3 +13,4 @@ period_seconds = 1.0
 mods = {
 &"heal_max": 0.1
 }
+duration_levels = PackedFloat32Array()

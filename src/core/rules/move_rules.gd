@@ -56,7 +56,8 @@ static func press_forward(attacker: PBAttacker, target: PBEnemy, leash: float) -
 	var want: float = minf(attacker.reach_stop_x(target.pos()), attacker.home.x + leash)
 	var to: float = maxf(want, attacker.home.x)
 	var gap: float = to - attacker.pos.x
-	attacker.pos.x += clampf(gap, -attacker.move_speed, attacker.move_speed)
+	var step: float = PBMotionAuraRules.move_step(attacker)
+	attacker.pos.x += clampf(gap, -step, step)
 
 
 ## 近战：**二维贴上去**，停在自己的接触距离上。
@@ -76,4 +77,4 @@ static func close_in(attacker: PBAttacker, target: PBEnemy, leash: float) -> voi
 	var leashed: float = from_home.length()
 	if leashed > leash:
 		stop = attacker.home + from_home / leashed * leash
-	attacker.pos = attacker.pos.move_toward(stop, attacker.move_speed)
+	attacker.pos = attacker.pos.move_toward(stop, PBMotionAuraRules.move_step(attacker))

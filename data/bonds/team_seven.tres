@@ -6,12 +6,8 @@
 script = ExtResource("1_be1kh")
 id = &"team_seven"
 name_key = "bond.team_seven"
-match_mode = 0
 member_ids = Array[StringName]([&"naruto", &"sasuke", &"sakura", &"kakashi"])
-match_element = 5
 tier_counts = Array[int]([4])
 tier_power = Array[float]([0.42000000000000004])
 tier_function_keys = Array[StringName]([&"pull"])
 tier_function_carriers = Array[StringName]([&"kakashi"])
-member_functions = {}
-member_skill_patches = {}

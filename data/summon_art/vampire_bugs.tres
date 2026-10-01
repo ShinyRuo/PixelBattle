@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PBSummonArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/summon_art.gd" id="1_2xsmq"]
+
+[resource]
+script = ExtResource("1_2xsmq")
+actor_key = &"summon_vampire_bugs"
+shot_key = &"bugsball"
+spawn_fx_key = &"summon_vampire_bugs_spawn"

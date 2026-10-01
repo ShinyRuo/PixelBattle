@@ -14,3 +14,4 @@ mods = {
 &"enemy_speed_scale": 0.0,
 &"stun": 1.0
 }
+duration_levels = PackedFloat32Array()

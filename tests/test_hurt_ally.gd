@@ -21,6 +21,7 @@ var _cfg: PBSimConfig
 func before_each() -> void:
 	_cfg = PBGameData.config()
 
+
 # ── 反弹：挨打那一侧的漏斗 ────────────────────────────────────
 
 
@@ -32,9 +33,7 @@ func test_both_ways_of_being_hit_go_through_the_same_funnel() -> void:
 	for path: String in [SIM_PATH, SHOT_PATH]:
 		var text := FileAccess.get_file_as_string(path)
 		assert_ne(text, "", "读得到 %s" % path)
-		assert_eq(
-			text.split("PBStrikeRules.hurt_ally(").size() - 1, 1, "%s 该只调一次漏斗" % path
-		)
+		assert_eq(text.split("PBStrikeRules.hurt_ally(").size() - 1, 1, "%s 该只调一次漏斗" % path)
 		assert_false(text.contains("reflect"), "%s 不该自己判反弹" % path)
 
 
@@ -57,13 +56,9 @@ func test_the_damage_comes_back_at_whoever_dealt_it() -> void:
 	var enemy := _enemy()
 	var out := PBCombatOutcome.new()
 	var full: float = enemy.hp
-	PBStrikeRules.hurt_ally(
-		target, enemy, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out
-	)
+	PBStrikeRules.hurt_ally(target, enemy, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out)
 	assert_lt(enemy.hp, full, "打人的那个该跟着掉血")
-	assert_almost_eq(
-		full - enemy.hp, (target.max_hp - target.hp) * 0.5, 0.001, "还回去的是挨的那一下的五成"
-	)
+	assert_almost_eq(full - enemy.hp, (target.max_hp - target.hp) * 0.5, 0.001, "还回去的是挨的那一下的五成")
 
 
 func test_a_dodged_hit_still_comes_back() -> void:
@@ -77,9 +72,7 @@ func test_a_dodged_hit_still_comes_back() -> void:
 	var full: float = enemy.hp
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	PBStrikeRules.hurt_ally(
-		target, enemy, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, rng, null, out
-	)
+	PBStrikeRules.hurt_ally(target, enemy, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, rng, null, out)
 	assert_eq(target.hp, target.max_hp, "闪掉了就一点不掉")
 	assert_lt(enemy.hp, full, "但那一下照样还回去")
 
@@ -93,9 +86,7 @@ func test_a_kill_by_reflection_is_counted_exactly_once() -> void:
 	enemy.max_hp = 1.0
 	enemy.hp = 1.0
 	var out := PBCombatOutcome.new()
-	PBStrikeRules.hurt_ally(
-		target, enemy, 10.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out
-	)
+	PBStrikeRules.hurt_ally(target, enemy, 10.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out)
 	assert_false(enemy.alive, "该被反弹打死")
 	assert_eq(out.kills, 1, "记一次，不多不少")
 
@@ -105,9 +96,7 @@ func test_nothing_comes_back_from_a_corpse() -> void:
 	var target := _hurtable(0.0)
 	target.reflect = 0.5
 	var out := PBCombatOutcome.new()
-	PBStrikeRules.hurt_ally(
-		target, null, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out
-	)
+	PBStrikeRules.hurt_ally(target, null, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out)
 	assert_eq(out.kills, 0, "没有来源就没有反弹，也不该崩")
 	assert_lt(target.hp, target.max_hp, "但他自己照样挨了这一下")
 
@@ -118,9 +107,7 @@ func test_without_a_reflect_nothing_changes_at_all() -> void:
 	var enemy := _enemy()
 	var out := PBCombatOutcome.new()
 	var full: float = enemy.hp
-	PBStrikeRules.hurt_ally(
-		target, enemy, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out
-	)
+	PBStrikeRules.hurt_ally(target, enemy, 100.0, PBElement.Type.PHYSICAL, _cfg, 0, null, null, out)
 	assert_eq(enemy.hp, full, "没配就一点都不该掉")
 
 
@@ -200,6 +187,7 @@ func test_without_dice_nobody_ever_dodges() -> void:
 	one.take_damage(10.0, 0)
 	assert_lt(one.hp, one.max_hp, "不给骰子就照常挨打")
 
+
 ## 一个满血、打不死的忍者。
 func _hurtable(dodge: float) -> PBAttacker:
 	var one := PBAttacker.new()
@@ -208,4 +196,3 @@ func _hurtable(dodge: float) -> PBAttacker:
 	one.alive = true
 	one.dodge = dodge
 	return one
-

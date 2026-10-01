@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_i4dcr"]
+
+[resource]
+script = ExtResource("1_i4dcr")
+id = &"shark_pressure"
+name_key = "buff.shark_pressure"
+icon_key = "buff.shark_pressure"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_attack_speed_scale": 0.75,
+&"enemy_speed_scale": 0.75
+}
+duration_levels = PackedFloat32Array()

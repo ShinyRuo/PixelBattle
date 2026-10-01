@@ -69,9 +69,7 @@ func test_locking_the_plan_records_the_names_and_settling_clears_them() -> void:
 	while PBEconomyRules.quest_cost_units(plan.quest_grade) <= 0:
 		plan.quest_grade = PBEconomyRules.roll_quest(_rng.quest)
 	PBRunSim.lock_plan(state, plan, strategy.deploy(state, plan.wave, _cfg), true, _cfg)
-	assert_eq(
-		state.dispatched_ids.size(), state.dispatched, "名单长度该等于派遣人数"
-	)
+	assert_eq(state.dispatched_ids.size(), state.dispatched, "名单长度该等于派遣人数")
 	var outcome := PBRunSim.resolve_battle(plan, state.def_reduction(_cfg), _cfg)
 	PBRunSim.settle_wave(state, plan, outcome, _cfg, _rng)
 	assert_true(state.dispatched_ids.is_empty(), "结算之后该清空")
@@ -132,11 +130,7 @@ func test_the_pity_counter_reads_the_best_of_the_three() -> void:
 	state.gold = 100000
 	state.gacha_pity = _cfg.gacha_pity
 	PBShopRules.open_offer(state, PBWaveRules.build(5, _cfg, _wave_rng), _cfg, _rng)
-	assert_gte(
-		PBEconomyRules.best_rarity(state.pending_offer),
-		int(PBUnit.Rarity.SSR),
-		"保底该在三张里兑现"
-	)
+	assert_gte(PBEconomyRules.best_rarity(state.pending_offer), int(PBUnit.Rarity.SSR), "保底该在三张里兑现")
 	assert_eq(state.gacha_pity, 0, "兑现之后保底计数该清零")
 
 
@@ -214,9 +208,7 @@ func test_levelling_gets_more_expensive_and_stops_at_the_cap() -> void:
 		var cost := PBEconomyRules.unit_level_cost(level, _cfg)
 		assert_gt(cost, previous, "第 %d 级该比上一级贵" % level)
 		previous = cost
-	assert_eq(
-		PBEconomyRules.unit_level_cost(_cfg.unit_level_max, _cfg), -1, "满级该报 -1"
-	)
+	assert_eq(PBEconomyRules.unit_level_cost(_cfg.unit_level_max, _cfg), -1, "满级该报 -1")
 
 
 func test_a_broke_player_cannot_level_anyone() -> void:

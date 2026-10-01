@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tenten_tools/front_0.png" id="1_bgyul"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tenten_tools/front_1.png" id="2_qhkw3"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tenten_tools/front_2.png" id="3_4jl68"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tenten_tools/front_3.png" id="4_k5q6h"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tenten_tools/front_4.png" id="5_5mufw"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tenten_tools/front_5.png" id="6_jb86m"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_1piyo"]
+
+[resource]
+script = ExtResource("7_1piyo")
+front_frames = Array[Texture2D]([ExtResource("1_bgyul"), ExtResource("2_qhkw3"), ExtResource("3_4jl68"), ExtResource("4_k5q6h"), ExtResource("5_5mufw"), ExtResource("6_jb86m")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

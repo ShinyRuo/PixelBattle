@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_pursuing_fangs_spawn/front_0.png" id="1_nn1lu"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_pursuing_fangs_spawn/front_1.png" id="2_vv7tb"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_pursuing_fangs_spawn/front_2.png" id="3_ml5gq"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_pursuing_fangs_spawn/front_3.png" id="4_xhjya"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_pursuing_fangs_spawn/front_4.png" id="5_fx3jc"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_pursuing_fangs_spawn/front_5.png" id="6_rhfne"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_lswx4"]
+
+[resource]
+script = ExtResource("7_lswx4")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_nn1lu"), ExtResource("2_vv7tb"), ExtResource("3_ml5gq"), ExtResource("4_xhjya"), ExtResource("5_fx3jc"), ExtResource("6_rhfne")])
+fps = 12.0
+anchor = Vector2(128, 245)
+pixel_scale = 0.18

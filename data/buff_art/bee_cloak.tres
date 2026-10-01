@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bee_cloak/front_0.png" id="1_p7hwn"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bee_cloak/front_1.png" id="2_g53td"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bee_cloak/front_2.png" id="3_mbn0m"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bee_cloak/front_3.png" id="4_8t61u"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bee_cloak/front_4.png" id="5_ddc7k"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bee_cloak/front_5.png" id="6_2bc8i"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_ewrgn"]
+
+[resource]
+script = ExtResource("7_ewrgn")
+front_frames = Array[Texture2D]([ExtResource("1_p7hwn"), ExtResource("2_g53td"), ExtResource("3_mbn0m"), ExtResource("4_8t61u"), ExtResource("5_ddc7k"), ExtResource("6_2bc8i")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

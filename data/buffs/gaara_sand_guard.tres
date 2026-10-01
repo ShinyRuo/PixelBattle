@@ -12,3 +12,4 @@ duration_seconds = 4.0
 mods = {
 &"defence": 100.0
 }
+duration_levels = PackedFloat32Array()

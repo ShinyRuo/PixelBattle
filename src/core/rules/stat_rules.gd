@@ -62,7 +62,6 @@ const PLACEHOLDER_PRIMARY := {
 	PBElement.Type.SAGE: PBCharacter.Primary.INTELLECT,
 }
 
-
 ## 力量加几点。**量型**（直接加点数）。
 const STRENGTH: StringName = &"strength"
 
@@ -74,12 +73,16 @@ const INTELLECT: StringName = &"intellect"
 
 ## 三围各加几点（原版的「全属性 +N」）。**量型**，和上面三个相加。
 const ALL_STATS: StringName = &"all_stats"
+## 按忍者当前等级增加三围，包含一级，不是每次升级才加的成长。
+const ALL_STATS_PER_LEVEL: StringName = &"all_stats_per_level"
 
 ## 三围各多几成（原版羁绊的「提升 20% 的全属性」）。**率型**，中性 0.0。
 ##
 ## **只放大角色自己的三围**（1 级值 + 等级成长），点数词条排在它后面加、不跟着放大：
 ## 放大点数的话，装备的「全属性 +30」和羁绊的 +20% 连乘，越往后装备越多、这一句越强。
 const ALL_STATS_BONUS: StringName = &"all_stats_bonus"
+## 将装备点数并入后再加成；按原触发取整数增量，不放大直接攻击 / 生命词条。
+const ALL_STATS_TOTAL_BONUS: StringName = &"all_stats_total_bonus"
 
 ## 攻击力加几点。**量型**。
 ##
@@ -103,6 +106,8 @@ const HP_BONUS: StringName = &"hp_bonus"
 ## 攻速多几成。**率型**，中性 0.0。
 ## [method PBAttacker.prime] 拿到的 [member PBAttacker.attack_speed] 已经是算完加成的数。
 const ATTACK_SPEED: StringName = &"attack_speed"
+## 先从基础攻击间隔减秒，再乘敏捷和攻速加成；不是最终间隔直接减秒。
+const ATTACK_INTERVAL_REDUCTION: StringName = &"attack_interval_reduction"
 
 ## 认得的全部属性词条。见本类顶上「属性 vs 行为」。
 const ALL: Array[StringName] = [
@@ -110,12 +115,15 @@ const ALL: Array[StringName] = [
 	AGILITY,
 	INTELLECT,
 	ALL_STATS,
+	ALL_STATS_PER_LEVEL,
 	ALL_STATS_BONUS,
+	ALL_STATS_TOTAL_BONUS,
 	ATTACK,
 	DEFENCE,
 	MAX_HP,
 	HP_BONUS,
 	ATTACK_SPEED,
+	ATTACK_INTERVAL_REDUCTION,
 ]
 
 
@@ -150,9 +158,7 @@ static func fill_placeholder(character: PBCharacter) -> void:
 	if character == null:
 		return
 	var rarity: int = clampi(int(character.rarity), 0, PLACEHOLDER_RARITY_DPS.size() - 1)
-	character.primary = PLACEHOLDER_PRIMARY.get(
-		character.element, PBCharacter.Primary.STRENGTH
-	)
+	character.primary = PLACEHOLDER_PRIMARY.get(character.element, PBCharacter.Primary.STRENGTH)
 	# 防元素 = 克制我攻元素的那一系。攻守指向不同波次，两轴才不会同进同退。
 	character.def_element = PBElement.counter_of(character.element)
 
@@ -202,12 +208,10 @@ static func fill_placeholder(character: PBCharacter) -> void:
 	# 反解攻击力基数，使 1 级 1 星的「攻 × 攻速」正好落在稀有度阶梯上。
 	# **这是新旧模型的接缝**：换成属性表之后，战力口径一点没变。
 	var speed: float = (
-		character.attack_speed_base
-		* (1.0 + character.agility * character.attack_speed_per_agility)
+		character.attack_speed_base * (1.0 + character.agility * character.attack_speed_per_agility)
 	)
 	character.atk_base = (
-		PLACEHOLDER_RARITY_DPS[rarity] / maxf(speed, 0.001)
-		- main_value * character.atk_per_primary
+		PLACEHOLDER_RARITY_DPS[rarity] / maxf(speed, 0.001) - main_value * character.atk_per_primary
 	)
 
 
@@ -242,7 +246,12 @@ static func amount(mods: Dictionary, key: StringName) -> float:
 ## 算出一个角色在 [param level] 级、[param star] 星、带着 [param mods] 词条时的全部属性。
 ## [param star] 走 [method PBUnit.star]，最低 1。
 static func of(
-	character: PBCharacter, level: int, star: int, cfg: PBSimConfig, mods: Dictionary = {}
+	character: PBCharacter,
+	level: int,
+	star: int,
+	cfg: PBSimConfig,
+	mods: Dictionary = {},
+	runtime_additions: Dictionary = {}
 ) -> PBStats:
 	var out := PBStats.new()
 	if character == null:
@@ -259,26 +268,36 @@ static func of(
 	out.strength *= own_scale
 	out.agility *= own_scale
 	out.intellect *= own_scale
-	var every: float = amount(mods, ALL_STATS)
+	var every: float = amount(mods, ALL_STATS) + amount(mods, ALL_STATS_PER_LEVEL) * maxi(level, 1)
 	out.strength += amount(mods, STRENGTH) + every
 	out.agility += amount(mods, AGILITY) + every
 	out.intellect += amount(mods, INTELLECT) + every
+	var total_bonus: float = maxf(amount(mods, ALL_STATS_TOTAL_BONUS), 0.0)
+	if total_bonus > 0.0:
+		out.strength += floorf(floorf(out.strength) * total_bonus)
+		out.agility += floorf(floorf(out.agility) * total_bonus)
+		out.intellect += floorf(floorf(out.intellect) * total_bonus)
+	# 开战后的赠送 / 临时增量不再次吃开局的百分比强化。
+	out.strength += amount(runtime_additions, STRENGTH)
+	out.agility += amount(runtime_additions, AGILITY)
+	out.intellect += amount(runtime_additions, INTELLECT)
 
 	# ── 基础属性：固定部分 + 二级属性 × 系数 ──────────────────
 	var star_mult: float = 1.0 + cfg.star_power_mult * float(maxi(star, 1) - 1)
 	out.hp = (character.hp_base + out.strength * character.hp_per_strength) * star_mult
 	out.mp = character.mp_base + out.intellect * character.mp_per_intellect
 	out.atk = (
-		(character.atk_base + primary_value(character, out) * character.atk_per_primary)
-		* star_mult
+		(character.atk_base + primary_value(character, out) * character.atk_per_primary) * star_mult
 	)
 	out.def = character.def_base + out.agility * character.def_per_agility
-	out.attack_speed = character.attack_speed_base * (
-		1.0 + out.agility * character.attack_speed_per_agility
-	)
+	var base_speed: float = character.attack_speed_base
+	if base_speed > 0.0 and amount(mods, ATTACK_INTERVAL_REDUCTION) > 0.0:
+		base_speed = 1.0 / maxf(1.0 / base_speed - amount(mods, ATTACK_INTERVAL_REDUCTION), 0.05)
+	out.attack_speed = base_speed * (1.0 + out.agility * character.attack_speed_per_agility)
 	# 二级属性的词条排在这儿 —— 它们不参与上面那几条派生。
 	# **点数不吃星级倍率**：星级放大的是这个角色自己的底子，
 	# 而装备给的 200 点攻击力对谁都是 200 点。
+	out.base_atk = out.atk
 	out.atk += amount(mods, ATTACK)
 	out.def += amount(mods, DEFENCE)
 	out.hp = (out.hp + amount(mods, MAX_HP)) * (1.0 + amount(mods, HP_BONUS))

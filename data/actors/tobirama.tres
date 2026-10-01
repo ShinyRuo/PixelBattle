@@ -1,32 +1,44 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://qg7gdml63r80"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://db315jw0cyyp0" path="res://assets/actors/tobirama/attack_0.png" id="1_vsm0m"]
-[ext_resource type="Texture2D" uid="uid://b3uvr51jjsymj" path="res://assets/actors/tobirama/attack_1.png" id="2_klgyv"]
-[ext_resource type="Texture2D" uid="uid://d3vycmwhrgfi0" path="res://assets/actors/tobirama/attack_2.png" id="3_eruya"]
-[ext_resource type="Texture2D" uid="uid://c4kr200456n03" path="res://assets/actors/tobirama/attack_3.png" id="4_o0suw"]
-[ext_resource type="Texture2D" uid="uid://coukw7d7te4jo" path="res://assets/actors/tobirama/attack_4.png" id="5_ofkgu"]
-[ext_resource type="Texture2D" uid="uid://brswhs65pxrqn" path="res://assets/actors/tobirama/attack_5.png" id="6_bfhcr"]
-[ext_resource type="Texture2D" uid="uid://dhve0vcy28071" path="res://assets/actors/tobirama/dead_0.png" id="7_wpduq"]
-[ext_resource type="Texture2D" uid="uid://cau1mf88po65f" path="res://assets/actors/tobirama/dead_1.png" id="8_ipqjj"]
-[ext_resource type="Texture2D" uid="uid://betn1big0dkbt" path="res://assets/actors/tobirama/dead_2.png" id="9_l1yj0"]
-[ext_resource type="Texture2D" uid="uid://c2a32021fb5f7" path="res://assets/actors/tobirama/dead_3.png" id="10_yhd5c"]
-[ext_resource type="Texture2D" uid="uid://bsbu2rl6hxf5" path="res://assets/actors/tobirama/dead_4.png" id="11_6wppg"]
-[ext_resource type="Texture2D" uid="uid://i12hsyahk6ua" path="res://assets/actors/tobirama/dead_5.png" id="12_6ctnj"]
-[ext_resource type="Texture2D" uid="uid://kfdp4bspumng" path="res://assets/actors/tobirama/idle_0.png" id="13_nyncj"]
-[ext_resource type="Texture2D" uid="uid://b6suq0ummnodr" path="res://assets/actors/tobirama/idle_1.png" id="14_6353h"]
-[ext_resource type="Texture2D" uid="uid://cu2p8hm2b07mu" path="res://assets/actors/tobirama/idle_2.png" id="15_5mil8"]
-[ext_resource type="Texture2D" uid="uid://oilskwfyje8i" path="res://assets/actors/tobirama/idle_3.png" id="16_ai6ux"]
-[ext_resource type="Texture2D" uid="uid://4w8w8l5jyyjt" path="res://assets/actors/tobirama/idle_4.png" id="17_5gh3s"]
-[ext_resource type="Texture2D" uid="uid://c1c1o6mytvvbl" path="res://assets/actors/tobirama/idle_5.png" id="18_s0hvj"]
-[ext_resource type="Texture2D" uid="uid://dc6j8jw62286g" path="res://assets/actors/tobirama/run_0.png" id="19_qqohp"]
-[ext_resource type="Texture2D" uid="uid://7mqpbqh1rn7q" path="res://assets/actors/tobirama/run_1.png" id="20_h2h28"]
-[ext_resource type="Texture2D" uid="uid://c3dgghyao1omd" path="res://assets/actors/tobirama/run_2.png" id="21_osb3t"]
-[ext_resource type="Texture2D" uid="uid://dx7cdvlg71tvx" path="res://assets/actors/tobirama/run_3.png" id="22_x46jn"]
-[ext_resource type="Texture2D" uid="uid://c6o2342dso0f6" path="res://assets/actors/tobirama/run_4.png" id="23_yat5a"]
-[ext_resource type="Texture2D" uid="uid://b73ctjue074k4" path="res://assets/actors/tobirama/run_5.png" id="24_g7tko"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_vyix1"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/attack_0.png" id="1_vsm0m"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/attack_1.png" id="2_klgyv"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/attack_2.png" id="3_eruya"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/attack_3.png" id="4_o0suw"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/attack_4.png" id="5_ofkgu"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/attack_5.png" id="6_bfhcr"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_water_wall_00.png" id="7_ipqjj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_dark_walk_00.png" id="7_nyncj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/dead_0.png" id="7_wpduq"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_dark_walk_01.png" id="8_6353h"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/dead_1.png" id="8_ipqjj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_water_wall_01.png" id="8_l1yj0"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_dark_walk_02.png" id="9_5mil8"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/dead_2.png" id="9_l1yj0"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_water_wall_02.png" id="9_yhd5c"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_water_wall_03.png" id="10_6wppg"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_dark_walk_03.png" id="10_ai6ux"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/dead_3.png" id="10_yhd5c"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_dark_walk_04.png" id="11_5gh3s"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_water_wall_04.png" id="11_6ctnj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/dead_4.png" id="11_6wppg"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/dead_5.png" id="12_6ctnj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_water_wall_05.png" id="12_nyncj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/cast_dark_walk_05.png" id="12_s0hvj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/idle_0.png" id="13_nyncj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/idle_1.png" id="14_6353h"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/idle_2.png" id="15_5mil8"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/idle_3.png" id="16_ai6ux"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/idle_4.png" id="17_5gh3s"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/idle_5.png" id="18_s0hvj"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/run_0.png" id="19_qqohp"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/run_1.png" id="20_h2h28"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/run_2.png" id="21_osb3t"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/run_3.png" id="22_x46jn"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/run_4.png" id="23_yat5a"]
+[ext_resource type="Texture2D" path="res://assets/actors/tobirama/run_5.png" id="24_g7tko"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_vyix1"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_t1r6l"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_qqohp"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +62,52 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_nyncj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_6353h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_5mil8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_ai6ux")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_5gh3s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_s0hvj")
+}],
+"loop": 0,
+"name": &"cast_dark_walk",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_ipqjj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_l1yj0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_yhd5c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_6wppg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_6ctnj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_nyncj")
+}],
+"loop": 0,
+"name": &"cast_water_wall",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +182,11 @@ animations = [{
 [resource]
 script = ExtResource("25_vyix1")
 key = &"tobirama"
-frames = SubResource("SpriteFrames_t1r6l")
+frames = SubResource("SpriteFrames_qqohp")
+skill_anims = {
+&"dark_walk": &"cast_dark_walk",
+&"water_wall": &"cast_water_wall"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

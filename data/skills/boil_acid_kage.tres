@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_pfqw0"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_pdcrq"]
+
+[sub_resource type="Resource" id="Resource_j7d5a"]
+script = ExtResource("1_pfqw0")
+id = &"mei_acid_kage"
+name_key = "buff.mei_acid_kage"
+icon_key = "buff.mei_acid_kage"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_defence": -4.0
+}
+mods_levels = {
+&"enemy_defence": PackedFloat32Array(-4, -8, -12, -16, -20, -24, -28, -32, -36, -40.5)
+}
+duration_levels = PackedFloat32Array()
+
+[sub_resource type="Resource" id="Resource_0fiq1"]
+script = ExtResource("1_pfqw0")
+id = &"mei_acid_pace"
+name_key = "buff.mei_acid_pace"
+icon_key = "buff.mei_acid_pace"
+kind = 1
+friendly = false
+duration_seconds = 4.0
+mods = {
+&"enemy_attack_speed_scale": 0.3
+}
+duration_levels = PackedFloat32Array()
+
+[resource]
+script = ExtResource("2_pdcrq")
+id = &"boil_acid_kage"
+name_key = "skill.boil_acid_kage"
+element = 4
+power_mult = 0.25
+damage_base = 15.0
+damage_growth = 15.0
+damage_stat = &"agility"
+radius = 0.34
+hit_count = 16
+hit_interval_ticks = 10
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+zone_seconds = 7.0
+zone_radius = 0.128
+zone_ring_radius = 0.128
+zone_ring_count = 5
+zone_outer_radius = 0.256
+zone_outer_count = 8
+zone_effects = Array[ExtResource("1_pfqw0")]([SubResource("Resource_j7d5a")])
+zone_ring_effects = Array[ExtResource("1_pfqw0")]([SubResource("Resource_0fiq1")])
+mp_cost_levels = PackedFloat32Array()

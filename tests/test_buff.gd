@@ -39,6 +39,21 @@ func _attacker(dps: float = 100.0) -> PBAttacker:
 	return out
 
 
+func test_an_instant_buff_records_one_visual_event_without_entering_the_bag() -> void:
+	var unit := _attacker()
+	unit.hp = 100.0
+	var buff := PBBuff.new()
+	buff.id = &"heal_burst"
+	buff.kind = PBBuff.Kind.INSTANT
+	buff.mods = {PBBuffRules.HEAL: 80.0}
+	PBSkillRules.apply_one(unit, buff, buff.mods, _cfg, 17)
+	assert_eq(unit.hp, 180.0, "瞬时档照常结算回血")
+	assert_eq(unit.buffs.count(17), 0, "瞬时档仍不占效果槽")
+	assert_eq(unit.instant_fx_id, buff.id, "表现事件保留效果键")
+	assert_eq(unit.instant_fx_tick, 17, "表现事件保留真实触发 tick")
+	assert_eq(unit.instant_fx_serial, 1, "第一次触发只记一次")
+
+
 # ── 不写回基础字段 ──────────────────────────────────────────────
 
 
@@ -48,9 +63,13 @@ func test_an_expired_buff_leaves_the_base_number_bit_identical() -> void:
 	# 「这个人打着打着好像变弱了」。所以断言是**逐位相等**，不是近似相等。
 	var attacker := _attacker()
 	var base: float = attacker.damage_per_shot()
-	attacker.buffs.add(_lasting(&"boost", {PBBuffRules.DAMAGE_SCALE: 1.3}), {
-		PBBuffRules.DAMAGE_SCALE: 1.3
-	}, 10, 40, 0)
+	attacker.buffs.add(
+		_lasting(&"boost", {PBBuffRules.DAMAGE_SCALE: 1.3}),
+		{PBBuffRules.DAMAGE_SCALE: 1.3},
+		10,
+		40,
+		0
+	)
 	assert_almost_eq(attacker.strike_for(20), base * 1.3, base * 1e-9, "窗口内该多打三成")
 	assert_eq(attacker.damage_per_shot(), base, "基数在窗口内也一个字没动")
 	assert_eq(attacker.strike_for(51), base, "过期之后要逐位回到原值")
@@ -73,9 +92,13 @@ func test_expiry_is_a_query_not_a_sweep() -> void:
 	# 反过来（删除即真相）的话，清扫的时机、顺序、和暂停的关系
 	# 全都变成正确性问题。
 	var bag := PBBuffBag.new()
-	bag.add(_lasting(&"boost", {PBBuffRules.DAMAGE_SCALE: 2.0}), {
-		PBBuffRules.DAMAGE_SCALE: 2.0
-	}, 0, 5, 0)
+	bag.add(
+		_lasting(&"boost", {PBBuffRules.DAMAGE_SCALE: 2.0}),
+		{PBBuffRules.DAMAGE_SCALE: 2.0},
+		0,
+		5,
+		0
+	)
 	assert_eq(bag.amount(PBBuffRules.DAMAGE_SCALE, 5), 2.0, "第 5 tick 还在（含）")
 	assert_eq(bag.amount(PBBuffRules.DAMAGE_SCALE, 6), 1.0, "第 6 tick 该没了，而且没清扫过")
 	assert_eq(bag.count(6), 0, "数一数也是 0")
@@ -124,8 +147,12 @@ func test_a_full_bag_drops_the_shortest_not_the_newest() -> void:
 		bag.add(_lasting(&"f%d" % i, {}), {PBBuffRules.HEAL: 1.0}, 0, 10 + i, 0)
 	assert_eq(bag.count(0), PBBuffBag.SLOTS, "先摆满")
 	bag.add(_lasting(&"late", {}), {PBBuffRules.HEAL: 100.0}, 0, 50, 0)
-	assert_eq(bag.count(0), PBBuffBag.SLOTS, "还是满的，没长出第七个槽")
-	assert_eq(bag.amount(PBBuffRules.HEAL, 0), 105.0, "顶掉的是最短的那一份（1），新的进来了")
+	assert_eq(bag.count(0), PBBuffBag.SLOTS, "满袋替换不会扩容")
+	assert_eq(
+		bag.amount(PBBuffRules.HEAL, 0),
+		float(PBBuffBag.SLOTS - 1) + 100.0,
+		"顶掉最短的 1 点，新来的 100 点与其余效果共存"
+	)
 
 
 # ── 周期型 ──────────────────────────────────────────────────────

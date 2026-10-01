@@ -1,3 +1,4 @@
+@tool
 class_name PBActorSkin
 extends Resource
 ## 一个战场形象：一份 [SpriteFrames] + 它和这个游戏之间的全部约定。
@@ -86,6 +87,7 @@ enum Facing { RIGHT, LEFT }
 ## 同屏站在一起，两边不一样高的表现是「这个人怎么比别人矮一截」。
 @export var height_px: float = 41.0
 
+
 ## 这一帧要不要水平翻转。[param facing] 走 [member PBActorPose.facing]。
 ## **敌我共用这一处**：各写一份的话符号迟早写反一边（左右对称的白模看不出来，真素材一进来就「倒着走」）。
 ## `tests` 里一条扫描式断言要求给 `flip_h` 赋值的地方都走这里。
@@ -130,7 +132,8 @@ func hold_last_to(anim: StringName, count: int) -> void:
 
 ## 某个忍术的动画名。表里没有就退回攻击段。
 func skill_anim(skill_id: StringName) -> StringName:
-	return resolve(skill_anims.get(skill_id, anim_attack))
+	var wanted: StringName = StringName(skill_anims.get(skill_id, anim_attack))
+	return resolve(wanted if has(wanted) else anim_attack)
 
 
 ## 这段动画在不在。

@@ -15,3 +15,4 @@ mods = {
 mods_growth = {
 &"damage_scale": 0.04
 }
+duration_levels = PackedFloat32Array()

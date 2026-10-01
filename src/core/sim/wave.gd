@@ -19,6 +19,8 @@ enum Shape {
 
 ## 波次序号，从 1 开始。
 var index: int = 1
+## 独立于波数；普通单档怪沿用战忍等级，英雄 BOSS 在波次规则里显式赋值。
+var enemy_level: int = 1
 
 ## 本波敌人的属性。按 [constant PBWaveRules.WAVE_ELEMENTS] 固定轮转，与波型无关。
 var element: PBElement.Type = PBElement.Type.FIRE
@@ -37,6 +39,26 @@ var armor_each: float = 0.0
 
 ## 单个敌人的忍术抗性（成数）。按波型与波次定（[method PBSimConfig.enemy_resist]），只减忍术。
 var resist_each: float = 0.0
+
+## 攻击类型与词条；普通波默认体术，怪物能力可以配置忍术。
+var damage_kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU
+var intellect_each: float = 0.0
+var ninjutsu_coefficient: float = 1.0
+var ninjutsu_crit_chance: float = 0.0
+var ninjutsu_crit_bonus: float = 0.0
+var taijutsu_bonus: float = 0.0
+var ninjutsu_bonus: float = 0.0
+var all_damage_bonus: float = 0.0
+var armor_pen: float = 0.0
+var ninjutsu_pen: float = 0.0
+
+## 可选主动技能；生产波次尚未分配具体能力，空数组保持原行为。
+var abilities: Array[PBEnemyAbility] = []
+
+## 普攻闪避率、体术暴击率与额外暴伤。基础为 0，临时效果由敌人自己的效果袋提供。
+var dodge_each: float = 0.0
+var crit_chance_each: float = 0.0
+var crit_bonus_each: float = 0.0
 
 ## 清完本波的基础奖金。§04 特意让它走线性，不跟血量的指数曲线走 ——
 ## 跟着走的话后期金币会溢出到抽卡不再是决策。

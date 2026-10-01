@@ -10,19 +10,25 @@ name_key = "buff.ino_seize"
 icon_key = "buff.ino_seize"
 kind = 1
 friendly = false
-duration_seconds = 2.0
+duration_seconds = 1.0
 mods = {
 &"enemy_speed_scale": 0.0,
 &"stun": 1.0
 }
+duration_levels = PackedFloat32Array(1, 1, 2, 2, 2, 3, 3, 4, 4, 5)
 
 [resource]
 script = ExtResource("2_i6hsf")
 target = 2
 id = &"mind_transfer"
+shot_key = &"skill_mind_transfer"
 name_key = "skill.mind_transfer"
 on_hit = Array[ExtResource("1_aqevm")]([SubResource("Resource_wqey7")])
+mind_control = true
 element = 2
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 480
 shot_cross_seconds = 0.35
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 18, 26, 34, 42, 50, 58, 66, 74, 82)

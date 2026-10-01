@@ -28,7 +28,6 @@ var aim_mode: Aim = Aim.OFF
 ## （[method toggle] 保证），所以「在等点击」这件事只有一个答案。
 var aim_skill: int = -1
 
-
 ## 正在等他点一个敌人。留着这个名字是因为它比 `aim_mode == Aim.TARGET` 好读，
 ## **而且只读** —— 状态只有 [member aim_mode] 一份。
 var aiming: bool:
@@ -68,9 +67,7 @@ static func index_of(units: Array[PBUnit], unit_id: StringName) -> int:
 ## 靠 [member PBAttacker.slot] 对回 [member PBWavePlan.deployed] 的下标 ——
 ## 那是建攻击者时定下的对应关系（[method PBCombatRules.build_attackers]），
 ## 全项目只有这一处需要反查。
-func attacker_of(
-	battle: PBBattleSim, deployed: Array[PBUnit], unit_id: StringName
-) -> PBAttacker:
+func attacker_of(battle: PBBattleSim, deployed: Array[PBUnit], unit_id: StringName) -> PBAttacker:
 	if battle == null or unit_id == &"":
 		return null
 	for attacker: PBAttacker in battle.attackers():
@@ -103,7 +100,7 @@ func enemy_at(battle: PBBattleSim, spot: Vector2, field: Vector2, pick: float) -
 	var best: PBEnemy = null
 	var best_gap: float = pick
 	for enemy: PBEnemy in battle.enemies():
-		if not enemy.is_active(battle.current_tick()):
+		if not enemy.is_hostile(battle.current_tick()):
 			continue
 		var gap: float = PBLayout.screen_gap(enemy.pos(), spot, field)
 		if gap <= best_gap:

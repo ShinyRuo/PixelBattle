@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://bfl4keaj5lsrt"]
+
+[ext_resource type="Texture2D" uid="uid://b37w4ayscoaad" path="res://assets/fx/fields/areas/great_breakthrough/frame_0.png" id="1_80x5x"]
+[ext_resource type="Texture2D" uid="uid://d4kpm5itniw3a" path="res://assets/fx/fields/areas/great_breakthrough/frame_1.png" id="2_lvqnk"]
+[ext_resource type="Texture2D" uid="uid://csp702g5uh7av" path="res://assets/fx/fields/areas/great_breakthrough/frame_2.png" id="3_fff5a"]
+[ext_resource type="Texture2D" uid="uid://c50h6kn0onshd" path="res://assets/fx/fields/areas/great_breakthrough/frame_3.png" id="4_gew8a"]
+[ext_resource type="Texture2D" uid="uid://sctxd037e0kg" path="res://assets/fx/fields/areas/great_breakthrough/frame_4.png" id="5_my1y1"]
+[ext_resource type="Texture2D" uid="uid://byt5ospm2sncp" path="res://assets/fx/fields/areas/great_breakthrough/frame_5.png" id="6_ks1gt"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_54nfn"]
+
+[resource]
+script = ExtResource("7_54nfn")
+frames = Array[Texture2D]([ExtResource("1_80x5x"), ExtResource("2_lvqnk"), ExtResource("3_fff5a"), ExtResource("4_gew8a"), ExtResource("5_my1y1"), ExtResource("6_ks1gt")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_great_breakthrough_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

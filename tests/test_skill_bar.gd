@@ -53,9 +53,7 @@ func _skill(tier: int, damage: float = 0.0) -> PBSkill:
 	var out := PBSkill.new()
 	out.id = &"probe"
 	out.target = tier
-	out.affects = (
-		PBSkill.Party.ALLIES if tier == PBSkill.Target.ALLY else PBSkill.Party.ENEMIES
-	)
+	out.affects = (PBSkill.Party.ALLIES if tier == PBSkill.Target.ALLY else PBSkill.Party.ENEMIES)
 	out.damage = damage
 	out.radius = 1.0
 	out.cooldown_ticks = 100
@@ -110,9 +108,7 @@ func test_a_ninja_without_a_skill_has_no_cell_to_press() -> void:
 
 	_give(live, PBSkill.Target.GROUND)
 	root._refresh_battle_panels()
-	assert_eq(
-		root._command.command_at(2), PBCommandCard.CMD_SKILL_1, "配了才有，而且顶上忍术让出的位置"
-	)
+	assert_eq(root._command.command_at(2), PBCommandCard.CMD_SKILL_1, "配了才有，而且顶上忍术让出的位置")
 	assert_eq(root._command.command_at(3), &"", "只配了一个就只摆一格")
 
 	_give(live, PBSkill.Target.GROUND)
@@ -239,9 +235,7 @@ func test_what_the_next_click_means_comes_from_the_skill() -> void:
 	root._on_field_click(PBLayout.to_screen(mate.pos, root._field()))
 	assert_eq(root._battle.order_of(live), 1, "点中队友就该下令")
 	assert_eq(root._battle.orders().target_of(0), mate.slot, "锁的是点中的那一个")
-	assert_eq(
-		root._battle.orders().spot_of(0), PBSkillCast.NO_SPOT, "锁定档没有落点 —— 别顺手记一个"
-	)
+	assert_eq(root._battle.orders().spot_of(0), PBSkillCast.NO_SPOT, "锁定档没有落点 —— 别顺手记一个")
 	assert_false(cast.is_pending(), "而且这一刻还没放出去")
 
 
@@ -253,12 +247,10 @@ func test_the_ground_tier_still_takes_any_point() -> void:
 	root._on_command(PBCommandCard.CMD_SKILL_1)
 	root._on_field_click(PBLayout.to_screen(Vector2(0.5, 0.0), root._field()))
 	assert_eq(root._battle.order_of(live), 1, "地面档哪个点都算，不用点中谁")
-	assert_true(
-		PBSkillCast.is_spot(root._battle.orders().spot_of(0)), "记下来的是一个真落点"
-	)
+	assert_true(PBSkillCast.is_spot(root._battle.orders().spot_of(0)), "记下来的是一个真落点")
 	assert_eq(root._battle.orders().target_of(0), -1, "地面档不锁人")
-	root._battle.step()
-	assert_gt(cast.ready_at, 0, "下一个 tick 就放出去了，冷却从这一发算起")
+	PBCastTestClock.release(root._battle, live)
+	assert_gt(cast.ready_at, 0, "第 4 帧释放，冷却从这一发算起")
 
 
 func test_a_real_click_casts_the_waiting_skill() -> void:
@@ -286,6 +278,7 @@ func test_a_real_click_casts_the_waiting_skill() -> void:
 	# 而等的这两帧足够跨过一个 tick —— 它可能已经落地了。
 	# 「还在飞」在这里是个会随帧数漂的性质，「放过了」不是。
 	assert_false(root._battle.can_cast(live, 1), "真点一下就该把这一格放出去，然后转灰")
+	PBCastTestClock.release(root._battle, live)
 	assert_gt(cast.ready_at, 0, "冷却从这一发算起")
 
 
@@ -376,7 +369,7 @@ func test_every_cell_lands_not_just_the_ultimate() -> void:
 	sim.step()
 
 	assert_true(sim.cast_skill_now(caster, 1), "第 1 格该放得出")
-	sim.step()
+	PBCastTestClock.release(sim, caster)
 	assert_false(cast.is_pending(), "它该真的落地了")
 	assert_gt(sim.result().kills, 0, "而且真的打死了人")
 

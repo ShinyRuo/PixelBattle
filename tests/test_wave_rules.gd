@@ -84,9 +84,7 @@ func test_wave_element_rotation_matches_spec_table() -> void:
 ## 单独一条而不是塞进上面那张表：表里第三列问的是「哪一系被废掉」，
 ## 而物理波的答案是**一个都没有** —— 那不是表里的一个值，是这一行没有那一列。
 func test_the_physical_wave_has_no_counter_and_wastes_nobody() -> void:
-	assert_true(
-		PBWaveRules.WAVE_ELEMENTS.has(int(PBElement.Type.PHYSICAL)), "物理应该在轮转里（M9-f）"
-	)
+	assert_true(PBWaveRules.WAVE_ELEMENTS.has(int(PBElement.Type.PHYSICAL)), "物理应该在轮转里（M9-f）")
 	for attacker: int in PBElement.RING:
 		assert_eq(
 			PBElement.relation(attacker as PBElement.Type, PBElement.Type.PHYSICAL),

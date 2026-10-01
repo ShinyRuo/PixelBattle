@@ -99,11 +99,7 @@ func test_spawn_clears_the_bag() -> void:
 
 	enemy.spawn(_wave(3), 0.02, 1.0, 0, 0.0)
 	assert_eq(enemy.buffs.count(1), 0, "出生那一刻身上不该带着上一波的东西")
-	assert_eq(
-		enemy.buffs.amount(PBBuffRules.ENEMY_SPEED_SCALE, 1),
-		1.0,
-		"合计要逐位回到中性值，不是「差不多是 1」"
-	)
+	assert_eq(enemy.buffs.amount(PBBuffRules.ENEMY_SPEED_SCALE, 1), 1.0, "合计要逐位回到中性值，不是「差不多是 1」")
 
 
 # ── 全场 × 个体 ────────────────────────────────────────────────
@@ -247,9 +243,9 @@ func test_a_ground_skill_hangs_on_hit_on_everyone_it_caught() -> void:
 	enemy.distance = 0.5
 	enemy.lane = 0.0
 	var enemies: Array[PBEnemy] = [enemy]
-	var cast := PBSkillCast.new(_ground_skill(10.0, [
-		_lasting(&"chill", {PBBuffRules.ENEMY_SPEED_SCALE: 0.5})
-	]))
+	var cast := PBSkillCast.new(
+		_ground_skill(10.0, [_lasting(&"chill", {PBBuffRules.ENEMY_SPEED_SCALE: 0.5})])
+	)
 	cast.cast(Vector2(0.5, 0.0), 0)
 
 	PBSkillRules.land(cast, enemies, 0, _cfg, 1, null, cast.skill.damage)
@@ -263,9 +259,9 @@ func test_on_hit_never_lands_on_an_enemy_the_blast_already_killed() -> void:
 	var enemy := _enemy(5.0)
 	enemy.distance = 0.5
 	var enemies: Array[PBEnemy] = [enemy]
-	var cast := PBSkillCast.new(_ground_skill(999.0, [
-		_lasting(&"chill", {PBBuffRules.ENEMY_SPEED_SCALE: 0.5})
-	]))
+	var cast := PBSkillCast.new(
+		_ground_skill(999.0, [_lasting(&"chill", {PBBuffRules.ENEMY_SPEED_SCALE: 0.5})])
+	)
 	cast.cast(Vector2(0.5, 0.0), 0)
 
 	assert_eq(PBSkillRules.land(cast, enemies, 0, _cfg, 1, null, cast.skill.damage), 1, "这一发该打死它")

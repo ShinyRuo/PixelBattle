@@ -161,26 +161,34 @@ static func lock_plan(
 		state.bonded_units(cfg), plan.deployed, cfg.bonds
 	)
 	plan.bond_passives = PBBondRules.active_passives(
-		state.bonded_units(cfg), plan.deployed, cfg.bonds
+		state.bonded_units(cfg), plan.deployed, cfg.bonds, false
 	)
 	plan.bond_skill_patches = PBBondRules.active_skill_patches(
 		state.bonded_units(cfg), plan.deployed, cfg.bonds
 	)
-	plan.attackers = PBCombatRules.build_attackers(
+	plan.attackers = (
+		PBCombatRules
+		. build_attackers(
+			plan.deployed,
+			plan.wave.element,
+			state.bond_mult(cfg),
+			PBCombatRules.unit_multipliers(plan.deployed, state, cfg),
+			cfg,
+			PBBeastRules.beast_of(state, cfg),
+			state.beast_level,
+			state.beast_cooldown_ticks,
+			# **这三份缺一不可**：少传的那份算出来存在计划上却没人取，羁绊成员效果或技能补丁
+			# 在真游戏里不生效，而测试直接调 `build_attackers` 抓不到（`test_bond_members.gd` 走完整条路钉着）。
+			plan.bond_functions,
+			plan.bond_passives,
+			plan.bond_skill_patches,
+			PBCombatRules.unit_mods(plan.deployed, state, cfg)
+		)
+	)
+	PBBondBuffRules.install(
+		plan.attackers,
 		plan.deployed,
-		plan.wave.element,
-		state.bond_mult(cfg),
-		PBCombatRules.unit_multipliers(plan.deployed, state, cfg),
-		cfg,
-		PBBeastRules.beast_of(state, cfg),
-		state.beast_level,
-		state.beast_cooldown_ticks,
-		# **这三份缺一不可**：少传的那份算出来存在计划上却没人取，羁绊成员效果或技能补丁
-		# 在真游戏里不生效，而测试直接调 `build_attackers` 抓不到（`test_bond_members.gd` 走完整条路钉着）。
-		plan.bond_functions,
-		plan.bond_passives,
-		plan.bond_skill_patches,
-		PBCombatRules.unit_mods(plan.deployed, state, cfg)
+		PBBondBuffRules.collect(state.bonded_units(cfg), plan.deployed, cfg.bonds)
 	)
 	# 玩家拖出来的开战位置盖在自动站位上（§02），排在建攻击者之后。名单空着时什么都不做。
 	PBFormationRules.apply(plan.attackers, plan.deployed, state.formation, cfg)
@@ -229,9 +237,11 @@ static func resolve_battle(
 	plan: PBWavePlan, def_reduction: float, cfg: PBSimConfig
 ) -> PBCombatOutcome:
 	if cfg.use_tick_battle:
-		return PBBattleSim.new(
-			plan.wave, plan.dps, def_reduction, cfg, plan.attackers, plan.crit_rng
-		).run_to_end()
+		return (
+			PBBattleSim
+			. new(plan.wave, plan.dps, def_reduction, cfg, plan.attackers, plan.crit_rng)
+			. run_to_end()
+		)
 	return PBCombatRules.resolve(plan.wave, plan.dps, def_reduction, cfg)
 
 

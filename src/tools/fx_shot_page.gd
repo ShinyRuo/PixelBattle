@@ -42,10 +42,7 @@ func _ready() -> void:
 	add_child(_preview)
 	_refresh_ninjas()
 	_refresh_enemies()
-	_say(
-		"新子弹：填键 → 飞行段选图、切图 →（要爆炸特效再切命中段）→ 看预览"
-		+ " → 生成子弹资源 → 选忍者、设为普攻子弹。"
-	)
+	_say("新子弹：填键 → 飞行段选图、切图 →（要爆炸特效再切命中段）→ 看预览" + " → 生成子弹资源 → 选忍者、设为普攻子弹。")
 
 
 ## 左边一栏。**包一层滚动、状态栏留在滚动区外**，理由同「战场形象」面板：面板高度是人拖出来的。
@@ -59,11 +56,15 @@ func _build_side() -> Control:
 	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	_key_edit = LineEdit.new()
-	_key_edit.placeholder_text = "kunai、fire_ball……"
-	_key_edit.tooltip_text = "子弹键：小写英文、数字、下划线。它是 assets/fx 下的目录名，也是名册里填的那个值"
+	_key_edit.placeholder_text = "kunai、skillbulletA……"
+	_key_edit.tooltip_text = "子弹键：大小写英文、数字、下划线。它是 assets/fx 下的目录名，可在技能表现页绑定技能，也可在下方绑定普攻"
 	_key_edit.text_submitted.connect(func(_t: String) -> void: _on_load())
 	_key_edit.text_changed.connect(func(_t: String) -> void: _refresh_users())
-	side.add_child(_titled("子弹键", _key_edit))
+	side.add_child(_titled("命名子弹资源（普攻 / 技能共用）", _key_edit))
+	var guide := Label.new()
+	guide.text = "技能子弹：填写如 skillbulletA，切图并生成资源，\n再去「技能表现」页选择该键；无需设为普攻。\n召唤物子弹：生成飞行段后，到「召唤物表现」绑定。"
+	guide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	side.add_child(guide)
 	side.add_child(_button("读这个键已经切好的帧", _on_load))
 
 	side.add_child(HSeparator.new())

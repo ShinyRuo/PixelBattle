@@ -114,7 +114,16 @@ func _at(one: PBAttacker, slot: int, x: float) -> PBAttacker:
 
 func _team_hit(one: PBAttacker, source: PBEnemy, team: Array[PBAttacker], tick: int) -> void:
 	PBStrikeRules.hurt_ally(
-		one, source, 10.0, PBElement.Type.PHYSICAL, _cfg, tick, null, null, PBCombatOutcome.new(), team
+		one,
+		source,
+		10.0,
+		PBElement.Type.PHYSICAL,
+		_cfg,
+		tick,
+		null,
+		null,
+		PBCombatOutcome.new(),
+		PBEnemyHitContext.new(team)
 	)
 
 
@@ -158,7 +167,9 @@ func test_an_aura_debuff_still_lands_on_the_enemy_that_struck() -> void:
 
 
 func test_the_boost_scales_amounts_but_not_rates() -> void:
-	var mods := PBBuffRules.scale_amounts({&"defence": 100.0, &"enemy_attack_speed_scale": 0.35}, 1.5)
+	var mods := PBBuffRules.scale_amounts(
+		{&"defence": 100.0, &"enemy_attack_speed_scale": 0.35}, 1.5
+	)
 	assert_almost_eq(float(mods[&"defence"]), 150.0, 0.001, "防御 100 → 150")
 	assert_almost_eq(float(mods[&"enemy_attack_speed_scale"]), 0.35, 0.0001, "率型不乘")
 	var guard := _buff(&"probe_guard", true, 4.0, {&"defence": 100.0})
@@ -193,7 +204,16 @@ func _struck_by(
 	one: PBAttacker, enemy: PBEnemy, tick: int, rng: RandomNumberGenerator, team: Array[PBAttacker]
 ) -> void:
 	PBStrikeRules.hurt_ally(
-		one, enemy, 1.0, PBElement.Type.PHYSICAL, _cfg, tick, rng, null, PBCombatOutcome.new(), team
+		one,
+		enemy,
+		1.0,
+		PBElement.Type.PHYSICAL,
+		_cfg,
+		tick,
+		rng,
+		null,
+		PBCombatOutcome.new(),
+		PBEnemyHitContext.new(team)
 	)
 
 

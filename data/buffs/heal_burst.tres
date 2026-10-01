@@ -13,3 +13,4 @@ mods = {
 mods_growth = {
 &"heal": 180.0
 }
+duration_levels = PackedFloat32Array()

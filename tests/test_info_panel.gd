@@ -219,7 +219,8 @@ func test_the_parts_bay_keeps_every_tile_inside_its_frame() -> void:
 		if not tile.visible:
 			continue
 		assert_lte(
-			tile.position.x + tile.size.x, clip.size.x + 0.5,
+			tile.position.x + tile.size.x,
+			clip.size.x + 0.5,
 			"格子不许漫出框外（x=%.1f 宽=%.1f 框=%.1f）" % [tile.position.x, tile.size.x, clip.size.x]
 		)
 		assert_gte(tile.position.x, -0.5, "也不许往左漏")

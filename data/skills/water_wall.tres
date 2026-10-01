@@ -11,8 +11,9 @@ icon_key = "buff.tobirama_wall"
 kind = 1
 duration_seconds = 3.0
 mods = {
-&"damage_taken": 0.4
+&"defence": 500.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_86fbm")
@@ -20,7 +21,11 @@ target = 0
 id = &"water_wall"
 name_key = "skill.water_wall"
 affects = 0
+followup_id = &"water_surge"
 on_self = Array[ExtResource("1_5swor")]([SubResource("Resource_magih")])
 element = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 340
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array()

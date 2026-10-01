@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_lddjw"]
+
+[resource]
+script = ExtResource("1_lddjw")
+id = &"strongest_ninja"
+name_key = "bond.strongest_ninja"
+member_ids = Array[StringName]([&"madara", &"hashirama"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_skill_patches = {
+&"hashirama": {
+&"wood_descent": {
+&"variant_enable": 1.0
+}
+},
+&"madara": {
+&"susanoo": {
+&"self_duration_scale": 1.35,
+&"variant_enable": 1.0
+}
+}
+}

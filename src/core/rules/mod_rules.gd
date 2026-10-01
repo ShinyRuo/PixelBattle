@@ -24,7 +24,9 @@ extends RefCounted
 ## 界面上写着「攻速 +0%」**—— 0.30 按点数格式化出来就是这个。
 ## 所以判据收在这里一处，两块面板共用。
 const RATE_KEYS: Array[StringName] = [
+	PBPassiveRules.STACK_HARM_BONUS,
 	PBStatRules.ALL_STATS_BONUS,
+	PBStatRules.ALL_STATS_TOTAL_BONUS,
 	PBStatRules.HP_BONUS,
 	PBStatRules.ATTACK_SPEED,
 	PBPassiveRules.CRIT_CHANCE,
@@ -44,6 +46,8 @@ const RATE_KEYS: Array[StringName] = [
 	PBPassiveRules.DODGE_HEAL,
 	PBPassiveRules.HEAL_POWER,
 	PBPassiveRules.STRUCK_BOOST,
+	PBPassiveRules.STRUCK_STRENGTH_BONUS,
+	PBPassiveRules.STRUCK_DODGE,
 	PBPassiveRules.STRUCK_SUMMON,
 	PBPassiveRules.UNDYING_END_HEAL,
 	PBPassiveRules.REGEN_MAX,
@@ -59,6 +63,9 @@ const RATE_KEYS: Array[StringName] = [
 	PBPassiveRules.ARMOR_PEN,
 	PBPassiveRules.NINJUTSU_PEN,
 	PBPassiveRules.NINJUTSU_BONUS,
+	PBPassiveRules.ALL_DAMAGE_BONUS,
+	PBPassiveRules.TAIJUTSU_BONUS,
+	PBPassiveRules.NINJUTSU_RESIST,
 	PBPassiveRules.NINJUTSU_CRIT_CHANCE,
 	PBPassiveRules.NINJUTSU_CRIT_DAMAGE,
 ]

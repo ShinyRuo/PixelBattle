@@ -99,11 +99,7 @@ func test_the_players_own_hand_stops_the_auto_upkeep() -> void:
 	assert_true(root._state.lineup_by_hand, "拖过之后就归他了")
 	root._refresh_panels()
 	assert_eq(root._state.lineup.size(), 0, "他要空着就空着，别把名单替他填回去")
-	assert_eq(
-		root._strategy.deploy(root._state, root._plan.wave, root._cfg).size(),
-		0,
-		"上场的也该是零个"
-	)
+	assert_eq(root._strategy.deploy(root._state, root._plan.wave, root._cfg).size(), 0, "上场的也该是零个")
 	# **羁绊也得跟着是零个**（M6-i 修的）。在那之前 `bring_to_field` 仍会
 	# 按策略往 `field` 里补满，而 `deploy` 只返回名单里的人 ——
 	# 于是羁绊算上了一个屏幕上根本不存在的人，不报错，只是倍率虚高。
@@ -162,9 +158,7 @@ func test_the_modal_swallows_clicks_meant_for_the_panels_behind_it() -> void:
 	# 全都做得成但没意义 —— 他还欠着一个回答。
 	var root := _prepared()
 	root._open_modal(root._beasts)
-	assert_eq(
-		root._beasts.mouse_filter, Control.MOUSE_FILTER_STOP, "弹层这一层必须自己吃掉鼠标"
-	)
+	assert_eq(root._beasts.mouse_filter, Control.MOUSE_FILTER_STOP, "弹层这一层必须自己吃掉鼠标")
 	root._beasts.close()
 	assert_false(root._beasts.visible, "收起来之后它一点都不该再挡路")
 
@@ -262,9 +256,7 @@ func test_equipping_goes_through_the_shared_primitive() -> void:
 	var unit: PBUnit = root._state.roster.values()[0]
 	root._selection.set_to(PBSelection.Kind.UNIT, unit.key())
 	root._on_equip_changed(&"blunt_blade", true)
-	assert_eq(
-		PBEquipRules.pinned_of(root._state.equipped, unit.key()).size(), 1, "挂上该记进状态"
-	)
+	assert_eq(PBEquipRules.pinned_of(root._state.equipped, unit.key()).size(), 1, "挂上该记进状态")
 	root._on_equip_changed(&"blunt_blade", false)
 	assert_false(root._state.equipped.has(unit.key()), "卸光了该把条目一起去掉")
 
@@ -356,11 +348,7 @@ func test_the_resolution_box_never_lies_about_the_current_window() -> void:
 	assert_eq(root._menu._sizes.item_count, PBDisplay.SIZES.size(), "档位表要全列出来")
 	var picked: int = root._menu._sizes.selected
 	if picked >= 0:
-		assert_eq(
-			PBDisplay.SIZES[picked],
-			DisplayServer.window_get_size(),
-			"选中的那一项必须真的等于当前窗口"
-		)
+		assert_eq(PBDisplay.SIZES[picked], DisplayServer.window_get_size(), "选中的那一项必须真的等于当前窗口")
 
 
 func test_the_battlefield_actually_shows_your_own_ninjas() -> void:

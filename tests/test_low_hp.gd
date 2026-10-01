@@ -69,7 +69,9 @@ func test_the_enemy_attack_path_triggers_it_and_reads_the_new_defence() -> void:
 	assert_eq(_defence_of(one, 1), 50.0, "敌人打过线就触发")
 	var before: float = one.hp
 	PBStrikeRules.hurt_ally(one, null, 100.0, PBElement.Type.PHYSICAL, _cfg, 2, null, null, out)
-	var bare := PBStatRules.strike_damage(100.0, PBElement.Type.PHYSICAL, 0.0, one.def_element, _cfg)
+	var bare := PBStatRules.strike_damage(
+		100.0, PBElement.Type.PHYSICAL, 0.0, one.def_element, _cfg
+	)
 	assert_lt(before - one.hp, bare - 0.001, "临时防御要在折算护甲那一句里算进去")
 
 
@@ -149,7 +151,9 @@ func test_the_bond_really_writes_the_heal_scale_onto_her_skill() -> void:
 				{},
 				{who: {PBPassiveRules.HEAL_POWER: power}}
 			)
-			assert_almost_eq(squad[0].skills[0].skill.heal_scale, 1.0 + power, 0.0001, "%s 的技能" % who)
+			assert_almost_eq(
+				squad[0].skills[0].skill.heal_scale, 1.0 + power, 0.0001, "%s 的技能" % who
+			)
 			return
 	fail_test("真表里该有一组羁绊给了 heal_power、而且那个人有技能")
 

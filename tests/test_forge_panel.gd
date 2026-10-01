@@ -29,7 +29,7 @@ func test_the_panel_builds_and_starts_empty() -> void:
 	add_child_autofree(panel)
 	await wait_process_frames(1)
 	assert_eq(
-		panel._picks_ui._picks.size(), PBActorForge.anim_names().size(), "四段一开始各挂一份空名单"
+		panel._picks_ui._picks.size(), PBActorForge.anim_names(true).size(), "基础四态和两个技能动作各挂一份空名单"
 	)
 	assert_true(PBActorForge.anim_names().has(panel._anim()), "下拉框选中的得是个真段名")
 	assert_true(panel._picked().is_empty(), "一开始什么都没挑")

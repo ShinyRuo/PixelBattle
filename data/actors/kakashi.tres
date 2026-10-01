@@ -1,25 +1,31 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://bsbincfdir1kd"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://7noo6wr7srq3" path="res://assets/actors/kakashi/attack_0.png" id="1_towg3"]
-[ext_resource type="Texture2D" uid="uid://ddd5ksyd5l2ii" path="res://assets/actors/kakashi/attack_1.png" id="2_04adr"]
-[ext_resource type="Texture2D" uid="uid://d1qbrau32yi75" path="res://assets/actors/kakashi/attack_2.png" id="3_bvwo0"]
-[ext_resource type="Texture2D" uid="uid://wcyt6c51k1nr" path="res://assets/actors/kakashi/attack_3.png" id="4_4k5ks"]
-[ext_resource type="Texture2D" uid="uid://41e6bg3prue8" path="res://assets/actors/kakashi/dead_0.png" id="5_0kciu"]
-[ext_resource type="Texture2D" uid="uid://b4ftd23rcqc5k" path="res://assets/actors/kakashi/attack_4.png" id="5_04adr"]
-[ext_resource type="Texture2D" uid="uid://bm5megnv34die" path="res://assets/actors/kakashi/dead_1.png" id="6_7f6cc"]
-[ext_resource type="Texture2D" uid="uid://c0iax3twbsx6u" path="res://assets/actors/kakashi/dead_2.png" id="7_4ce64"]
-[ext_resource type="Texture2D" uid="uid://66ukptpra8jg" path="res://assets/actors/kakashi/dead_3.png" id="8_cwfnd"]
-[ext_resource type="Texture2D" uid="uid://cscr638favcoo" path="res://assets/actors/kakashi/idle_0.png" id="9_2yn1m"]
-[ext_resource type="Texture2D" uid="uid://qg5gcfv8dooh" path="res://assets/actors/kakashi/idle_1.png" id="10_3sd84"]
-[ext_resource type="Texture2D" uid="uid://bd8bo8fojll51" path="res://assets/actors/kakashi/run_0.png" id="11_cirri"]
-[ext_resource type="Texture2D" uid="uid://fnqpayg2n8p5" path="res://assets/actors/kakashi/run_1.png" id="12_4lmkx"]
-[ext_resource type="Texture2D" uid="uid://dxmp0l5kdhf6f" path="res://assets/actors/kakashi/run_2.png" id="13_qlrdg"]
-[ext_resource type="Texture2D" uid="uid://8frqwens3tkm" path="res://assets/actors/kakashi/run_3.png" id="14_jl80w"]
-[ext_resource type="Texture2D" uid="uid://cewo115dyl6a2" path="res://assets/actors/kakashi/run_4.png" id="15_gf6li"]
-[ext_resource type="Texture2D" uid="uid://c5nv6yx4gcdc3" path="res://assets/actors/kakashi/run_5.png" id="16_7l3nn"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="17_cslrn"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/attack_0.png" id="1_towg3"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/attack_1.png" id="2_04adr"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/attack_2.png" id="3_bvwo0"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/attack_3.png" id="4_4k5ks"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/dead_0.png" id="5_0kciu"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/attack_4.png" id="5_04adr"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/dead_1.png" id="6_7f6cc"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/cast_pursuing_fangs_00.png" id="6_cwfnd"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/cast_pursuing_fangs_01.png" id="7_2yn1m"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/dead_2.png" id="7_4ce64"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/cast_pursuing_fangs_02.png" id="8_3sd84"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/dead_3.png" id="8_cwfnd"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/idle_0.png" id="9_2yn1m"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/cast_pursuing_fangs_03.png" id="9_cirri"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/idle_1.png" id="10_3sd84"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/cast_pursuing_fangs_04.png" id="10_4lmkx"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/run_0.png" id="11_cirri"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/cast_pursuing_fangs_05.png" id="11_qlrdg"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/run_1.png" id="12_4lmkx"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/run_2.png" id="13_qlrdg"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/run_3.png" id="14_jl80w"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/run_4.png" id="15_gf6li"]
+[ext_resource type="Texture2D" path="res://assets/actors/kakashi/run_5.png" id="16_7l3nn"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="17_cslrn"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_bvwo0"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_jl80w"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -40,6 +46,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_cwfnd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_2yn1m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_3sd84")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_cirri")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_4lmkx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_qlrdg")
+}],
+"loop": 0,
+"name": &"cast_pursuing_fangs",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -96,7 +125,10 @@ animations = [{
 [resource]
 script = ExtResource("17_cslrn")
 key = &"kakashi"
-frames = SubResource("SpriteFrames_bvwo0")
+frames = SubResource("SpriteFrames_jl80w")
+skill_anims = {
+&"pursuing_fangs": &"cast_pursuing_fangs"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

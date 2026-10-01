@@ -199,9 +199,7 @@ func _build_states(left: float, width: float, top: float) -> float:
 	var cell: float = (width - GAP * 2.0) / 3.0
 	for i: int in STATES.size():
 		var row: Array = STATES[i]
-		var at := Vector2(
-			left + float(i % 3) * (cell + GAP), y + float(i / 3) * (ROW_H + GAP)
-		)
+		var at := Vector2(left + float(i % 3) * (cell + GAP), y + float(i / 3) * (ROW_H + GAP))
 		var state: int = row[1] as int
 		_button(row[0] as String, Rect2(at, Vector2(cell, ROW_H)), func() -> void: _play(state))
 	return y + (ROW_H + GAP) * 2.0 + GAP
@@ -213,9 +211,7 @@ func _build_playback(left: float, width: float, top: float) -> float:
 	var cell: float = (width - GAP * 2.0) / 3.0
 	_button("暂停/继续", Rect2(Vector2(left, y), Vector2(cell, ROW_H)), _toggle_pause)
 	_button(
-		"◀ 帧",
-		Rect2(Vector2(left + cell + GAP, y), Vector2(cell, ROW_H)),
-		func() -> void: _step(-1)
+		"◀ 帧", Rect2(Vector2(left + cell + GAP, y), Vector2(cell, ROW_H)), func() -> void: _step(-1)
 	)
 	_button(
 		"帧 ▶",
@@ -293,13 +289,16 @@ func _build_entries() -> void:
 		_build_foes()
 		return
 	for character: PBCharacter in PBCharacterLoader.table().all():
-		_entries.append(
-			{
-				"title": _title_of(character),
-				"key": character.actor_key,
-				"element": character.element,
-				"rank": PBEnemy.Rank.MINION,
-			}
+		(
+			_entries
+			. append(
+				{
+					"title": _title_of(character),
+					"key": character.actor_key,
+					"element": character.element,
+					"rank": PBEnemy.Rank.MINION,
+				}
+			)
 		)
 
 
@@ -319,13 +318,16 @@ func _build_foes() -> void:
 				if seen.has(form):
 					continue
 				seen[form] = true
-				_entries.append(
-					{
-						"title": _foe_title(element, form),
-						"key": PBEnemyPool.skin_key(element, rank, ranged),
-						"element": element,
-						"rank": rank,
-					}
+				(
+					_entries
+					. append(
+						{
+							"title": _foe_title(element, form),
+							"key": PBEnemyPool.skin_key(element, rank, ranged),
+							"element": element,
+							"rank": rank,
+						}
+					)
 				)
 
 
@@ -417,9 +419,7 @@ func _play(state: int) -> void:
 
 ## 朝向**和两个池子同一把尺子**（[method PBActorSkin.flips_for]）—— 专门验朝向的工具不能和它要验的东西各说各的。
 func _face() -> void:
-	_sprite.flip_h = _skin.flips_for(
-		PBActorPose.FACE_LEFT if _flip else PBActorPose.FACE_RIGHT
-	)
+	_sprite.flip_h = _skin.flips_for(PBActorPose.FACE_LEFT if _flip else PBActorPose.FACE_RIGHT)
 
 
 func _toggle_pause() -> void:
@@ -521,10 +521,7 @@ func _refresh() -> void:
 	lines.append("来源　%s　key「%s」" % [source, key if key != "" else "（空）"])
 	lines.append(_missing_line())
 	lines.append(
-		(
-			"段　%s　帧 %d/%d"
-			% [String(_sprite.animation), _sprite.frame + 1, maxi(_frame_count(), 1)]
-		)
+		"段　%s　帧 %d/%d" % [String(_sprite.animation), _sprite.frame + 1, maxi(_frame_count(), 1)]
 	)
 	var canvas: Vector2 = _skin.canvas_size()
 	lines.append(
@@ -534,10 +531,7 @@ func _refresh() -> void:
 		)
 	)
 	lines.append(
-		(
-			"放大 %d×　朝%s　%s"
-			% [_zoom, "左" if _sprite.flip_h else "右", "暂停" if _paused else "播放中"]
-		)
+		"放大 %d×　朝%s　%s" % [_zoom, "左" if _sprite.flip_h else "右", "暂停" if _paused else "播放中"]
 	)
 	lines.append(PBSkin.tint("空格暂停　←→ 换一个　Esc 退出", PBSkin.DIM))
 	_info.text = "\n".join(lines)

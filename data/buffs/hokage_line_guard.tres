@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_lkkhv"]
+
+[resource]
+script = ExtResource("1_lkkhv")
+id = &"hokage_line_guard"
+name_key = "buff.hokage_line_guard"
+icon_key = "buff.hokage_line_guard"
+kind = 1
+until_wave_end = true
+mods = {
+&"defence": 30.0
+}
+duration_levels = PackedFloat32Array()

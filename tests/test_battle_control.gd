@@ -147,9 +147,7 @@ func test_clicking_a_ninja_selects_him_even_while_paused() -> void:
 	var at := PBLayout.to_screen(live.pos, root._field())
 	root._on_field_click(at)
 	assert_eq(root._selection.kind, PBSelection.Kind.UNIT, "点中忍者该选中他")
-	assert_eq(
-		root._selection.unit_id, root._plan.deployed[live.slot].key(), "而且选中的是点到的那个"
-	)
+	assert_eq(root._selection.unit_id, root._plan.deployed[live.slot].key(), "而且选中的是点到的那个")
 
 
 func test_aiming_takes_two_steps_and_can_be_taken_back() -> void:
@@ -231,7 +229,7 @@ func test_the_player_can_order_one_by_hand() -> void:
 	assert_eq(sim.order_of(caster), 0, "这一刻是攒在手上")
 	sim.step()
 	assert_false(sim.can_cast(caster), "出手之后进冷却，那一格才转灰")
-	for _i: int in 10:
+	for _i: int in 16:
 		sim.step()
 	assert_gt(sim.result().kills, 0, "延迟走完之后它该真的落地")
 

@@ -102,8 +102,13 @@ func test_the_real_table_only_names_skills_their_owner_actually_has() -> void:
 			assert_not_null(character, "「%s」不在名册里" % who)
 			for skill_id: StringName in bond.member_skill_patches[who]:
 				# 阵亡技能是羁绊发给他的，本来就不在他的技能表里 —— 那一种只要求技能表里查得到。
-				if (bond.member_skill_patches[who][skill_id] as Dictionary).has(
-					PBSkillPatchRules.ON_DEATH
+				if (
+					(bond.member_skill_patches[who][skill_id] as Dictionary).has(
+						PBSkillPatchRules.ON_DEATH
+					)
+					or (bond.member_skill_patches[who][skill_id] as Dictionary).has(
+						PBSkillPatchRules.ON_ATTACK_CHANCE
+					)
 				):
 					assert_true(_cfg.skills.has(skill_id), "阵亡技能「%s」不存在" % skill_id)
 					continue
@@ -135,19 +140,57 @@ func _skill() -> PBSkill:
 	skill.slow_ticks = 0
 	skill.summon_power = 0.5
 	skill.summon_seconds = 4.0
+	var harm := PBBuff.new()
+	harm.mods = {PBBuffRules.HARM: 10.0, PBBuffRules.NINJUTSU_SHIELD: 100.0}
+	skill.on_hit = [harm]
+	var own := PBBuff.new()
+	own.duration_seconds = 3.0
+	skill.on_self = [own]
 	return skill
 
 
 func _snapshot(skill: PBSkill) -> Array:
 	return [
+		skill.rescue_radius,
+		skill.attack_repeat_count,
+		skill.heal_aura_max,
+		skill.heal_aura_hit_chance,
+		skill.heal_aura_lost,
+		skill.rebate_delay_ticks,
+		skill.rebate_mana_scale,
+		skill.rebate_cooldown_ticks,
+		skill.transfer_scale,
+		skill.phantom_count,
+		skill.followup_enabled,
+		skill.variant_enabled,
+		skill.on_self[0].duration_seconds,
 		skill.power_mult,
 		skill.radius,
+		skill.full_damage_radius,
+		skill.outer_damage_scale,
+		skill.impact_hold_radius,
+		skill.impact_hold_seconds,
+		skill.ranged_attack_aura,
 		skill.cooldown_ticks,
 		skill.max_targets,
+		skill.extra_target_radius,
+		skill.extra_control_scale,
 		skill.summon_count,
 		skill.slow_scale,
 		skill.slow_ticks,
 		skill.summon_power,
 		skill.summon_seconds,
 		skill.fires_on_death,
+		skill.attack_trigger_chance,
+		skill.gather,
+		skill.first_cast_attack,
+		skill.target_effect_area,
+		skill.on_hit.size(),
+		skill.echo_delay_ticks,
+		skill.echo_radius_scale,
+		skill.hit_count,
+		skill.hit_interval_ticks,
+		skill.hit_step,
+		skill.on_hit[0].mods.get(PBBuffRules.HARM, 0.0),
+		skill.on_hit[0].mods.get(PBBuffRules.NINJUTSU_SHIELD_MAX, 0.0),
 	]

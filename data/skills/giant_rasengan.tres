@@ -3,15 +3,34 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_flpsr"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_gahwx"]
 
+[sub_resource type="Resource" id="Resource_8lwil"]
+script = ExtResource("1_flpsr")
+id = &"sage_rasengan_stun"
+name_key = "buff.sage_rasengan_stun"
+icon_key = "buff.sage_rasengan_stun"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
 [resource]
 script = ExtResource("2_gahwx")
+target = 2
 id = &"giant_rasengan"
 name_key = "skill.giant_rasengan"
-element = 1
-power_mult = 2.8
-radius = 0.19
+on_target = Array[ExtResource("1_flpsr")]([SubResource("Resource_8lwil")])
+element = 6
+power_mult = 2.0
+damage_base = 150.0
+damage_growth = 150.0
+damage_stat = &"agility"
+radius = 0.1875
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
-delay_ticks = 8
-slow_scale = 0.0
-slow_ticks = 40
 mp_cost = 14.0
+mp_cost_levels = PackedFloat32Array(14, 20, 26, 32, 38, 44, 50, 56, 62, 68)

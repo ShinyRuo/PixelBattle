@@ -48,9 +48,7 @@ const FONT_BODY: int = 8
 
 
 ## 一个填色 + 描边 + 圆角的盒子。所有皮肤都从这里出。
-static func box(
-	fill: Color, border: Color, radius: int = RADIUS, width: int = 1
-) -> StyleBoxFlat:
+static func box(fill: Color, border: Color, radius: int = RADIUS, width: int = 1) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
 	style.border_color = border
@@ -79,11 +77,7 @@ static func panel(parent: Control, rect: Rect2, fill: Color = PANEL) -> Panel:
 ## 各处自己 `Label.new()` 时，`mouse_filter` 十有八九会忘，
 ## 于是那行字会挡住底下的按钮，而表现只是「这里点不动」。
 static func label(
-	parent: Control,
-	at: Vector2,
-	width: float,
-	font_size: int = FONT_BODY,
-	color: Color = TEXT
+	parent: Control, at: Vector2, width: float, font_size: int = FONT_BODY, color: Color = TEXT
 ) -> Label:
 	var node := Label.new()
 	node.position = at

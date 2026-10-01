@@ -101,10 +101,7 @@ func test_every_swing_deals_exactly_one_attack_worth_of_damage() -> void:
 		var target := _run(squad, interval * 10)
 		var dealt: float = target.max_hp - target.hp
 		assert_almost_eq(
-			dealt,
-			squad[0].damage_per_shot() * 10.0,
-			1e-6,
-			"攻速 %.1f：十个间隔该正好打出十发" % speed
+			dealt, squad[0].damage_per_shot() * 10.0, 1e-6, "攻速 %.1f：十个间隔该正好打出十发" % speed
 		)
 
 

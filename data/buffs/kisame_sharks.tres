@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_8rwx6"]
+
+[resource]
+script = ExtResource("1_8rwx6")
+id = &"kisame_sharks"
+name_key = "buff.kisame_sharks"
+icon_key = "buff.kisame_sharks"
+kind = 1
+friendly = false
+duration_seconds = 1.01
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()

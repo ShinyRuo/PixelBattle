@@ -10,19 +10,27 @@ name_key = "buff.kurenai_haze"
 icon_key = "buff.kurenai_haze"
 kind = 1
 friendly = false
-duration_seconds = 2.0
+duration_seconds = 1.0
 mods = {
+&"disarm": 1.0,
 &"enemy_speed_scale": 0.25,
-&"hurt": 2.0
+&"hurt": 2.0,
+&"sage_hurt_scale": 1.25
 }
+duration_levels = PackedFloat32Array(1, 1, 2, 2, 2, 3, 3, 3, 3, 4)
 
 [resource]
 script = ExtResource("2_ongqg")
 target = 2
 id = &"haze_illusion"
+shot_key = &"skill_haze_illusion"
 name_key = "skill.haze_illusion"
 on_hit = Array[ExtResource("1_vqtmf")]([SubResource("Resource_jkndk")])
 element = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 shot_cross_seconds = 0.3
+extra_target_from_caster = true
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 17, 24, 31, 38, 45, 52, 59, 66, 73)

@@ -195,9 +195,7 @@ func test_it_says_so_when_dispatch_breaks_nothing() -> void:
 	# 而红的是「雷系现在有几个人」，不是这条测试要问的东西。
 	# 它真正要的前提只有一条 —— 这一队摆得满、且一组羁绊都不吃，
 	# 后者由下面那条断言直接量。
-	assert_gte(
-		field.size(), _cfg.deploy_slots_base, "这一系的人数该够摆满出战席，否则这个夹具不成立"
-	)
+	assert_gte(field.size(), _cfg.deploy_slots_base, "这一系的人数该够摆满出战席，否则这个夹具不成立")
 
 	# 派 1 个之后这一系还剩 4 个，仍然吃着同一档；也没有别的组被顶着。
 	var kept := PBBondRules.active_tiers(_bonded_with(state, 0), _cfg.bonds)
@@ -288,7 +286,9 @@ func test_the_reward_and_the_headcount_are_both_on_the_card() -> void:
 		var need: int = PBEconomyRules.quest_cost_units(grade)
 		if need > state.dispatch_available(_cfg):
 			continue
-		assert_true(card._terms.text.contains("%d 金" % reward), "%d 级：%s" % [grade, card._terms.text])
+		assert_true(
+			card._terms.text.contains("%d 金" % reward), "%d 级：%s" % [grade, card._terms.text]
+		)
 		# M6-k 压成「需 N · 已 M」——面板从 142 高掉到 58，那一行要和奖励并排。
 		assert_true(card._need.text.contains("需 %d" % need), card._need.text)
 		assert_true(

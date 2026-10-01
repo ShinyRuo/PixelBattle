@@ -6,12 +6,8 @@
 script = ExtResource("1_2ntm3")
 id = &"haku_and_zabuza"
 name_key = "bond.haku_and_zabuza"
-match_mode = 0
 member_ids = Array[StringName]([&"haku", &"zabuza"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
-member_skill_patches = {}

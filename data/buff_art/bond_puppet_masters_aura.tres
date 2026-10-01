@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_puppet_masters_aura/back_0.png" id="1_omcnd"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_puppet_masters_aura/back_1.png" id="2_ag844"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_puppet_masters_aura/back_2.png" id="3_o4gmi"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_puppet_masters_aura/back_3.png" id="4_detcb"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_puppet_masters_aura/back_4.png" id="5_dvnxe"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_puppet_masters_aura/back_5.png" id="6_j6niy"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_8tugd"]
+
+[resource]
+script = ExtResource("7_8tugd")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_omcnd"), ExtResource("2_ag844"), ExtResource("3_o4gmi"), ExtResource("4_detcb"), ExtResource("5_dvnxe"), ExtResource("6_j6niy")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

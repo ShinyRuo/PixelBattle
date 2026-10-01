@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBBond" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/bond.gd" id="1_pccm7"]
+
+[resource]
+script = ExtResource("1_pccm7")
+id = &"inner_love"
+name_key = "bond.inner_love"
+member_ids = Array[StringName]([&"chiyo", &"sasori"])
+tier_counts = Array[int]([2])
+tier_power = Array[float]([0.14])
+tier_function_keys = Array[StringName]([&""])
+tier_function_carriers = Array[StringName]([&""])
+member_functions = {
+&"sasori": {
+&"stack_defence": -2.0,
+&"stack_harm_bonus": 0.5
+}
+}
+member_skill_patches = {
+&"chiyo": {
+&"reincarnation": {
+&"transfer_scale": 1.5
+}
+}
+}

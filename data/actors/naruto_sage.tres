@@ -1,32 +1,44 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://yu16yccyothk"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://ci2hlt0k01j1p" path="res://assets/actors/naruto_sage/attack_0.png" id="1_ns1fd"]
-[ext_resource type="Texture2D" uid="uid://yvqw428tdj6x" path="res://assets/actors/naruto_sage/attack_1.png" id="2_x8ghs"]
-[ext_resource type="Texture2D" uid="uid://vrutrgwfkqbs" path="res://assets/actors/naruto_sage/attack_2.png" id="3_s2n3b"]
-[ext_resource type="Texture2D" uid="uid://iihqqofwsa0l" path="res://assets/actors/naruto_sage/attack_3.png" id="4_yny7l"]
-[ext_resource type="Texture2D" uid="uid://b3xyouiiop65d" path="res://assets/actors/naruto_sage/attack_4.png" id="5_vc2sl"]
-[ext_resource type="Texture2D" uid="uid://cu5hty5sr5mqs" path="res://assets/actors/naruto_sage/attack_5.png" id="6_bc6d2"]
-[ext_resource type="Texture2D" uid="uid://2rm5m7a5jw5e" path="res://assets/actors/naruto_sage/dead_0.png" id="7_1x5mh"]
-[ext_resource type="Texture2D" uid="uid://dgs3wi18t05kj" path="res://assets/actors/naruto_sage/dead_1.png" id="8_2qhek"]
-[ext_resource type="Texture2D" uid="uid://ciud6myemnd72" path="res://assets/actors/naruto_sage/dead_2.png" id="9_1tb5b"]
-[ext_resource type="Texture2D" uid="uid://b2e7h4jakdj0n" path="res://assets/actors/naruto_sage/dead_3.png" id="10_ssl5v"]
-[ext_resource type="Texture2D" uid="uid://b4l43u2iap80k" path="res://assets/actors/naruto_sage/dead_4.png" id="11_jun7i"]
-[ext_resource type="Texture2D" uid="uid://56qm133alc86" path="res://assets/actors/naruto_sage/dead_5.png" id="12_5lc7i"]
-[ext_resource type="Texture2D" uid="uid://c4h1hgbg276ss" path="res://assets/actors/naruto_sage/idle_0.png" id="13_fjfw3"]
-[ext_resource type="Texture2D" uid="uid://dma5lpesu47vv" path="res://assets/actors/naruto_sage/idle_1.png" id="14_e42ra"]
-[ext_resource type="Texture2D" uid="uid://b2gfcug35wnlf" path="res://assets/actors/naruto_sage/idle_2.png" id="15_jq215"]
-[ext_resource type="Texture2D" uid="uid://bk4ssbidc16lv" path="res://assets/actors/naruto_sage/idle_3.png" id="16_8ybe2"]
-[ext_resource type="Texture2D" uid="uid://p75kg0jeil51" path="res://assets/actors/naruto_sage/idle_4.png" id="17_lo50g"]
-[ext_resource type="Texture2D" uid="uid://b6b2myy6xsvs2" path="res://assets/actors/naruto_sage/idle_5.png" id="18_d8fhm"]
-[ext_resource type="Texture2D" uid="uid://bwwmfi1cdxkhe" path="res://assets/actors/naruto_sage/run_0.png" id="19_h8wv2"]
-[ext_resource type="Texture2D" uid="uid://uoh0duhxn27d" path="res://assets/actors/naruto_sage/run_1.png" id="20_kp1ah"]
-[ext_resource type="Texture2D" uid="uid://c6vggqlntwnjx" path="res://assets/actors/naruto_sage/run_2.png" id="21_mxwc6"]
-[ext_resource type="Texture2D" uid="uid://ceb7ylis4y7py" path="res://assets/actors/naruto_sage/run_3.png" id="22_r8afx"]
-[ext_resource type="Texture2D" uid="uid://jldcv2qk4s61" path="res://assets/actors/naruto_sage/run_4.png" id="23_rhgfu"]
-[ext_resource type="Texture2D" uid="uid://dk2mpwcyikbqk" path="res://assets/actors/naruto_sage/run_5.png" id="24_bcjjf"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_rl0kl"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/attack_0.png" id="1_ns1fd"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/attack_1.png" id="2_x8ghs"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/attack_2.png" id="3_s2n3b"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/attack_3.png" id="4_yny7l"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/attack_4.png" id="5_vc2sl"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/attack_5.png" id="6_bc6d2"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/dead_0.png" id="7_1x5mh"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_malice_sense_00.png" id="7_2qhek"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_giant_rasengan_00.png" id="7_fjfw3"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_malice_sense_01.png" id="8_1tb5b"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/dead_1.png" id="8_2qhek"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_giant_rasengan_01.png" id="8_e42ra"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/dead_2.png" id="9_1tb5b"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_giant_rasengan_02.png" id="9_jq215"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_malice_sense_02.png" id="9_ssl5v"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_giant_rasengan_03.png" id="10_8ybe2"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_malice_sense_03.png" id="10_jun7i"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/dead_3.png" id="10_ssl5v"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_malice_sense_04.png" id="11_5lc7i"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/dead_4.png" id="11_jun7i"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_giant_rasengan_04.png" id="11_lo50g"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/dead_5.png" id="12_5lc7i"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_giant_rasengan_05.png" id="12_d8fhm"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/cast_malice_sense_05.png" id="12_fjfw3"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/idle_0.png" id="13_fjfw3"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/idle_1.png" id="14_e42ra"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/idle_2.png" id="15_jq215"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/idle_3.png" id="16_8ybe2"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/idle_4.png" id="17_lo50g"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/idle_5.png" id="18_d8fhm"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/run_0.png" id="19_h8wv2"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/run_1.png" id="20_kp1ah"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/run_2.png" id="21_mxwc6"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/run_3.png" id="22_r8afx"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/run_4.png" id="23_rhgfu"]
+[ext_resource type="Texture2D" path="res://assets/actors/naruto_sage/run_5.png" id="24_bcjjf"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_rl0kl"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_6522n"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_h8wv2"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +62,52 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_fjfw3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_e42ra")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_jq215")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_8ybe2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_lo50g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_d8fhm")
+}],
+"loop": 0,
+"name": &"cast_giant_rasengan",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_2qhek")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_1tb5b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ssl5v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_jun7i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_5lc7i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_fjfw3")
+}],
+"loop": 0,
+"name": &"cast_malice_sense",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -124,7 +182,11 @@ animations = [{
 [resource]
 script = ExtResource("25_rl0kl")
 key = &"naruto_sage"
-frames = SubResource("SpriteFrames_6522n")
+frames = SubResource("SpriteFrames_h8wv2")
+skill_anims = {
+&"giant_rasengan": &"cast_giant_rasengan",
+&"malice_sense": &"cast_malice_sense"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

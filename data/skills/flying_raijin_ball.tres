@@ -3,16 +3,34 @@
 [ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_k8xdr"]
 [ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_pmafj"]
 
+[sub_resource type="Resource" id="Resource_is8rm"]
+script = ExtResource("1_k8xdr")
+id = &"minato_stun"
+name_key = "buff.minato_stun"
+icon_key = "buff.minato_stun"
+kind = 1
+friendly = false
+duration_seconds = 2.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array()
+
 [resource]
 script = ExtResource("2_pmafj")
+target = 2
 id = &"flying_raijin_ball"
 name_key = "skill.flying_raijin_ball"
+on_hit = Array[ExtResource("1_k8xdr")]([SubResource("Resource_is8rm")])
 element = 4
-power_mult = 3.0
-radius = 0.06
+power_mult = 2.5
+damage_base = 300.0
+damage_growth = 300.0
+damage_stat = &"agility"
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
-delay_ticks = 6
-knockback = 0.05
-slow_scale = 0.0
-slow_ticks = 40
+blink_to_target = true
 mp_cost = 13.0
+mp_cost_levels = PackedFloat32Array(13, 18, 23, 28, 33, 38, 43, 48, 53, 58)

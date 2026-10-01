@@ -12,3 +12,4 @@ duration_seconds = 2.0
 mods = {
 &"undying": 1.0
 }
+duration_levels = PackedFloat32Array()

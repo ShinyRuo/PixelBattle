@@ -10,3 +10,4 @@ icon_key = "buff.pein_rebirth"
 mods = {
 &"heal_max": 0.1
 }
+duration_levels = PackedFloat32Array()

@@ -13,6 +13,7 @@ duration_seconds = 1.0
 mods = {
 &"damage_taken": 0.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_u1oe2")
@@ -21,7 +22,13 @@ id = &"kaiten"
 name_key = "skill.kaiten"
 on_self = Array[ExtResource("1_dmrmy")]([SubResource("Resource_qwl1h")])
 element = 4
-power_mult = 2.6
+power_mult = 2.5
+damage_base = 240.0
+damage_growth = 240.0
+damage_stat = &"agility"
 radius = 0.12
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 320
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 14, 18, 22, 26, 30, 34, 38, 42, 46)

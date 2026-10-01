@@ -150,6 +150,7 @@ const CARRIER_AMOUNTS := {
 	REVIVE: float(PBStrikeRules.BOND_REVIVES),
 }
 
+
 ## 这个键认不认得。
 static func is_known(key: StringName) -> bool:
 	return ALL.has(key)

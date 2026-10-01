@@ -8,27 +8,35 @@ script = ExtResource("1_qewja")
 id = &"hashirama_forest"
 name_key = "buff.hashirama_forest"
 icon_key = "buff.hashirama_forest"
-kind = 2
+kind = 1
 friendly = false
-duration_seconds = 6.0
-period_seconds = 1.0
+duration_seconds = 0.05
 mods = {
-&"harm": 35.0
+&"enemy_attack_speed_scale": 0.7,
+&"enemy_speed_scale": 0.7
 }
-mods_growth = {
-&"harm": 35.0
-}
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_2y63y")
 id = &"wood_descent"
 name_key = "skill.wood_descent"
-on_hit = Array[ExtResource("1_qewja")]([SubResource("Resource_f17v7")])
+variant_id = &"true_hands"
+variant_first = true
 element = 6
-power_mult = 1.2
-radius = 0.18
+power_mult = 0.2
+damage_base = 17.5
+damage_growth = 17.5
+damage_stat = &"strength"
+damage_stat_floor = true
+radius = 0.175
+hit_count = 12
+hit_interval_ticks = 10
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 400
-delay_ticks = 10
-slow_scale = 0.7
-slow_ticks = 120
 mp_cost = 10.0
+zone_seconds = 6.0
+zone_radius = 0.175
+zone_effects = Array[ExtResource("1_qewja")]([SubResource("Resource_f17v7")])
+mp_cost_levels = PackedFloat32Array(10, 15, 21, 26, 32, 37, 43, 48, 54, 59)

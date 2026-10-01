@@ -13,6 +13,7 @@ duration_seconds = 12.0
 mods = {
 &"damage_scale": 1.5
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_vjqyd")
@@ -21,5 +22,9 @@ id = &"eight_gates"
 name_key = "skill.eight_gates"
 affects = 0
 on_self = Array[ExtResource("1_qoaua")]([SubResource("Resource_1lyv2")])
+kind = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 mp_cost = 12.0
+mp_cost_levels = PackedFloat32Array()

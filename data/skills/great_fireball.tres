@@ -6,10 +6,17 @@
 [resource]
 script = ExtResource("2_4hl1n")
 id = &"great_fireball"
+shot_key = &"skill_great_fireball"
 name_key = "skill.great_fireball"
 element = 0
 power_mult = 3.0
+damage_base = 250.0
+damage_growth = 250.0
+damage_stat = &"intellect"
 radius = 0.11
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 280
 delay_ticks = 8
 mp_cost = 13.0
+mp_cost_levels = PackedFloat32Array(13, 23, 33, 43, 53, 63, 73, 83, 93, 103)

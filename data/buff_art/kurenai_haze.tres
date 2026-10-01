@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurenai_haze/front_0.png" id="1_qyws4"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurenai_haze/front_1.png" id="2_5nilx"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurenai_haze/front_2.png" id="3_qhoud"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurenai_haze/front_3.png" id="4_d5leh"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurenai_haze/front_4.png" id="5_6brom"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kurenai_haze/front_5.png" id="6_24p2w"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_7giao"]
+
+[resource]
+script = ExtResource("7_7giao")
+front_frames = Array[Texture2D]([ExtResource("1_qyws4"), ExtResource("2_5nilx"), ExtResource("3_qhoud"), ExtResource("4_d5leh"), ExtResource("5_6brom"), ExtResource("6_24p2w")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

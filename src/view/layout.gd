@@ -36,10 +36,13 @@ const SCREEN := Vector2(640.0, 360.0)
 # ── A 顶栏：本局信息 ────────────────────────────────────────────
 
 ## 出战人口、金币、波次。**横跨整个屏幕宽度**：这一行是全屏最长的一句话，左上角本来就空着。
-const A_INFO := Rect2(8.0, 3.0, 624.0, 12.0)
+const A_INFO := Rect2(8.0, 3.0, 560.0, 12.0)
 
 ## 下一波预告，和本局信息贴在一起（不隔着战场来回扫）。
-const A_PREVIEW := Rect2(8.0, 15.0, 624.0, 12.0)
+const A_PREVIEW := Rect2(8.0, 15.0, 560.0, 12.0)
+
+## 调试入口独占顶栏右侧，不遮挡战场点选。
+const A_DEBUG := Rect2(575.0, 2.0, 57.0, 30.0)
 
 ## 顶栏两行的字号。
 const A_FONT_SIZE: int = 9
@@ -85,14 +88,11 @@ const SPRITE_HEADROOM: float = 64.0
 ## 地面带的上沿 —— **战场坐标 y=0 落在屏幕的哪一行**。和 [constant FIELD_TOP]（框的上沿）差一个头顶。
 const GROUND_TOP: float = FIELD_TOP + SPRITE_HEADROOM
 
-const B_FIELD := Rect2(
-	FIELD_LEFT, FIELD_TOP, FIELD_RIGHT - FIELD_LEFT, FIELD_BOTTOM - FIELD_TOP
-)
+const B_FIELD := Rect2(FIELD_LEFT, FIELD_TOP, FIELD_RIGHT - FIELD_LEFT, FIELD_BOTTOM - FIELD_TOP)
 
 ## 战场底板比判定区大一圈，好让玩家看出「这条道到哪儿为止」。
 ## 横向比纵向多留一点 —— 敌人是从右边走进来的，右端要看得出还有路。
 const B_LANE_INSET := Vector2(6.0, 4.0)
-
 
 # ── C / D / E 左侧一列 ──────────────────────────────────────────
 #
@@ -189,9 +189,7 @@ static func lane_bottom(field: Vector2) -> float:
 ##
 ## [param field] 是 `Vector2(field_length, field_height)`。
 static func to_screen(at: Vector2, field: Vector2) -> Vector2:
-	return Vector2(
-		FIELD_LEFT + at.x * px_per_unit(field), GROUND_TOP + at.y * px_per_lane(field)
-	)
+	return Vector2(FIELD_LEFT + at.x * px_per_unit(field), GROUND_TOP + at.y * px_per_lane(field))
 
 
 ## 屏幕坐标 → 战场坐标，[method to_screen] 的逆（鼠标点选用）。**和正向那一份必须成对改。**
@@ -230,12 +228,7 @@ static func ground_disc(at: Vector2, radius_px: float, segments: int = 32) -> Pa
 ## 把上面这些矩形贴到场景节点上。**`.tscn` 里不写死这些数**，否则改排版要两处各改，
 ## 对不上只表现为「底板和判定区错开几个像素」。
 static func apply_to(
-	lane: ColorRect,
-	limit: ColorRect,
-	info: Label,
-	preview: Label,
-	field: Vector2,
-	limit_x: float
+	lane: ColorRect, limit: ColorRect, info: Label, preview: Label, field: Vector2, limit_x: float
 ) -> void:
 	var bottom: float = lane_bottom(field)
 	# **底板铺满整个 B 框**：只铺地面带的话最里面那条道上的人有半个身子露在背景色上，像站到了场外。

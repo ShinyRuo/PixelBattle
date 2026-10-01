@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tsunade_byakugou/front_0.png" id="1_80dw1"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tsunade_byakugou/front_1.png" id="2_l0xxt"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tsunade_byakugou/front_2.png" id="3_hugs7"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tsunade_byakugou/front_3.png" id="4_cnk34"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tsunade_byakugou/front_4.png" id="5_yva8s"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/tsunade_byakugou/front_5.png" id="6_0rc83"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_jkyra"]
+
+[resource]
+script = ExtResource("7_jkyra")
+front_frames = Array[Texture2D]([ExtResource("1_80dw1"), ExtResource("2_l0xxt"), ExtResource("3_hugs7"), ExtResource("4_cnk34"), ExtResource("5_yva8s"), ExtResource("6_0rc83")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

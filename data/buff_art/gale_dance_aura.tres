@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/gale_dance_aura/front_0.png" id="1"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/gale_dance_aura/front_1.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/gale_dance_aura/front_2.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/gale_dance_aura/front_3.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/gale_dance_aura/front_4.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/gale_dance_aura/front_5.png" id="6"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7"]
+
+[resource]
+script = ExtResource("7")
+front_frames = Array[Texture2D]([ExtResource("1"), ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
+fps = 8.0
+anchor = Vector2(256, 420)
+pixel_scale = 0.16

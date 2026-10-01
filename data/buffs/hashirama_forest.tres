@@ -7,13 +7,11 @@ script = ExtResource("1_lybbs")
 id = &"hashirama_forest"
 name_key = "buff.hashirama_forest"
 icon_key = "buff.hashirama_forest"
-kind = 2
+kind = 1
 friendly = false
-duration_seconds = 6.0
-period_seconds = 1.0
+duration_seconds = 0.05
 mods = {
-&"harm": 35.0
+&"enemy_attack_speed_scale": 0.7,
+&"enemy_speed_scale": 0.7
 }
-mods_growth = {
-&"harm": 35.0
-}
+duration_levels = PackedFloat32Array()

@@ -8,10 +8,13 @@ id = &"rin_cheer"
 name_key = "buff.rin_cheer"
 icon_key = "buff.rin_cheer"
 kind = 1
-duration_seconds = 20.0
+duration_seconds = 15.0
 mods = {
-&"damage_scale": 1.1
+&"base_attack_bonus": 0.13,
+&"defence": 3.0
 }
 mods_growth = {
-&"damage_scale": 0.03
+&"base_attack_bonus": 0.03,
+&"defence": 3.0
 }
+duration_levels = PackedFloat32Array()

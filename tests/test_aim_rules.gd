@@ -31,6 +31,7 @@ func _skill(radius: float, delay_ticks: int) -> PBSkill:
 	out.delay_ticks = delay_ticks
 	return out
 
+
 func before_each() -> void:
 	_cfg = PBSimConfig.new()
 	_rng = RandomNumberGenerator.new()
@@ -135,9 +136,7 @@ func test_without_a_cast_delay_the_two_policies_cannot_differ() -> void:
 	# 恒等于 100%，看着达标其实什么都没测。
 	# 这条把「延迟是分层的前提」这件事钉死，免得有人顺手把它调成 0。
 	var enemies := _enemies_at([0.50, 0.52, 0.54])
-	var now := PBAimRules.pick_spot(
-		PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
-	)
+	var now := PBAimRules.pick_spot(PBAimRules.Policy.AUTO, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0)
 	var ahead := PBAimRules.pick_spot(
 		PBAimRules.Policy.LEAD, enemies, 0, _skill(0.05, 0), 0, 1, 1, 0
 	)
@@ -229,7 +228,7 @@ func test_the_strike_lands_after_the_delay_not_on_the_tick_it_is_ordered() -> vo
 	var sim := PBBattleSim.new(wave, 0.0, 0.0, _cfg, squad)
 	sim.step()
 	assert_eq(sim.result().kills, 0, "下达的那一 tick 不该有人死 —— 大招还在飞")
-	for _i: int in 10:
+	for _i: int in 16:
 		sim.step()
 	assert_gt(sim.result().kills, 0, "延迟走完之后才结算伤害")
 
@@ -267,9 +266,7 @@ func test_gathering_drags_survivors_onto_the_landing_spot() -> void:
 	# 拖到同一点的敌人展开成一个队列（不然画出来是一个单位）。
 	# 聚拢的价值本来也不是坐标相等，是「一发 AOE 能罩住几个」——
 	# 队列间距 0.012 远小于大招半径，那个价值一分没少。
-	assert_lt(
-		spread, float(seen.size()) * _cfg.unit_min_gap + 1e-6, "聚拢之后该挤成一条紧队列"
-	)
+	assert_lt(spread, float(seen.size()) * _cfg.unit_min_gap + 1e-6, "聚拢之后该挤成一条紧队列")
 
 
 func test_a_battle_with_ultimates_still_conserves_enemies() -> void:

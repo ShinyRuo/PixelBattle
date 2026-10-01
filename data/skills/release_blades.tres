@@ -16,6 +16,7 @@ mods = {
 mods_growth = {
 &"damage_scale": 0.15
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_u53hx")
@@ -25,5 +26,8 @@ name_key = "skill.release_blades"
 affects = 0
 on_self = Array[ExtResource("1_aj6b3")]([SubResource("Resource_ew463")])
 element = 4
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
 mp_cost = 11.0
+mp_cost_levels = PackedFloat32Array(11, 19, 27, 35, 43, 51, 59, 67, 75, 83)

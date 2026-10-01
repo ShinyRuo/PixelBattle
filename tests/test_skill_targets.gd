@@ -54,10 +54,7 @@ func _ally(slot: int = 0) -> PBAttacker:
 
 ## 给 [param attacker] 装一个技能。[param caster_level] 走决策 7 的等级缩放。
 func _give(
-	attacker: PBAttacker,
-	target: PBSkill.Target,
-	affects: PBSkill.Party,
-	caster_level: int = 1
+	attacker: PBAttacker, target: PBSkill.Target, affects: PBSkill.Party, caster_level: int = 1
 ) -> PBSkill:
 	var skill := PBSkill.new()
 	skill.target = target
@@ -91,15 +88,11 @@ func test_pointing_at_an_enemy_but_hitting_friends_is_rejected() -> void:
 func test_only_the_ground_tier_may_carry_a_cast_delay() -> void:
 	# 施法延迟存在的全部理由是地面档的预判窗口（[PBSkill] 顶部）。
 	# 锁定目标的技能没有预判可言：目标跟着走，落点也跟着走。
-	for target: PBSkill.Target in [
-		PBSkill.Target.NONE, PBSkill.Target.ALLY, PBSkill.Target.ENEMY
-	]:
+	for target: PBSkill.Target in [PBSkill.Target.NONE, PBSkill.Target.ALLY, PBSkill.Target.ENEMY]:
 		var skill := PBSkill.new()
 		skill.target = target
 		skill.affects = (
-			PBSkill.Party.ALLIES
-			if target == PBSkill.Target.ALLY
-			else PBSkill.Party.ENEMIES
+			PBSkill.Party.ALLIES if target == PBSkill.Target.ALLY else PBSkill.Party.ENEMIES
 		)
 		skill.delay_ticks = 6
 		assert_ne(PBSkillRules.validate(skill), "", "第 %d 档不该配得上延迟" % target)
@@ -134,7 +127,7 @@ func test_a_heal_reaches_the_one_who_was_pointed_at() -> void:
 	hurt.hp = 100.0
 	medic.hp = 100.0
 	assert_true(sim.cast_skill_on(medic, hurt), "点了队友就该放得出")
-	sim.step()
+	PBCastTestClock.release(sim, medic)
 	assert_almost_eq(hurt.hp, 220.0, 0.001, "被点的那个该回血")
 	assert_almost_eq(medic.hp, 100.0, 0.001, "没被点的施法者自己不该跟着回")
 
@@ -181,7 +174,7 @@ func _heal_at_level(level: int) -> float:
 	var sim := PBBattleSim.new(_wave(), 0.0, 0.0, _cfg, squad)
 	patient.hp = 100.0
 	sim.cast_skill_on(medic, patient)
-	sim.step()
+	PBCastTestClock.release(sim, medic)
 	return patient.hp
 
 
@@ -205,7 +198,7 @@ func test_a_skill_edited_after_it_was_wrapped_still_takes_effect() -> void:
 	skill.on_hit = [_heal(70.0)]
 	patient.hp = 100.0
 	sim.cast_skill_on(medic, patient)
-	sim.step()
+	PBCastTestClock.release(sim, medic)
 	assert_almost_eq(patient.hp, 170.0, 0.001, "后装上去的效果照样要生效")
 
 
@@ -216,7 +209,7 @@ func test_a_self_buff_lands_the_moment_the_skill_goes_off() -> void:
 	# 人已经把技能交出去了，自增益却要等**落地**才生效的话，
 	# 玩家看到的是「按下去没反应」—— 所以它挂在出手那一刻，不是落地那一刻。
 	#
-	# **出手是下一个 tick**（M7-h）：玩家下的令先攒在
+	# **出手是第 4 帧**（M7-h）：玩家下的令先攒在
 	# [PBSkillOrders] 里，暂停时因此一个字都不变。
 	var caster := _ally(0)
 	var skill := _give(caster, PBSkill.Target.NONE, PBSkill.Party.ALLIES)
@@ -226,7 +219,7 @@ func test_a_self_buff_lands_the_moment_the_skill_goes_off() -> void:
 	caster.hp = 100.0
 	assert_true(sim.cast_skill_now(caster), "不用挑目标，按下去就该下得了令")
 	assert_almost_eq(caster.hp, 100.0, 0.001, "令还攒着的时候一点都不该回")
-	sim.step()
+	PBCastTestClock.release(sim, caster)
 	assert_almost_eq(caster.hp, 190.0, 0.001, "**出手那一刻**就该回上，不用等落地")
 
 
@@ -241,7 +234,7 @@ func test_a_field_wide_strike_reaches_everyone_regardless_of_distance() -> void:
 	var squad: Array[PBAttacker] = [caster]
 	var sim := PBBattleSim.new(wave, 0.0, 0.0, _cfg, squad)
 	assert_true(sim.cast_skill_now(caster), "该放得出")
-	sim.step()
+	PBCastTestClock.release(sim, caster)
 	assert_eq(sim.result().kills, wave.count, "整波都该吃到，半径一点都不管用")
 
 

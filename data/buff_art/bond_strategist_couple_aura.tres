@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_strategist_couple_aura/back_0.png" id="1_0hsm8"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_strategist_couple_aura/back_1.png" id="2_dl7ug"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_strategist_couple_aura/back_2.png" id="3_tt2vy"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_strategist_couple_aura/back_3.png" id="4_s4jbd"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_strategist_couple_aura/back_4.png" id="5_ydvtf"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_strategist_couple_aura/back_5.png" id="6_2oj1v"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_73vru"]
+
+[resource]
+script = ExtResource("7_73vru")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_0hsm8"), ExtResource("2_dl7ug"), ExtResource("3_tt2vy"), ExtResource("4_s4jbd"), ExtResource("5_ydvtf"), ExtResource("6_2oj1v")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

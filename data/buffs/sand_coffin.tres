@@ -7,13 +7,11 @@ script = ExtResource("1_pw7gc")
 id = &"sand_coffin"
 name_key = "buff.sand_coffin"
 icon_key = "buff.sand_coffin"
-kind = 2
+kind = 1
 friendly = false
-duration_seconds = 2.0
-period_seconds = 0.5
+duration_seconds = 1.5
 mods = {
-&"harm": 50.0
+&"disarm": 1.0,
+&"enemy_speed_scale": 0.0
 }
-mods_growth = {
-&"harm": 50.0
-}
+duration_levels = PackedFloat32Array(1.5, 1.5, 2, 2, 2, 2.5, 2.5, 3, 3, 3.5)

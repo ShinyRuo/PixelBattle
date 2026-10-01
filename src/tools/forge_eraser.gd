@@ -167,9 +167,7 @@ func _on_erase_all() -> void:
 		done.append(i)
 	_touch = null
 	reset.emit(done)
-	said.emit(
-		"[color=#71d08c]%d 笔套到 %s 段全部 %d 帧。[/color]" % [marks.size(), _anim, _shots.size()]
-	)
+	said.emit("[color=#71d08c]%d 笔套到 %s 段全部 %d 帧。[/color]" % [marks.size(), _anim, _shots.size()])
 
 
 # ── 小工具 ──────────────────────────────────────────────────────

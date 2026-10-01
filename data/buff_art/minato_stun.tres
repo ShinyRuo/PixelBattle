@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/minato_stun/front_0.png" id="1_tih44"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/minato_stun/front_1.png" id="2_0b5na"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/minato_stun/front_2.png" id="3_jhucu"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/minato_stun/front_3.png" id="4_xar12"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/minato_stun/front_4.png" id="5_m0d44"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/minato_stun/front_5.png" id="6_te8ob"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_cm82k"]
+
+[resource]
+script = ExtResource("7_cm82k")
+front_frames = Array[Texture2D]([ExtResource("1_tih44"), ExtResource("2_0b5na"), ExtResource("3_jhucu"), ExtResource("4_xar12"), ExtResource("5_m0d44"), ExtResource("6_te8ob")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="PBBuff" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_kcilx"]
+
+[resource]
+script = ExtResource("1_kcilx")
+id = &"serpent_regen"
+name_key = "buff.serpent_regen"
+icon_key = "buff.serpent_regen"
+kind = 2
+duration_seconds = 12.0
+period_seconds = 1.0
+mods = {
+&"heal": 54.16666666666667
+}
+mods_growth = {
+&"heal": 54.16666666666667
+}
+duration_levels = PackedFloat32Array()

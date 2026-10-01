@@ -74,21 +74,21 @@ static func deal(
 		# **抬手**：冷却转好之后先起手，[member PBAttacker.windup_ticks] 之后才结算。
 		# 要先确认射程内真有人 —— 对着空气抬手的话，抬完那一刻敌人走进来，
 		# 伤害会在没有起手的情况下落地。
-		if first_reachable(attacker, enemies, front, tick) != null and attacker.begin_swing(tick):
-			continue
+		var target := first_reachable(attacker, enemies, front, tick)
+		if target != null and not attacker.swinging:
+			var waiting: bool = attacker.begin_swing(tick)
+			PBOnAttackRules.fire(attacker, target, enemies, cfg, tick, rng, book, out)
+			if waiting:
+				continue
 		var fired: bool = (
 			_strike_area(attacker, enemies, front, cfg, tick, rng, book, out)
 			if attacker.shape == PBAttacker.Shape.AOE
 			else _strike_single(attacker, enemies, shots, front, cfg, tick, rng, book, out)
 		)
-		# **打空了不进冷却。** 进的话，射程内暂时没人的那几 tick 会白白
-		# 吃掉一个间隔，等敌人走进来时他还得再等 —— 表现是「远程有时候发呆」。
-		if fired:
+		# 已经起手就完成本次挥击，包括目标离开射程造成的挥空；收招后才能追赶。
+		# 没有起手、也没有出手的空闲单位仍不消费冷却。
+		if fired or attacker.swinging:
 			attacker.on_fired(tick)
-		else:
-			# 抬着手却打空了（目标死了、走了）—— 手放下，下次重新抬。
-			# 不放的话下一个走进射程的敌人会挨一发没有起手的伤害。
-			attacker.swinging = false
 
 
 ## 玩家点名的那个敌人，**只在他还活着、也已经出场的时候**。否则 null。
@@ -96,7 +96,7 @@ static func named_target(attacker: PBAttacker, enemies: Array[PBEnemy], tick: in
 	if attacker.forced_target < 0 or attacker.forced_target >= enemies.size():
 		return null
 	var named: PBEnemy = enemies[attacker.forced_target]
-	return named if named.alive and named.has_spawned(tick) else null
+	return named if named.is_hostile(tick) else null
 
 
 ## 射程内最接近基地的那个活敌人。没有就返回 null。
@@ -108,12 +108,14 @@ static func first_reachable(
 	var named := named_target(attacker, enemies, tick)
 	if named != null and attacker.can_reach(named.pos()):
 		return named
+	if named != null and attacker.focus_named_target:
+		return null
 	for i: int in range(front, enemies.size()):
 		var enemy: PBEnemy = enemies[i]
 		if not enemy.has_spawned(tick):
 			# 后面的出场更晚，这一 tick 不会再有可打的目标了。
 			break
-		if enemy.alive and attacker.can_reach(enemy.pos()):
+		if enemy.is_hostile(tick) and attacker.can_reach(enemy.pos()):
 			return enemy
 	return null
 
@@ -144,20 +146,41 @@ static func land(
 	cfg: PBSimConfig,
 	tick: int,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	rng: RandomNumberGenerator = null
 ) -> void:
+	if not enemy.is_hostile(tick):
+		return
 	var total: float = damage + _heavy_extra(attacker, enemy, damage)
 	total += _bite_extra(attacker, enemy, damage, crit)
 	total = mitigated(attacker, enemy, total, PBCritRules.attack_kind(attacker), cfg, tick)
-	if book != null:
-		book.hit(tick, -1 if attacker == null else attacker.slot, enemy.slot, total, false, crit)
 	var before: float = enemy.hp
-	if enemy.take_damage(total, tick):
+	var dodged_before: int = enemy.dodge_count
+	var element: PBElement.Type = (
+		PBElement.Type.PHYSICAL if attacker == null else attacker.attack_element
+	)
+	if enemy.take_damage(total, tick, rng, true, element):
 		out.kills += 1
+	if enemy.dodge_count > dodged_before:
+		return
+	var leech: float = 0.0
+	if attacker != null:
+		leech = _leech(attacker, before - maxf(enemy.hp, 0.0))
+	if book != null:
+		book.hit(
+			tick,
+			-1 if attacker == null else attacker.slot,
+			enemy.slot,
+			total,
+			false,
+			crit,
+			attacker.appearance_slot if attacker != null and attacker.phantom else -1,
+			&"",
+			leech
+		)
 	if attacker == null:
 		return
-	_leech(attacker, before - maxf(enemy.hp, 0.0))
-	out.kills += _splash(attacker, enemy, enemies, damage, cfg, tick)
+	out.kills += _splash(attacker, enemy, enemies, damage, cfg, tick, rng)
 	_arm_crit(attacker, cfg, tick)
 	out.kills += _hang_on_enemy(attacker, enemy, attacker.attack_buffs, cfg, tick)
 	if crit:
@@ -179,17 +202,24 @@ static func mitigated(
 	raw: float,
 	kind: PBDamageKind.Type,
 	cfg: PBSimConfig,
-	tick: int
+	tick: int,
+	source: PBHarmContext = null
 ) -> float:
-	if kind == PBDamageKind.Type.NINJUTSU:
-		var resist: float = enemy.ninjutsu_resist + enemy.buffs.amount(PBBuffRules.ENEMY_RESIST, tick)
-		if attacker != null:
-			resist *= 1.0 - clampf(attacker.ninjutsu_pen, 0.0, 1.0)
-		return raw * (1.0 - clampf(resist, 0.0, 1.0))
-	var armour: float = enemy.armor + enemy.buffs.amount(PBBuffRules.ENEMY_DEFENCE, tick)
-	if attacker != null:
-		armour *= 1.0 - clampf(attacker.armor_pen, 0.0, 1.0)
-	return raw * (1.0 - PBStatRules.damage_reduction(armour, cfg))
+	var armor: float = enemy.armor + enemy.buffs.amount(PBBuffRules.ENEMY_DEFENCE, tick)
+	var resist: float = enemy.ninjutsu_resist + enemy.buffs.amount(PBBuffRules.ENEMY_RESIST, tick)
+	return PBDefenceRules.mitigated(
+		raw,
+		kind,
+		armor,
+		resist,
+		(source.armor_pen if source != null else 0.0) if attacker == null else attacker.armor_pen,
+		(
+			(source.ninjutsu_pen if source != null else 0.0)
+			if attacker == null
+			else attacker.ninjutsu_pen
+		),
+		cfg
+	)
 
 
 ## 把他自带的一串效果挂到目标身上。返回挂死了几个。
@@ -202,12 +232,18 @@ static func mitigated(
 static func _hang_on_enemy(
 	attacker: PBAttacker, enemy: PBEnemy, buffs: Array[PBBuff], cfg: PBSimConfig, tick: int
 ) -> int:
-	if not enemy.alive or buffs.is_empty():
+	if not enemy.is_hostile(tick) or buffs.is_empty():
 		return 0
 	var level: int = 1
 	if attacker.ultimate != null:
 		level = attacker.ultimate.caster_level
-	return 1 if PBSkillRules.apply_all_enemy(enemy, buffs, level, cfg, tick) else 0
+	return (
+		1
+		if PBSkillRules.apply_all_enemy(
+			enemy, buffs, level, cfg, tick, PBHarmContext.from_caster(attacker, null, tick)
+		)
+		else 0
+	)
 
 
 ## 一次**敌人的攻击**落在一个忍者身上的唯一落点。
@@ -230,20 +266,44 @@ static func hurt_ally(
 	rng: RandomNumberGenerator,
 	book: PBBattleLog,
 	out: PBCombatOutcome,
-	team: Array[PBAttacker] = []
+	context: PBEnemyHitContext = null
 ) -> void:
+	var team: Array[PBAttacker] = []
+	if context != null:
+		team = context.team
+	var crit: bool = context != null and context.crit
 	# 临时防御（[constant PBBuffRules.DEFENCE]）在这里加：护甲只在这一句折算。
 	var armour: float = target.defence + target.buffs.amount(PBBuffRules.DEFENCE, tick)
-	var hurt: float = PBStatRules.strike_damage(raw, element, armour, target.def_element, cfg)
+	var kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU if context == null else context.kind
+	var resist: float = (
+		target.ninjutsu_resist + target.buffs.amount(PBBuffRules.NINJUTSU_RESIST, tick)
+	)
+	var hurt: float = raw * cfg.damage_multiplier(PBElement.relation(element, target.def_element))
+	hurt = PBDefenceRules.mitigated(
+		hurt,
+		kind,
+		armour,
+		resist,
+		0.0 if context == null else context.armor_pen,
+		0.0 if context == null else context.ninjutsu_pen,
+		cfg
+	)
 	# 按敌人攻击属性的增减伤（霸气、水化之术）也只在这一句乘，反弹按乘完的数算。
 	hurt *= PBPassiveRules.taken_scale(target, element)
 	var ranged: bool = source == null or source.shot_speed > 0.0
+	if kind == PBDamageKind.Type.NINJUTSU:
+		if target.buffs.amount(PBBuffRules.NINJUTSU_IMMUNE, tick) > 0.0:
+			hurt = 0.0
 	if not ranged:
 		hurt *= maxf(1.0 + target.melee_taken, 0.0)
 	if book != null:
-		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true)
+		book.hit(tick, -1 if source == null else source.slot, target.slot, hurt, true, crit)
+	var hp_before: float = target.hp
 	var dodged_before: int = target.dodge_count
-	wound_ally(target, hurt, cfg, tick, rng, book, out)
+	var temporary_share: float = target.buffs.amount(PBBuffRules.REFLECT, tick)
+	if wound_ally(target, hurt, cfg, tick, rng, book, out, kind) and source != null:
+		target.death_target = source.pos()
+	PBRescueRules.on_hurt(target, source, maxf(hp_before - target.hp, 0.0), team, cfg, tick)
 	if target.dodge_count > dodged_before:
 		_counter(target, source, tick, book, out)
 	var ready: bool = target.alive and tick >= target.struck_ready_at
@@ -253,7 +313,7 @@ static func hurt_ally(
 		_leap(target, source)
 	_struck_auras(target, source, ranged, team, cfg, tick, out)
 	_struck_summon(target, team, cfg, tick, rng)
-	_reflect(target, source, hurt, ranged, tick, book, out)
+	_reflect(target, source, hurt, ranged, tick, book, out, temporary_share, element)
 
 
 ## 这一下算不算 [param owner] 的「受攻击」：配了只认远程（[member PBAttacker.struck_ranged]）的，近战那一下不算。
@@ -271,7 +331,7 @@ static func _counter(
 	var back: float = target.damage_per_shot() * target.dodge_counter
 	if book != null:
 		book.hit(tick, target.slot, source.slot, back, false)
-	if source.take_damage(back, tick):
+	if source.take_damage(back, tick, null, false, target.attack_element):
 		out.kills += 1
 
 
@@ -300,14 +360,19 @@ static func _struck_summon(
 	tick: int,
 	rng: RandomNumberGenerator
 ) -> void:
-	if target.struck_summon <= 0.0 or rng == null or not target.alive or tick < target.struck_ready_at:
+	if (
+		target.struck_summon <= 0.0
+		or rng == null
+		or not target.alive
+		or tick < target.struck_ready_at
+	):
 		return
 	if rng.randf() >= target.struck_summon:
 		return
 	for cast: PBSkillCast in target.skills:
 		if cast.skill.summon_count > 0:
 			target.struck_ready_at = tick + _struck_ticks(target, cfg)
-			PBSummonRules.raise_from(team, target, cast.skill, tick, cfg, 1)
+			PBSummonRules.raise_from(team, target, cast.skill, tick, cfg, 1, cast.caster_level)
 			return
 
 
@@ -335,11 +400,22 @@ static func _trigger_struck(
 ) -> void:
 	var level: int = 1 if owner.ultimate == null else owner.ultimate.caster_level
 	for buff: PBBuff in owner.struck_buffs:
-		var mods := PBBuffRules.scale_amounts(PBBuffRules.resolve(buff, level), 1.0 + owner.struck_boost)
+		var mods := PBBuffRules.scale_amounts(
+			PBBuffRules.resolve(buff, level), 1.0 + owner.struck_boost
+		)
 		if buff.friendly:
-			PBSkillRules.apply_one(on, buff, mods, cfg, tick)
+			if mods.has(PBBuffRules.STRENGTH_BONUS):
+				mods = mods.duplicate()
+				mods[PBBuffRules.STRENGTH_BONUS] += owner.struck_strength_bonus
+				if owner.struck_dodge > 0.0:
+					mods[PBBuffRules.DODGE] = (
+						float(mods.get(PBBuffRules.DODGE, 0.0)) + owner.struck_dodge
+					)
+			PBSkillRules.apply_one(on, buff, mods, cfg, tick, level)
 		elif source != null and source.alive:
-			if PBSkillRules.apply_one_enemy(source, buff, mods, cfg, tick):
+			if PBSkillRules.apply_one_enemy(
+				source, buff, mods, cfg, tick, PBHarmContext.from_caster(owner, null, tick), level
+			):
 				out.kills += 1
 
 
@@ -390,17 +466,11 @@ static func wound_ally(
 	tick: int,
 	rng: RandomNumberGenerator,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU
 ) -> bool:
-	if target.take_damage(hurt, tick, rng):
-		# **召唤物没了不算「折了一个」**（玩家定的）：`allies_lost` 是玩家要心疼的数，
-		# 影分身本来就是拿来炸的；播报同理，否则「忍者倒下」那一档会被冲干净。
-		if not target.summoned:
-			out.allies_lost += 1
-			if book != null:
-				book.ally_down(tick, target.slot)
-		# 阵亡技能在这里只记一笔：放出去要全场的敌我名单，那在 [PBBattleSim] 手上。
-		target.death_pending = not target.death_casts.is_empty()
+	if target.take_damage(hurt, tick, rng, kind):
+		record_death(target, tick, book, out)
 		return true
 	if target.lethal_pending:
 		target.lethal_pending = false
@@ -429,15 +499,14 @@ static func _hang_self(
 		var mods := PBBuffRules.resolve(buff, level)
 		# 他自己放出去的回血，吃他自己的治疗倍率（羁绊「百豪之术的恢复量提升 50%」那一类）。
 		PBSkillRules.apply_one(
-			target, buff, PBBuffRules.scale_heal(mods, 1.0 + target.heal_power), cfg, tick
+			target, buff, PBBuffRules.scale_heal(mods, 1.0 + target.heal_power), cfg, tick, level
 		)
 
 
 ## 把挨的这一下按比例还回去。没配就是 0。
 ##
-## **还的是折算之后的那个数**（也就是他实际会掉的血），不是敌人报出来的原始值 ——
-## 后者没有经过护甲与克制，而玩家看到的伤害数字是前者。两者不一致的表现是
-## 「反弹出来的数和挨的那一下对不上」。
+## 基数经过克制、护甲 / 忍术抗性和被动减伤，但尚未经过受伤倍率、闪避与护盾。
+## 临时比例在受击触发前取快照，新获得的效果不能反弹触发它的这一击。
 ##
 ## **闪掉的那一下照样反弹**：[method PBAttacker.take_damage] 里闪避返回 false，
 ## 而这一句排在它外面。原版那一条正是「免疫此次伤害**并**反弹」——
@@ -451,16 +520,20 @@ static func _reflect(
 	ranged: bool,
 	tick: int,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	temporary_share: float,
+	element: PBElement.Type
 ) -> void:
-	var share: float = target.reflect + (0.0 if ranged else target.melee_reflect)
+	var share: float = target.reflect + temporary_share + (0.0 if ranged else target.melee_reflect)
 	if source == null or not source.alive or share <= 0.0 or hurt <= 0.0:
 		return
 	var back: float = hurt * share
 	if book != null:
 		book.hit(tick, target.slot, source.slot, back, false)
-	if source.take_damage(back, tick):
+	if source.take_damage(back, tick, null, false, element):
 		out.kills += 1
+
+
 ## 「命中之后提暴击」的效果定义（B10）。同 [method PBBuffRules.team_damage]：
 ## 它只提供**身份**，数值每次挂的时候另给。
 static func crit_window() -> PBBuff:
@@ -494,9 +567,7 @@ static func _heavy_extra(attacker: PBAttacker, enemy: PBEnemy, damage: float) ->
 ##
 ## `bite_current` 按**还剩多少**算（越打越弱），`bite_lost` 按**已经掉了多少**算
 ## （越打越强）—— 两个字段，一个人才带得了两种。加进主伤害，理由同 [method _heavy_extra]。
-static func _bite_extra(
-	attacker: PBAttacker, enemy: PBEnemy, damage: float, crit: bool
-) -> float:
+static func _bite_extra(attacker: PBAttacker, enemy: PBEnemy, damage: float, crit: bool) -> float:
 	if attacker == null or not crit or enemy.max_hp <= 0.0:
 		return 0.0
 	var share: float = enemy.hp * attacker.bite_current
@@ -509,10 +580,12 @@ static func _bite_extra(
 ## 普攻吸血（[member PBAttacker.lifesteal]）。[param dealt] 是目标**实际掉的血**：
 ## 打死时溢出的那一截不算（否则一刀秒小怪回满血），易伤算（那是真掉的）。溅射那几下不算 ——
 ## 原版写的是「普攻造成伤害」，溅射是另一件事的伤害。
-static func _leech(attacker: PBAttacker, dealt: float) -> void:
+static func _leech(attacker: PBAttacker, dealt: float) -> float:
 	if attacker.lifesteal <= 0.0 or dealt <= 0.0:
-		return
+		return 0.0
+	var before: float = attacker.hp
 	attacker.heal(dealt * attacker.lifesteal)
+	return maxf(attacker.hp - before, 0.0)
 
 
 ## 这个人的溅射够得到多远（战场坐标）。配了原版码数（[member PBAttacker.splash_radius]）就按它换算，
@@ -533,7 +606,8 @@ static func _splash(
 	enemies: Array[PBEnemy],
 	damage: float,
 	cfg: PBSimConfig,
-	tick: int
+	tick: int,
+	rng: RandomNumberGenerator
 ) -> int:
 	if attacker.splash_damage <= 0.0 or damage <= 0.0:
 		return 0
@@ -542,12 +616,18 @@ static func _splash(
 	var reach: float = splash_reach(attacker, cfg)
 	var killed: int = 0
 	for other: PBEnemy in enemies:
-		if other == center or not other.alive or not other.has_spawned(tick):
+		if other == center or not other.is_hostile(tick):
 			continue
 		if spot.distance_to(other.pos()) > reach:
 			continue
 		var kind := PBCritRules.attack_kind(attacker)
-		if other.take_damage(mitigated(attacker, other, each, kind, cfg, tick), tick):
+		if other.take_damage(
+			mitigated(attacker, other, each, kind, cfg, tick),
+			tick,
+			rng,
+			true,
+			attacker.attack_element
+		):
 			killed += 1
 	return killed
 
@@ -595,15 +675,24 @@ static func _strike_single(
 	var crit: bool = swing[PBCritRules.CRIT]
 	# 近战没有子弹（[member PBAttacker.shot_speed] 为 0），当场结算。
 	if attacker.shot_speed <= 0.0:
-		land(attacker, target, damage, crit, enemies, cfg, tick, book, out)
+		land(attacker, target, damage, crit, enemies, cfg, tick, book, out, rng)
 		return true
 	var shot := PBShotRules.free_shot(shots)
 	if shot == null:
 		return false
 	shot.launch(
-		attacker.pos, target.slot, damage, attacker.shot_speed,
-		false, PBElement.Type.PHYSICAL, attacker.slot, null, 1, crit
+		attacker.pos,
+		target.slot,
+		damage,
+		attacker.shot_speed,
+		false,
+		PBElement.Type.PHYSICAL,
+		attacker.slot,
+		null,
+		1,
+		crit
 	)
+	shot.summon_skill_id = attacker.summon_skill_id if attacker.summoned else &""
 	# 穿透距离**出膛那一刻**定下来（同暴击）：飞到时出手的人可能已经死了。
 	if attacker.pierce > 0.0:
 		shot.pierce_left = cfg.units_to_field(attacker.pierce)
@@ -635,14 +724,14 @@ static func _pour_damage(
 		var enemy: PBEnemy = enemies[index]
 		if not enemy.has_spawned(tick):
 			break
-		if not enemy.alive or not attacker.can_reach(enemy.pos()):
+		if not enemy.is_hostile(tick) or not attacker.can_reach(enemy.pos()):
 			index += 1
 			continue
 		hit = true
 		# **花掉多少伤害，不是掉了多少血** —— 易伤让两者不同，而这条退化路径是对拍锚点
 		# （见 [method PBEnemy.damage_to_kill]）。
-		var cost: float = enemy.damage_to_kill(tick)
-		if enemy.take_damage(remaining, tick):
+		var cost: float = enemy.damage_to_kill(tick, attacker.attack_element)
+		if enemy.take_damage(remaining, tick, rng, true, attacker.attack_element):
 			out.kills += 1
 			remaining -= cost
 			index += 1
@@ -679,8 +768,23 @@ static func _strike_area(
 		if not enemy.has_spawned(tick):
 			break
 		index += 1
-		if not enemy.alive or not attacker.can_reach(enemy.pos()):
+		if not enemy.is_hostile(tick) or not attacker.can_reach(enemy.pos()):
 			continue
-		land(attacker, enemy, damage, swing[PBCritRules.CRIT], enemies, cfg, tick, book, out)
+		land(attacker, enemy, damage, swing[PBCritRules.CRIT], enemies, cfg, tick, book, out, rng)
 		hits += 1
 	return hits > 0
+
+
+static func record_death(
+	target: PBAttacker, tick: int, book: PBBattleLog, out: PBCombatOutcome
+) -> void:
+	# **召唤物没了不算「折了一个」**（玩家定的）：`allies_lost` 是玩家要心疼的数，
+	# 影分身本来就是拿来炸的；播报同理，否则「忍者倒下」那一档会被冲干净。
+	if not target.summoned:
+		out.allies_lost += 1
+		if book != null:
+			book.ally_down(tick, target.slot)
+	# 阵亡技能在这里只记一笔：放出去要全场的敌我名单，那在 [PBBattleSim] 手上。
+	target.death_pending = not target.death_casts.is_empty()
+	target.death_tick = tick
+	target.death_target = target.pos

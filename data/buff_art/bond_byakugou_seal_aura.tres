@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_byakugou_seal_aura/back_0.png" id="1_2trem"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_byakugou_seal_aura/back_1.png" id="2_3xdwn"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_byakugou_seal_aura/back_2.png" id="3_6vf8e"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_byakugou_seal_aura/back_3.png" id="4_qyr47"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_byakugou_seal_aura/back_4.png" id="5_3ysh5"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_byakugou_seal_aura/back_5.png" id="6_le2st"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_ygx88"]
+
+[resource]
+script = ExtResource("7_ygx88")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_2trem"), ExtResource("2_3xdwn"), ExtResource("3_6vf8e"), ExtResource("4_qyr47"), ExtResource("5_3ysh5"), ExtResource("6_le2st")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

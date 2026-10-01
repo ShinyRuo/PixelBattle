@@ -85,11 +85,7 @@ func test_the_leash_is_off_by_default() -> void:
 	# 上面那一批显式 [method _leash_on] 的测试全部还绿着，
 	# 所以只有这一条能说出「游戏里实际跑的是哪一档」。
 	assert_eq(_cfg.unit_leash, 0.0, "默认不该拴")
-	assert_gte(
-		_cfg.leash_distance(),
-		_cfg.field_diagonal(),
-		"不拴要落成覆盖全场 —— 落不到的话钳位还在偷偷生效"
-	)
+	assert_gte(_cfg.leash_distance(), _cfg.field_diagonal(), "不拴要落成覆盖全场 —— 落不到的话钳位还在偷偷生效")
 
 
 # ── 交战中不后退 ────────────────────────────────────────────────
@@ -222,9 +218,8 @@ func test_walking_up_to_a_target_always_ends_in_range() -> void:
 		for _i: int in 200:
 			PBMoveRules.close_in(who, foe, who.leash)
 		assert_true(
-			who.can_reach(foe.pos()), "第 %d 个方向走到位了却判够不着（差 %.17f）" % [
-				step, who.pos.distance_to(foe.pos()) - who.reach
-			]
+			who.can_reach(foe.pos()),
+			"第 %d 个方向走到位了却判够不着（差 %.17f）" % [step, who.pos.distance_to(foe.pos()) - who.reach]
 		)
 
 
@@ -246,11 +241,7 @@ func test_going_to_help_a_pinned_teammate_is_capped_not_forbidden() -> void:
 	foe.engaged = true
 	var rope: float = PBMoveRules.leash_for(mine, foe, null, _cfg)
 	assert_gt(rope, mine.leash, "够不着就该放绳 —— 不放的话同一列里那几个会站到这一波结束")
-	assert_lte(
-		rope,
-		mine.leash + _cfg.enemy_reach_ranged + 1e-9,
-		"而放多长有天花板，那才是「别被拽出阵型」的那道防线"
-	)
+	assert_lte(rope, mine.leash + _cfg.enemy_reach_ranged + 1e-9, "而放多长有天花板，那才是「别被拽出阵型」的那道防线")
 
 
 func test_a_melee_a_hair_out_of_range_is_not_locked_out() -> void:
@@ -300,11 +291,7 @@ func test_the_released_leash_is_a_spring_not_a_ratchet() -> void:
 	var rope_far: float = PBMoveRules.leash_for(mine, far, null, _cfg)
 	assert_gt(rope_near, mine.leash, "咬住我的那个够不着，绳子要放长")
 	assert_lt(rope_near, rope_far, "放多长是按目标算的，不是一个写死的值")
-	assert_lte(
-		rope_far,
-		mine.leash + _cfg.enemy_reach_ranged + 1e-9,
-		"再远也有天花板 —— 没有它，每杀一个就往外挪一截"
-	)
+	assert_lte(rope_far, mine.leash + _cfg.enemy_reach_ranged + 1e-9, "再远也有天花板 —— 没有它，每杀一个就往外挪一截")
 
 
 func test_an_incoming_wave_does_not_pull_anyone_off_their_spot() -> void:
@@ -323,9 +310,7 @@ func test_an_incoming_wave_does_not_pull_anyone_off_their_spot() -> void:
 	sim.enemies()[0].reach = 0.0
 	for _i: int in 200:
 		sim.step()
-	assert_almost_eq(
-		squad[0].pos.x, 0.30 + _cfg.unit_leash, 1e-6, "没站定的敌人拉不动他，绳子到头就是到头"
-	)
+	assert_almost_eq(squad[0].pos.x, 0.30 + _cfg.unit_leash, 1e-6, "没站定的敌人拉不动他，绳子到头就是到头")
 
 
 func test_the_leash_is_long_enough_to_cross_the_middle_line() -> void:

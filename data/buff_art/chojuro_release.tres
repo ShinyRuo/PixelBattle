@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/chojuro_release/front_0.png" id="1_lfmcy"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/chojuro_release/front_1.png" id="2_peqac"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/chojuro_release/front_2.png" id="3_rryv4"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/chojuro_release/front_3.png" id="4_l335r"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/chojuro_release/front_4.png" id="5_gpdwi"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/chojuro_release/front_5.png" id="6_pckvo"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_ygb02"]
+
+[resource]
+script = ExtResource("7_ygb02")
+front_frames = Array[Texture2D]([ExtResource("1_lfmcy"), ExtResource("2_peqac"), ExtResource("3_rryv4"), ExtResource("4_l335r"), ExtResource("5_gpdwi"), ExtResource("6_pckvo")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

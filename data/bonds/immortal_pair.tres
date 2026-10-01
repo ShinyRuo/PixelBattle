@@ -6,9 +6,7 @@
 script = ExtResource("1_2p3ux")
 id = &"immortal_pair"
 name_key = "bond.immortal_pair"
-match_mode = 0
 member_ids = Array[StringName]([&"kakuzu", &"hidan"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&"revive"])
@@ -21,4 +19,3 @@ member_functions = {
 &"revive": 1.0
 }
 }
-member_skill_patches = {}

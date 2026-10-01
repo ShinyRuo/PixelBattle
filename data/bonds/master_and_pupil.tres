@@ -6,14 +6,11 @@
 script = ExtResource("1_0qjrw")
 id = &"master_and_pupil"
 name_key = "bond.master_and_pupil"
-match_mode = 0
 member_ids = Array[StringName]([&"orochimaru", &"hiruzen"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&""])
 tier_function_carriers = Array[StringName]([&""])
-member_functions = {}
 member_skill_patches = {
 &"orochimaru": {
 &"great_breakthrough": {

@@ -208,10 +208,12 @@ func _on_cut() -> void:
 	if cells.is_empty():
 		said.emit(
 			(
-				"[color=#e06666]一格都没切出来。[/color]量出来的背景色是 [b]#%s[/b] —— "
-				+ "不是这张图的底色的话，说明人物占的地方比背景还多。"
+				(
+					"[color=#e06666]一格都没切出来。[/color]量出来的背景色是 [b]#%s[/b] —— "
+					+ "不是这张图的底色的话，说明人物占的地方比背景还多。"
+				)
+				% key.to_html(false)
 			)
-			% key.to_html(false)
 		)
 		return
 	var err := _write(sheet, cells)
@@ -249,37 +251,29 @@ func _report(count: int, key: Color) -> void:
 	var tone: String = "底色 #%s" % key.to_html(false)
 	var want: int = cells_wanted()
 	if count == want:
-		said.emit(
-			"[color=#71d08c]切出 %d 格[/color]（%s）。← → 翻一遍确认没切歪，再挑帧。"
-			% [want, tone]
-		)
+		said.emit("[color=#71d08c]切出 %d 格[/color]（%s）。← → 翻一遍确认没切歪，再挑帧。" % [want, tone])
 		return
 	if count == 1:
-		said.emit(
-			(
-				"[color=#e06666]只切出 1 格 —— 背景没抠掉。[/color]量出来的 %s，"
-				+ "把「抠底容差」往上调再重切。"
-			)
-			% tone
-		)
+		said.emit(("[color=#e06666]只切出 1 格 —— 背景没抠掉。[/color]量出来的 %s，" + "把「抠底容差」往上调再重切。") % tone)
 		return
 	if count < want:
 		# 走到这里说明连补刀都没救回来 —— 滑块只能让更窄的缝也算缝，两只重叠时那道缝是负的。
 		said.emit(
 			(
-				"[color=#e0a666]切出 %d 格，少了 %d 格[/color]（%s）。两只叠在一起了，"
-				+ "连按最深的谷补刀都切不开 —— 把这一段重出一版（宽的生物排成"
-				+ "3 行 2 列，每格宽一倍就挤得开），或者在图上把它们之间涂一条底色。"
+				(
+					"[color=#e0a666]切出 %d 格，少了 %d 格[/color]（%s）。两只叠在一起了，"
+					+ "连按最深的谷补刀都切不开 —— 把这一段重出一版（宽的生物排成"
+					+ "3 行 2 列，每格宽一倍就挤得开），或者在图上把它们之间涂一条底色。"
+				)
+				% [count, want - count, tone]
 			)
-			% [count, want - count, tone]
 		)
 		return
 	said.emit(
 		(
-			"[color=#e0a666]切出 %d 格，多了 %d 格[/color]（%s）。一个人被切成两半了，"
-			+ "把「至少空多少」调大再重切。"
+			("[color=#e0a666]切出 %d 格，多了 %d 格[/color]（%s）。一个人被切成两半了，" + "把「至少空多少」调大再重切。")
+			% [count, count - want, tone]
 		)
-		% [count, count - want, tone]
 	)
 
 

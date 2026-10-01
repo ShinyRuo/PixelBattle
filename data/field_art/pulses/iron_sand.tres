@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://cu4lemx3mmbgu"]
+
+[ext_resource type="Texture2D" uid="uid://bf3rlp3y0wsuo" path="res://assets/fx/fields/pulses/iron_sand/frame_0.png" id="1_k28pi"]
+[ext_resource type="Texture2D" uid="uid://cdn6264gqnggq" path="res://assets/fx/fields/pulses/iron_sand/frame_1.png" id="2_s6e27"]
+[ext_resource type="Texture2D" uid="uid://ret7m2hpq4ub" path="res://assets/fx/fields/pulses/iron_sand/frame_2.png" id="3_x481o"]
+[ext_resource type="Texture2D" uid="uid://dw6738i0h5bc8" path="res://assets/fx/fields/pulses/iron_sand/frame_3.png" id="4_vitvn"]
+[ext_resource type="Texture2D" uid="uid://col5806a3hjhu" path="res://assets/fx/fields/pulses/iron_sand/frame_4.png" id="5_jbjms"]
+[ext_resource type="Texture2D" uid="uid://288ch5fi17bh" path="res://assets/fx/fields/pulses/iron_sand/frame_5.png" id="6_m0n4r"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_lxnhm"]
+
+[resource]
+script = ExtResource("7_lxnhm")
+frames = Array[Texture2D]([ExtResource("1_k28pi"), ExtResource("2_s6e27"), ExtResource("3_x481o"), ExtResource("4_vitvn"), ExtResource("5_jbjms"), ExtResource("6_m0n4r")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_iron_sand_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

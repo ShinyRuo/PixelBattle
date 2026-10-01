@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_flying_raijin_ball/back/frame_0.png" id="1_36iil"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_flying_raijin_ball/back/frame_1.png" id="2_vgeop"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_flying_raijin_ball/back/frame_2.png" id="3_vvhn0"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_flying_raijin_ball/back/frame_3.png" id="4_ugckg"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_flying_raijin_ball/back/frame_4.png" id="5_wpdsw"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_flying_raijin_ball/back/frame_5.png" id="6_ihgfj"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_r6g4n"]
+
+[resource]
+script = ExtResource("7_r6g4n")
+back_frames = Array[Texture2D]([ExtResource("1_36iil"), ExtResource("2_vgeop"), ExtResource("3_vvhn0"), ExtResource("4_ugckg"), ExtResource("5_wpdsw"), ExtResource("6_ihgfj")])
+fps = 20.0
+anchor = Vector2(128, 128)
+offset = Vector2(0, -30)
+pixel_scale = 0.32
+metadata/sheet_back = {
+"background": 0,
+"center": true,
+"columns": 3,
+"count": 6,
+"layout": 0,
+"path": "res://aires/skills/skill_flying_raijin_ball_cast_v1.png",
+"rows": 2,
+"size": 256
+}

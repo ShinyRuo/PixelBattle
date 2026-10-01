@@ -30,9 +30,7 @@ const SIEGE_RING: float = PBAttacker.STOP_RING
 static func siege_spot(at: Vector2, slot: int, reach: float, height: float) -> Vector2:
 	var angle: float = float(slot) * SPREAD_ANGLE
 	var ring: float = reach * SIEGE_RING
-	return Vector2(
-		at.x + absf(cos(angle)) * ring, clampf(at.y + sin(angle) * ring, 0.0, height)
-	)
+	return Vector2(at.x + absf(cos(angle)) * ring, clampf(at.y + sin(angle) * ring, 0.0, height))
 
 
 ## 敌人这一侧。[param front] 起、[param tick] 这一刻已经出场且活着的才参与。

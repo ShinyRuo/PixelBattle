@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3 uid="uid://dapfcf6ltfhm5"]
+
+[ext_resource type="Texture2D" uid="uid://bl8p1v53cr22r" path="res://assets/fx/casts/cast_sage/back/frame_0.png" id="1_ko0iy"]
+[ext_resource type="Texture2D" uid="uid://jwirb6p3y1hp" path="res://assets/fx/casts/cast_sage/back/frame_1.png" id="2_lgtfn"]
+[ext_resource type="Texture2D" uid="uid://6f0sel4q3g84" path="res://assets/fx/casts/cast_sage/back/frame_2.png" id="3_eb3v2"]
+[ext_resource type="Texture2D" uid="uid://qghm4nr7anw1" path="res://assets/fx/casts/cast_sage/back/frame_3.png" id="4_abmvs"]
+[ext_resource type="Texture2D" uid="uid://mn04c40ievrs" path="res://assets/fx/casts/cast_sage/back/frame_4.png" id="5_n73wl"]
+[ext_resource type="Texture2D" uid="uid://cbpssp6jqf1rc" path="res://assets/fx/casts/cast_sage/back/frame_5.png" id="6_04jmy"]
+[ext_resource type="Script" uid="uid://33rfmk1npwku" path="res://src/view/buff_skin.gd" id="7_vnnqu"]
+
+[resource]
+script = ExtResource("7_vnnqu")
+back_frames = Array[Texture2D]([ExtResource("1_ko0iy"), ExtResource("2_lgtfn"), ExtResource("3_eb3v2"), ExtResource("4_abmvs"), ExtResource("5_n73wl"), ExtResource("6_04jmy")])
+fps = 20.0
+metadata/sheet_back = {
+"background": 1,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/cast_sage.png",
+"rows": 2.0,
+"size": 256.0
+}

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/rin_cheer/front_0.png" id="1_baeih"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/rin_cheer/front_1.png" id="2_6eald"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/rin_cheer/front_2.png" id="3_4jrib"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/rin_cheer/front_3.png" id="4_r8avm"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/rin_cheer/front_4.png" id="5_3q15p"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/rin_cheer/front_5.png" id="6_47ovk"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_idtl4"]
+
+[resource]
+script = ExtResource("7_idtl4")
+front_frames = Array[Texture2D]([ExtResource("1_baeih"), ExtResource("2_6eald"), ExtResource("3_4jrib"), ExtResource("4_r8avm"), ExtResource("5_3q15p"), ExtResource("6_47ovk")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

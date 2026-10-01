@@ -39,6 +39,10 @@ custom_bind_ip=""
 port_override_enabled=false
 port_override=6550
 
+[gui]
+
+theme/custom_font="res://assets/fonts/NotoSansSC-VF.ttf"
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0

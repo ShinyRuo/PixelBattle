@@ -12,3 +12,4 @@ duration_seconds = 30.0
 mods = {
 &"crit_chance": 0.1
 }
+duration_levels = PackedFloat32Array()

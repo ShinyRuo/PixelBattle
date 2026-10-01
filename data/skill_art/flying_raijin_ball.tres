@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="PBSkillStartArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/skill_start_art.gd" id="1_ibfjk"]
+
+[resource]
+script = ExtResource("1_ibfjk")
+start_key = &"cast_flying_raijin_ball"

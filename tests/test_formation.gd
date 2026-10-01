@@ -62,10 +62,7 @@ func test_an_empty_formation_reproduces_the_automatic_columns() -> void:
 			continue
 		var unit: PBUnit = plan.deployed[attacker.slot]
 		assert_almost_eq(
-			attacker.home.x,
-			_cfg.reach_column(unit.character.reach_tier()),
-			EPS,
-			"x 该还是射程档派生的那一列"
+			attacker.home.x, _cfg.reach_column(unit.character.reach_tier()), EPS, "x 该还是射程档派生的那一列"
 		)
 		assert_almost_eq(
 			attacker.home.y,
@@ -92,10 +89,7 @@ func test_placing_one_leaves_everyone_else_alone() -> void:
 			assert_almost_eq(attacker.home, Vector2(0.05, 0.12), EPS2, "拖过的那个照摆的来")
 		else:
 			assert_almost_eq(
-				attacker.home.x,
-				_cfg.reach_column(unit.character.reach_tier()),
-				EPS,
-				"没拖过的还是自动站位"
+				attacker.home.x, _cfg.reach_column(unit.character.reach_tier()), EPS, "没拖过的还是自动站位"
 			)
 
 
@@ -113,9 +107,7 @@ func test_the_limit_clamps_instead_of_refusing() -> void:
 	assert_almost_eq(at.y, _cfg.field_height, EPS, "纵向也夹在战场之内")
 
 	PBFormationRules.place(state, unit, Vector2(-1.0, -1.0), _cfg)
-	assert_almost_eq(
-		state.formation[unit.key()], Vector2.ZERO, EPS2, "另一头同样夹住"
-	)
+	assert_almost_eq(state.formation[unit.key()], Vector2.ZERO, EPS2, "另一头同样夹住")
 
 
 func test_the_limit_keeps_the_march_worth_something() -> void:
@@ -143,9 +135,7 @@ func test_where_it_is_drawn_is_where_it_fights() -> void:
 			continue
 		var index: int = deployed.find(plan.deployed[attacker.slot])
 		assert_gte(index, 0, "上场名单不该在锁定时换人")
-		assert_almost_eq(
-			attacker.home, drawn[index], EPS2, "画的位置和打的位置该是同一个"
-		)
+		assert_almost_eq(attacker.home, drawn[index], EPS2, "画的位置和打的位置该是同一个")
 
 
 func test_dragging_moves_him_on_the_real_screen() -> void:
@@ -174,9 +164,7 @@ func test_dragging_moves_him_on_the_real_screen() -> void:
 	root._ground.hovered.emit(
 		PBUnitTile.ZONE_FIELD, units[0].key(), PBLayout.to_screen(goal, field)
 	)
-	assert_almost_eq(
-		root._state.formation[units[0].key()], goal, EPS2, "拖到哪就跟到哪 —— 每帧都写，不是松手才写"
-	)
+	assert_almost_eq(root._state.formation[units[0].key()], goal, EPS2, "拖到哪就跟到哪 —— 每帧都写，不是松手才写")
 
 
 func test_a_ninja_on_the_field_can_be_clicked_and_dragged_anywhere() -> void:
@@ -208,7 +196,9 @@ func test_a_ninja_on_the_field_can_be_clicked_and_dragged_anywhere() -> void:
 
 	# 仓库那一块**整块都要收得住**，不只是正好落在某张卡上。
 	assert_true(
-		root._bay._can_drop_data(Vector2.ZERO, {"zone": PBUnitTile.ZONE_FIELD, "unit": units[0].key()}),
+		root._bay._can_drop_data(
+			Vector2.ZERO, {"zone": PBUnitTile.ZONE_FIELD, "unit": units[0].key()}
+		),
 		"仓库面板本身必须回答得了「可以放」—— 裁剪层挡着那块收件区"
 	)
 	watch_signals(root._bay)
@@ -255,6 +245,4 @@ func test_dragging_a_card_out_of_the_warehouse_puts_him_where_it_lands() -> void
 	assert_true(
 		root._fighting_now(PBFieldRoster.dispatch_preview(root._state)).has(idle[0]), "拖到战场上就该上场"
 	)
-	assert_almost_eq(
-		root._state.formation[idle[0].key()], goal, EPS2, "而且就站在松手的那个点"
-	)
+	assert_almost_eq(root._state.formation[idle[0].key()], goal, EPS2, "而且就站在松手的那个点")

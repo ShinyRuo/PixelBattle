@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_my_cage_aura/back_0.png" id="1_64nko"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_my_cage_aura/back_1.png" id="2_wtkyq"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_my_cage_aura/back_2.png" id="3_wgggr"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_my_cage_aura/back_3.png" id="4_yetqr"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_my_cage_aura/back_4.png" id="5_5lmrh"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/bond_my_cage_aura/back_5.png" id="6_0aum2"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_ino20"]
+
+[resource]
+script = ExtResource("7_ino20")
+blend_style = 1
+back_frames = Array[Texture2D]([ExtResource("1_64nko"), ExtResource("2_wtkyq"), ExtResource("3_wgggr"), ExtResource("4_yetqr"), ExtResource("5_5lmrh"), ExtResource("6_0aum2")])
+fps = 6.0
+anchor = Vector2(128, 168)
+pixel_scale = 0.25
+tint = Color(1, 1, 1, 0.65)

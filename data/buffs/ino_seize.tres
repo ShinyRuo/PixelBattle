@@ -9,8 +9,9 @@ name_key = "buff.ino_seize"
 icon_key = "buff.ino_seize"
 kind = 1
 friendly = false
-duration_seconds = 2.0
+duration_seconds = 1.0
 mods = {
 &"enemy_speed_scale": 0.0,
 &"stun": 1.0
 }
+duration_levels = PackedFloat32Array(1, 1, 2, 2, 2, 3, 3, 4, 4, 5)

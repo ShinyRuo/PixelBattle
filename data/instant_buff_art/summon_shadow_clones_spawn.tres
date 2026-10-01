@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_shadow_clones_spawn/front_0.png" id="1_1ox0i"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_shadow_clones_spawn/front_1.png" id="2_c3yfx"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_shadow_clones_spawn/front_2.png" id="3_3dr5k"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_shadow_clones_spawn/front_3.png" id="4_07oa3"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_shadow_clones_spawn/front_4.png" id="5_5oukn"]
+[ext_resource type="Texture2D" path="res://assets/fx/instant_buffs/summon_shadow_clones_spawn/front_5.png" id="6_uevb6"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_rxj5j"]
+
+[resource]
+script = ExtResource("7_rxj5j")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_1ox0i"), ExtResource("2_c3yfx"), ExtResource("3_3dr5k"), ExtResource("4_07oa3"), ExtResource("5_5oukn"), ExtResource("6_uevb6")])
+fps = 12.0
+anchor = Vector2(128, 245)
+pixel_scale = 0.38

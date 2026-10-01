@@ -124,10 +124,7 @@ func reset(state: PBRunState, plan: PBWavePlan) -> void:
 ## [param away] 是这一波谁去做任务：战斗中是锁定的那一份（`dispatched_ids`），准备阶段是任务栏里站着的
 ## （[method PBFieldRoster.dispatch_preview]）。不收 `cfg`：判定只看「拖进来几个 vs 本波要几个」。
 func refresh(
-	selection: PBSelection,
-	state: PBRunState,
-	plan: PBWavePlan,
-	away: Array[PBUnit] = []
+	selection: PBSelection, state: PBRunState, plan: PBWavePlan, away: Array[PBUnit] = []
 ) -> void:
 	var grade: int = plan.quest_grade
 	var need: int = PBEconomyRules.quest_cost_units(grade)
@@ -158,13 +155,16 @@ func refresh(
 ## 而面板上那几个短句只是它的索引。
 func tip_body(state: PBRunState, cfg: PBSimConfig, plan: PBWavePlan) -> String:
 	var need: int = PBEconomyRules.quest_cost_units(plan.quest_grade)
-	return "\n".join(
-		PackedStringArray(
-			[
-				_picked_text(state, need),
-				_bond_text(state, cfg, need),
-				_outcome_text(state, cfg, plan, need),
-			]
+	return (
+		"\n"
+		. join(
+			PackedStringArray(
+				[
+					_picked_text(state, need),
+					_bond_text(state, cfg, need),
+					_outcome_text(state, cfg, plan, need),
+				]
+			)
 		)
 	)
 
@@ -194,9 +194,7 @@ func _picked_text(state: PBRunState, need: int) -> String:
 		return "任务栏空着 —— 这一波不接，没有奖励也没有代价。"
 	if chosen == need:
 		return "已派 %d/%d 人，打完这一波就能领奖励。" % [chosen, need]
-	return "已派 %d 人，本波要 %d —— 人数不符，任务失败：他们照样离场，但一分钱拿不到。" % [
-		chosen, need
-	]
+	return "已派 %d 人，本波要 %d —— 人数不符，任务失败：他们照样离场，但一分钱拿不到。" % [chosen, need]
 
 
 ## §06 那句「派了羁绊掉几档」：把派遣前后的档位表对比一遍，只报**真的掉了的那几组**。
@@ -281,8 +279,7 @@ func _add_tile(at: Vector2) -> PBUnitTile:
 	tile.zone = PBUnitTile.ZONE_QUEST
 	tile.dropped.connect(card_dropped.emit)
 	tile.picked.connect(
-		func(hit: PBUnitTile) -> void:
-			slot_picked.emit(PBSelection.Kind.DISPATCHED, hit.unit.key())
+		func(hit: PBUnitTile) -> void: slot_picked.emit(PBSelection.Kind.DISPATCHED, hit.unit.key())
 	)
 	add_child(tile)
 	return tile

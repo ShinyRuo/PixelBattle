@@ -71,8 +71,7 @@ func _read_roster() -> Array:
 	for cells: PackedStringArray in PBRosterSheet.read(ROSTER).rows():
 		if cells.size() < PBRosterSheet.COLUMNS:
 			printerr(
-				"这一行少了列（要 %d 列，实际 %d）：%s"
-				% [PBRosterSheet.COLUMNS, cells.size(), "\t".join(cells)]
+				"这一行少了列（要 %d 列，实际 %d）：%s" % [PBRosterSheet.COLUMNS, cells.size(), "\t".join(cells)]
 			)
 			continue
 		out.append(cells)

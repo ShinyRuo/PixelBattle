@@ -3,6 +3,7 @@ extends RefCounted
 ## 「屏幕上这几档各是谁」—— 在场 / 出任务 / 名单转卡。全部 static，不碰画面，是 state + plan 的派生量。
 ## 三档和 [PBCardMoves] 的三个区是同一套；仓库那一档在 [method PBRosterBay.idle_units]（前两档的补集）。
 
+
 ## 这一波谁去做任务：锁过了照 `dispatched_ids` 念，准备阶段就是任务栏里站着的那几个。
 ## 脚本玩家的末尾规则在 `lock_plan` 里，不经过这里。
 static func dispatch_preview(state: PBRunState) -> Array[PBUnit]:
@@ -20,8 +21,7 @@ static func dispatch_preview(state: PBRunState) -> Array[PBUnit]:
 ## 准备阶段按「现在开打会是谁」预览一份，**同样要减掉派遣**：
 ## 不减的话被派出去的人会**同时出现在战场和任务栏**，而他只可能在一处。
 static func fighting_now(
-	state: PBRunState, strategy: PBStrategy, plan: PBWavePlan, away: Array[PBUnit],
-	cfg: PBSimConfig
+	state: PBRunState, strategy: PBStrategy, plan: PBWavePlan, away: Array[PBUnit], cfg: PBSimConfig
 ) -> Array[PBUnit]:
 	var out: Array[PBUnit] = []
 	for unit: PBUnit in strategy.deploy(state, plan.wave, cfg):

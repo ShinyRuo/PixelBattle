@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/vampire_bugs/frame_0.png" id="1_pr2vy"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/vampire_bugs/frame_1.png" id="2_0squs"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/vampire_bugs/frame_2.png" id="3_6dufr"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/vampire_bugs/frame_3.png" id="4_c7e2p"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/vampire_bugs/frame_4.png" id="5_1rnmw"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/vampire_bugs/frame_5.png" id="6_ddaxp"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_wctoq"]
+
+[resource]
+script = ExtResource("7_wctoq")
+frames = Array[Texture2D]([ExtResource("1_pr2vy"), ExtResource("2_0squs"), ExtResource("3_6dufr"), ExtResource("4_c7e2p"), ExtResource("5_1rnmw"), ExtResource("6_ddaxp")])
+fps = 12.0
+link_width = 56.0

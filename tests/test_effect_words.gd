@@ -77,9 +77,7 @@ func test_a_skill_card_names_what_it_hangs_on_the_target() -> void:
 	assert_true(body.contains("冷却"), "要写冷却：%s" % body)
 	assert_true(body.contains(PBLocale.text(picked.on_hit[0].name_key)), "要写附带的效果：%s" % body)
 	assert_false(body.contains("buff_fx."), "不能漏出键名：%s" % body)
-	assert_true(
-		PBEffectWords.skill_title(picked).begins_with(PBLocale.of_skill(picked)), "标题是技能名"
-	)
+	assert_true(PBEffectWords.skill_title(picked).begins_with(PBLocale.of_skill(picked)), "标题是技能名")
 
 
 func test_a_bond_card_lists_what_the_full_tier_gives() -> void:

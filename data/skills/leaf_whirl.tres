@@ -11,8 +11,10 @@ icon_key = "buff.lee_whirl"
 kind = 1
 duration_seconds = 3.5
 mods = {
-&"damage_taken": 0.35
+&"channel": 1.0,
+&"ninjutsu_immune": 1.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_7mq7d")
@@ -20,7 +22,15 @@ target = 0
 id = &"leaf_whirl"
 name_key = "skill.leaf_whirl"
 on_self = Array[ExtResource("1_j3okx")]([SubResource("Resource_utb3g")])
-power_mult = 1.8
-radius = 0.1
+kind = 0
+damage_base = 50.0
+damage_growth = 50.0
+radius = 0.125
+hit_count = 7
+hit_interval_ticks = 10
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 340
+delay_ticks = 10
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 14, 18, 22, 26, 30, 34, 38, 42, 46)

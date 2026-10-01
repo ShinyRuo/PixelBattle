@@ -33,10 +33,24 @@ static func cast_count(unit: PBAttacker) -> int:
 static func can_cast(unit: PBAttacker, index: int, at_tick: int) -> bool:
 	if unit == null or not unit.alive:
 		return false
+	if (
+		unit.casting.active(at_tick)
+		or PBCastTimeline.interrupted(unit, at_tick)
+		or PBSkillChannel.blocked(unit, at_tick)
+	):
+		return false
 	var cast := cast_at(unit, index)
 	if cast == null:
 		return false
-	return cast.is_ready(at_tick) and unit.can_pay(cast.skill.mp_cost)
+	return (
+		cast.skill.ranged_attack_aura == 0.0
+		and cast.skill.attack_trigger_chance == 0.0
+		and not PBMotionAuraRules.enabled(cast.skill)
+		and not PBHealingAuraRules.enabled(cast.skill)
+		and (not cast.skill.sacrifice_transfer or unit.sacrifice_at < 0)
+		and cast.is_ready(at_tick)
+		and unit.can_pay(PBSkillCostRules.mana(cast.skill, cast.caster_level))
+	)
 
 
 ## 这份技能的数据合不合法。返回空串表示没问题，否则是给人看的原因。
@@ -44,17 +58,24 @@ static func can_cast(unit: PBAttacker, index: int, at_tick: int) -> bool:
 ## 拦的都是**静默生效**的错：
 ##
 ## - **`ALLY` 却打敌人 / `ENEMY` 却打自己人** —— 表现是「点了一个队友然后他掉血」
-## - **非 `GROUND` 却配了施法延迟** —— 延迟存在的全部理由是 §02 的预判窗口，
-##   锁定单体的技能目标跟着走，没有预判可言
+## - 施法延迟只允许地面预判、周围连击或有起手状态的锁定技能。
 static func validate(skill: PBSkill) -> String:
 	if skill == null:
 		return "技能是空的"
+	var barrage_error := PBSkillBarrage.validate(skill)
+	if barrage_error != "":
+		return barrage_error
 	if skill.target == PBSkill.Target.ALLY and skill.affects != PBSkill.Party.ALLIES:
 		return "target=ALLY 的技能必须 affects=ALLIES —— 点队友却打敌人说不通"
 	if skill.target == PBSkill.Target.ENEMY and skill.affects != PBSkill.Party.ENEMIES:
 		return "target=ENEMY 的技能必须 affects=ENEMIES —— 点敌人却打自己人说不通"
-	if skill.target != PBSkill.Target.GROUND and skill.delay_ticks != 0:
-		return "只有 GROUND 档能配施法延迟 —— 锁定目标的技能没有预判窗口"
+	if (
+		skill.target != PBSkill.Target.GROUND
+		and not (skill.target == PBSkill.Target.NONE and skill.hit_count > 1)
+		and not (skill.target == PBSkill.Target.ENEMY and not skill.on_start_target.is_empty())
+		and skill.delay_ticks != 0
+	):
+		return "命中延迟需要地面、周围连击或带前置效果的锁定技能"
 	return _check_shot(skill)
 
 
@@ -65,6 +86,9 @@ static func validate(skill: PBSkill) -> String:
 ## - **子弹技能配了位置操纵与全场效果**（[member PBSkill.gather] 那一批）：
 ##   子弹只结算打中的那一个（[method PBShotRules._hit_enemy]），配了不会生效
 static func _check_shot(skill: PBSkill) -> String:
+	var hold_error := PBSkillImpact.validate(skill)
+	if hold_error != "":
+		return hold_error
 	if skill.shot_cross_seconds <= 0.0:
 		return ""
 	if skill.target != PBSkill.Target.ALLY and skill.target != PBSkill.Target.ENEMY:
@@ -90,12 +114,30 @@ static func hit_by_shot(
 	tick: int,
 	book: PBBattleLog
 ) -> int:
-	var dealt: float = PBStrikeRules.mitigated(caster, enemy, shot.damage, shot.skill.kind, cfg, tick)
+	if shot.skill.mind_control:
+		PBMindRules.apply(enemy, shot, cfg, tick)
+		if book != null:
+			book.skill_impact(tick, shot.source, enemy.slot, false, shot.skill.shot_key)
+		return 0
+	var dealt: float = PBStrikeRules.mitigated(
+		caster, enemy, shot.damage, shot.skill.kind, cfg, tick
+	)
 	if book != null:
-		book.hit(tick, shot.source, enemy.slot, dealt, false, shot.crit)
-	if enemy.take_damage(dealt, tick):
+		book.hit(tick, shot.source, enemy.slot, dealt, false, shot.crit, -1, shot.skill.shot_key)
+	if enemy.take_damage(dealt, tick, null, false, shot.skill.element):
 		return 1
-	return 1 if apply_all_enemy(enemy, shot.skill.on_hit, shot.level, cfg, tick) else 0
+	return (
+		1
+		if apply_all_enemy(
+			enemy,
+			shot.skill.on_hit,
+			shot.level,
+			cfg,
+			tick,
+			PBHarmContext.from_caster(caster, shot.skill, tick)
+		)
+		else 0
+	)
 
 
 ## 一发**子弹**落在己方单位身上（治疗那一类）。
@@ -121,7 +163,9 @@ static func land(
 	cfg: PBSimConfig,
 	tick: int,
 	caster: PBAttacker,
-	damage: float
+	damage: float,
+	book: PBBattleLog = null,
+	crit: bool = false
 ) -> int:
 	var skill := cast.skill
 	var kills: int = 0
@@ -132,17 +176,45 @@ static func land(
 		var enemy: PBEnemy = enemies[i]
 		if not enemy.has_spawned(tick):
 			break
-		if not enemy.alive:
+		if not enemy.is_hostile(tick):
 			continue
-		# 真圆（[member PBSkill.radius]），圆心是落点。
-		if enemy.pos().distance_to(cast.spot) > skill.radius:
+		if not PBSkillArea.contains(skill, cast.origin, cast.spot, enemy.pos()):
 			continue
 		hits += 1
-		if enemy.take_damage(PBStrikeRules.mitigated(caster, enemy, damage, skill.kind, cfg, tick), tick):
+		var each: float = PBSkillDamage.area_damage(cast, enemy, damage)
+		var dealt := PBStrikeRules.mitigated(caster, enemy, each, skill.kind, cfg, tick)
+		if book != null:
+			book.hit(
+				tick,
+				-1 if caster == null else caster.slot,
+				enemy.slot,
+				dealt,
+				false,
+				crit,
+				-1,
+				skill.shot_key
+			)
+		if enemy.take_damage(dealt, tick, null, false, skill.element):
+			kills += 1
+			continue
+		if PBSkillAfterHit.land(cast, enemy, each, caster, cfg, tick, book, crit):
 			kills += 1
 			continue
 		# 命中之后才挂 [member PBSkill.on_hit]：给尸体挂减速会让「定住了几个」虚高。
-		if apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
+		if (
+			(
+				skill.control_radius <= 0
+				or enemy.pos().distance_to(cast.spot) <= skill.control_radius
+			)
+			and apply_all_enemy(
+				enemy,
+				skill.on_hit,
+				cast.caster_level,
+				cfg,
+				tick,
+				PBHarmContext.from_caster(caster, skill, tick)
+			)
+		):
 			kills += 1
 			continue
 		# 活下来的才挪 —— 挪一个尸体没有意义，而且会让「聚拢值多少」虚高。
@@ -151,7 +223,10 @@ static func land(
 			# 一条横线，而「聚成一堆」正是这个机制唯一的产出。
 			enemy.distance = cast.spot.x
 			enemy.lane = cast.spot.y
-		elif skill.knockback > 0.0:
+		elif (
+			skill.knockback > 0.0
+			and not (skill.target == PBSkill.Target.ENEMY and i == cast.target_slot)
+		):
 			# 击退只作用在推进轴上 —— 它买的是「敌人晚到基地多久」。
 			# 上限是**他自己的出生点**，不是战场长度：方阵后面几列出生在
 			# 战场之外，拿战场长度封顶会把他们往前拽（见 [member PBEnemy.start_x]）。
@@ -165,14 +240,17 @@ static func land(
 ## 改打别人的话，玩家点的人和实际受益的人不是同一个，而他不会知道。
 ## 同 [PBProjectile] 那条「目标死了子弹就消失」。
 static func land_on_ally(
-	cast: PBSkillCast, attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int
+	cast: PBSkillCast,
+	attackers: Array[PBAttacker],
+	cfg: PBSimConfig,
+	tick: int,
+	caster: PBAttacker = null
 ) -> void:
-	if cast.target_slot < 0 or cast.target_slot >= attackers.size():
+	if cast.skill.sacrifice_transfer:
+		PBSacrificeRules.land(cast, caster, attackers, cfg, tick)
 		return
-	var target: PBAttacker = attackers[cast.target_slot]
-	if not target.is_targetable():
-		return
-	_apply_all(target, cast.skill.on_hit, cast.caster_level, cfg, tick, cast.skill.heal_scale)
+	for index: int in PBSkillTargets.allies(cast, attackers):
+		apply_hit_ally(attackers[index], cast.skill, cast.caster_level, cfg, tick)
 
 
 ## 落在**一圈己方单位**身上：圆心 [param center]、半径 [member PBSkill.radius] 内每个还站着的人各挂一份
@@ -183,6 +261,8 @@ static func land_on_ally(
 static func land_around_allies(
 	cast: PBSkillCast, center: Vector2, attackers: Array[PBAttacker], cfg: PBSimConfig, tick: int
 ) -> void:
+	if cast.skill.radius > 0.0:
+		cast.spot = center
 	for unit: PBAttacker in attackers:
 		if unit.is_targetable() and unit.pos.distance_to(center) <= cast.skill.radius:
 			_apply_all(unit, cast.skill.on_hit, cast.caster_level, cfg, tick, cast.skill.heal_scale)
@@ -201,17 +281,91 @@ static func land_on_enemy(
 	if cast.target_slot < 0 or cast.target_slot >= enemies.size():
 		return 0
 	var enemy: PBEnemy = enemies[cast.target_slot]
-	if not enemy.alive or not enemy.has_spawned(tick):
+	if not enemy.is_hostile(tick):
 		return 0
+	if cast.skill.blink_to_target and caster != null and caster.alive:
+		caster.pos = enemy.pos() + Vector2(caster.stop_gap(), 0.0)
+	if cast.skill.radius > 0.0:
+		cast.spot = enemy.pos()
+		return _target_area(cast, enemies, cfg, tick, caster, damage)
 	var dealt: float = PBStrikeRules.mitigated(caster, enemy, damage, cast.skill.kind, cfg, tick)
-	if enemy.take_damage(dealt, tick):
+	if enemy.take_damage(dealt, tick, null, false, cast.skill.element):
 		return 1
-	return 1 if apply_all_enemy(enemy, cast.skill.on_hit, cast.caster_level, cfg, tick) else 0
+	if apply_all_enemy(
+		enemy,
+		cast.skill.on_hit,
+		cast.caster_level,
+		cfg,
+		tick,
+		PBHarmContext.from_caster(caster, cast.skill, tick)
+	):
+		return 1
+	if cast.skill.knockback > 0.0:
+		enemy.distance = minf(enemy.distance + cast.skill.knockback, enemy.start_x)
+	return 0
 
 
-## 打全场：伤害发给**每一个已出场且还活着的敌人**，不看位置
-## （[constant PBSkill.Target.NONE] + [constant PBSkill.Party.ENEMIES]）。返回打死了几个。
-## 和 [method land] 只差「不按半径圈人」，[member PBSkill.max_targets] 仍然管用（0 = 不限）。
+## 锁定延迟技能的起手效果只施加一次；无效目标直接空放，不等它后来复活或出场。
+static func prepare_target(
+	cast: PBSkillCast, enemies: Array[PBEnemy], cfg: PBSimConfig, tick: int
+) -> void:
+	if cast.start_applied or cast.skill.on_start_target.is_empty():
+		return
+	cast.start_applied = true
+	if (
+		cast.target_slot < 0
+		or cast.target_slot >= enemies.size()
+		or not enemies[cast.target_slot].is_hostile(tick)
+	):
+		cast.land(tick)
+		return
+	var begun: int = cast.lands_at - cast.skill.delay_ticks
+	apply_all_enemy(
+		enemies[cast.target_slot], cast.skill.on_start_target, cast.caster_level, cfg, begun
+	)
+
+
+## 范围命中效果与主目标效果分离；范围强化在击退前按原落点确定名单。
+static func _target_area(
+	cast: PBSkillCast,
+	enemies: Array[PBEnemy],
+	cfg: PBSimConfig,
+	tick: int,
+	caster: PBAttacker,
+	damage: float
+) -> int:
+	var selected: Array[PBEnemy] = []
+	for enemy: PBEnemy in enemies:
+		if (
+			enemy.is_hostile(tick)
+			and (
+				enemy == enemies[cast.target_slot]
+				or (
+					cast.skill.target_effect_area
+					and enemy.pos().distance_to(cast.spot) <= cast.skill.radius
+				)
+			)
+		):
+			selected.append(enemy)
+	var kills: int = land(cast, enemies, 0, cfg, tick, caster, damage)
+	for enemy: PBEnemy in selected:
+		if (
+			enemy.alive
+			and apply_all_enemy(
+				enemy,
+				cast.skill.on_target,
+				cast.caster_level,
+				cfg,
+				tick,
+				PBHarmContext.from_caster(caster, cast.skill, tick)
+			)
+		):
+			kills += 1
+	return kills
+
+
+## 无需选目标的敌方技能：半径大于 0 时以施法者为圆心，半径 0 才打全场。
+## 范围路径复用 land，命中效果、击退和目标上限也必须遵守同一个圆。
 static func land_on_field(
 	cast: PBSkillCast,
 	enemies: Array[PBEnemy],
@@ -222,6 +376,11 @@ static func land_on_field(
 	damage: float
 ) -> int:
 	var skill := cast.skill
+	if skill.radius > 0.0:
+		if caster == null:
+			return 0
+		cast.spot = caster.pos
+		return land(cast, enemies, front, cfg, tick, caster, damage)
 	var kills: int = 0
 	var hits: int = 0
 	for i: int in range(front, enemies.size()):
@@ -230,13 +389,26 @@ static func land_on_field(
 		var enemy: PBEnemy = enemies[i]
 		if not enemy.has_spawned(tick):
 			break
-		if not enemy.alive:
+		if not enemy.is_hostile(tick):
 			continue
 		hits += 1
-		if enemy.take_damage(PBStrikeRules.mitigated(caster, enemy, damage, skill.kind, cfg, tick), tick):
+		if enemy.take_damage(
+			PBStrikeRules.mitigated(caster, enemy, damage, skill.kind, cfg, tick),
+			tick,
+			null,
+			false,
+			skill.element
+		):
 			kills += 1
 			continue
-		if apply_all_enemy(enemy, skill.on_hit, cast.caster_level, cfg, tick):
+		if apply_all_enemy(
+			enemy,
+			skill.on_hit,
+			cast.caster_level,
+			cfg,
+			tick,
+			PBHarmContext.from_caster(caster, skill, tick)
+		):
 			kills += 1
 	return kills
 
@@ -260,7 +432,7 @@ static func _apply_all(
 ) -> void:
 	for buff: PBBuff in buffs:
 		var mods := PBBuffRules.scale_heal(PBBuffRules.resolve(buff, level), heal_scale)
-		apply_one(unit, buff, mods, cfg, tick)
+		apply_one(unit, buff, mods, cfg, tick, level)
 
 
 ## 把**一份**效果挂到一个己方单位身上。
@@ -272,7 +444,7 @@ static func _apply_all(
 ## 结算完就没了，而 [method PBBuffBag.add] 那条路是给有窗口的那两档走的
 ## —— 顺带它自己也拦着（`ticks <= 0` 直接返回），瞬间档的窗口正好是 0。
 static func apply_one(
-	unit: PBAttacker, buff: PBBuff, mods: Dictionary, cfg: PBSimConfig, tick: int
+	unit: PBAttacker, buff: PBBuff, mods: Dictionary, cfg: PBSimConfig, tick: int, level: int = 1
 ) -> void:
 	if buff == null:
 		return
@@ -280,8 +452,20 @@ static func apply_one(
 		unit.heal(float(mods.get(PBBuffRules.HEAL, 0.0)))
 		unit.heal(unit.max_hp * float(mods.get(PBBuffRules.HEAL_MAX, 0.0)))
 		unit.restore_mana(float(mods.get(PBBuffRules.MANA, 0.0)))
+		if buff.id != &"":
+			unit.instant_fx_id = buff.id
+			unit.instant_fx_tick = tick
+			unit.instant_fx_serial += 1
 		return
-	unit.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
+	var values := PBTemporaryAttributeRules.prepare(unit, buff, mods, cfg, tick)
+	if mods.has(PBBuffRules.NINJUTSU_SHIELD_MAX):
+		values = values.duplicate()
+		values[PBBuffRules.NINJUTSU_SHIELD] = (
+			float(mods.get(PBBuffRules.NINJUTSU_SHIELD, 0.0))
+			+ unit.max_hp * float(mods[PBBuffRules.NINJUTSU_SHIELD_MAX])
+		)
+	unit.buffs.add(buff, values, tick, buff.duration_ticks(cfg, level), buff.period_ticks(cfg))
+	PBTemporaryAttributeRules.refresh(unit, cfg, tick)
 
 
 ## 把一串效果挂到一个**敌人**身上。返回它有没有被这一串里的瞬间伤害打死。
@@ -289,10 +473,15 @@ static func apply_one(
 ## 技能与角色被动（[method PBStrikeRules.land]）共用这一处 —— 各写一份的话，
 ## 两者迟早在叠加方式或「死了还挂不挂」上分叉。
 static func apply_all_enemy(
-	enemy: PBEnemy, buffs: Array[PBBuff], level: int, cfg: PBSimConfig, tick: int
+	enemy: PBEnemy,
+	buffs: Array[PBBuff],
+	level: int,
+	cfg: PBSimConfig,
+	tick: int,
+	source: PBHarmContext = null
 ) -> bool:
 	for buff: PBBuff in buffs:
-		if apply_one_enemy(enemy, buff, PBBuffRules.resolve(buff, level), cfg, tick):
+		if apply_one_enemy(enemy, buff, PBBuffRules.resolve(buff, level), cfg, tick, source, level):
 			return true
 	return false
 
@@ -302,19 +491,33 @@ static func apply_all_enemy(
 ## 瞬间分支和己方（[method apply_one]）不能共用：己方是回血回蓝，敌方是掉血，
 ## 而掉血必须走 [method PBEnemy.take_damage]（杀敌数和易伤都在它里面）。
 static func apply_one_enemy(
-	enemy: PBEnemy, buff: PBBuff, mods: Dictionary, cfg: PBSimConfig, tick: int
+	enemy: PBEnemy,
+	buff: PBBuff,
+	mods: Dictionary,
+	cfg: PBSimConfig,
+	tick: int,
+	source: PBHarmContext = null,
+	level: int = 1
 ) -> bool:
 	if buff == null:
 		return false
+	var values: Dictionary = PBBuffFormula.resolve(buff, mods, source)
 	if buff.kind == PBBuff.Kind.INSTANT:
-		var harm: float = float(mods.get(PBBuffRules.HARM, 0.0))
+		var harm: float = float(values.get(PBBuffRules.HARM, 0.0))
 		if harm <= 0.0:
 			return false
 		# 瞬间伤害算忍术，吃忍术抗性（同持续伤害，见 [PBDamageKind]）。
-		var kind := PBDamageKind.Type.NINJUTSU
-		var dealt: float = PBStrikeRules.mitigated(null, enemy, harm, kind, cfg, tick)
+		var dealt: float = PBHarmContext.damage(harm, source, enemy, cfg, tick)
 		return enemy.take_damage(dealt, tick)
-	enemy.buffs.add(buff, mods, tick, buff.duration_ticks(cfg), buff.period_ticks(cfg))
+	enemy.buffs.add(
+		buff,
+		values,
+		tick,
+		buff.duration_ticks(cfg, level),
+		buff.period_ticks(cfg),
+		-1 if source == null else source.source_slot,
+		source
+	)
 	return false
 
 

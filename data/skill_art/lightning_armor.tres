@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="PBSkillStartArt" format=3]
+
+[ext_resource type="Script" path="res://src/view/skill_start_art.gd" id="1_gg031"]
+
+[resource]
+script = ExtResource("1_gg031")
+start_key = &"cast_lightning_armor"

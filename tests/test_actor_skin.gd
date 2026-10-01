@@ -34,11 +34,7 @@ func test_the_art_is_mirrored_when_it_faces_away_from_where_he_looks() -> void:
 
 	# 流水线出的素材一律填 RIGHT（[method PBActorForge.link]），白模也是 ——
 	# 所以「往左走要翻」是今天全部素材实际走的那一档。
-	assert_eq(
-		PBWhiteModel.enemy(6).source_faces,
-		PBActorSkin.Facing.RIGHT,
-		"白模也是朝右画的，敌人往左走时必须翻"
-	)
+	assert_eq(PBWhiteModel.enemy(6).source_faces, PBActorSkin.Facing.RIGHT, "白模也是朝右画的，敌人往左走时必须翻")
 
 
 func test_nobody_works_out_the_mirroring_on_their_own() -> void:
@@ -47,8 +43,11 @@ func test_nobody_works_out_the_mirroring_on_their_own() -> void:
 	#
 	# 单元测试抓不到那种复制：两个池子各自都「能跑」，只是其中一个
 	# 演的是倒着走的人。所以这里直接扫源码。
-	for path: String in ["res://src/view/enemy_pool.gd", "res://src/view/ally_pool.gd",
-		"res://src/tools/actor_lab.gd"]:
+	for path: String in [
+		"res://src/view/enemy_pool.gd",
+		"res://src/view/ally_pool.gd",
+		"res://src/tools/actor_lab.gd"
+	]:
 		var text := FileAccess.get_file_as_string(path)
 		assert_ne(text, "", "读得到 %s 才谈得上扫" % path)
 		for line: String in text.split("\n"):
@@ -74,12 +73,8 @@ func test_a_short_attack_take_is_padded_to_six_frames() -> void:
 	var frames := SpriteFrames.new()
 	frames.add_animation(&"attack")
 	frames.set_animation_loop(&"attack", false)
-	var one := ImageTexture.create_from_image(
-		Image.create_empty(4, 4, false, Image.FORMAT_RGBA8)
-	)
-	var last := ImageTexture.create_from_image(
-		Image.create_empty(4, 4, false, Image.FORMAT_RGBA8)
-	)
+	var one := ImageTexture.create_from_image(Image.create_empty(4, 4, false, Image.FORMAT_RGBA8))
+	var last := ImageTexture.create_from_image(Image.create_empty(4, 4, false, Image.FORMAT_RGBA8))
 	frames.add_frame(&"attack", one)
 	frames.add_frame(&"attack", one)
 	frames.add_frame(&"attack", last)
@@ -104,9 +99,7 @@ func test_a_looping_take_is_never_padded() -> void:
 	var frames := SpriteFrames.new()
 	frames.add_animation(&"run")
 	frames.set_animation_loop(&"run", true)
-	var one := ImageTexture.create_from_image(
-		Image.create_empty(4, 4, false, Image.FORMAT_RGBA8)
-	)
+	var one := ImageTexture.create_from_image(Image.create_empty(4, 4, false, Image.FORMAT_RGBA8))
 	frames.add_frame(&"run", one)
 	frames.add_frame(&"run", one)
 	skin.frames = frames

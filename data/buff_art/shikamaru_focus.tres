@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shikamaru_focus/front_0.png" id="1_7kj2y"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shikamaru_focus/front_1.png" id="2_5ls8w"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shikamaru_focus/front_2.png" id="3_c87dc"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shikamaru_focus/front_3.png" id="4_v1xrw"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shikamaru_focus/front_4.png" id="5_5dlhy"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/shikamaru_focus/front_5.png" id="6_ywk85"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_ut50p"]
+
+[resource]
+script = ExtResource("7_ut50p")
+front_frames = Array[Texture2D]([ExtResource("1_7kj2y"), ExtResource("2_5ls8w"), ExtResource("3_c87dc"), ExtResource("4_v1xrw"), ExtResource("5_5dlhy"), ExtResource("6_ywk85")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

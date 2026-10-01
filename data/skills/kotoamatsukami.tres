@@ -13,6 +13,7 @@ duration_seconds = 30.0
 mods = {
 &"crit_chance": 0.1
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_5e3ho")
@@ -22,5 +23,8 @@ name_key = "skill.kotoamatsukami"
 affects = 0
 on_self = Array[ExtResource("1_1mb3l")]([SubResource("Resource_g4m6i")])
 element = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 600
 mp_cost = 12.0
+mp_cost_levels = PackedFloat32Array()

@@ -5,17 +5,18 @@
 
 [sub_resource type="Resource" id="Resource_bqa1d"]
 script = ExtResource("1_g3qlg")
-id = &"rin_cheer"
-name_key = "buff.rin_cheer"
-icon_key = "buff.rin_cheer"
+id = &"reincarnation_gift"
+name_key = "buff.reincarnation_gift"
+icon_key = "buff.reincarnation_gift"
 kind = 1
-duration_seconds = 20.0
+until_wave_end = true
+per_source = true
 mods = {
-&"damage_scale": 1.1
+&"agility": 0.0,
+&"intellect": 0.0,
+&"strength": 0.0
 }
-mods_growth = {
-&"damage_scale": 0.03
-}
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_tts2l")
@@ -23,6 +24,12 @@ target = 1
 id = &"reincarnation"
 name_key = "skill.reincarnation"
 affects = 0
-on_hit = Array[ExtResource("1_g3qlg")]([SubResource("Resource_bqa1d")])
+sacrifice_transfer = true
+transfer_buff = SubResource("Resource_bqa1d")
+kind = 0
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 1200
+extra_target_from_caster = true
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array(10, 12, 15, 19, 24, 30, 37, 45, 54, 64)

@@ -22,14 +22,13 @@ func test_the_synthetic_table_reproduces_the_pre_m2_card_pool() -> void:
 	# 合成表铺的是可发牌的六系，仙不在其中。照枚举个数算的话，
 	# 期望值会凭空多出三格，而那三格永远填不满。
 	var table := _cfg.characters
-	var expected: int = PBUnit.Rarity.size() * PBElement.PICKABLE.size() * _cfg.characters_per_bucket
+	var expected: int = (
+		PBUnit.Rarity.size() * PBElement.PICKABLE.size() * _cfg.characters_per_bucket
+	)
 	assert_eq(
 		table.size(),
 		expected,
-		(
-			"合成卡池应该还是 %d 稀有度 × 6 属性 × %d 变体"
-			% [PBUnit.Rarity.size(), _cfg.characters_per_bucket]
-		)
+		"合成卡池应该还是 %d 稀有度 × 6 属性 × %d 变体" % [PBUnit.Rarity.size(), _cfg.characters_per_bucket]
 	)
 
 	# 每一格都要填满 —— 抽卡是先掷属性再掷变体的，缺一格就会走到退化路径，

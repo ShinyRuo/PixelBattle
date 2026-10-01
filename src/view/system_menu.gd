@@ -108,9 +108,10 @@ func _build_main() -> void:
 ## `Esc` 是第二条路，而手在鼠标上的时候不该被逼着去够键盘（§01 要双端）。
 func _build_graphics() -> void:
 	var left: float = (panel_rect().size.x - FIELD_LABEL_W - FIELD_W) * 0.5
-	PBSkin.label(_graphics, Vector2(left, 9.0), FIELD_LABEL_W, PBSkin.FONT_BODY, PBSkin.TEXT).text = (
-		"分辨率"
+	var label := PBSkin.label(
+		_graphics, Vector2(left, 9.0), FIELD_LABEL_W, PBSkin.FONT_BODY, PBSkin.TEXT
 	)
+	label.text = "分辨率"
 	_sizes = OptionButton.new()
 	_sizes.size = Vector2(FIELD_W, FIELD_H)
 	_sizes.position = Vector2(left + FIELD_LABEL_W, 6.0)

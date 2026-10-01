@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://xffyxay2h8vg"]
+
+[ext_resource type="Texture2D" uid="uid://d1stro5btt344" path="res://assets/fx/fields/areas/dust_release/frame_0.png" id="1_xvv4c"]
+[ext_resource type="Texture2D" uid="uid://d2f2ilstcbwrt" path="res://assets/fx/fields/areas/dust_release/frame_1.png" id="2_umtbf"]
+[ext_resource type="Texture2D" uid="uid://bh4ak7mb32s5b" path="res://assets/fx/fields/areas/dust_release/frame_2.png" id="3_4bxxa"]
+[ext_resource type="Texture2D" uid="uid://b2dfmjpb10qqq" path="res://assets/fx/fields/areas/dust_release/frame_3.png" id="4_v2xtf"]
+[ext_resource type="Texture2D" uid="uid://de422e8aebgsr" path="res://assets/fx/fields/areas/dust_release/frame_4.png" id="5_dxder"]
+[ext_resource type="Texture2D" uid="uid://cdrh8cjmubv7v" path="res://assets/fx/fields/areas/dust_release/frame_5.png" id="6_dyfw0"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_40ntl"]
+
+[resource]
+script = ExtResource("7_40ntl")
+frames = Array[Texture2D]([ExtResource("1_xvv4c"), ExtResource("2_umtbf"), ExtResource("3_4bxxa"), ExtResource("4_v2xtf"), ExtResource("5_dxder"), ExtResource("6_dyfw0")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_dust_release_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

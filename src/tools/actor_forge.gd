@@ -52,7 +52,7 @@ const MID := Vector2i(960, 540)
 ## **`scripts/make_actor.ps1` 里必须是同一条**（那条路自己调 ffmpeg）——
 ## `test_actor_forge.gd` 逐字符钉着这一条，改了一边不改另一边会红。
 const FILTER := (
-	"colorkey=0xFF00FF:0.34:0.0,format=rgba,premultiply=inplace=1,scale=960:540:flags=area"
+	"colorkey=0xFF00FF:0.34:0.0,format=rgba,premultiply=inplace=1," + "scale=960:540:flags=area"
 )
 
 ## 半透明像素归到哪一边。像素画不许有半透明边缘（规格第 8 节），
@@ -89,6 +89,11 @@ const ANIMS: Array = [
 	{"name": &"dead", "fps": 4.0, "loop": false, "want": 6, "pick": "settle"},
 ]
 
+const SKILL_ANIMS: Array = [
+	{"name": &"skill1", "fps": 10.0, "loop": false, "want": 6, "pick": "cycle"},
+	{"name": &"skill2", "fps": 10.0, "loop": false, "want": 6, "pick": "cycle"},
+]
+
 ## 剪影比对用的小掩码尺寸。按包围盒归一化之后再缩到这么大，
 ## 所以它**不受人物平移与缩放影响** —— 比的是姿势，不是位置。
 const MASK := Vector2i(16, 24)
@@ -116,7 +121,7 @@ var clamped: bool = false
 
 ## 这一段的播放参数。段名不认识时返回空字典。
 static func spec_of(anim: String) -> Dictionary:
-	for spec: Dictionary in ANIMS:
+	for spec: Dictionary in ANIMS + SKILL_ANIMS:
 		if String(spec["name"]) == anim:
 			return spec
 	return {}
@@ -129,9 +134,9 @@ func texture_height() -> int:
 
 
 ## 四个段名，按 [constant ANIMS] 的顺序。
-static func anim_names() -> PackedStringArray:
+static func anim_names(include_skills: bool = false) -> PackedStringArray:
 	var out := PackedStringArray()
-	for spec: Dictionary in ANIMS:
+	for spec: Dictionary in ANIMS + (SKILL_ANIMS if include_skills else []):
 		out.append(String(spec["name"]))
 	return out
 
@@ -160,8 +165,15 @@ func extract(video: String, out_dir: String) -> String:
 	wipe_frames(out_dir)
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var args: PackedStringArray = [
-		"-v", "error", "-y", "-i", ProjectSettings.globalize_path(video),
-		"-vf", FILTER, "-fps_mode", "passthrough",
+		"-v",
+		"error",
+		"-y",
+		"-i",
+		ProjectSettings.globalize_path(video),
+		"-vf",
+		FILTER,
+		"-fps_mode",
+		"passthrough",
 		ProjectSettings.globalize_path(out_dir).path_join("%03d.png"),
 	]
 	var log: Array = []
@@ -234,7 +246,7 @@ func measure_one(path: String) -> Dictionary:
 func scales(takes: Dictionary, share_idle: bool = false) -> Dictionary:
 	var out: Dictionary = {}
 	var idle_scale: float = 1.0
-	for spec: Dictionary in ANIMS:
+	for spec: Dictionary in ANIMS + SKILL_ANIMS:
 		var anim: String = String(spec["name"])
 		if anim == "dead" or not takes.has(anim):
 			continue
@@ -421,11 +433,20 @@ func save_frames(key: String, anim: String, images: Array) -> String:
 ## 编辑器插件那条路没有这个问题 —— 它能让编辑器当场重扫一遍
 ## （[method PBActorForgePanel._rescan]），这也是做成插件最实在的一处好处。
 func link(key: String) -> String:
+	var previous_path := "%s/%s.tres" % [data_dir, key]
+	var previous: PBActorSkin = null
+	if ResourceLoader.exists(previous_path):
+		previous = load(previous_path) as PBActorSkin
 	if scale_up > 1:
 		_want_mipmaps(key)
 	var frames := SpriteFrames.new()
-	for spec: Dictionary in ANIMS:
+	for spec: Dictionary in ANIMS + SKILL_ANIMS:
 		var anim: StringName = spec["name"]
+		if (
+			spec in SKILL_ANIMS
+			and not FileAccess.file_exists("%s/%s/%s_0.png" % [assets_dir, key, anim])
+		):
+			continue
 		frames.add_animation(anim)
 		frames.set_animation_speed(anim, float(spec["fps"]))
 		frames.set_animation_loop(anim, bool(spec["loop"]))
@@ -434,11 +455,16 @@ func link(key: String) -> String:
 			var path: String = "%s/%s/%s_%d.png" % [assets_dir, key, anim, slot]
 			if not ResourceLoader.exists(path):
 				break
-			frames.add_frame(anim, load(path) as Texture2D)
+			frames.add_frame(
+				anim, ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REPLACE) as Texture2D
+			)
 			slot += 1
+		if spec in SKILL_ANIMS and slot != 6:
+			return "技能动作必须恰好六帧：%s" % anim
 		if slot == 0:
 			return "这一段一帧都没有：%s（导出跑过吗？）" % anim
 	frames.remove_animation(&"default")
+	PBArtBindings.keep_extra_animations(previous, frames)
 
 	# **图集放子目录里，不和形象表并排。**
 	# [method PBActorLibrary.load_from] 把 `data/actors/` 下的每个 `.tres`
@@ -450,6 +476,8 @@ func link(key: String) -> String:
 		return "图集存不下来（%d）" % err
 
 	var skin := PBActorSkin.new()
+	if previous != null:
+		skin.skill_anims = previous.skill_anims.duplicate()
 	skin.key = StringName(key)
 	skin.frames = frames
 	skin.anim_idle = &"idle"

@@ -50,21 +50,14 @@ func test_a_point_of_strength_really_turns_into_health() -> void:
 	var buffed := unit.stats(_cfg, {PBStatRules.STRENGTH: 10.0})
 	assert_almost_eq(buffed.strength, bare.strength + 10.0, 0.0001, "力量该加上去")
 	assert_gt(buffed.hp, bare.hp, "而血该跟着涨")
-	assert_almost_eq(
-		buffed.hp - bare.hp,
-		10.0 * PBStatRules.HP_PER_STRENGTH,
-		0.01,
-		"涨的量该正好是原版那个系数"
-	)
+	assert_almost_eq(buffed.hp - bare.hp, 10.0 * PBStatRules.HP_PER_STRENGTH, 0.01, "涨的量该正好是原版那个系数")
 
 
 func test_all_stats_moves_all_three_at_once() -> void:
 	# 原版的「全属性 +15」。它和单项**相加**，不是二选一。
 	var unit := _someone()
 	var bare := unit.stats(_cfg)
-	var buffed := unit.stats(
-		_cfg, {PBStatRules.ALL_STATS: 5.0, PBStatRules.AGILITY: 3.0}
-	)
+	var buffed := unit.stats(_cfg, {PBStatRules.ALL_STATS: 5.0, PBStatRules.AGILITY: 3.0})
 	assert_almost_eq(buffed.strength, bare.strength + 5.0, 0.0001, "力量 +5")
 	assert_almost_eq(buffed.agility, bare.agility + 8.0, 0.0001, "敏捷 +5 再 +3")
 	assert_almost_eq(buffed.intellect, bare.intellect + 5.0, 0.0001, "智力 +5")
@@ -82,22 +75,23 @@ func test_all_stats_bonus_scales_his_own_stats_but_not_the_points() -> void:
 	assert_almost_eq(scaled.intellect, bare.intellect * 1.2, 0.0001, "智力 ×1.2")
 	assert_gt(scaled.hp, bare.hp, "血跟着三围派生")
 	assert_gt(scaled.atk, bare.atk, "攻击力跟着主属性派生")
-	var both := unit.stats(
-		_cfg, {PBStatRules.ALL_STATS_BONUS: 0.2, PBStatRules.ALL_STATS: 30.0}
-	)
+	var both := unit.stats(_cfg, {PBStatRules.ALL_STATS_BONUS: 0.2, PBStatRules.ALL_STATS: 30.0})
 	assert_almost_eq(both.strength, bare.strength * 1.2 + 30.0, 0.0001, "点数不跟着放大")
 
 
 func test_the_flat_words_land_on_the_derived_stats() -> void:
 	var unit := _someone()
 	var bare := unit.stats(_cfg)
-	var buffed := unit.stats(
-		_cfg,
-		{
-			PBStatRules.ATTACK: 200.0,
-			PBStatRules.DEFENCE: 10.0,
-			PBStatRules.MAX_HP: 1200.0,
-		}
+	var buffed := (
+		unit
+		. stats(
+			_cfg,
+			{
+				PBStatRules.ATTACK: 200.0,
+				PBStatRules.DEFENCE: 10.0,
+				PBStatRules.MAX_HP: 1200.0,
+			}
+		)
 	)
 	assert_almost_eq(buffed.atk, bare.atk + 200.0, 0.0001, "攻击力 +200 点")
 	assert_almost_eq(buffed.def, bare.def + 10.0, 0.0001, "防御 +10 点")
@@ -110,9 +104,7 @@ func test_the_rate_words_multiply_after_the_flat_ones() -> void:
 	# 而那不是人会预期的叠加方式。
 	var unit := _someone()
 	var bare := unit.stats(_cfg)
-	var buffed := unit.stats(
-		_cfg, {PBStatRules.MAX_HP: 1000.0, PBStatRules.HP_BONUS: 0.5}
-	)
+	var buffed := unit.stats(_cfg, {PBStatRules.MAX_HP: 1000.0, PBStatRules.HP_BONUS: 0.5})
 	assert_almost_eq(buffed.hp, (bare.hp + 1000.0) * 1.5, 0.01, "先加点数，再乘成数")
 
 	var faster := unit.stats(_cfg, {PBStatRules.ATTACK_SPEED: 1.0})
@@ -136,17 +128,13 @@ func test_the_attack_word_is_multiplied_by_the_element_counter() -> void:
 	assert_gt(_cfg.damage_multiplier(rel), 1.0, "该找得到一波他吃加成的")
 	var plain := unit.effective_attack(wave, _cfg)
 	var armed := unit.effective_attack(wave, _cfg, mods)
-	assert_almost_eq(
-		armed - plain, 100.0 * _cfg.damage_multiplier(rel), 0.01, "那 100 点也要乘克制倍率"
-	)
+	assert_almost_eq(armed - plain, 100.0 * _cfg.damage_multiplier(rel), 0.01, "那 100 点也要乘克制倍率")
 
 
 func test_collect_adds_up_instead_of_overwriting() -> void:
 	# 两组羁绊各给 +15 点防御该是 +30。覆盖的表现是玩家凑满两组
 	# 只拿到一组的量，而那不报错（同 [PBBuffBag] 同 id 整份覆盖那个坑）。
-	var got := PBStatRules.collect(
-		[{PBStatRules.DEFENCE: 15.0}, {PBStatRules.DEFENCE: 15.0}]
-	)
+	var got := PBStatRules.collect([{PBStatRules.DEFENCE: 15.0}, {PBStatRules.DEFENCE: 15.0}])
 	assert_almost_eq(PBStatRules.amount(got, PBStatRules.DEFENCE), 30.0, 0.0001, "该相加")
 
 

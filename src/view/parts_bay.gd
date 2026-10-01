@@ -51,12 +51,17 @@ func _ready() -> void:
 	# 那个格子还不存在（它正挂在人身上）。
 	var drop := PBDropArea.new()
 	drop.cover(rect, PBUnitTile.ZONE_STASH)
-	drop.item_dropped.connect(func(_from: StringName, id: StringName) -> void: item_returned.emit(id))
+	drop.item_dropped.connect(
+		func(_from: StringName, id: StringName) -> void: item_returned.emit(id)
+	)
 	add_child(drop)
 
 	_title = PBSkin.label(
-		self, rect.position + Vector2(PAD, 0.0), rect.size.x - PAD * 2.0,
-		PBSkin.FONT_BODY, PBSkin.TITLE
+		self,
+		rect.position + Vector2(PAD, 0.0),
+		rect.size.x - PAD * 2.0,
+		PBSkin.FONT_BODY,
+		PBSkin.TITLE
 	)
 
 	# 裁剪区：滚出去的那几行必须真的看不见，否则会漫到 F 和 H 上面。
@@ -121,8 +126,7 @@ func _place(slot: int, index: int, base: int) -> void:
 	var tile: PBItemTile = _tiles[slot]
 	tile.visible = true
 	tile.position = Vector2(
-		float(index % _columns) * PITCH,
-		float(base + index / _columns - _row_offset) * PITCH
+		float(index % _columns) * PITCH, float(base + index / _columns - _row_offset) * PITCH
 	)
 
 

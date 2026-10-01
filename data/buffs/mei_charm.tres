@@ -13,3 +13,4 @@ duration_seconds = 3.0
 mods = {
 &"enemy_attack_speed_scale": 0.35
 }
+duration_levels = PackedFloat32Array()

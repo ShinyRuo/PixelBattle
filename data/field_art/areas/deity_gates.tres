@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/deity_gates/frame_0.png" id="1_rvf5o"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/deity_gates/frame_1.png" id="2_v8h2q"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/deity_gates/frame_2.png" id="3_f30dn"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/deity_gates/frame_3.png" id="4_fw75t"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/deity_gates/frame_4.png" id="5_wbeic"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/areas/deity_gates/frame_5.png" id="6_aytfl"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_xijri"]
+
+[resource]
+script = ExtResource("7_xijri")
+frames = Array[Texture2D]([ExtResource("1_rvf5o"), ExtResource("2_v8h2q"), ExtResource("3_f30dn"), ExtResource("4_fw75t"), ExtResource("5_wbeic"), ExtResource("6_aytfl")])
+fps = 6.0

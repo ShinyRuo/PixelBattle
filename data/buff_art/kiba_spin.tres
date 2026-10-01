@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kiba_spin/front_0.png" id="1_ttgow"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kiba_spin/front_1.png" id="2_la0dr"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kiba_spin/front_2.png" id="3_ekfna"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kiba_spin/front_3.png" id="4_a7ajt"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kiba_spin/front_4.png" id="5_5mgtg"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/kiba_spin/front_5.png" id="6_hwcug"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_uxt3v"]
+
+[resource]
+script = ExtResource("7_uxt3v")
+front_frames = Array[Texture2D]([ExtResource("1_ttgow"), ExtResource("2_la0dr"), ExtResource("3_ekfna"), ExtResource("4_a7ajt"), ExtResource("5_5mgtg"), ExtResource("6_hwcug")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

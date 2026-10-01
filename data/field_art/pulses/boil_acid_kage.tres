@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://clw3bcg6rtaps"]
+
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://dto2ojqr5mrf4" path="res://assets/fx/fields/pulses/boil_acid_kage/frame_0.png" id="1_5s58u"]
+[ext_resource type="Texture2D" uid="uid://bmfk6iplc3t4j" path="res://assets/fx/fields/pulses/boil_acid_kage/frame_1.png" id="2_s4fxi"]
+[ext_resource type="Texture2D" uid="uid://b3fdfqvq3bvvm" path="res://assets/fx/fields/pulses/boil_acid_kage/frame_2.png" id="3_qrvq3"]
+[ext_resource type="Texture2D" uid="uid://jmqidwr77lh1" path="res://assets/fx/fields/pulses/boil_acid_kage/frame_3.png" id="4_37wtl"]
+[ext_resource type="Texture2D" uid="uid://cii17n6cldr1q" path="res://assets/fx/fields/pulses/boil_acid_kage/frame_4.png" id="5_nm3ey"]
+[ext_resource type="Texture2D" uid="uid://dapnrnc8vekm4" path="res://assets/fx/fields/pulses/boil_acid_kage/frame_5.png" id="6_tlus7"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_5s58u"), ExtResource("2_s4fxi"), ExtResource("3_qrvq3"), ExtResource("4_37wtl"), ExtResource("5_nm3ey"), ExtResource("6_tlus7")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_boil_acid_kage_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

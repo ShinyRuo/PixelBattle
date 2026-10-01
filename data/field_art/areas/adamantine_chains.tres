@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://bwh6drwdsp8b3"]
+
+[ext_resource type="Texture2D" uid="uid://luq8q6rfbvs6" path="res://assets/fx/fields/areas/adamantine_chains/frame_0.png" id="1_lrokt"]
+[ext_resource type="Texture2D" uid="uid://m1g6na31q3md" path="res://assets/fx/fields/areas/adamantine_chains/frame_1.png" id="2_13qs5"]
+[ext_resource type="Texture2D" uid="uid://dlhgqstirctaa" path="res://assets/fx/fields/areas/adamantine_chains/frame_2.png" id="3_fw3sy"]
+[ext_resource type="Texture2D" uid="uid://b17n5ico4bguw" path="res://assets/fx/fields/areas/adamantine_chains/frame_3.png" id="4_xnwst"]
+[ext_resource type="Texture2D" uid="uid://2fim161p242m" path="res://assets/fx/fields/areas/adamantine_chains/frame_4.png" id="5_2ap54"]
+[ext_resource type="Texture2D" uid="uid://is2pfcm3b4a" path="res://assets/fx/fields/areas/adamantine_chains/frame_5.png" id="6_ds7v3"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_s3vf0"]
+
+[resource]
+script = ExtResource("7_s3vf0")
+frames = Array[Texture2D]([ExtResource("1_lrokt"), ExtResource("2_13qs5"), ExtResource("3_fw3sy"), ExtResource("4_xnwst"), ExtResource("5_2ap54"), ExtResource("6_ds7v3")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_adamantine_chains_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

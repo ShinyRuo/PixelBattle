@@ -70,12 +70,17 @@ func poll(
 			continue
 		_pending[slot] += maxf(lost, 0.0)
 		var crit: bool = crit_slots.has(slot)
-		out.append({
-			"slot": slot,
-			"shown": _take(slot, enemy, died or crit),
-			"killed": died,
-			"crit": crit,
-		})
+		(
+			out
+			. append(
+				{
+					"slot": slot,
+					"shown": _take(slot, enemy, died or crit),
+					"killed": died,
+					"crit": crit,
+				}
+			)
+		)
 	_ready = true
 	return out
 

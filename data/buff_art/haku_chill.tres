@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/haku_chill/front_0.png" id="1_gx315"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/haku_chill/front_1.png" id="2_13kux"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/haku_chill/front_2.png" id="3_j8tkc"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/haku_chill/front_3.png" id="4_r4nyp"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/haku_chill/front_4.png" id="5_ctafn"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/haku_chill/front_5.png" id="6_q7oih"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_151no"]
+
+[resource]
+script = ExtResource("7_151no")
+front_frames = Array[Texture2D]([ExtResource("1_gx315"), ExtResource("2_13kux"), ExtResource("3_j8tkc"), ExtResource("4_r4nyp"), ExtResource("5_ctafn"), ExtResource("6_q7oih")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

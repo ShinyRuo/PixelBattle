@@ -70,7 +70,7 @@ const BOND_CRIT_DAMAGE: float = 0.5
 static func attack_kind(unit: PBAttacker) -> PBDamageKind.Type:
 	if unit != null and unit.attack_ninjutsu > 0.0:
 		return PBDamageKind.Type.NINJUTSU
-	return PBDamageKind.Type.PHYSICAL
+	return PBDamageKind.Type.TAIJUTSU
 
 
 ## 这个单位这一刻 [param kind] 那一类的暴击率。常驻 + 临时（临时那一份只有体术），钳在 0~1。
@@ -79,7 +79,7 @@ static func attack_kind(unit: PBAttacker) -> PBDamageKind.Type:
 ## 而 `randf() < 1.2` 恒为真 —— 那时暴击率这个数就没有意义了，
 ## 而屏幕上只表现为「怎么每一下都是黄的」。
 static func chance_of(
-	unit: PBAttacker, at_tick: int, kind: PBDamageKind.Type = PBDamageKind.Type.PHYSICAL
+	unit: PBAttacker, at_tick: int, kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU
 ) -> float:
 	if unit == null:
 		return 0.0
@@ -91,7 +91,7 @@ static func chance_of(
 
 ## 暴击时打几倍。基础 + 常驻加成 + 临时加成（临时那一份只有体术），**全是加法**。
 static func multiplier_of(
-	unit: PBAttacker, at_tick: int, kind: PBDamageKind.Type = PBDamageKind.Type.PHYSICAL
+	unit: PBAttacker, at_tick: int, kind: PBDamageKind.Type = PBDamageKind.Type.TAIJUTSU
 ) -> float:
 	if kind == PBDamageKind.Type.NINJUTSU:
 		var extra: float = 0.0 if unit == null else unit.ninjutsu_crit_bonus
@@ -106,15 +106,12 @@ static func multiplier_of(
 ##
 ## [param rng] 为 null 时（批量扫描、探测、老的构造点）恒不暴击且**不掷骰**。
 ## 暴击率为 0 时同理 —— 见本类顶部那条「一次都不掷」。
-## 忍术普攻多乘一份忍术增伤（[member PBAttacker.ninjutsu_bonus]）；体术那一份（`damage_bonus`）已经在
-## [method PBAttacker.strike_for] 里面。
-static func strike(
-	unit: PBAttacker, at_tick: int, rng: RandomNumberGenerator = null
-) -> Dictionary:
+## 先取相应属性基数与普攻专用加成，再乘通用与对应类型的增伤。
+## `damage_bonus` 仅表示普攻增伤，不能当作体术增伤。
+static func strike(unit: PBAttacker, at_tick: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var kind := attack_kind(unit)
 	var damage: float = unit.strike_for(at_tick)
-	if kind == PBDamageKind.Type.NINJUTSU:
-		damage *= 1.0 + maxf(unit.ninjutsu_bonus, -1.0)
+	damage *= bonus_scale(unit, kind)
 	return _roll(unit, damage, kind, at_tick, rng)
 
 
@@ -128,9 +125,54 @@ static func hit(
 	rng: RandomNumberGenerator = null
 ) -> Dictionary:
 	var damage: float = raw
-	if unit != null and kind == PBDamageKind.Type.NINJUTSU:
-		damage *= 1.0 + maxf(unit.ninjutsu_bonus, -1.0)
+	damage *= bonus_scale(unit, kind)
 	return _roll(unit, damage, kind, at_tick, rng)
+
+
+## 敌人普攻在近战 / 子弹分岔前只掷一次；子弹保存结果，飞行途中不重新读取暴击 BUFF。
+static func enemy_strike(
+	unit: PBEnemy, at_tick: int, rng: RandomNumberGenerator = null
+) -> Dictionary:
+	var kind: PBDamageKind.Type = unit.damage_kind
+	var raw: float = unit.damage_per_shot
+	if kind == PBDamageKind.Type.NINJUTSU:
+		raw = maxf(unit.intellect, 0.0) * maxf(unit.ninjutsu_coefficient, 0.0)
+	return enemy_hit(unit, raw, kind, at_tick, rng)
+
+
+## 敌方技能与普攻共用分型增伤、暴击；主动技能显式传入自己的基数和类型。
+static func enemy_hit(
+	unit: PBEnemy,
+	raw: float,
+	kind: PBDamageKind.Type,
+	at_tick: int,
+	rng: RandomNumberGenerator = null
+) -> Dictionary:
+	var chance: float = unit.ninjutsu_crit_chance
+	var bonus: float = unit.ninjutsu_crit_bonus
+	var scale: float = unit.ninjutsu_bonus
+	if kind == PBDamageKind.Type.TAIJUTSU:
+		chance = unit.crit_chance + unit.buffs.amount(PBBuffRules.CRIT_CHANCE, at_tick)
+		bonus = unit.crit_bonus + unit.buffs.amount(PBBuffRules.CRIT_DAMAGE, at_tick)
+		scale = unit.taijutsu_bonus
+	var crit: bool = rng != null and chance > 0.0 and rng.randf() < clampf(chance, 0.0, 1.0)
+	var damage: float = raw * maxf(1.0 + scale, 0.0)
+	damage *= maxf(1.0 + unit.all_damage_bonus, 0.0)
+	if crit:
+		var extra: float = (
+			NINJUTSU_CRIT_BASE if kind == PBDamageKind.Type.NINJUTSU else CRIT_DAMAGE_BASE
+		)
+		damage *= 1.0 + maxf(extra + bonus, 0.0)
+	return {DAMAGE: damage, CRIT: crit, KIND: kind}
+
+
+static func bonus_scale(unit: PBAttacker, kind: PBDamageKind.Type) -> float:
+	if unit == null:
+		return 1.0
+	var typed: float = (
+		unit.ninjutsu_bonus if kind == PBDamageKind.Type.NINJUTSU else unit.taijutsu_bonus
+	)
+	return maxf(1.0 + unit.all_damage_bonus, 0.0) * maxf(1.0 + typed, 0.0)
 
 
 static func _roll(
@@ -141,6 +183,6 @@ static func _roll(
 	rng: RandomNumberGenerator
 ) -> Dictionary:
 	var chance: float = chance_of(unit, at_tick, kind)
-	if rng == null or chance <= 0.0 or rng.randf() >= chance:
+	if damage <= 0.0 or rng == null or chance <= 0.0 or rng.randf() >= chance:
 		return {DAMAGE: damage, CRIT: false, KIND: kind}
 	return {DAMAGE: damage * multiplier_of(unit, at_tick, kind), CRIT: true, KIND: kind}

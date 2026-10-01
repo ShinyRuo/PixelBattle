@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/shadow_hold/frame_0.png" id="1_w05o5"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/shadow_hold/frame_1.png" id="2_3jip2"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/shadow_hold/frame_2.png" id="3_7q6ff"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/shadow_hold/frame_3.png" id="4_r43yn"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/shadow_hold/frame_4.png" id="5_qg06v"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/shadow_hold/frame_5.png" id="6_qr12t"]
+
+[resource]
+script = ExtResource("1")
+frames = Array[Texture2D]([ExtResource("1_w05o5"), ExtResource("2_3jip2"), ExtResource("3_7q6ff"), ExtResource("4_r43yn"), ExtResource("5_qg06v"), ExtResource("6_qr12t")])
+fps = 8.0
+link_width = 42.0
+metadata/sheet = {
+"background": 3,
+"center": true,
+"columns": 2.0,
+"count": 2.0,
+"floor": 0.93,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/​skill_shadow_bind_link​.png",
+"rows": 2.0,
+"size": 256.0
+}

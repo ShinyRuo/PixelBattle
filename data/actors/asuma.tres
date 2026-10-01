@@ -1,32 +1,44 @@
-[gd_resource type="Resource" script_class="PBActorSkin" format=3 uid="uid://cqlmlgbeui1us"]
+[gd_resource type="Resource" script_class="PBActorSkin" format=3]
 
-[ext_resource type="Texture2D" uid="uid://cju0wxg4fab2o" path="res://assets/actors/asuma/attack_0.png" id="1_w0wxj"]
-[ext_resource type="Texture2D" uid="uid://dxawfwjxexi7l" path="res://assets/actors/asuma/attack_1.png" id="2_63x03"]
-[ext_resource type="Texture2D" uid="uid://cx3an3l4x8t32" path="res://assets/actors/asuma/attack_2.png" id="3_j60tr"]
-[ext_resource type="Texture2D" uid="uid://bpk3au8s7pngq" path="res://assets/actors/asuma/attack_3.png" id="4_nlun6"]
-[ext_resource type="Texture2D" uid="uid://d021is5itglt5" path="res://assets/actors/asuma/attack_4.png" id="5_te5d6"]
-[ext_resource type="Texture2D" uid="uid://3fg6m7vie53l" path="res://assets/actors/asuma/attack_5.png" id="6_hr7fs"]
-[ext_resource type="Texture2D" uid="uid://bwb7dntnurk83" path="res://assets/actors/asuma/dead_0.png" id="7_bm4fj"]
-[ext_resource type="Texture2D" uid="uid://clhcmww724wf2" path="res://assets/actors/asuma/dead_1.png" id="8_gkm5p"]
-[ext_resource type="Texture2D" uid="uid://ceb640e81wa7" path="res://assets/actors/asuma/dead_2.png" id="9_85f3v"]
-[ext_resource type="Texture2D" uid="uid://dld428u1n7slg" path="res://assets/actors/asuma/dead_3.png" id="10_3tfo0"]
-[ext_resource type="Texture2D" uid="uid://c6pq28rkf1ysk" path="res://assets/actors/asuma/dead_4.png" id="11_m6j87"]
-[ext_resource type="Texture2D" uid="uid://bxhfy0rkdjh15" path="res://assets/actors/asuma/dead_5.png" id="12_im61j"]
-[ext_resource type="Texture2D" uid="uid://rh7cup78dlx8" path="res://assets/actors/asuma/idle_0.png" id="13_mkw5q"]
-[ext_resource type="Texture2D" uid="uid://djusbxg3e7dw1" path="res://assets/actors/asuma/idle_1.png" id="14_s5yqc"]
-[ext_resource type="Texture2D" uid="uid://dfuxddb0o6umf" path="res://assets/actors/asuma/idle_2.png" id="15_ayvt8"]
-[ext_resource type="Texture2D" uid="uid://dia3maclx2xwl" path="res://assets/actors/asuma/idle_3.png" id="16_r0d0g"]
-[ext_resource type="Texture2D" uid="uid://dsm7kyathb1kb" path="res://assets/actors/asuma/idle_4.png" id="17_tcfwx"]
-[ext_resource type="Texture2D" uid="uid://dccf3714ngxj6" path="res://assets/actors/asuma/idle_5.png" id="18_isgto"]
-[ext_resource type="Texture2D" uid="uid://cw2ue1jieode" path="res://assets/actors/asuma/run_0.png" id="19_752qn"]
-[ext_resource type="Texture2D" uid="uid://ufhq10hi0me0" path="res://assets/actors/asuma/run_1.png" id="20_c02v1"]
-[ext_resource type="Texture2D" uid="uid://ce27mt1uafehf" path="res://assets/actors/asuma/run_2.png" id="21_uilla"]
-[ext_resource type="Texture2D" uid="uid://chdcwji0qpcfo" path="res://assets/actors/asuma/run_3.png" id="22_trngx"]
-[ext_resource type="Texture2D" uid="uid://don85ummvexr7" path="res://assets/actors/asuma/run_4.png" id="23_uenuw"]
-[ext_resource type="Texture2D" uid="uid://bcqgytj06tmsi" path="res://assets/actors/asuma/run_5.png" id="24_gqjc8"]
-[ext_resource type="Script" uid="uid://bw0pt02pm8j3c" path="res://src/view/actor_skin.gd" id="25_s1obn"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/attack_0.png" id="1_w0wxj"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/attack_1.png" id="2_63x03"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/attack_2.png" id="3_j60tr"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/attack_3.png" id="4_nlun6"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/attack_4.png" id="5_te5d6"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/attack_5.png" id="6_hr7fs"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/dead_0.png" id="7_bm4fj"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/cast_ash_burn_00.png" id="7_mkw5q"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/dead_1.png" id="8_gkm5p"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/cast_ash_burn_01.png" id="8_s5yqc"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/dead_2.png" id="9_85f3v"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/cast_ash_burn_02.png" id="9_ayvt8"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/dead_3.png" id="10_3tfo0"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/cast_ash_burn_03.png" id="10_r0d0g"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/dead_4.png" id="11_m6j87"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/cast_ash_burn_04.png" id="11_tcfwx"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/dead_5.png" id="12_im61j"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/cast_ash_burn_05.png" id="12_isgto"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/idle_0.png" id="13_mkw5q"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/idle_1.png" id="14_s5yqc"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/idle_2.png" id="15_ayvt8"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/idle_3.png" id="16_r0d0g"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/idle_4.png" id="17_tcfwx"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/idle_5.png" id="18_isgto"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/run_0.png" id="19_752qn"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/run_1.png" id="20_c02v1"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/run_2.png" id="21_uilla"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/run_3.png" id="22_trngx"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/run_4.png" id="23_uenuw"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/run_5.png" id="24_gqjc8"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/skill1_0.png" id="25_bm4fj"]
+[ext_resource type="Script" path="res://src/view/actor_skin.gd" id="25_s1obn"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/skill1_1.png" id="26_gkm5p"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/skill1_2.png" id="27_85f3v"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/skill1_3.png" id="28_3tfo0"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/skill1_4.png" id="29_m6j87"]
+[ext_resource type="Texture2D" path="res://assets/actors/asuma/skill1_5.png" id="30_im61j"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_eouuy"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_752qn"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -50,6 +62,29 @@ animations = [{
 "loop": 0,
 "name": &"attack",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_mkw5q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_s5yqc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ayvt8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_r0d0g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_tcfwx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_isgto")
+}],
+"loop": 0,
+"name": &"cast_ash_burn",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -119,12 +154,38 @@ animations = [{
 "loop": 1,
 "name": &"run",
 "speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("25_bm4fj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_gkm5p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_85f3v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_3tfo0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_m6j87")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_im61j")
+}],
+"loop": 0,
+"name": &"skill1",
+"speed": 10.0
 }]
 
 [resource]
 script = ExtResource("25_s1obn")
 key = &"asuma"
-frames = SubResource("SpriteFrames_eouuy")
+frames = SubResource("SpriteFrames_752qn")
+skill_anims = {
+&"ash_burn": &"cast_ash_burn"
+}
 pixel_scale = 0.3333333333333333
 smooth = true
 height_px = 180.0

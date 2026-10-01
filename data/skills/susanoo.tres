@@ -5,25 +5,46 @@
 
 [sub_resource type="Resource" id="Resource_b8f7d"]
 script = ExtResource("1_sxb4a")
+id = &"madara_shock"
+name_key = "buff.madara_shock"
+icon_key = "buff.madara_shock"
+kind = 1
+friendly = false
+duration_seconds = 1.0
+mods = {
+&"enemy_speed_scale": 0.0,
+&"stun": 1.0
+}
+duration_levels = PackedFloat32Array(1, 1, 1.5, 1.5, 1.5, 2, 2, 2, 2, 2.5)
+
+[sub_resource type="Resource" id="Resource_lqdlq"]
+script = ExtResource("1_sxb4a")
 id = &"madara_susanoo"
 name_key = "buff.madara_susanoo"
 icon_key = "buff.madara_susanoo"
 kind = 1
-duration_seconds = 3.0
+duration_seconds = 2.0
 mods = {
-&"damage_taken": 0.5
+&"defence": 10.0,
+&"ninjutsu_resist": 0.4
 }
+mods_growth = {
+&"defence": 10.0
+}
+duration_levels = PackedFloat32Array(2, 2, 3, 3, 3, 4, 4, 5, 5, 6)
 
 [resource]
 script = ExtResource("2_5gqyi")
 target = 0
 id = &"susanoo"
 name_key = "skill.susanoo"
-on_self = Array[ExtResource("1_sxb4a")]([SubResource("Resource_b8f7d")])
+on_hit = Array[ExtResource("1_sxb4a")]([SubResource("Resource_b8f7d")])
+variant_id = &"susanoo_perfect"
+on_self = Array[ExtResource("1_sxb4a")]([SubResource("Resource_lqdlq")])
 element = 0
-power_mult = 2.2
 radius = 0.15
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 360
-slow_scale = 0.0
-slow_ticks = 30
 mp_cost = 13.0
+mp_cost_levels = PackedFloat32Array(13, 16, 19, 22, 27, 32, 37, 42, 47, 52)

@@ -10,5 +10,6 @@ icon_key = "buff.tobirama_wall"
 kind = 1
 duration_seconds = 3.0
 mods = {
-&"damage_taken": 0.4
+&"defence": 500.0
 }
+duration_levels = PackedFloat32Array()

@@ -126,9 +126,9 @@ tobirama	千手扉间	SR	近战	水	水	敏捷	26	30	18	26.0	30.0	18.0	1.5	-	-	-
 hiruzen	猿飞日斩	SR	远程	土	火	智力	21	15	32	21.5	15.0	32.5	1.5	-	-	shoulijian	600
 tsunade	纲手	SR	近战	水	火	力量	31	25	14	31.5	24.0	14.0	1.5	-	low_hp=0.25;on_low_hp=tsunade_byakugou;on_low_hp=tsunade_guard	-	125
 jiraiya	自来也	SR	近战	火	土	力量	35	20	14	34.5	20.0	14.0	1.5	-	defence=20;melee_reflect=0.20;melee_taken=-0.15	-	125
-kisame	干柿鬼鲛	SR	近战	水	水	力量	30	22	13	30.0	22.0	13.0	1.5	-	crit_chance=0.20	-	125
+kisame	干柿鬼鲛	SR	近战	水	水	力量	30	22	13	30.0	22.0	13.0	1.5	-	-	-	125
 konan	小南	SR	远程	水	土	敏捷	21	33	12	21.0	33.0	12.0	1.5	-	pierce=500	shoulijian_zhi	800
-sasori	蝎	SR	远程	风	风	敏捷	22	30	15	22.0	32.0	15.0	1.5	-	on_attack=sasori_venom	dingzhi	600
+sasori	蝎	SR	远程	风	风	敏捷	22	30	15	22.0	32.0	15.0	1.5	-	on_attack=sasori_venom;on_attack=sasori_poison	dingzhi	600
 deidara	迪达拉	SR	远程	土	土	智力	22	15	33	21.0	15.0	33.0	1.5	-	splash=0.5;splash_radius=275	gezi	600
 hidan	飞段	SR	近战	物理	物理	力量	34	18	12	34.0	18.0	12.0	1.5	-	splash=0.35;splash_radius=250;reflect=0.25;on_lethal=hidan_undying	-	245
 kakuzu	角都	SR	近战	雷	雷	力量	32	21	12	32.5	20.0	12.0	1.5	-	-	-	125
@@ -146,7 +146,7 @@ killer_bee	奇拉比	SR	近战	雷	水	敏捷	27	33	15	27.0	33.0	15.0	1.5	bee	cr
 kurenai	夕日红	SR	远程	火	火	智力	23	19	33	22.5	19.0	33.0	1.5	-	-	floweball	600
 danzo	志村团藏	SR	远程	火	风	敏捷	21	31	18	21.0	31.0	18.0	1.5	-	on_lethal=danzo_izanagi;on_lethal=danzo_blur	windball	600
 kankuro	勘九郎	SR	远程	雷	土	敏捷	22	30	15	22.0	30.0	15.0	1.5	-	-	qianben	600
-kurotsuchi	黑土	SR	远程	水	土	敏捷	22	33	15	22.0	33.0	15.0	1.5	-	attack_speed=0.30;move_speed_bonus=0.15	rockarrow	600
+kurotsuchi	黑土	SR	远程	水	土	敏捷	22	33	15	22.0	33.0	15.0	1.5	-	-	rockarrow	600
 shino	油女志乃	SR	远程	土	土	智力	21	15	32	21.5	15.0	32.5	1.5	-	damage_bonus=0.26	bugsball	600
 
 itachi	宇智波鼬	SSR	远程	火	火	智力	22	18	37	22.5	18.0	37.0	1.5	-	attack_ninjutsu=1;ninjutsu_crit_chance=0.15	-	600
@@ -155,7 +155,7 @@ madara	宇智波斑	SSR	近战	火	火	力量	36	23	14	35.0	23.0	14.0	1.5	-	crit
 hashirama	千手柱间	SSR	近战	土	水	力量	38	18	18	38.0	18.0	18.0	1.5	-	regen_max=0.02	-	125
 tendo	天道佩恩	SSR	近战	仙	物理	敏捷	27	34	15	26.5	34.5	15.0	1.5	-	crit_chance=0.15;dodge=0.22	-	125
 kabuto	仙人兜	SSR	远程	仙	物理	智力	22	18	36	22.5	18.0	36.0	1.5	-	-	-	600
-minato	波风水门	SSR	近战	水	风	敏捷	27	35	17	26.0	35.0	17.0	1.45	-	crit_chance=0.17;crit_damage=1.0;attack_speed=0.75;move_speed_bonus=0.75	-	125
+minato	波风水门	SSR	近战	水	风	敏捷	27	35	17	26.0	35.0	17.0	1.45	-	attack_speed=0.75;move_speed_bonus=0.75	-	125
 naruto_sage	仙人鸣人	SSR	近战	风	风	敏捷	27	36	17	28.0	35.5	16.0	1.45	-	dodge=0.20;dodge_counter=0.35	-	125
 raikage	艾（雷影）	SSR	近战	雷	雷	力量	38	23	15	38.0	23.0	15.0	1.5	-	wind_taken=-0.55;on_struck=raikage_blade;on_struck=raikage_blade_guard;struck_cd=10;struck_ranged=1;struck_leap=1	-	125
 shisui	宇智波止水	SSR	近战	火	火	敏捷	26	37	15	25.5	37.0	15.0	1.5	-	-	-	125

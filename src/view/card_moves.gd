@@ -22,8 +22,12 @@ const NO_SPOT := Vector2(-1.0, -1.0)
 ## 出战席满了就**什么都不做** —— 挤掉一个已经在场的人是玩家没要求过的事，
 ## 而他不会知道被挤掉的是谁。
 static func set_on_field(
-	state: PBRunState, strategy: PBStrategy, plan: PBWavePlan, unit: PBUnit,
-	on_field: bool, cfg: PBSimConfig
+	state: PBRunState,
+	strategy: PBStrategy,
+	plan: PBWavePlan,
+	unit: PBUnit,
+	on_field: bool,
+	cfg: PBSimConfig
 ) -> void:
 	if unit == null:
 		return

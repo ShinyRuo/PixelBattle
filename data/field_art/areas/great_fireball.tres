@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3 uid="uid://cl7duugmo5ib5"]
+
+[ext_resource type="Texture2D" uid="uid://bbe2pqskj114h" path="res://assets/fx/fields/areas/great_fireball/frame_0.png" id="1_8m41s"]
+[ext_resource type="Texture2D" uid="uid://c8mkudoggyi43" path="res://assets/fx/fields/areas/great_fireball/frame_1.png" id="2_07anf"]
+[ext_resource type="Texture2D" uid="uid://smqrtfbsqf7c" path="res://assets/fx/fields/areas/great_fireball/frame_2.png" id="3_p672x"]
+[ext_resource type="Texture2D" uid="uid://bcqryh4fwbs8y" path="res://assets/fx/fields/areas/great_fireball/frame_3.png" id="4_wbld1"]
+[ext_resource type="Texture2D" uid="uid://cyr1og0oyyn0g" path="res://assets/fx/fields/areas/great_fireball/frame_4.png" id="5_eb306"]
+[ext_resource type="Texture2D" uid="uid://cy5atnpyoxpem" path="res://assets/fx/fields/areas/great_fireball/frame_5.png" id="6_y3qok"]
+[ext_resource type="Script" uid="uid://cetbq85xiumy4" path="res://src/view/field_skin.gd" id="7_xiyab"]
+
+[resource]
+script = ExtResource("7_xiyab")
+frames = Array[Texture2D]([ExtResource("1_8m41s"), ExtResource("2_07anf"), ExtResource("3_p672x"), ExtResource("4_wbld1"), ExtResource("5_eb306"), ExtResource("6_y3qok")])
+fps = 6.0
+metadata/sheet = {
+"background": 0,
+"center": true,
+"columns": 3.0,
+"count": 6.0,
+"floor": 0.9299999999999999,
+"gap": 12.0,
+"layout": 0,
+"path": "res://aires/skills/skill_great_fireball_area_v1.png",
+"rows": 2.0,
+"size": 384.0
+}

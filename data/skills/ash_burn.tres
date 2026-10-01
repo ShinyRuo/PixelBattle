@@ -14,6 +14,7 @@ duration_seconds = 2.5
 mods = {
 &"enemy_hit_scale": 0.0
 }
+duration_levels = PackedFloat32Array()
 
 [resource]
 script = ExtResource("2_qcu2e")
@@ -21,8 +22,12 @@ id = &"ash_burn"
 name_key = "skill.ash_burn"
 on_hit = Array[ExtResource("1_0t01e")]([SubResource("Resource_eh53r")])
 element = 0
-power_mult = 2.4
+power_mult = 3.0
+damage_stat = &"agility"
 radius = 0.15
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
 cooldown_ticks = 320
 delay_ticks = 8
 mp_cost = 10.0
+mp_cost_levels = PackedFloat32Array()

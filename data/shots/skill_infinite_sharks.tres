@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="PBShotSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/skill_infinite_sharks/fly_0.png" id="1_eeqpc"]
+[ext_resource type="Texture2D" path="res://assets/fx/skill_infinite_sharks/fly_1.png" id="2_gi2sc"]
+[ext_resource type="Texture2D" path="res://assets/fx/skill_infinite_sharks/fly_2.png" id="3_uc1nk"]
+[ext_resource type="Script" path="res://src/view/shot_skin.gd" id="4_fmw57"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_5rtqf"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_eeqpc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_gi2sc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_uc1nk")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 12.0
+}]
+
+[resource]
+script = ExtResource("4_fmw57")
+key = &"skill_infinite_sharks"
+frames = SubResource("SpriteFrames_5rtqf")
+pixel_scale = 0.3333333333333333
+smooth = true
+tint_by_side = false
+additive_fly = true
+additive_hit = true

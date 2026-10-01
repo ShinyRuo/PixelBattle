@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zabuza_mist/front_0.png" id="1_d2mgv"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zabuza_mist/front_1.png" id="2_smfik"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zabuza_mist/front_2.png" id="3_va2dx"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zabuza_mist/front_3.png" id="4_f88hd"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zabuza_mist/front_4.png" id="5_0e1lh"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/zabuza_mist/front_5.png" id="6_m1ydx"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_dtmmp"]
+
+[resource]
+script = ExtResource("7_dtmmp")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_d2mgv"), ExtResource("2_smfik"), ExtResource("3_va2dx"), ExtResource("4_f88hd"), ExtResource("5_0e1lh"), ExtResource("6_m1ydx")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

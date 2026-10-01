@@ -101,7 +101,9 @@ func test_the_valuation_path_still_gets_a_straight_answer() -> void:
 	PBShopRules.toggle_dispatch(state, pool[0], 2, _cfg)
 	PBShopRules.toggle_dispatch(state, pool[1], 2, _cfg)
 	for count: int in [1, 3, 4]:
-		assert_eq(state.dispatch_picks(_cfg, count).size(), count, "问派 %d 个就该答 %d 个" % [count, count])
+		assert_eq(
+			state.dispatch_picks(_cfg, count).size(), count, "问派 %d 个就该答 %d 个" % [count, count]
+		)
 
 
 func test_who_still_counts_is_always_the_complement() -> void:

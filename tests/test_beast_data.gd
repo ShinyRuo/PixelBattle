@@ -41,10 +41,7 @@ func test_every_beast_does_something() -> void:
 		# 「光环是不是活的」收在 [method _has_aura] 一处（M12-e2）——
 		# 这个文件里有两条断言要问同一件事，各写一份的话
 		# 加一种光环字段时只会更新其中一条，而漏掉的那条继续绿着。
-		assert_true(
-			_has_aura(beast) or beast.has_ultimate(),
-			"%s 至少要有光环或大招其中一半是活的" % beast.id
-		)
+		assert_true(_has_aura(beast) or beast.has_ultimate(), "%s 至少要有光环或大招其中一半是活的" % beast.id)
 
 
 func test_the_two_mechanism_beasts_are_really_mechanism_beasts() -> void:
@@ -95,9 +92,7 @@ func test_the_defensive_aura_is_not_quietly_paid_out_as_damage() -> void:
 	)
 	assert_not_null(defensive, "该有一只带全体防御光环的（§11 的一尾）")
 	assert_eq(defensive.aura_power, 0.0, "防御光环不该被折算成伤害加成")
-	assert_false(
-		defensive.aura_passives.has(PBPassiveRules.DAMAGE_BONUS), "也不该顺手补一笔增伤"
-	)
+	assert_false(defensive.aura_passives.has(PBPassiveRules.DAMAGE_BONUS), "也不该顺手补一笔增伤")
 	assert_true(defensive.has_ultimate(), "但它的另一半（全屏减速）必须是活的，否则整只是废的")
 
 
@@ -172,9 +167,7 @@ func test_the_running_game_installs_the_real_beast_table() -> void:
 
 func test_no_beast_name_leaks_into_src() -> void:
 	# §14 铁律 5：代码里不出现尾兽名，一律走 id + name_key。
-	var names: Array[String] = [
-		"守鹤", "又旅", "矶抚", "孙悟空", "穆王", "犀犬", "重明", "牛鬼", "九喇嘛"
-	]
+	var names: Array[String] = ["守鹤", "又旅", "矶抚", "孙悟空", "穆王", "犀犬", "重明", "牛鬼", "九喇嘛"]
 	for path: String in _gd_files("res://src"):
 		var text := FileAccess.get_file_as_string(path)
 		for beast_name: String in names:

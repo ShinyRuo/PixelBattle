@@ -10,8 +10,9 @@ icon_key = "buff.kurenai_shield"
 kind = 1
 duration_seconds = 9.0
 mods = {
-&"shield": 800.0
+&"ninjutsu_shield": 800.0
 }
 mods_growth = {
-&"shield": 800.0
+&"ninjutsu_shield": 800.0
 }
+duration_levels = PackedFloat32Array()

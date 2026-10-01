@@ -204,9 +204,7 @@ func _aim_at() -> void:
 	if _aim != "attack" and _aim != "skill":
 		printerr("--aim 只认 attack / skill，收到：%s" % _aim)
 		return
-	_scene._on_command(
-		PBCommandCard.CMD_ATTACK if _aim == "attack" else PBCommandCard.CMD_SKILL_1
-	)
+	_scene._on_command(PBCommandCard.CMD_ATTACK if _aim == "attack" else PBCommandCard.CMD_SKILL_1)
 	Input.warp_mouse(PBLayout.B_FIELD.position + PBLayout.B_FIELD.size * Vector2(0.62, 0.45))
 
 

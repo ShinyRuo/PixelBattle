@@ -6,9 +6,7 @@
 script = ExtResource("1_8w0gl")
 id = &"divine_wound"
 name_key = "bond.divine_wound"
-match_mode = 0
 member_ids = Array[StringName]([&"konan", &"tendo"])
-match_element = 5
 tier_counts = Array[int]([2])
 tier_power = Array[float]([0.14])
 tier_function_keys = Array[StringName]([&"splash"])
@@ -21,4 +19,3 @@ member_functions = {
 &"lifesteal": 0.12
 }
 }
-member_skill_patches = {}

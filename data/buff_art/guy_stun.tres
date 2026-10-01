@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/guy_stun/front_0.png" id="1_7o7v1"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/guy_stun/front_1.png" id="2_enxdv"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/guy_stun/front_2.png" id="3_gsyca"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/guy_stun/front_3.png" id="4_r7yia"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/guy_stun/front_4.png" id="5_ktpfu"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/guy_stun/front_5.png" id="6_ex4q2"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_t6l03"]
+
+[resource]
+script = ExtResource("7_t6l03")
+front_frames = Array[Texture2D]([ExtResource("1_7o7v1"), ExtResource("2_enxdv"), ExtResource("3_gsyca"), ExtResource("4_r7yia"), ExtResource("5_ktpfu"), ExtResource("6_ex4q2")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

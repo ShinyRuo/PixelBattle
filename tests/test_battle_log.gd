@@ -121,7 +121,7 @@ func test_a_leak_says_how_much_the_base_took() -> void:
 	assert_almost_eq(total, sim.result().base_damage, 0.01, "记下来的伤害要和结算对得上")
 
 
-func test_casting_a_jutsu_is_announced_when_it_is_ordered() -> void:
+func test_casting_a_jutsu_is_announced_at_release() -> void:
 	# **下达那一刻记，不是落地那一刻**：玩家点下去就该看见回音，
 	# 而落地还隔着一整段施法延迟（§02 要的预判窗口）。
 	# 落点策略关掉：自动档会在开波第一 tick 替他放掉，那时这条断言
@@ -138,12 +138,12 @@ func test_casting_a_jutsu_is_announced_when_it_is_ordered() -> void:
 	assert_true(sim.cast_skill(squad[0], Vector2(0.5, 0.0)), "前提：这一发放得出去")
 	# 玩家下的令先攒一个 tick（M7-h，见 [PBSkillOrders]）——
 	# 播报记的是**出手**那一刻，而那一刻在下一个 tick 上。
-	sim.step()
+	PBCastTestClock.release(sim, squad[0])
 	var casts: int = 0
 	for entry: Dictionary in log.entries:
 		if entry["kind"] == PBBattleLog.Kind.ULTIMATE:
 			casts += 1
-	assert_eq(casts, 1, "下达就该记一条，不等落地")
+	assert_eq(casts, 1, "第 4 帧释放记一条，不等落地")
 
 
 func test_the_ring_buffer_drops_the_oldest_not_the_newest() -> void:
@@ -156,7 +156,5 @@ func test_the_ring_buffer_drops_the_oldest_not_the_newest() -> void:
 	assert_eq(log.entries.size(), PBBattleLog.CAP, "上限该钳住")
 	assert_eq(log.entries[0]["text"], "第 20 条", "丢的是最老的")
 	assert_eq(
-		log.entries[log.entries.size() - 1]["text"],
-		"第 %d 条" % (PBBattleLog.CAP + 19),
-		"最新的一条必须还在"
+		log.entries[log.entries.size() - 1]["text"], "第 %d 条" % (PBBattleLog.CAP + 19), "最新的一条必须还在"
 	)

@@ -31,7 +31,6 @@ func before_each() -> void:
 
 ## 造一只只有指定字段的尾兽。测试不读 `data/`，免得数据一调这里就红。
 
-
 # ── 常驻光环走被动词汇表（M12-e）─────────────
 
 
@@ -76,9 +75,7 @@ func _wave(index: int) -> PBWave:
 
 ## 把一只尾兽的大招摆到场上，全队普攻输出记为 [param team_dps]。
 func _sim_with(beast: PBBeast, wave: PBWave, team_dps: float) -> PBBattleSim:
-	var attacker := PBBeastRules.build_ultimate_attacker(
-		beast, 1, team_dps, wave.element, _cfg
-	)
+	var attacker := PBBeastRules.build_ultimate_attacker(beast, 1, team_dps, wave.element, _cfg)
 	var squad: Array[PBAttacker] = []
 	if attacker != null:
 		squad.append(attacker)
@@ -96,9 +93,7 @@ func test_no_beast_changes_nothing_at_all() -> void:
 		var with_table := PBRunSim.run(plain, PBStrategyRegistry.make(&"balanced"), run_seed)
 		var without := PBRunSim.run(control, PBStrategyRegistry.make(&"balanced"), run_seed)
 		assert_eq(
-			with_table.wave_reached,
-			without.wave_reached,
-			"种子 %d：没选尾兽时，装不装尾兽表都该跑出同一局" % run_seed
+			with_table.wave_reached, without.wave_reached, "种子 %d：没选尾兽时，装不装尾兽表都该跑出同一局" % run_seed
 		)
 		assert_eq(with_table.gold_earned, without.gold_earned, "收入也该逐位相同")
 
@@ -143,12 +138,8 @@ func test_the_aura_grows_with_the_level_but_the_mechanisms_do_not() -> void:
 	var a1 := PBBeastRules.build_ultimate_attacker(beast, 1, 1000.0, PBElement.Type.WIND, _cfg)
 	var a5 := PBBeastRules.build_ultimate_attacker(beast, 5, 1000.0, PBElement.Type.WIND, _cfg)
 	assert_gt(a5.ultimate.skill.damage, a1.ultimate.skill.damage, "伤害该随等级涨")
-	assert_lt(
-		a5.ultimate.skill.cooldown_ticks, a1.ultimate.skill.cooldown_ticks, "冷却该随等级缩短"
-	)
-	assert_eq(
-		a5.ultimate.skill.slow_scale, a1.ultimate.skill.slow_scale, "减速倍率**不该**随等级变强"
-	)
+	assert_lt(a5.ultimate.skill.cooldown_ticks, a1.ultimate.skill.cooldown_ticks, "冷却该随等级缩短")
+	assert_eq(a5.ultimate.skill.slow_scale, a1.ultimate.skill.slow_scale, "减速倍率**不该**随等级变强")
 
 
 func test_the_beast_ultimate_scales_with_the_team_not_with_itself() -> void:
@@ -198,9 +189,7 @@ func test_gathering_drags_the_pack_onto_the_landing_spot() -> void:
 		gathered.step()
 	assert_eq(_largest_stack(control.active_enemies()), 1, "不聚拢的话，任意两个敌人都不同位置")
 	assert_gte(
-		_largest_stack(gathered.active_enemies()),
-		_cfg.ultimate_min_targets,
-		"聚拢该把落点罩住的那几个拖到同一个点上"
+		_largest_stack(gathered.active_enemies()), _cfg.ultimate_min_targets, "聚拢该把落点罩住的那几个拖到同一个点上"
 	)
 
 
@@ -217,13 +206,10 @@ func test_resetting_cooldowns_helps_everyone_else_but_not_itself() -> void:
 	var beast := _beast(&"resetter")
 	beast.ultimate_reset_cooldowns = true
 	var beast_attacker := PBBeastRules.build_ultimate_attacker(beast, 1, 0.0, wave.element, _cfg)
+	beast_attacker.ultimate.skill.delay_ticks = 20  # 等队友第 4 帧释放进入冷却后再重置。
 	var alone: Array[PBAttacker] = [_mate_with_ultimate(wave)]
 	var helped: Array[PBAttacker] = [_mate_with_ultimate(wave), beast_attacker]
-	assert_gt(
-		_kills_over(wave, helped, 200),
-		_kills_over(wave, alone, 200),
-		"有尾兽在场，队友的大招该多放出几发来"
-	)
+	assert_gt(_kills_over(wave, helped, 200), _kills_over(wave, alone, 200), "有尾兽在场，队友的大招该多放出几发来")
 	assert_gt(beast_attacker.ultimate.ready_at, 0, "尾兽自己照常进冷却，不自我重置")
 
 
@@ -324,9 +310,7 @@ func test_upgrade_costs_follow_the_spec_curve_and_stop_at_the_cap() -> void:
 	# §11：`400 × 1.6^Lv`，上限 10。价格曲线比攻击科技（1.4）陡是有道理的 ——
 	# 一级尾兽同时买到光环、大招伤害和大招频率三样。
 	assert_eq(PBBeastRules.upgrade_cost(1, _cfg), 640, "Lv1 → Lv2 = 400 × 1.6")
-	assert_gt(
-		PBBeastRules.upgrade_cost(5, _cfg), PBBeastRules.upgrade_cost(4, _cfg), "价格该逐级上涨"
-	)
+	assert_gt(PBBeastRules.upgrade_cost(5, _cfg), PBBeastRules.upgrade_cost(4, _cfg), "价格该逐级上涨")
 	assert_eq(PBBeastRules.upgrade_cost(_cfg.beast_level_max, _cfg), -1, "满级返回 −1，与科技同约定")
 
 

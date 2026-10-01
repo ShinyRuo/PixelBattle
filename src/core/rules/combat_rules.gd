@@ -134,7 +134,7 @@ static func build_attackers(
 	var team_mult: float = bond_mult
 	var out: Array[PBAttacker] = []
 	# 召唤物的位子开波就留好（理由见 [PBSummonRules] 顶部）。没有召唤技能就一个不留。
-	var spare: int = PBSummonRules.reserve(deployed, cfg)
+	var spare: int = PBSummonRules.reserve(deployed, cfg, bond_skill_patches)
 	out.resize(deployed.size() + spare)
 	# 带聚拢大招的名额按出战席顺序发前 n 个。**按比例而不是按角色表**，
 	# 理由见 [member PBSimConfig.ultimate_gather_share]。
@@ -155,13 +155,16 @@ static func build_attackers(
 		# 里面注入（二级属性从一级派生，攻击力要吃克制）。行为那一档走下面的
 		# [method PBPassiveRules.equip]。装备和训练科技的词条在 `worn` 里。
 		var worn: Dictionary = equip_mods[i] if i < equip_mods.size() else {}
-		var stat_mods: Dictionary = PBStatRules.collect(
-			[
-				unit.character.passives,
-				bond_passives.get(unit.character.id, {}) as Dictionary,
-				beast_aura,
-				worn,
-			]
+		var stat_mods: Dictionary = (
+			PBStatRules
+			. collect(
+				[
+					unit.character.passives,
+					bond_passives.get(unit.character.id, {}) as Dictionary,
+					beast_aura,
+					worn,
+				]
+			)
 		)
 		# **一发多重**：战斗真正用的是这个数，见 [member PBAttacker.attack]。
 		attacker.attack = unit.effective_attack(wave_element, cfg, stat_mods) * mult
@@ -170,9 +173,27 @@ static func build_attackers(
 		attacker.dps = unit.effective_power(wave_element, cfg) * mult
 		# 挨打这一半。**血与防不吃 `mult`**：队伍倍率是进攻向的，防守加成走词条。
 		var stats := unit.stats(cfg, stat_mods)
+		attacker.attribute_profile = PBAttributeProfile.make(
+			unit, stat_mods, stats, wave_element, mult
+		)
+		attacker.base_attack = stats.base_atk
+		attacker.ranged_attack = tier != PBCharacter.Reach.MELEE
 		attacker.max_hp = stats.hp
+		attacker.damage_attributes = {
+			&"strength": stats.strength,
+			&"agility": stats.agility,
+			&"intellect": stats.intellect,
+			&"attack": stats.atk,
+			&"max_hp": stats.hp
+		}
+		attacker.ninjutsu_attack = (
+			stats.intellect
+			* cfg.damage_multiplier(PBElement.relation(unit.element, wave_element))
+			* mult
+		)
 		attacker.defence = stats.def
 		attacker.def_element = unit.def_element
+		attacker.attack_element = unit.element
 		# 蓝：智力抬池子，回速按池子的比例走。
 		attacker.max_mp = stats.mp
 		attacker.mp_regen = stats.mp * cfg.mp_regen_rate / float(cfg.tick_rate)
@@ -182,8 +203,8 @@ static func build_attackers(
 		# 跑动：站位是「从哪一列出发」，皮带绳默认不拴（见 [member PBSimConfig.unit_leash]）。
 		attacker.home = attacker.pos
 		attacker.leash = cfg.leash_distance()
-		attacker.move_speed = cfg.field_length / maxf(
-			cfg.unit_move_seconds * float(cfg.tick_rate), 1.0
+		attacker.move_speed = (
+			cfg.field_length / maxf(cfg.unit_move_seconds * float(cfg.tick_rate), 1.0)
 		)
 		attacker.shape = unit.character.attack_shape
 		attacker.max_targets = cfg.aoe_max_targets
@@ -193,27 +214,29 @@ static func build_attackers(
 		attacker.shot_speed = (
 			0.0
 			if tier == PBCharacter.Reach.MELEE
-			else cfg.field_length / maxf(
-				cfg.projectile_cross_seconds * float(cfg.tick_rate), 1.0
-			)
+			else cfg.field_length / maxf(cfg.projectile_cross_seconds * float(cfg.tick_rate), 1.0)
 		)
-		var skill := _build_skill(unit, wave_element, mult, i < gather_count, cfg)
+		var skill := _build_skill(unit, wave_element, mult, i < gather_count, cfg, stats)
 		# 羁绊功能档里装在大招上的那一半（一组只出一个载体）。
 		# 装在本人身上的那一半必须在这个循环里 —— 只有这里知道这个攻击者是哪个角色。
 		for key: StringName in bond_functions.get(unit.character.id, []) as Array:
 			PBBondFunctionRules.apply_to_skill(skill, key, cfg)
 		# 行为词条：角色自带 / 羁绊成员效果 / 尾兽光环 / 装备，**走同一个入口**、在字段上 `+=` 汇合。
 		# 走 `equip` 不走几行 `grant_all`：率型键装完还要折算，见 [method PBPassiveRules.equip]。
-		PBPassiveRules.equip(
-			attacker,
-			[
-				unit.character.passives,
-				bond_passives.get(unit.character.id, {}) as Dictionary,
-				beast_aura,
-				worn,
-			]
+		(
+			PBPassiveRules
+			. equip(
+				attacker,
+				[
+					unit.character.passives,
+					bond_passives.get(unit.character.id, {}) as Dictionary,
+					beast_aura,
+					worn,
+				]
+			)
 		)
 		# 名册「被动」列里 `on_hit=<效果键>` 那一半。这份是定义，直接共用引用。
+		PBAttackRangeRules.apply(attacker, cfg)
 		attacker.on_hit_buffs = unit.character.on_hit_buffs
 		# `on_low_hp=<效果键>` 那一半，同上。阈值（`low_hp`）已经跟着被动表装上了。
 		attacker.low_hp_buffs = unit.character.low_hp_buffs
@@ -228,8 +251,13 @@ static func build_attackers(
 		# [member PBSkillCast.caster_level]。
 		attacker.ultimate = PBSkillCast.new(skill, unit.level)
 		_equip_skills(
-			attacker, unit, wave_element, mult, cfg,
-			bond_skill_patches.get(unit.character.id, {})
+			attacker,
+			unit,
+			wave_element,
+			mult,
+			cfg,
+			bond_skill_patches.get(unit.character.id, {}),
+			stats
 		)
 		out[i] = attacker
 
@@ -266,7 +294,8 @@ static func _equip_skills(
 	wave_element: PBElement.Type,
 	mult: float,
 	cfg: PBSimConfig,
-	patches: Dictionary = {}
+	patches: Dictionary = {},
+	stats: PBStats = null
 ) -> void:
 	if cfg.skills == null:
 		return
@@ -279,13 +308,34 @@ static func _equip_skills(
 			push_error("角色表里点了一个不存在的技能：%s" % id)
 			continue
 		# **补丁打在复制品上**，而且**排在伤害换算之前**：`power_scale` 改的就是换算要用的倍率。
-		var mine := skill.clone()
-		PBSkillPatchRules.apply(mine, patches.get(id, {}), cfg.tick_rate)
-		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
+		var mine := PBSkillVariantRules.prepare(skill, patches.get(id, {}), cfg, unit.level)
+		mine.kind = PBDamageKind.skill_kind(unit.element)
+		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg, stats)
+		if mine.recast != null:
+			mine.recast.kind = mine.kind
+			mine.recast.damage = skill_damage(unit, mine.recast, wave_element, mult, cfg, stats)
+		if mine.followup_enabled:
+			mine.followup = cfg.skills.by_id(mine.followup_id).clone()
+			mine.followup.kind = mine.kind
+			mine.followup.damage = skill_damage(unit, mine.followup, wave_element, mult, cfg, stats)
+		if PBSkillDamage.stat_of(mine) == &"attack":
+			mine.attack_formula_scale = (
+				mine.power_mult
+				* mult
+				* cfg.damage_multiplier(PBElement.relation(mine.element, wave_element))
+			)
 		# 被动已经在这之前装好了（[method PBPassiveRules.equip]），治疗倍率跟着写到这一份上。
+		var values: PBStats = unit.stats(cfg) if stats == null else stats
+		mine.first_cast_damage = (
+			values.atk
+			* mine.first_cast_attack
+			* mult
+			* cfg.damage_multiplier(PBElement.relation(mine.element, wave_element))
+		)
 		mine.heal_scale = 1.0 + attacker.heal_power
 		attacker.skills.append(PBSkillCast.new(mine, unit.level))
-	_equip_death_casts(attacker, unit, wave_element, mult, cfg, patches)
+	_equip_death_casts(attacker, unit, wave_element, mult, cfg, patches, stats)
+	PBOnAttackRules.equip(attacker, unit, wave_element, mult, cfg, patches, stats)
 
 
 ## 羁绊补丁 `on_death` 点到的技能装进 [member PBAttacker.death_casts]。**不进指令卡**，所以不占
@@ -296,7 +346,8 @@ static func _equip_death_casts(
 	wave_element: PBElement.Type,
 	mult: float,
 	cfg: PBSimConfig,
-	patches: Dictionary
+	patches: Dictionary,
+	stats: PBStats = null
 ) -> void:
 	attacker.death_casts.clear()
 	for id: StringName in patches:
@@ -307,8 +358,9 @@ static func _equip_death_casts(
 			push_error("羁绊补丁点了一个不存在的阵亡技能：%s" % id)
 			continue
 		var mine := skill.clone()
+		mine.kind = PBDamageKind.skill_kind(unit.element)
 		PBSkillPatchRules.apply(mine, patches[id], cfg.tick_rate)
-		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg)
+		mine.damage = skill_damage(unit, mine, wave_element, mult, cfg, stats)
 		mine.heal_scale = 1.0 + attacker.heal_power
 		attacker.death_casts.append(PBSkillCast.new(mine, unit.level))
 
@@ -316,12 +368,18 @@ static func _equip_death_casts(
 ## 造一个单位这一波的大招（§02）。
 ## **克制按大招自己的属性算，不按单位的**（铁律 4：element 挂在伤害事件上）。
 static func _build_skill(
-	unit: PBUnit, wave_element: PBElement.Type, mult: float, gather: bool, cfg: PBSimConfig
+	unit: PBUnit,
+	wave_element: PBElement.Type,
+	mult: float,
+	gather: bool,
+	cfg: PBSimConfig,
+	stats: PBStats = null
 ) -> PBSkill:
 	var skill := PBSkill.new()
 	skill.element = unit.character.ultimate_element()
+	skill.kind = PBDamageKind.skill_kind(unit.element)
 	skill.power_mult = cfg.ultimate_power_mult
-	skill.damage = skill_damage(unit, skill, wave_element, mult, cfg)
+	skill.damage = skill_damage(unit, skill, wave_element, mult, cfg, stats)
 	skill.radius = cfg.ultimate_radius
 	skill.cooldown_ticks = int(round(cfg.ultimate_cooldown_seconds * float(cfg.tick_rate)))
 	skill.delay_ticks = int(round(cfg.ultimate_delay_seconds * float(cfg.tick_rate)))
@@ -335,20 +393,27 @@ static func _build_skill(
 ## 和 [method unit_multipliers] 是两条腿，四个调用点两条都要拿。
 ## 这是唯一一个手上有 [PBRunState] 又已经接到全部折叠点的地方，局面给的词条都并在这里。
 static func unit_mods(
-	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig
+	units: Array[PBUnit], state: PBRunState, cfg: PBSimConfig, preview: bool = false
 ) -> Array[Dictionary]:
 	var out := PBEquipRules.unit_mods(units, state.equip_parts, cfg, state.equipped)
 	if state.training.is_empty():
 		return out
+	var passives := PBBondRules.active_passives(state.bonded_units(cfg, preview), units, cfg.bonds)
 	for i: int in units.size():
-		var trained := PBTechRules.unit_mods(units[i], state.training)
+		var own: Dictionary = passives.get(units[i].character.id, {})
+		var ranged: bool = (
+			float(own.get(PBPassiveRules.RANGED_RANGE, 0.0)) > 0.0
+			or float(out[i].get(PBPassiveRules.RANGED_RANGE, 0.0)) > 0.0
+			or float(units[i].character.passives.get(PBPassiveRules.RANGED_RANGE, 0.0)) > 0.0
+		)
+		var trained := PBTechRules.unit_mods(units[i], state.training, ranged)
 		for key: StringName in trained:
 			out[i][key] = float(out[i].get(key, 0.0)) + float(trained[key])
 	return out
 
 
 ## 一发技能打多少。**大招和角色技能共用这一句**：
-## `战力 × 属性克制 × 队伍倍率 × 这一发的倍率`。
+## `（等级基数 + 属性 × 系数）× 技能属性克制 × 队伍倍率`。
 ##
 ## 只能有一处：技能伤害写成 `.tres` 里的字面量的话，克制、羁绊对技能一律不生效，
 ## 而且它不随波次涨（见 [member PBSkill.power_mult]）。
@@ -358,10 +423,12 @@ static func skill_damage(
 	skill: PBSkill,
 	wave_element: PBElement.Type,
 	mult: float,
-	cfg: PBSimConfig
+	cfg: PBSimConfig,
+	stats: PBStats = null
 ) -> float:
 	var rel := PBElement.relation(skill.element, wave_element)
-	return unit.power(cfg) * cfg.damage_multiplier(rel) * mult * skill.power_mult
+	var values: PBStats = unit.stats(cfg) if stats == null else stats
+	return PBSkillDamage.raw(skill, values, unit.level) * cfg.damage_multiplier(rel) * mult
 
 
 ## 一组攻击者的 DPS 之和 —— 也就是对外报的「队伍战力」。

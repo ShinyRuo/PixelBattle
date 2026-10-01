@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PBFieldSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/kushina_chains/frame_0.png" id="1_noae4"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/kushina_chains/frame_1.png" id="2_1hs6t"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/kushina_chains/frame_2.png" id="3_iki1n"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/kushina_chains/frame_3.png" id="4_yfear"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/kushina_chains/frame_4.png" id="5_bhpiq"]
+[ext_resource type="Texture2D" path="res://assets/fx/fields/links/kushina_chains/frame_5.png" id="6_ji61t"]
+[ext_resource type="Script" path="res://src/view/field_skin.gd" id="7_e06ib"]
+
+[resource]
+script = ExtResource("7_e06ib")
+frames = Array[Texture2D]([ExtResource("1_noae4"), ExtResource("2_1hs6t"), ExtResource("3_iki1n"), ExtResource("4_yfear"), ExtResource("5_bhpiq"), ExtResource("6_ji61t")])
+fps = 8.0
+link_width = 56.0

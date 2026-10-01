@@ -34,10 +34,12 @@ static func advance(
 	for shot: PBProjectile in shots:
 		if not shot.alive:
 			continue
-		if shot.at_ally:
+		if shot.enemy_duel:
+			PBEnemyDuelRules.advance_shot(shot, enemies, cfg, tick, rng, book, out)
+		elif shot.at_ally:
 			_hit_ally(shot, attackers, enemies, cfg, tick, book, out, rng)
 		else:
-			_hit_enemy(shot, enemies, attackers, cfg, tick, book, out)
+			_hit_enemy(shot, enemies, attackers, cfg, tick, book, out, rng)
 
 
 ## 找一发空子弹。池子满了返回 null —— 那时**这一发就没了**，
@@ -64,13 +66,23 @@ static func _hit_enemy(
 	cfg: PBSimConfig,
 	tick: int,
 	book: PBBattleLog,
-	out: PBCombatOutcome
+	out: PBCombatOutcome,
+	rng: RandomNumberGenerator
 ) -> void:
 	if shot.piercing:
-		out.kills += _pierce(shot, enemies, PBStrikeRules.by_slot(attackers, shot.source), cfg, tick)
+		out.kills += _pierce(
+			shot, enemies, PBStrikeRules.by_slot(attackers, shot.source), cfg, tick, rng
+		)
 		return
+	if (
+		shot.skill != null
+		and (shot.skill.channel_control or (shot.skill.mind_control and shot.primary_target))
+	):
+		if shot.channel == null or not shot.channel.is_live(tick):
+			shot.retire()
+			return
 	var enemy: PBEnemy = enemies[shot.target]
-	if not enemy.alive:
+	if not enemy.is_hostile(tick):
 		shot.retire()
 		return
 	if not shot.fly(enemy.pos()):
@@ -81,9 +93,12 @@ static func _hit_enemy(
 	if shot.skill != null:
 		# 技能子弹不是普攻：减伤按技能的类型，不跑普攻那几样触发。
 		out.kills += PBSkillRules.hit_by_shot(enemy, shot, shooter, cfg, tick, book)
+		if shot.channel != null and not shot.skill.mind_control:
+			shot.channel.attach(enemy, shot.skill.on_hit[0].id, tick, true)
+		PBSkillImpact.hold_neighbors(enemy, shot.skill, enemies, cfg, tick, shot.channel)
 		shot.retire()
 		return
-	PBStrikeRules.land(shooter, enemy, shot.damage, shot.crit, enemies, cfg, tick, book, out)
+	PBStrikeRules.land(shooter, enemy, shot.damage, shot.crit, enemies, cfg, tick, book, out, rng)
 	# 穿透的普攻打中第一个之后不回池，接着往前飞（玩家定的：子弹不能碰到第一个敌人就消失）。
 	if shot.pierce_left > 0.0:
 		shot.start_pierce(shot.target)
@@ -103,21 +118,23 @@ static func _pierce(
 	enemies: Array[PBEnemy],
 	shooter: PBAttacker,
 	cfg: PBSimConfig,
-	tick: int
+	tick: int,
+	rng: RandomNumberGenerator
 ) -> int:
 	var start: Vector2 = shot.pos
 	var more: bool = shot.glide()
 	var killed: int = 0
 	for i: int in enemies.size():
 		var other: PBEnemy = enemies[i]
-		if not other.alive or not other.has_spawned(tick) or shot.struck.has(i):
+		if not other.is_hostile(tick) or shot.struck.has(i):
 			continue
 		if _off_line(other.pos(), start, shot.pos) > PIERCE_HALF_WIDTH:
 			continue
 		var hit: float = shot.damage * pow(1.0 - PIERCE_DECAY, shot.struck.size())
 		shot.struck.append(i)
 		var kind := PBCritRules.attack_kind(shooter)
-		if other.take_damage(PBStrikeRules.mitigated(shooter, other, hit, kind, cfg, tick), tick):
+		var reduced: float = PBStrikeRules.mitigated(shooter, other, hit, kind, cfg, tick)
+		if other.take_damage(reduced, tick, rng, true, shot.element):
 			killed += 1
 	if not more:
 		shot.retire()
@@ -165,9 +182,15 @@ static func _hit_ally(
 		return
 	if shot.skill != null:
 		PBSkillRules.apply_hit_ally(target, shot.skill, shot.level, cfg, tick)
+		if book != null:
+			book.skill_impact(tick, shot.source, target.slot, true, shot.skill.shot_key)
 		shot.retire()
 		return
 	# 折算、播报、扣血、阵亡、反弹全走 [method PBStrikeRules.hurt_ally]，近战那一路调的是同一个。
+	var source := _shooter(shot, enemies)
+	if source != null and source.controlled(tick):
+		shot.retire()
+		return
 	PBStrikeRules.hurt_ally(
 		target,
 		_shooter(shot, enemies),
@@ -178,6 +201,6 @@ static func _hit_ally(
 		rng,
 		book,
 		out,
-		attackers
+		shot.enemy_hit if shot.enemy_hit != null else PBEnemyHitContext.new(attackers, shot.crit)
 	)
 	shot.retire()

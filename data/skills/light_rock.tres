@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PBSkill" format=3]
+
+[ext_resource type="Script" path="res://src/core/sim/buff.gd" id="1_lkmcj"]
+[ext_resource type="Script" path="res://src/core/sim/skill.gd" id="2_5pkky"]
+
+[resource]
+script = ExtResource("2_5pkky")
+target = 0
+id = &"light_rock"
+name_key = "skill.light_rock"
+affects = 0
+attack_speed_aura = 0.14
+attack_speed_aura_growth = 0.04
+move_speed_aura = 0.15
+element = 3
+area_refresh_ticks = PackedInt32Array()
+hit_count_levels = PackedInt32Array()
+mp_cost_levels = PackedFloat32Array()

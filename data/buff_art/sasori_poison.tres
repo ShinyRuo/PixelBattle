@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sasori_poison/front_0.png" id="1_a0ltl"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sasori_poison/front_1.png" id="2_wmn0m"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sasori_poison/front_2.png" id="3_cct2t"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sasori_poison/front_3.png" id="4_sl04n"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sasori_poison/front_4.png" id="5_mtbll"]
+[ext_resource type="Texture2D" path="res://assets/fx/buffs/sasori_poison/front_5.png" id="6_g7isi"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_vkmax"]
+
+[resource]
+script = ExtResource("7_vkmax")
+blend_style = 1
+front_frames = Array[Texture2D]([ExtResource("1_a0ltl"), ExtResource("2_wmn0m"), ExtResource("3_cct2t"), ExtResource("4_sl04n"), ExtResource("5_mtbll"), ExtResource("6_g7isi")])
+fps = 8.0
+anchor = Vector2(128, 224)
+pixel_scale = 0.3333333333333333

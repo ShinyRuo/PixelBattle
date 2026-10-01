@@ -9,7 +9,6 @@ id = &"itachi"
 name_key = "char.itachi"
 icon_key = "itachi"
 actor_key = &"itachi"
-shot_key = &""
 element = 0
 def_element = 0
 primary = 2
@@ -27,20 +26,12 @@ attack_speed_base = 0.6666666666666666
 hp_per_strength = 80.0
 mp_per_intellect = 0.7
 atk_per_primary = 3.5
-def_per_agility = 0.22
 attack_speed_per_agility = 0.009
 rarity = 2
 reach = 2
 attack_range = 600.0
-attack_shape = 0
-ultimate_element_override = -1
 skill_ids = Array[StringName]([&"great_fireball", &"tsukuyomi"])
 passives = {
 &"attack_ninjutsu": 1.0,
 &"ninjutsu_crit_chance": 0.15
 }
-on_hit_buffs = Array[ExtResource("1_mvtvh")]([])
-low_hp_buffs = Array[ExtResource("1_mvtvh")]([])
-lethal_buffs = Array[ExtResource("1_mvtvh")]([])
-struck_buffs = Array[ExtResource("1_mvtvh")]([])
-attack_buffs = Array[ExtResource("1_mvtvh")]([])

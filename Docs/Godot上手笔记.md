@@ -353,6 +353,11 @@ godot_console --version
 
 ## 容易踩的坑
 
+- **条件表达式里的空数组不一定继承目标元素类型。**
+  `var team: Array[PBAttacker] = [] if context == null else context.team`
+  在空分支可能运行时报类型不匹配。先声明类型明确的空数组，再用 `if` 赋另一分支。
+  这是运行时问题，需用例实际走到空分支，不能只看导入解析通过。
+
 - **`queue_free()` 不是 `free()`。** `free()` 立即释放，正在遍历或信号回调里调用会崩；
   `queue_free()` 在帧末安全释放。除非你非常确定，否则永远用 `queue_free()`。
   （这条只针对 `Node`。`RefCounted` 两个都不用调。）

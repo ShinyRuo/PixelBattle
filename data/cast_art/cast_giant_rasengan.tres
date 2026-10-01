@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PBBuffSkin" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_giant_rasengan/back/frame_0.png" id="1_j6noh"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_giant_rasengan/back/frame_1.png" id="2_1uvg8"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_giant_rasengan/back/frame_2.png" id="3_700of"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_giant_rasengan/back/frame_3.png" id="4_80c17"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_giant_rasengan/back/frame_4.png" id="5_3si7p"]
+[ext_resource type="Texture2D" path="res://assets/fx/casts/cast_giant_rasengan/back/frame_5.png" id="6_gkub7"]
+[ext_resource type="Script" path="res://src/view/buff_skin.gd" id="7_mgu6o"]
+
+[resource]
+script = ExtResource("7_mgu6o")
+back_frames = Array[Texture2D]([ExtResource("1_j6noh"), ExtResource("2_1uvg8"), ExtResource("3_700of"), ExtResource("4_80c17"), ExtResource("5_3si7p"), ExtResource("6_gkub7")])
+fps = 20.0
+anchor = Vector2(128, 128)
+offset = Vector2(5, -25)
+pixel_scale = 0.35
+metadata/sheet_back = {
+"background": 0,
+"center": true,
+"columns": 3,
+"count": 6,
+"layout": 0,
+"path": "res://aires/skills/skill_giant_rasengan_cast_v1.png",
+"rows": 2,
+"size": 256
+}

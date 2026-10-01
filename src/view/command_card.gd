@@ -183,8 +183,7 @@ func _ready() -> void:
 		var at := (
 			PANEL_RECT.position
 			+ Vector2(
-				4.0 + float(i % COLUMNS) * CELL_STEP.x,
-				GRID_TOP + float(i / COLUMNS) * CELL_STEP.y
+				4.0 + float(i % COLUMNS) * CELL_STEP.x, GRID_TOP + float(i / COLUMNS) * CELL_STEP.y
 			)
 		)
 		_slots[i] = _make_slot(i, at)
@@ -266,6 +265,10 @@ func set_battle(
 func set_skills(skills: Array[PBSkill], level: int) -> void:
 	_skills = skills
 	_skill_level = level
+
+
+func skill_definitions() -> Array[PBSkill]:
+	return _skills
 
 
 ## 这一格现在绑着哪个指令。测试拿它确认「选中什么就该出现什么」。
@@ -391,10 +394,7 @@ func _fill_beast(state: PBRunState, cfg: PBSimConfig) -> void:
 		return
 	_bind(0, CMD_BEAST_UP, "升级尾兽\n%d" % cost, cost <= state.gold)
 	# §11：等级只放大光环与大招伤害，**半径、聚拢、减速、重置 CD 一概不变**。
-	_hint.text = (
-		"Lv%d → Lv%d，%d 金。只放大数值，机制不变。"
-		% [state.beast_level, state.beast_level + 1, cost]
-	)
+	_hint.text = ("Lv%d → Lv%d，%d 金。只放大数值，机制不变。" % [state.beast_level, state.beast_level + 1, cost])
 
 
 func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
@@ -420,26 +420,32 @@ func _fill_unit(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	elif _deployed.has(unit):
 		_bind(1, CMD_BENCH, "收回仓库", true)
 	else:
-		_bind(
-			1,
-			CMD_DEPLOY,
-			"派上场",
-			_deployed.size() + _away.size() < state.field_slots(cfg)
-		)
+		_bind(1, CMD_DEPLOY, "派上场", _deployed.size() + _away.size() < state.field_slots(cfg))
 	# 没有「装备」格：装备栏（[PBEquipBay]）跟着选中常驻显示，打开一直开着的东西的按钮只会让人以为漏了一步。
 	_fill_dispatch(unit, state, cfg)
-	_fill_skills(unit, cfg)
+	_fill_skills(unit, state, cfg)
 
 
 ## 准备阶段也把技能格摆出来，**和战斗中同一个位置**（第 2 格起），**灰着、按不下去** —— 只为了悬停看说明（玩家定的）。
 ## 「派去任务」因此让到第 4 格。
-func _fill_skills(unit: PBUnit, cfg: PBSimConfig) -> void:
+func _fill_skills(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	var skills: Array[PBSkill] = [null]
+	var patches := PBBondRules.active_skill_patches(
+		state.bonded_units(cfg, true), _deployed, cfg.bonds
+	)
+	var mine: Dictionary = patches.get(unit.character.id, {})
 	if cfg.skills != null:
 		for id: StringName in unit.character.skill_ids:
 			var skill: PBSkill = cfg.skills.by_id(id)
 			if skill != null and skills.size() < SKILL_COMMANDS.size():
-				skills.append(skill)
+				var copy := PBSkillVariantRules.prepare(skill, mine.get(id, {}), cfg, unit.level)
+				copy.kind = PBDamageKind.skill_kind(unit.element)
+				if copy.recast != null:
+					copy.recast.kind = copy.kind
+				if copy.followup_enabled:
+					copy.followup = cfg.skills.by_id(copy.followup_id).clone()
+					copy.followup.kind = copy.kind
+				skills.append(copy)
 	set_skills(skills, unit.level)
 	for i: int in range(FIRST_SKILL, skills.size()):
 		_bind(2 + i - FIRST_SKILL, SKILL_COMMANDS[i], PBLocale.of_skill(skills[i]), false)
@@ -457,9 +463,7 @@ func _fill_dispatch(unit: PBUnit, state: PBRunState, cfg: PBSimConfig) -> void:
 	# 仓库里的人派出去一分代价都没有（他本来就不给羁绊），那样任务就是白送 ——
 	# §06 整节的张力在于「派谁」要付羁绊，所以门槛是「在不在场」。
 	var on_field: bool = state.field_units(cfg).has(unit)
-	_bind(
-		DISPATCH_SLOT, CMD_DISPATCH, "派去任务\n%d/%d" % [chosen, need], on_field and chosen < need
-	)
+	_bind(DISPATCH_SLOT, CMD_DISPATCH, "派去任务\n%d/%d" % [chosen, need], on_field and chosen < need)
 	if not on_field:
 		_hint.text = "他不在场上 —— 派他去等于白送，先派上场。"
 	elif chosen >= need:

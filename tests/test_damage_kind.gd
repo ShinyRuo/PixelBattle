@@ -5,7 +5,7 @@ extends GutTest
 ## 没人配忍术暴击率时技能也掷了骰子（拨动那条流，整局对拍漂移）；
 ## 技能子弹走了普攻的落点，吃护甲还触发了施法者的吸血和溅射。
 
-const PHYS := PBDamageKind.Type.PHYSICAL
+const PHYS := PBDamageKind.Type.TAIJUTSU
 const NIN := PBDamageKind.Type.NINJUTSU
 
 var _cfg: PBSimConfig
@@ -30,6 +30,7 @@ func _ninja() -> PBAttacker:
 	var one := PBAttacker.new()
 	one.max_hp = 1000.0
 	one.attack = 100.0
+	one.ninjutsu_attack = 100.0
 	one.attack_speed = 1.0
 	one.prime(_cfg.tick_rate)
 	one.revive()
@@ -65,9 +66,13 @@ func test_each_kind_is_cut_only_by_its_own_defence() -> void:
 	var by_armor: float = 100.0 * (1.0 - PBStatRules.damage_reduction(20.0, _cfg))
 	var body: float = PBStrikeRules.mitigated(ninja, enemy, 100.0, PHYS, _cfg, 0)
 	assert_almost_eq(body, by_armor, 0.001, "体术吃护甲")
-	assert_almost_eq(PBStrikeRules.mitigated(ninja, enemy, 100.0, NIN, _cfg, 0), 60.0, 0.001, "忍术吃抗性")
+	assert_almost_eq(
+		PBStrikeRules.mitigated(ninja, enemy, 100.0, NIN, _cfg, 0), 60.0, 0.001, "忍术吃抗性"
+	)
 	ninja.ninjutsu_pen = 0.5
-	assert_almost_eq(PBStrikeRules.mitigated(ninja, enemy, 100.0, NIN, _cfg, 0), 80.0, 0.001, "穿透一半")
+	assert_almost_eq(
+		PBStrikeRules.mitigated(ninja, enemy, 100.0, NIN, _cfg, 0), 80.0, 0.001, "穿透一半"
+	)
 	var shred := PBBuff.new()
 	shred.id = &"probe_resist_down"
 	shred.kind = PBBuff.Kind.DURATION
